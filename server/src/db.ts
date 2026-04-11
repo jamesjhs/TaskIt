@@ -112,11 +112,18 @@ db.exec(`
 `);
 
 // Runtime migrations — add columns if they don't exist yet
+const VALID_IDENTIFIER = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 function columnExists(table: string, col: string): boolean {
+  if (!VALID_IDENTIFIER.test(table) || !VALID_IDENTIFIER.test(col)) {
+    throw new Error(`Invalid identifier: table="${table}", col="${col}"`);
+  }
   const infos = db.prepare(`PRAGMA table_info("${table}")`).all() as Array<{ name: string }>;
   return infos.some(r => r.name === col);
 }
 function addCol(table: string, col: string, def: string) {
+  if (!VALID_IDENTIFIER.test(table) || !VALID_IDENTIFIER.test(col)) {
+    throw new Error(`Invalid identifier: table="${table}", col="${col}"`);
+  }
   if (!columnExists(table, col)) db.exec(`ALTER TABLE "${table}" ADD COLUMN ${col} ${def}`);
 }
 

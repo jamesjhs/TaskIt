@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 const DB_PATH = path.join(__dirname, '..', 'jobber.db');
 
@@ -82,7 +83,6 @@ if (countRow.cnt === 0) {
   );
   const now = Date.now();
   for (const name of defaultTypes) {
-    const { v4: uuidv4 } = require('uuid');
     insert.run(uuidv4(), name, now);
   }
 }

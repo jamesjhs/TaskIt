@@ -421,6 +421,7 @@ let token = localStorage.getItem('jbToken') || '';
 let currentUser = JSON.parse(localStorage.getItem('jbUser') || 'null');
 let taskTypes = [];
 let groups = [];
+let tasksMap = new Map(); // keyed by task id
 let currentFilter = { status: '', groupId: '', archived: false, assignedToMe: false };
 let currentDetailTask = null;
 
@@ -662,6 +663,7 @@ async function loadTasks() {
     if (currentFilter.archived) params.set('archived', 'true');
     if (currentFilter.assignedToMe) params.set('assignedToMe', 'true');
     const tasks = await api('GET', '/tasks?' + params.toString());
+    tasksMap = new Map(tasks.map(t => [t.id, t]));
     renderTasks(tasks);
   } catch (err) {
     grid.innerHTML = '<div class="col-span-full text-center py-12 text-red-400">' + escHtml(err.message) + '</div>';
@@ -677,7 +679,7 @@ function renderTasks(tasks) {
   grid.innerHTML = tasks.map(t => {
     const statusInfo = statusMeta(t.status);
     return `
-      <div onclick="openDetail(${JSON.stringify(t).replace(/"/g,'&quot;')})"
+      <div onclick="openDetailById(${JSON.stringify(t.id).replace(/"/g,'&quot;')})"
         class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 cursor-pointer hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500 transition-all group">
         <div class="flex items-start justify-between gap-2 mb-3">
           <h3 class="font-semibold text-slate-800 dark:text-white text-sm leading-snug group-hover:text-indigo-700 dark:group-hover:text-indigo-400 transition-colors">${escHtml(t.title)}</h3>
@@ -825,6 +827,11 @@ async function handleTaskSubmit(e) {
 }
 
 // ========== Task Detail ==========
+function openDetailById(id) {
+  const task = tasksMap.get(id);
+  if (task) openDetail(task);
+}
+
 function openDetail(task) {
   currentDetailTask = task;
   document.getElementById('detailTitle').textContent = task.title;
@@ -854,6 +861,7 @@ async function quickStatus(status) {
   try {
     const updated = await api('PATCH', '/tasks/' + currentDetailTask.id + '/status', { status });
     currentDetailTask = updated;
+    tasksMap.set(updated.id, updated);
     openDetail(updated);
     loadTasks();
     toast('Status updated!');
@@ -873,6 +881,7 @@ async function archiveCurrentTask() {
   try {
     const updated = await api('PATCH', '/tasks/' + currentDetailTask.id + '/archive');
     currentDetailTask = updated;
+    tasksMap.set(updated.id, updated);
     openDetail(updated);
     loadTasks();
     toast(updated.archived ? 'Task archived' : 'Task unarchived');

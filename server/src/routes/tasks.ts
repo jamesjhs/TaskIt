@@ -5,15 +5,24 @@ import db from '../db';
 
 const router = Router();
 
+// Allowed values for validated enum fields
+const ALLOWED_STATUSES = new Set(['not_started', 'started', 'complete']);
+
 router.use(authMiddleware);
 
 router.get('/', (req: Request, res: Response): void => {
   const userId = req.user!.id;
 
-  // Build filters
+  // Build filters — all condition strings are hardcoded; only values use parameters
   const { groupId, assignedToMe, status, archived } = req.query;
 
-  let whereConditions: string[] = [];
+  // Validate status against allowed values to reject garbage before hitting the DB
+  if (status && !ALLOWED_STATUSES.has(status as string)) {
+    res.status(400).json({ error: 'Invalid status value' });
+    return;
+  }
+
+  const whereConditions: string[] = [];
   const params: (string | number | null)[] = [];
 
   // User must be the creator OR an assignee OR group member
@@ -47,7 +56,9 @@ router.get('/', (req: Request, res: Response): void => {
   whereConditions.push('t.archived = ?');
   params.push(archivedVal);
 
-  const where = whereConditions.length ? 'WHERE ' + whereConditions.join(' AND ') : '';
+  // All strings in whereConditions are hardcoded literals with ? placeholders;
+  // no user-supplied content is interpolated into the SQL structure.
+  const whereClause = 'WHERE ' + whereConditions.join(' AND ');
 
   const tasks = db.prepare(`
     SELECT t.*, tt.name AS type_name,
@@ -55,7 +66,7 @@ router.get('/', (req: Request, res: Response): void => {
     FROM tasks t
     JOIN task_types tt ON tt.id = t.type_id
     JOIN users u ON u.id = t.created_by
-    ${where}
+    ${whereClause}
     ORDER BY t.updated_at DESC
   `).all(...params) as Array<Record<string, unknown>>;
 
@@ -166,21 +177,30 @@ router.patch('/:id', (req: Request, res: Response): void => {
   }
 
   const { title, details, typeId, status, assigneeIds } = req.body;
+
+  // Validate status if provided
+  if (status !== undefined && !ALLOWED_STATUSES.has(status as string)) {
+    res.status(400).json({ error: 'Invalid status value' });
+    return;
+  }
+
   const now = Date.now();
 
-  const fields: string[] = [];
+  // All SET clause fragments are hardcoded string literals — no user input is
+  // interpolated into the SQL structure; only values use ? placeholders.
+  const setClauses: string[] = [];
   const vals: (string | number | null)[] = [];
 
-  if (title !== undefined) { fields.push('title = ?'); vals.push(title); }
-  if (details !== undefined) { fields.push('details = ?'); vals.push(details); }
-  if (typeId !== undefined) { fields.push('type_id = ?'); vals.push(typeId); }
-  if (status !== undefined) { fields.push('status = ?'); vals.push(status); }
-  fields.push('updated_at = ?');
+  if (title !== undefined) { setClauses.push('title = ?'); vals.push(title); }
+  if (details !== undefined) { setClauses.push('details = ?'); vals.push(details); }
+  if (typeId !== undefined) { setClauses.push('type_id = ?'); vals.push(typeId); }
+  if (status !== undefined) { setClauses.push('status = ?'); vals.push(status); }
+  setClauses.push('updated_at = ?');
   vals.push(now);
   vals.push(taskId);
 
-  if (fields.length > 0) {
-    db.prepare(`UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`).run(...vals);
+  if (setClauses.length > 0) {
+    db.prepare(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = ?`).run(...vals);
   }
 
   if (Array.isArray(assigneeIds)) {
@@ -213,8 +233,7 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
   const taskId = req.params.id;
   const { status } = req.body;
 
-  const validStatuses = ['not_started', 'started', 'complete'];
-  if (!status || !validStatuses.includes(status)) {
+  if (!status || !ALLOWED_STATUSES.has(status)) {
     res.status(400).json({ error: 'status must be one of: not_started, started, complete' });
     return;
   }

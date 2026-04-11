@@ -4,8 +4,10 @@
   "description": "Jobber task management server",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build:css": "tailwindcss -i src/css/input.css -o ../public/tailwind.css --minify",
+    "build": "npm run build:css && tsc",
     "start": "node dist/index.js",
+    "dev:css": "tailwindcss -i src/css/input.css -o ../public/tailwind.css --watch",
     "dev": "ts-node-dev --respawn src/index.ts"
   },
   "dependencies": {
@@ -26,6 +28,7 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.12.5",
     "@types/uuid": "^9.0.8",
+    "tailwindcss": "^3.4.19",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.4.5"
   }

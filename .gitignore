@@ -43,6 +43,8 @@ server/dist/
 # SQLite database
 *.db
 *.sqlite
+*.db-shm
+*.db-wal
 
 # Environment variables
 .env

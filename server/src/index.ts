@@ -37,10 +37,10 @@ app.use('/api/tasks', generalLimiter, taskRoutes);
 app.use('/api/task-types', generalLimiter, taskTypeRoutes);
 
 // Serve static frontend files
-app.use(express.static(path.join(__dirname, '..', '..', 'public')));
+app.use(generalLimiter, express.static(path.join(__dirname, '..', '..', 'public')));
 
 // SPA fallback
-app.get('*', (_req, res) => {
+app.get('*', generalLimiter, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', '..', 'public', 'index.html'));
 });
 

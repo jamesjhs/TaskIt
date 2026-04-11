@@ -100,7 +100,7 @@ router.get('/', (req: Request, res: Response): void => {
 
 router.post('/', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const { title, details, typeId, groupId, assigneeIds } = req.body;
+  const { title, details, typeId, groupId, assigneeIds, dueDate } = req.body;
 
   if (!title || !typeId) {
     res.status(400).json({ error: 'title and typeId are required' });
@@ -129,9 +129,9 @@ router.post('/', (req: Request, res: Response): void => {
   const now = Date.now();
 
   db.prepare(`
-    INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at)
-    VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?)
-  `).run(id, title, details || null, typeId, userId, groupId || null, now, now);
+    INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date)
+    VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?)
+  `).run(id, title, details || null, typeId, userId, groupId || null, now, now, dueDate || null);
 
   // Insert assignees
   const ids: string[] = Array.isArray(assigneeIds) ? assigneeIds : [];
@@ -176,7 +176,7 @@ router.patch('/:id', (req: Request, res: Response): void => {
     return;
   }
 
-  const { title, details, typeId, status, assigneeIds } = req.body;
+  const { title, details, typeId, status, assigneeIds, dueDate } = req.body;
 
   // Validate status if provided
   if (status !== undefined && !ALLOWED_STATUSES.has(status as string)) {
@@ -195,6 +195,7 @@ router.patch('/:id', (req: Request, res: Response): void => {
   if (details !== undefined) { setClauses.push('details = ?'); vals.push(details); }
   if (typeId !== undefined) { setClauses.push('type_id = ?'); vals.push(typeId); }
   if (status !== undefined) { setClauses.push('status = ?'); vals.push(status); }
+  if (dueDate !== undefined) { setClauses.push('due_date = ?'); vals.push(dueDate || null); }
   setClauses.push('updated_at = ?');
   vals.push(now);
   vals.push(taskId);

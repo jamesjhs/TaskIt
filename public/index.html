@@ -45,22 +45,38 @@
       </div>
 
       <!-- Login Form -->
-      <form id="loginForm" onsubmit="handleLogin(event)">
+      <form id="loginForm" onsubmit="handleMagicLinkSend(event)">
         <div class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
             <input id="loginEmail" type="email" required placeholder="you@example.com"
               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
-            <input id="loginPassword" type="password" required placeholder="••••••••"
-              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+          <!-- Magic link mode (default) -->
+          <div id="magicLinkMode">
+            <button type="submit"
+              class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors shadow-md">
+              Send Magic Link
+            </button>
+            <p class="text-center mt-3">
+              <button type="button" onclick="toggleLoginMode()" class="text-xs text-indigo-500 hover:underline">Use password instead</button>
+            </p>
           </div>
-          <button type="submit"
-            class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors shadow-md">
-            Sign In
-          </button>
+          <!-- Password mode -->
+          <div id="passwordMode" class="hidden space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
+              <input id="loginPassword" type="password" placeholder="••••••••"
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+            </div>
+            <button type="button" onclick="handlePasswordLogin()"
+              class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors shadow-md">
+              Sign In
+            </button>
+            <p class="text-center">
+              <button type="button" onclick="toggleLoginMode()" class="text-xs text-indigo-500 hover:underline">Use magic link instead</button>
+            </p>
+          </div>
         </div>
       </form>
 
@@ -95,6 +111,12 @@
 <!-- ===== MAIN APP ===== -->
 <div id="appPage" class="hidden h-full flex flex-col min-h-screen">
 
+  <!-- Version mismatch banner -->
+  <div id="versionBanner" class="hidden bg-yellow-400 text-yellow-900 text-sm font-medium px-4 py-2 flex items-center justify-between gap-4">
+    <span>⚡ A new version is available — please refresh.</span>
+    <button onclick="window.location.reload()" class="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-xs font-semibold transition-colors">Refresh</button>
+  </div>
+
   <!-- Top nav -->
   <header class="bg-indigo-700 dark:bg-slate-800 shadow-md">
     <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
@@ -118,6 +140,10 @@
         <button onclick="showPage('profile')" id="navProfile"
           class="px-3 py-1.5 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors">
           Profile
+        </button>
+        <button onclick="showPage('admin')" id="navAdmin"
+          class="hidden px-3 py-1.5 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+          Admin
         </button>
         <div class="w-px h-5 bg-white/20 mx-1"></div>
         <button onclick="logout()"
@@ -219,6 +245,93 @@
       </div>
     </div>
 
+    <!-- ===== ADMIN PAGE ===== -->
+    <div id="adminPage" class="hidden">
+      <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Admin Panel</h2>
+      <!-- Admin Tabs -->
+      <div class="flex gap-1 bg-white dark:bg-slate-800 rounded-xl p-1 shadow-sm border border-slate-200 dark:border-slate-700 mb-6 w-fit">
+        <button onclick="showAdminTab('smtp')" id="adminTabSmtp"
+          class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white transition-colors">SMTP Settings</button>
+        <button onclick="showAdminTab('locked')" id="adminTabLocked"
+          class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">Locked Accounts</button>
+        <button onclick="showAdminTab('reports')" id="adminTabReports"
+          class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">User Reports</button>
+      </div>
+
+      <!-- SMTP Settings Tab -->
+      <div id="adminSmtpTab">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 max-w-lg">
+          <h3 class="font-semibold text-slate-800 dark:text-white mb-4">SMTP Configuration</h3>
+          <form onsubmit="handleSmtpSave(event)" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="col-span-2">
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Host</label>
+                <input id="smtpHost" type="text" placeholder="smtp.example.com"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Port</label>
+                <input id="smtpPort" type="number" placeholder="587"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+              </div>
+              <div class="flex items-center gap-2 mt-6">
+                <input id="smtpSecure" type="checkbox" class="rounded" />
+                <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Secure (TLS)</label>
+              </div>
+              <div class="col-span-2">
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Username</label>
+                <input id="smtpUsername" type="text" placeholder="user@example.com"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
+                <input id="smtpPass" type="password" placeholder="leave blank to keep current"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">From Address</label>
+                <input id="smtpFrom" type="text" placeholder="Jobber &lt;noreply@example.com&gt;"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+              </div>
+              <div class="col-span-2 flex items-center gap-2">
+                <input id="smtpEnabled" type="checkbox" class="rounded" />
+                <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Enabled</label>
+              </div>
+            </div>
+            <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-sm shadow transition-colors">
+              Save SMTP Settings
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Locked Accounts Tab -->
+      <div id="adminLockedTab" class="hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+            <h3 class="font-semibold text-slate-800 dark:text-white">Locked Accounts</h3>
+            <button onclick="loadLockedAccounts()" class="text-xs text-indigo-500 hover:underline">Refresh</button>
+          </div>
+          <div id="lockedAccountsList" class="divide-y divide-slate-200 dark:divide-slate-700">
+            <div class="p-4 text-center text-slate-400 text-sm">Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Reports Tab -->
+      <div id="adminReportsTab" class="hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+            <h3 class="font-semibold text-slate-800 dark:text-white">User Reports</h3>
+            <button onclick="loadUserReports()" class="text-xs text-indigo-500 hover:underline">Refresh</button>
+          </div>
+          <div id="userReportsList" class="divide-y divide-slate-200 dark:divide-slate-700">
+            <div class="p-4 text-center text-slate-400 text-sm">Loading…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -263,6 +376,11 @@
         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notes</label>
         <textarea id="taskDetails" rows="3" placeholder="Optional notes…"
           class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Due Date</label>
+        <input id="taskDueDate" type="datetime-local"
+          class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
       </div>
       <div id="taskStatusRow" class="hidden">
         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status</label>
@@ -367,6 +485,7 @@
         <span id="detailArchivedBadge" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 hidden">Archived</span>
       </div>
       <p id="detailNotes" class="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap"></p>
+      <div id="detailDueDate" class="text-sm text-slate-600 dark:text-slate-400 hidden"></div>
       <div id="detailAssignees" class="text-sm text-slate-600 dark:text-slate-400"></div>
 
       <!-- Status buttons -->
@@ -403,6 +522,23 @@
   </div>
 </div>
 
+<!-- ===== GROUP MEMBERS MODAL ===== -->
+<div id="groupMembersModal" class="hidden fixed inset-0 z-40 modal-backdrop bg-black/40 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto">
+    <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+      <h3 id="groupMembersTitle" class="text-lg font-bold text-slate-800 dark:text-white">Group Members</h3>
+      <button onclick="document.getElementById('groupMembersModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div id="groupMembersList" class="p-4 space-y-2">
+      <div class="text-center text-slate-400 text-sm py-4">Loading…</div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ========== State ==========
 let token = localStorage.getItem('jbToken') || '';
@@ -412,6 +548,8 @@ let groups = [];
 let tasksMap = new Map(); // keyed by task id
 let currentFilter = { status: '', groupId: '', archived: false, assignedToMe: false };
 let currentDetailTask = null;
+let blockedUserIds = new Set();
+window._serverVersion = null;
 
 // ========== API ==========
 async function api(method, path, body) {
@@ -444,7 +582,56 @@ function toast(msg, type = 'success') {
 }
 
 // ========== Auth ==========
-function showTab(tab) {
+let loginMode = 'magic'; // 'magic' | 'password'
+
+function toggleLoginMode() {
+  loginMode = loginMode === 'magic' ? 'password' : 'magic';
+  const magicDiv = document.getElementById('magicLinkMode');
+  const passDiv = document.getElementById('passwordMode');
+  const pwdInput = document.getElementById('loginPassword');
+  if (loginMode === 'magic') {
+    magicDiv.classList.remove('hidden');
+    passDiv.classList.add('hidden');
+    pwdInput.removeAttribute('required');
+  } else {
+    magicDiv.classList.add('hidden');
+    passDiv.classList.remove('hidden');
+    pwdInput.setAttribute('required', 'required');
+  }
+}
+
+async function handleMagicLinkSend(e) {
+  e.preventDefault();
+  if (loginMode === 'password') {
+    await handlePasswordLogin();
+    return;
+  }
+  try {
+    const data = await api('POST', '/auth/magic-link', {
+      email: document.getElementById('loginEmail').value,
+    });
+    toast(data.message || 'Check your email for a login link.', 'info');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function handlePasswordLogin() {
+  try {
+    const data = await api('POST', '/auth/login', {
+      email: document.getElementById('loginEmail').value,
+      password: document.getElementById('loginPassword').value,
+    });
+    storeAuth(data);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  await handlePasswordLogin();
+}
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
   const tabLoginBtn = document.getElementById('tabLoginBtn');
@@ -515,25 +702,38 @@ function initApp() {
     document.getElementById('profileUsername').textContent = currentUser.username;
     document.getElementById('profileEmail').textContent = currentUser.email;
     document.getElementById('profileAvatar').textContent = (currentUser.username || '?')[0].toUpperCase();
+    // Show admin nav if admin
+    if (currentUser.role === 'admin') {
+      document.getElementById('navAdmin').classList.remove('hidden');
+    } else {
+      document.getElementById('navAdmin').classList.add('hidden');
+    }
   }
   loadTypes();
   loadGroups();
+  loadBlockedUsers();
   showPage('tasks');
+  checkVersion();
+  setInterval(checkVersion, 5 * 60 * 1000);
 }
 
 // ========== Navigation ==========
 function showPage(page) {
-  ['tasks', 'groups', 'profile'].forEach(p => {
+  ['tasks', 'groups', 'profile', 'admin'].forEach(p => {
     document.getElementById(p + 'Page').classList.toggle('hidden', p !== page);
     const btn = document.getElementById('nav' + p.charAt(0).toUpperCase() + p.slice(1));
     if (btn) {
       btn.className = p === page
         ? 'px-3 py-1.5 rounded-lg text-sm font-medium bg-white/20 text-white'
-        : 'px-3 py-1.5 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors';
+        : (p === 'admin' ? 'hidden px-3 py-1.5 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors' : 'px-3 py-1.5 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors');
+      if (p === 'admin' && currentUser && currentUser.role === 'admin') {
+        btn.classList.remove('hidden');
+      }
     }
   });
   if (page === 'tasks') loadTasks();
   if (page === 'groups') renderGroups();
+  if (page === 'admin') loadAdminPage();
 }
 
 // ========== Task Types ==========
@@ -580,13 +780,16 @@ function renderGroups() {
           <span class="px-2 py-0.5 rounded-md text-xs font-medium ${g.role === 'admin' ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}">${g.role}</span>
         </div>
         ${g.shared_key ? `
-        <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl px-3 py-2">
+        <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl px-3 py-2 mb-3">
           <span class="text-xs text-slate-500 dark:text-slate-400">Key:</span>
           <code class="text-sm font-mono font-bold text-indigo-600 dark:text-indigo-400 tracking-widest">${g.shared_key}</code>
           <button onclick="copyToClipboard('${g.shared_key}')" class="ml-auto text-slate-400 hover:text-indigo-600 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
           </button>
         </div>` : ''}
+        <button onclick="openGroupMembers('${escHtml(g.id)}')" class="w-full py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+          View Members
+        </button>
       </div>
     `).join('');
   });
@@ -678,6 +881,7 @@ function renderTasks(tasks) {
           <span class="px-2 py-0.5 rounded-lg text-xs font-medium ${statusInfo.cls}">${statusInfo.label}</span>
         </div>
         ${t.assignees && t.assignees.length ? `<p class="mt-2 text-xs text-slate-400">👤 ${t.assignees.map(a => escHtml(a.username)).join(', ')}</p>` : ''}
+        ${t.due_date ? `<p class="mt-1 text-xs text-amber-600 dark:text-amber-400">📅 ${new Date(t.due_date).toLocaleDateString()}</p>` : ''}
         ${t.details ? `<p class="mt-2 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">${escHtml(t.details)}</p>` : ''}
       </div>
     `;
@@ -748,12 +952,21 @@ function openTaskModal(task = null) {
     groupSelect.value = task.group_id || '';
     document.getElementById('taskStatusRow').classList.remove('hidden');
     document.getElementById('taskStatus').value = task.status || 'not_started';
+    // Set due date
+    if (task.due_date) {
+      const d = new Date(task.due_date);
+      const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      document.getElementById('taskDueDate').value = iso;
+    } else {
+      document.getElementById('taskDueDate').value = '';
+    }
     loadGroupMembersForTask(task.assignees ? task.assignees.map(a => a.id) : []);
   } else {
     document.getElementById('taskModalTitle').textContent = 'New Task';
     editId.value = '';
     document.getElementById('taskTitle').value = '';
     document.getElementById('taskDetails').value = '';
+    document.getElementById('taskDueDate').value = '';
     document.getElementById('taskStatusRow').classList.add('hidden');
     document.getElementById('assigneeContainer').innerHTML = '<span class="text-sm text-slate-400 italic">Select a group to see members</span>';
   }
@@ -796,6 +1009,7 @@ async function handleTaskSubmit(e) {
     typeId: document.getElementById('taskType').value,
     groupId: document.getElementById('taskGroup').value || null,
     assigneeIds,
+    dueDate: (() => { const v = document.getElementById('taskDueDate').value; return v ? new Date(v).getTime() : null; })(),
   };
   if (editId) body.status = document.getElementById('taskStatus').value;
 
@@ -830,6 +1044,13 @@ function openDetail(task) {
   statusBadge.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold ' + statusInfo.cls;
   document.getElementById('detailArchivedBadge').classList.toggle('hidden', !task.archived);
   document.getElementById('detailNotes').textContent = task.details || 'No notes.';
+  const dueDateEl = document.getElementById('detailDueDate');
+  if (task.due_date) {
+    dueDateEl.textContent = '📅 Due: ' + new Date(task.due_date).toLocaleString();
+    dueDateEl.classList.remove('hidden');
+  } else {
+    dueDateEl.classList.add('hidden');
+  }
   const assigneesEl = document.getElementById('detailAssignees');
   if (task.assignees && task.assignees.length) {
     assigneesEl.textContent = 'Assigned to: ' + task.assignees.map(a => a.username).join(', ');
@@ -897,10 +1118,243 @@ function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ========== Bootstrap ==========
-if (token && currentUser) {
-  initApp();
+// ========== Version Check ==========
+async function checkVersion() {
+  try {
+    const data = await fetch('/api/version').then(r => r.json());
+    if (!window._serverVersion) {
+      window._serverVersion = data.version;
+    } else if (data.version !== window._serverVersion) {
+      document.getElementById('versionBanner').classList.remove('hidden');
+    }
+  } catch {
+    // ignore network errors
+  }
 }
+
+// ========== Blocked Users ==========
+async function loadBlockedUsers() {
+  try {
+    const list = await api('GET', '/users/blocks');
+    blockedUserIds = new Set(list.map(u => u.id));
+  } catch {
+    // ignore
+  }
+}
+
+// ========== Group Members ==========
+async function openGroupMembers(groupId) {
+  const modal = document.getElementById('groupMembersModal');
+  const listEl = document.getElementById('groupMembersList');
+  modal.classList.remove('hidden');
+  listEl.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">Loading…</div>';
+  try {
+    const members = await api('GET', '/groups/' + groupId + '/members');
+    if (!members.length) {
+      listEl.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">No members found.</div>';
+      return;
+    }
+    listEl.innerHTML = members.map(m => {
+      const isMe = currentUser && m.id === currentUser.id;
+      const isBlocked = blockedUserIds.has(m.id);
+      return `
+        <div class="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50">
+          <div>
+            <p class="text-sm font-medium text-slate-800 dark:text-white">${escHtml(m.username)} ${isMe ? '<span class="text-xs text-indigo-500">(you)</span>' : ''}</p>
+            <p class="text-xs text-slate-400">${escHtml(m.email)}</p>
+          </div>
+          ${!isMe ? `
+          <div class="flex gap-1">
+            <button onclick="reportUser('${m.id}', '${escHtml(m.username)}')"
+              class="px-2 py-1 text-xs rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors">Report</button>
+            <button onclick="${isBlocked ? 'unblockUser' : 'blockUser'}('${m.id}', '${groupId}')"
+              class="px-2 py-1 text-xs rounded-lg ${isBlocked ? 'bg-green-50 text-green-600 hover:bg-green-100' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} transition-colors">
+              ${isBlocked ? 'Unblock' : 'Block'}
+            </button>
+          </div>` : ''}
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    listEl.innerHTML = `<div class="text-center text-red-400 text-sm py-4">${escHtml(err.message)}</div>`;
+  }
+}
+
+async function reportUser(userId, username) {
+  const reason = prompt(`Report ${username}? Enter a reason (optional):`);
+  if (reason === null) return; // cancelled
+  try {
+    await api('POST', '/users/' + userId + '/report', { reason: reason.trim() || undefined });
+    toast('Report submitted');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function blockUser(userId, groupId) {
+  try {
+    await api('POST', '/users/' + userId + '/block');
+    blockedUserIds.add(userId);
+    toast('User blocked');
+    if (groupId) openGroupMembers(groupId);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function unblockUser(userId, groupId) {
+  try {
+    await api('DELETE', '/users/' + userId + '/block');
+    blockedUserIds.delete(userId);
+    toast('User unblocked');
+    if (groupId) openGroupMembers(groupId);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// ========== Admin Panel ==========
+function showAdminTab(tab) {
+  ['smtp', 'locked', 'reports'].forEach(t => {
+    document.getElementById('admin' + t.charAt(0).toUpperCase() + t.slice(1) + 'Tab').classList.toggle('hidden', t !== tab);
+    const btn = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
+    btn.className = t === tab
+      ? 'px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white transition-colors'
+      : 'px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors';
+  });
+  if (tab === 'locked') loadLockedAccounts();
+  if (tab === 'reports') loadUserReports();
+}
+
+async function loadAdminPage() {
+  try {
+    const smtp = await api('GET', '/admin/smtp');
+    document.getElementById('smtpHost').value = smtp.host || '';
+    document.getElementById('smtpPort').value = smtp.port || 587;
+    document.getElementById('smtpSecure').checked = smtp.secure === 1;
+    document.getElementById('smtpUsername').value = smtp.username || '';
+    document.getElementById('smtpFrom').value = smtp.from_addr || '';
+    document.getElementById('smtpEnabled').checked = smtp.enabled === 1;
+    document.getElementById('smtpPass').value = '';
+  } catch (err) {
+    toast('Failed to load SMTP settings: ' + err.message, 'error');
+  }
+}
+
+async function handleSmtpSave(e) {
+  e.preventDefault();
+  try {
+    await api('PUT', '/admin/smtp', {
+      host: document.getElementById('smtpHost').value.trim(),
+      port: parseInt(document.getElementById('smtpPort').value) || 587,
+      secure: document.getElementById('smtpSecure').checked,
+      user: document.getElementById('smtpUsername').value.trim(),
+      pass: document.getElementById('smtpPass').value,
+      from_addr: document.getElementById('smtpFrom').value.trim(),
+      enabled: document.getElementById('smtpEnabled').checked,
+    });
+    toast('SMTP settings saved!');
+    document.getElementById('smtpPass').value = '';
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function loadLockedAccounts() {
+  const listEl = document.getElementById('lockedAccountsList');
+  try {
+    const users = await api('GET', '/admin/locked');
+    if (!users.length) {
+      listEl.innerHTML = '<div class="p-4 text-center text-slate-400 text-sm">No locked accounts.</div>';
+      return;
+    }
+    listEl.innerHTML = users.map(u => `
+      <div class="flex items-center justify-between p-4">
+        <div>
+          <p class="text-sm font-medium text-slate-800 dark:text-white">${escHtml(u.username)}</p>
+          <p class="text-xs text-slate-400">${escHtml(u.email)}</p>
+          <p class="text-xs text-amber-600 dark:text-amber-400">Locked until: ${new Date(u.locked_until).toLocaleString()}</p>
+        </div>
+        <button onclick="unlockAccount('${u.id}')" class="px-3 py-1.5 text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 rounded-lg transition-colors">
+          Unlock
+        </button>
+      </div>
+    `).join('');
+  } catch (err) {
+    listEl.innerHTML = `<div class="p-4 text-center text-red-400 text-sm">${escHtml(err.message)}</div>`;
+  }
+}
+
+async function unlockAccount(userId) {
+  try {
+    await api('POST', '/admin/users/' + userId + '/unlock');
+    toast('Account unlocked');
+    loadLockedAccounts();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function loadUserReports() {
+  const listEl = document.getElementById('userReportsList');
+  try {
+    const reports = await api('GET', '/admin/reports');
+    if (!reports.length) {
+      listEl.innerHTML = '<div class="p-4 text-center text-slate-400 text-sm">No reports.</div>';
+      return;
+    }
+    listEl.innerHTML = reports.map(r => `
+      <div class="flex items-start justify-between p-4 ${r.resolved ? 'opacity-50' : ''}">
+        <div class="text-sm space-y-0.5">
+          <p class="font-medium text-slate-800 dark:text-white">
+            <span class="text-red-500">${escHtml(r.reporter_username)}</span>
+            reported
+            <span class="text-indigo-500">${escHtml(r.reported_username)}</span>
+          </p>
+          ${r.reason ? `<p class="text-slate-500 dark:text-slate-400 italic">"${escHtml(r.reason)}"</p>` : ''}
+          <p class="text-xs text-slate-400">${new Date(r.created_at).toLocaleString()} · ${r.resolved ? '<span class="text-green-500">Resolved</span>' : '<span class="text-amber-500">Open</span>'}</p>
+        </div>
+        ${!r.resolved ? `
+        <button onclick="resolveReport('${r.id}')" class="shrink-0 px-3 py-1.5 text-xs font-medium bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg transition-colors">
+          Resolve
+        </button>` : ''}
+      </div>
+    `).join('');
+  } catch (err) {
+    listEl.innerHTML = `<div class="p-4 text-center text-red-400 text-sm">${escHtml(err.message)}</div>`;
+  }
+}
+
+async function resolveReport(reportId) {
+  try {
+    await api('PUT', '/admin/reports/' + reportId + '/resolve');
+    toast('Report resolved');
+    loadUserReports();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// ========== Bootstrap ==========
+(async function() {
+  // Check for magic link token in URL
+  const params = new URLSearchParams(window.location.search);
+  const magicToken = params.get('token');
+  if (magicToken) {
+    try {
+      const data = await api('GET', '/auth/magic-link/verify?token=' + encodeURIComponent(magicToken));
+      history.replaceState(null, '', window.location.pathname);
+      storeAuth(data);
+    } catch (err) {
+      history.replaceState(null, '', window.location.pathname);
+      toast('Magic link is invalid or expired.', 'error');
+    }
+    return;
+  }
+  if (token && currentUser) {
+    initApp();
+  }
+})();
 </script>
 </body>
 </html>

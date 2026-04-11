@@ -33,6 +33,11 @@ const authLimiter = rateLimit({
 app.use(cors());
 app.use(express.json());
 
+// ─── Health-check endpoint (exempt from auth and rate limiting) ──────────────
+app.get('/readyz', (_req, res) => {
+  res.json({ ok: true, service: 'Jobber', version: APP_VERSION, timestamp: new Date().toISOString() });
+});
+
 // Version endpoint
 app.get('/api/version', (_req, res) => {
   res.json({ version: APP_VERSION });

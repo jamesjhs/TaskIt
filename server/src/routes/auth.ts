@@ -3,9 +3,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db';
+import { JWT_SECRET } from '../config';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'jobber-secret-key-change-in-production';
 
 router.post('/register', (req: Request, res: Response): void => {
   const { username, email, password } = req.body;

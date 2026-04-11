@@ -179,7 +179,7 @@ router.patch('/:id', (req: Request, res: Response): void => {
   vals.push(now);
   vals.push(taskId);
 
-  if (fields.length > 1) {
+  if (fields.length > 0) {
     db.prepare(`UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`).run(...vals);
   }
 

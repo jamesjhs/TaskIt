@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Jobber</string>
+    <string name="login">Login</string>
+    <string name="register">Register</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="username">Username</string>
+    <string name="tasks">Tasks</string>
+    <string name="groups">Groups</string>
+    <string name="new_task">New Task</string>
+    <string name="not_started">Not Started</string>
+    <string name="started">Started</string>
+    <string name="complete">Complete</string>
+</resources>

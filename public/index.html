@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jobber – Task Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { DEFAULT: '#4F46E5', dark: '#3730A3' }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    [x-cloak] { display: none !important; }
+    .toast { animation: slideIn 0.3s ease, fadeOut 0.5s ease 3s forwards; }
+    @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes fadeOut { to { opacity: 0; pointer-events: none; } }
+    .modal-backdrop { backdrop-filter: blur(2px); }
+  </style>
+</head>
+<body class="h-full bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 font-sans">
+
+<!-- Toast container -->
+<div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- ===== AUTH PAGE ===== -->
+<div id="authPage" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-violet-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 mb-4 shadow-lg">
+        <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+      </div>
+      <h1 class="text-4xl font-bold text-slate-900 dark:text-white">Jobber</h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1">Collaborative task management</p>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8">
+      <!-- Tabs -->
+      <div class="flex rounded-xl bg-slate-100 dark:bg-slate-700 p-1 mb-6">
+        <button onclick="showTab('login')" id="tabLoginBtn"
+          class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-sm">
+          Login
+        </button>
+        <button onclick="showTab('register')" id="tabRegisterBtn"
+          class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all text-slate-500 dark:text-slate-300">
+          Register
+        </button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+            <input id="loginEmail" type="email" required placeholder="you@example.com"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
+            <input id="loginPassword" type="password" required placeholder="••••••••"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+          </div>
+          <button type="submit"
+            class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors shadow-md">
+            Sign In
+          </button>
+        </div>
+      </form>
+
+      <!-- Register Form -->
+      <form id="registerForm" class="hidden" onsubmit="handleRegister(event)">
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Username</label>
+            <input id="regUsername" type="text" required placeholder="johndoe"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+            <input id="regEmail" type="email" required placeholder="you@example.com"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
+            <input id="regPassword" type="password" required placeholder="••••••••" minlength="6"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+          </div>
+          <button type="submit"
+            class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors shadow-md">
+            Create Account
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="appPage" class="hidden h-full flex flex-col min-h-screen">
+
+  <!-- Top nav -->
+  <header class="bg-indigo-700 dark:bg-slate-800 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+        </div>
+        <span class="text-white font-bold text-xl">Jobber</span>
+      </div>
+      <nav class="flex items-center gap-1">
+        <button onclick="showPage('tasks')" id="navTasks"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+          Tasks
+        </button>
+        <button onclick="showPage('groups')" id="navGroups"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+          Groups
+        </button>
+        <button onclick="showPage('profile')" id="navProfile"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+          Profile
+        </button>
+        <div class="w-px h-5 bg-white/20 mx-1"></div>
+        <button onclick="logout()"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-red-500/20 transition-colors">
+          Logout
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Page content -->
+  <main class="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
+
+    <!-- ===== TASKS PAGE ===== -->
+    <div id="tasksPage">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h2 class="text-2xl font-bold text-slate-800 dark:text-white">My Tasks</h2>
+        <button onclick="openTaskModal()"
+          class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium text-sm shadow transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          New Task
+        </button>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex flex-wrap gap-2 mb-5">
+        <div class="flex gap-1 bg-white dark:bg-slate-800 rounded-xl p-1 shadow-sm border border-slate-200 dark:border-slate-700">
+          <button onclick="setFilter('status','')" id="filterAll"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white">All</button>
+          <button onclick="setFilter('status','not_started')" id="filterNotStarted"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Not Started</button>
+          <button onclick="setFilter('status','started')" id="filterStarted"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Started</button>
+          <button onclick="setFilter('status','complete')" id="filterComplete"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Complete</button>
+        </div>
+        <select id="filterGroup" onchange="applyFilters()"
+          class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 shadow-sm">
+          <option value="">All Groups</option>
+        </select>
+        <label class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 shadow-sm cursor-pointer">
+          <input type="checkbox" id="filterArchived" onchange="applyFilters()" class="rounded" />
+          Show Archived
+        </label>
+        <label class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 shadow-sm cursor-pointer">
+          <input type="checkbox" id="filterAssignedToMe" onchange="applyFilters()" class="rounded" />
+          Assigned to Me
+        </label>
+      </div>
+
+      <!-- Task grid -->
+      <div id="taskGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="col-span-full text-center py-12 text-slate-400">Loading tasks…</div>
+      </div>
+    </div>
+
+    <!-- ===== GROUPS PAGE ===== -->
+    <div id="groupsPage" class="hidden">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Groups</h2>
+        <div class="flex gap-2">
+          <button onclick="openJoinGroupModal()"
+            class="px-4 py-2 border border-indigo-600 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl font-medium text-sm transition-colors">
+            Join Group
+          </button>
+          <button onclick="openCreateGroupModal()"
+            class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium text-sm shadow transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            New Group
+          </button>
+        </div>
+      </div>
+      <div id="groupList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="col-span-full text-center py-12 text-slate-400">Loading groups…</div>
+      </div>
+    </div>
+
+    <!-- ===== PROFILE PAGE ===== -->
+    <div id="profilePage" class="hidden">
+      <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Profile</h2>
+      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 max-w-md">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+            <span id="profileAvatar" class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">?</span>
+          </div>
+          <div>
+            <p id="profileUsername" class="text-lg font-bold text-slate-800 dark:text-white">—</p>
+            <p id="profileEmail" class="text-sm text-slate-500 dark:text-slate-400">—</p>
+          </div>
+        </div>
+        <button onclick="logout()"
+          class="w-full py-2.5 px-4 bg-red-100 hover:bg-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 font-semibold rounded-xl transition-colors">
+          Sign Out
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ===== TASK MODAL ===== -->
+<div id="taskModal" class="hidden fixed inset-0 z-40 modal-backdrop bg-black/40 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+      <h3 id="taskModalTitle" class="text-lg font-bold text-slate-800 dark:text-white">New Task</h3>
+      <button onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="taskForm" onsubmit="handleTaskSubmit(event)" class="p-6 space-y-4">
+      <input type="hidden" id="taskEditId" />
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title <span class="text-red-500">*</span></label>
+        <input id="taskTitle" type="text" required placeholder="Task title"
+          class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Type <span class="text-red-500">*</span></label>
+        <select id="taskType" required
+          class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+          <option value="">Select type…</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Group</label>
+        <select id="taskGroup"
+          class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+          onchange="loadGroupMembersForTask()">
+          <option value="">Personal (no group)</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Assign To</label>
+        <div id="assigneeContainer" class="text-sm text-slate-400 italic">Select a group to see members</div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notes</label>
+        <textarea id="taskDetails" rows="3" placeholder="Optional notes…"
+          class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"></textarea>
+      </div>
+      <div id="taskStatusRow" class="hidden">
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status</label>
+        <select id="taskStatus"
+          class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+          <option value="not_started">Not Started</option>
+          <option value="started">Started</option>
+          <option value="complete">Complete</option>
+        </select>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeTaskModal()"
+          class="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl font-medium text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+          Cancel
+        </button>
+        <button type="submit"
+          class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium text-sm shadow transition-colors">
+          Save Task
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== CREATE GROUP MODAL ===== -->
+<div id="createGroupModal" class="hidden fixed inset-0 z-40 modal-backdrop bg-black/40 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+      <h3 class="text-lg font-bold text-slate-800 dark:text-white">Create Group</h3>
+      <button onclick="closeCreateGroupModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form onsubmit="handleCreateGroup(event)" class="p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Group Name</label>
+        <input id="createGroupName" type="text" required placeholder="My Team"
+          class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+      </div>
+      <div class="flex gap-3">
+        <button type="button" onclick="closeCreateGroupModal()"
+          class="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl font-medium text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+          Cancel
+        </button>
+        <button type="submit"
+          class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium text-sm shadow transition-colors">
+          Create
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== JOIN GROUP MODAL ===== -->
+<div id="joinGroupModal" class="hidden fixed inset-0 z-40 modal-backdrop bg-black/40 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+      <h3 class="text-lg font-bold text-slate-800 dark:text-white">Join Group</h3>
+      <button onclick="closeJoinGroupModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form onsubmit="handleJoinGroup(event)" class="p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Shared Key</label>
+        <input id="joinGroupKey" type="text" required placeholder="Enter group key"
+          class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm uppercase" />
+      </div>
+      <div class="flex gap-3">
+        <button type="button" onclick="closeJoinGroupModal()"
+          class="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl font-medium text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+          Cancel
+        </button>
+        <button type="submit"
+          class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium text-sm shadow transition-colors">
+          Join
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== TASK DETAIL MODAL ===== -->
+<div id="taskDetailModal" class="hidden fixed inset-0 z-40 modal-backdrop bg-black/40 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg">
+    <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+      <h3 id="detailTitle" class="text-lg font-bold text-slate-800 dark:text-white">Task</h3>
+      <button onclick="closeDetailModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="flex gap-2 flex-wrap">
+        <span id="detailTypeBadge" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"></span>
+        <span id="detailStatusBadge" class="px-2.5 py-1 rounded-lg text-xs font-semibold"></span>
+        <span id="detailArchivedBadge" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 hidden">Archived</span>
+      </div>
+      <p id="detailNotes" class="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap"></p>
+      <div id="detailAssignees" class="text-sm text-slate-600 dark:text-slate-400"></div>
+
+      <!-- Status buttons -->
+      <div class="flex gap-2 flex-wrap pt-2">
+        <button onclick="quickStatus('not_started')"
+          class="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+          Not Started
+        </button>
+        <button onclick="quickStatus('started')"
+          class="px-3 py-1.5 text-xs font-medium rounded-lg border border-blue-300 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+          Started
+        </button>
+        <button onclick="quickStatus('complete')"
+          class="px-3 py-1.5 text-xs font-medium rounded-lg border border-green-300 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
+          Complete
+        </button>
+      </div>
+
+      <div class="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+        <button onclick="editCurrentTask()"
+          class="flex-1 py-2 text-sm font-medium rounded-xl border border-indigo-300 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+          Edit
+        </button>
+        <button onclick="archiveCurrentTask()"
+          class="flex-1 py-2 text-sm font-medium rounded-xl border border-yellow-300 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors">
+          Toggle Archive
+        </button>
+        <button onclick="deleteCurrentTask()"
+          class="flex-1 py-2 text-sm font-medium rounded-xl border border-red-300 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== State ==========
+let token = localStorage.getItem('jbToken') || '';
+let currentUser = JSON.parse(localStorage.getItem('jbUser') || 'null');
+let taskTypes = [];
+let groups = [];
+let currentFilter = { status: '', groupId: '', archived: false, assignedToMe: false };
+let currentDetailTask = null;
+
+// ========== API ==========
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+  };
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch('/api' + path, opts);
+  if (res.status === 204) return null;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+// ========== Toast ==========
+function toast(msg, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  const colors = type === 'error'
+    ? 'bg-red-600 text-white'
+    : type === 'info'
+    ? 'bg-slate-700 text-white'
+    : 'bg-green-600 text-white';
+  el.className = `toast px-4 py-3 rounded-xl shadow-lg text-sm font-medium pointer-events-auto ${colors}`;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// ========== Auth ==========
+function showTab(tab) {
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const tabLoginBtn = document.getElementById('tabLoginBtn');
+  const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+  if (tab === 'login') {
+    loginForm.classList.remove('hidden');
+    registerForm.classList.add('hidden');
+    tabLoginBtn.className = 'flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-sm';
+    tabRegisterBtn.className = 'flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all text-slate-500 dark:text-slate-300';
+  } else {
+    loginForm.classList.add('hidden');
+    registerForm.classList.remove('hidden');
+    tabRegisterBtn.className = 'flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-sm';
+    tabLoginBtn.className = 'flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all text-slate-500 dark:text-slate-300';
+  }
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  try {
+    const data = await api('POST', '/auth/login', {
+      email: document.getElementById('loginEmail').value,
+      password: document.getElementById('loginPassword').value,
+    });
+    storeAuth(data);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function handleRegister(e) {
+  e.preventDefault();
+  try {
+    const data = await api('POST', '/auth/register', {
+      username: document.getElementById('regUsername').value,
+      email: document.getElementById('regEmail').value,
+      password: document.getElementById('regPassword').value,
+    });
+    storeAuth(data);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function storeAuth(data) {
+  token = data.token;
+  currentUser = data.user;
+  localStorage.setItem('jbToken', token);
+  localStorage.setItem('jbUser', JSON.stringify(currentUser));
+  initApp();
+}
+
+function logout() {
+  token = '';
+  currentUser = null;
+  localStorage.removeItem('jbToken');
+  localStorage.removeItem('jbUser');
+  document.getElementById('appPage').classList.add('hidden');
+  document.getElementById('authPage').classList.remove('hidden');
+}
+
+// ========== App init ==========
+function initApp() {
+  document.getElementById('authPage').classList.add('hidden');
+  document.getElementById('appPage').classList.remove('hidden');
+  // Profile
+  if (currentUser) {
+    document.getElementById('profileUsername').textContent = currentUser.username;
+    document.getElementById('profileEmail').textContent = currentUser.email;
+    document.getElementById('profileAvatar').textContent = (currentUser.username || '?')[0].toUpperCase();
+  }
+  loadTypes();
+  loadGroups();
+  showPage('tasks');
+}
+
+// ========== Navigation ==========
+function showPage(page) {
+  ['tasks', 'groups', 'profile'].forEach(p => {
+    document.getElementById(p + 'Page').classList.toggle('hidden', p !== page);
+    const btn = document.getElementById('nav' + p.charAt(0).toUpperCase() + p.slice(1));
+    if (btn) {
+      btn.className = p === page
+        ? 'px-3 py-1.5 rounded-lg text-sm font-medium bg-white/20 text-white'
+        : 'px-3 py-1.5 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors';
+    }
+  });
+  if (page === 'tasks') loadTasks();
+  if (page === 'groups') renderGroups();
+}
+
+// ========== Task Types ==========
+async function loadTypes() {
+  try {
+    taskTypes = await api('GET', '/task-types');
+  } catch (err) {
+    toast('Failed to load task types', 'error');
+  }
+}
+
+// ========== Groups ==========
+async function loadGroups() {
+  try {
+    groups = await api('GET', '/groups');
+    // Update filter dropdown
+    const sel = document.getElementById('filterGroup');
+    sel.innerHTML = '<option value="">All Groups</option>';
+    groups.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id;
+      opt.textContent = g.name;
+      sel.appendChild(opt);
+    });
+  } catch (err) {
+    // ignore
+  }
+}
+
+function renderGroups() {
+  loadGroups().then(() => {
+    const container = document.getElementById('groupList');
+    if (!groups.length) {
+      container.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">No groups yet. Create or join one!</div>';
+      return;
+    }
+    container.innerHTML = groups.map(g => `
+      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <h3 class="font-bold text-slate-800 dark:text-white text-lg">${escHtml(g.name)}</h3>
+            <p class="text-xs text-slate-400 mt-0.5">${g.member_count || 1} member(s)</p>
+          </div>
+          <span class="px-2 py-0.5 rounded-md text-xs font-medium ${g.role === 'admin' ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}">${g.role}</span>
+        </div>
+        ${g.shared_key ? `
+        <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl px-3 py-2">
+          <span class="text-xs text-slate-500 dark:text-slate-400">Key:</span>
+          <code class="text-sm font-mono font-bold text-indigo-600 dark:text-indigo-400 tracking-widest">${g.shared_key}</code>
+          <button onclick="copyToClipboard('${g.shared_key}')" class="ml-auto text-slate-400 hover:text-indigo-600 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          </button>
+        </div>` : ''}
+      </div>
+    `).join('');
+  });
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard!'));
+}
+
+function openCreateGroupModal() {
+  document.getElementById('createGroupName').value = '';
+  document.getElementById('createGroupModal').classList.remove('hidden');
+}
+function closeCreateGroupModal() {
+  document.getElementById('createGroupModal').classList.add('hidden');
+}
+
+async function handleCreateGroup(e) {
+  e.preventDefault();
+  try {
+    const name = document.getElementById('createGroupName').value.trim();
+    await api('POST', '/groups', { name });
+    closeCreateGroupModal();
+    toast('Group created!');
+    await loadGroups();
+    renderGroups();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function openJoinGroupModal() {
+  document.getElementById('joinGroupKey').value = '';
+  document.getElementById('joinGroupModal').classList.remove('hidden');
+}
+function closeJoinGroupModal() {
+  document.getElementById('joinGroupModal').classList.add('hidden');
+}
+
+async function handleJoinGroup(e) {
+  e.preventDefault();
+  try {
+    const key = document.getElementById('joinGroupKey').value.trim().toUpperCase();
+    await api('POST', '/groups/join', { shared_key: key });
+    closeJoinGroupModal();
+    toast('Joined group!');
+    await loadGroups();
+    renderGroups();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// ========== Tasks ==========
+async function loadTasks() {
+  const grid = document.getElementById('taskGrid');
+  grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">Loading…</div>';
+  try {
+    const params = new URLSearchParams();
+    if (currentFilter.status) params.set('status', currentFilter.status);
+    if (currentFilter.groupId) params.set('groupId', currentFilter.groupId);
+    if (currentFilter.archived) params.set('archived', 'true');
+    if (currentFilter.assignedToMe) params.set('assignedToMe', 'true');
+    const tasks = await api('GET', '/tasks?' + params.toString());
+    renderTasks(tasks);
+  } catch (err) {
+    grid.innerHTML = '<div class="col-span-full text-center py-12 text-red-400">' + escHtml(err.message) + '</div>';
+  }
+}
+
+function renderTasks(tasks) {
+  const grid = document.getElementById('taskGrid');
+  if (!tasks.length) {
+    grid.innerHTML = '<div class="col-span-full text-center py-16"><div class="text-5xl mb-3">📋</div><p class="text-slate-400">No tasks found. Create your first task!</p></div>';
+    return;
+  }
+  grid.innerHTML = tasks.map(t => {
+    const statusInfo = statusMeta(t.status);
+    return `
+      <div onclick="openDetail(${JSON.stringify(t).replace(/"/g,'&quot;')})"
+        class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 cursor-pointer hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500 transition-all group">
+        <div class="flex items-start justify-between gap-2 mb-3">
+          <h3 class="font-semibold text-slate-800 dark:text-white text-sm leading-snug group-hover:text-indigo-700 dark:group-hover:text-indigo-400 transition-colors">${escHtml(t.title)}</h3>
+          ${t.archived ? '<span class="shrink-0 px-1.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">Archived</span>' : ''}
+        </div>
+        <div class="flex flex-wrap gap-1.5 mt-auto">
+          <span class="px-2 py-0.5 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">${escHtml(t.type_name || '')}</span>
+          <span class="px-2 py-0.5 rounded-lg text-xs font-medium ${statusInfo.cls}">${statusInfo.label}</span>
+        </div>
+        ${t.assignees && t.assignees.length ? `<p class="mt-2 text-xs text-slate-400">👤 ${t.assignees.map(a => escHtml(a.username)).join(', ')}</p>` : ''}
+        ${t.details ? `<p class="mt-2 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">${escHtml(t.details)}</p>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function statusMeta(status) {
+  switch (status) {
+    case 'not_started': return { label: 'Not Started', cls: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' };
+    case 'started':     return { label: 'Started',     cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' };
+    case 'complete':    return { label: 'Complete',    cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' };
+    default:            return { label: status,        cls: 'bg-slate-100 text-slate-600' };
+  }
+}
+
+// ========== Filters ==========
+function setFilter(key, value) {
+  currentFilter[key] = value;
+  // Update button styles
+  const btnMap = { '': 'filterAll', 'not_started': 'filterNotStarted', 'started': 'filterStarted', 'complete': 'filterComplete' };
+  Object.entries(btnMap).forEach(([v, id]) => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    if (v === value) {
+      btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white';
+    } else {
+      btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700';
+    }
+  });
+  loadTasks();
+}
+
+function applyFilters() {
+  currentFilter.groupId = document.getElementById('filterGroup').value;
+  currentFilter.archived = document.getElementById('filterArchived').checked;
+  currentFilter.assignedToMe = document.getElementById('filterAssignedToMe').checked;
+  loadTasks();
+}
+
+// ========== Task Modal ==========
+function openTaskModal(task = null) {
+  // Populate type select
+  const typeSelect = document.getElementById('taskType');
+  typeSelect.innerHTML = '<option value="">Select type…</option>';
+  taskTypes.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = t.name + (t.group_id ? ' (group)' : '');
+    typeSelect.appendChild(opt);
+  });
+  // Populate group select
+  const groupSelect = document.getElementById('taskGroup');
+  groupSelect.innerHTML = '<option value="">Personal (no group)</option>';
+  groups.forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g.id;
+    opt.textContent = g.name;
+    groupSelect.appendChild(opt);
+  });
+
+  const editId = document.getElementById('taskEditId');
+  if (task) {
+    document.getElementById('taskModalTitle').textContent = 'Edit Task';
+    editId.value = task.id;
+    document.getElementById('taskTitle').value = task.title || '';
+    document.getElementById('taskDetails').value = task.details || '';
+    typeSelect.value = task.type_id || '';
+    groupSelect.value = task.group_id || '';
+    document.getElementById('taskStatusRow').classList.remove('hidden');
+    document.getElementById('taskStatus').value = task.status || 'not_started';
+    loadGroupMembersForTask(task.assignees ? task.assignees.map(a => a.id) : []);
+  } else {
+    document.getElementById('taskModalTitle').textContent = 'New Task';
+    editId.value = '';
+    document.getElementById('taskTitle').value = '';
+    document.getElementById('taskDetails').value = '';
+    document.getElementById('taskStatusRow').classList.add('hidden');
+    document.getElementById('assigneeContainer').innerHTML = '<span class="text-sm text-slate-400 italic">Select a group to see members</span>';
+  }
+  document.getElementById('taskModal').classList.remove('hidden');
+}
+
+function closeTaskModal() {
+  document.getElementById('taskModal').classList.add('hidden');
+}
+
+async function loadGroupMembersForTask(selectedIds = []) {
+  const groupId = document.getElementById('taskGroup').value;
+  const container = document.getElementById('assigneeContainer');
+  if (!groupId) {
+    container.innerHTML = '<span class="text-sm text-slate-400 italic">Select a group to see members</span>';
+    return;
+  }
+  try {
+    const members = await api('GET', '/groups/' + groupId + '/members');
+    container.innerHTML = members.map(m => `
+      <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 mb-1 cursor-pointer">
+        <input type="checkbox" class="assignee-check rounded" value="${m.id}" ${selectedIds.includes(m.id) ? 'checked' : ''} />
+        ${escHtml(m.username)}
+        ${m.id === (currentUser && currentUser.id) ? '<span class="text-xs text-indigo-500">(you)</span>' : ''}
+      </label>
+    `).join('');
+  } catch {
+    container.innerHTML = '<span class="text-sm text-red-400">Failed to load members</span>';
+  }
+}
+
+async function handleTaskSubmit(e) {
+  e.preventDefault();
+  const editId = document.getElementById('taskEditId').value;
+  const assigneeIds = Array.from(document.querySelectorAll('.assignee-check:checked')).map(el => el.value);
+
+  const body = {
+    title: document.getElementById('taskTitle').value.trim(),
+    details: document.getElementById('taskDetails').value.trim() || null,
+    typeId: document.getElementById('taskType').value,
+    groupId: document.getElementById('taskGroup').value || null,
+    assigneeIds,
+  };
+  if (editId) body.status = document.getElementById('taskStatus').value;
+
+  try {
+    if (editId) {
+      await api('PATCH', '/tasks/' + editId, body);
+      toast('Task updated!');
+    } else {
+      await api('POST', '/tasks', body);
+      toast('Task created!');
+    }
+    closeTaskModal();
+    loadTasks();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// ========== Task Detail ==========
+function openDetail(task) {
+  currentDetailTask = task;
+  document.getElementById('detailTitle').textContent = task.title;
+  document.getElementById('detailTypeBadge').textContent = task.type_name || '';
+  const statusInfo = statusMeta(task.status);
+  const statusBadge = document.getElementById('detailStatusBadge');
+  statusBadge.textContent = statusInfo.label;
+  statusBadge.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold ' + statusInfo.cls;
+  document.getElementById('detailArchivedBadge').classList.toggle('hidden', !task.archived);
+  document.getElementById('detailNotes').textContent = task.details || 'No notes.';
+  const assigneesEl = document.getElementById('detailAssignees');
+  if (task.assignees && task.assignees.length) {
+    assigneesEl.textContent = 'Assigned to: ' + task.assignees.map(a => a.username).join(', ');
+  } else {
+    assigneesEl.textContent = '';
+  }
+  document.getElementById('taskDetailModal').classList.remove('hidden');
+}
+
+function closeDetailModal() {
+  document.getElementById('taskDetailModal').classList.add('hidden');
+  currentDetailTask = null;
+}
+
+async function quickStatus(status) {
+  if (!currentDetailTask) return;
+  try {
+    const updated = await api('PATCH', '/tasks/' + currentDetailTask.id + '/status', { status });
+    currentDetailTask = updated;
+    openDetail(updated);
+    loadTasks();
+    toast('Status updated!');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function editCurrentTask() {
+  if (!currentDetailTask) return;
+  closeDetailModal();
+  openTaskModal(currentDetailTask);
+}
+
+async function archiveCurrentTask() {
+  if (!currentDetailTask) return;
+  try {
+    const updated = await api('PATCH', '/tasks/' + currentDetailTask.id + '/archive');
+    currentDetailTask = updated;
+    openDetail(updated);
+    loadTasks();
+    toast(updated.archived ? 'Task archived' : 'Task unarchived');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function deleteCurrentTask() {
+  if (!currentDetailTask) return;
+  if (!confirm('Delete this task permanently?')) return;
+  try {
+    await api('DELETE', '/tasks/' + currentDetailTask.id);
+    closeDetailModal();
+    loadTasks();
+    toast('Task deleted');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// ========== Utils ==========
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ========== Bootstrap ==========
+if (token && currentUser) {
+  initApp();
+}
+</script>
+</body>
+</html>

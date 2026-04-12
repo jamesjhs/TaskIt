@@ -17,6 +17,12 @@ export const LOCKOUT_MINUTES = process.env.LOCKOUT_MINUTES ? parseInt(process.en
 export const ADMIN_EMAIL: string | null = process.env.ADMIN_EMAIL || null;
 export const APP_VERSION: string = pkg.version;
 
+// Optional public-facing base URL used for invite links, magic links, etc.
+// When not set, the URL is derived from the request Host header (suitable for
+// development / single-domain deployments but not recommended for production
+// where the Host header can be spoofed).
+export const BASE_URL: string | null = process.env.BASE_URL ? process.env.BASE_URL.replace(/\/$/, '') : null;
+
 export const SMTP = {
   host: process.env.SMTP_HOST || '',
   port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587,

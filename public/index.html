@@ -936,7 +936,7 @@ function renderGroups() {
           <p style="font-size:.75rem;color:#9ca3af;margin-bottom:2px">Group name (share to let others find you):</p>
           <div class="group-key-box">
             <span class="group-key-code" style="font-size:.9rem">${escHtml(g.name)}</span>
-            <button onclick="copyToClipboard('${escHtml(g.name)}')" class="btn btn-sm btn-secondary">Copy</button>
+            <button onclick="copyToClipboard(${escHtml(JSON.stringify(g.name))})" class="btn btn-sm btn-secondary">Copy</button>
           </div>
         </div>
         ${g.shared_key ? `
@@ -944,10 +944,10 @@ function renderGroups() {
           <p style="font-size:.75rem;color:#9ca3af;margin-bottom:2px">Secret key (keep private — needed to join):</p>
           <div class="group-key-box">
             <span class="group-key-code">${escHtml(g.shared_key)}</span>
-            <button onclick="copyToClipboard('${escHtml(g.shared_key)}')" class="btn btn-sm btn-secondary">Copy</button>
+            <button onclick="copyToClipboard(${escHtml(JSON.stringify(g.shared_key))})" class="btn btn-sm btn-secondary">Copy</button>
           </div>
         </div>` : ''}
-        <button onclick="openGroupMembers('${escHtml(g.id)}')" class="btn btn-secondary btn-full btn-sm">${g.role === 'admin' ? 'Manage / Invite' : 'View Members'}</button>
+        <button onclick="openGroupMembers(${escHtml(JSON.stringify(g.id))})" class="btn btn-secondary btn-full btn-sm">${g.role === 'admin' ? 'Manage / Invite' : 'View Members'}</button>
       </div>
     `).join('');
   });
@@ -1317,7 +1317,7 @@ async function openGroupMembers(groupId) {
       const isBlocked = blockedUserIds.has(m.id);
       const roleBadge = `<span class="badge ${m.role === 'admin' ? 'badge-purple' : 'badge-gray'}">${m.role}</span>`;
       const promoteBtn = isAdmin && !isMe ? `
-        <button onclick="changeMemberRole('${escHtml(m.id)}', '${m.role === 'admin' ? 'member' : 'admin'}')" class="btn btn-sm btn-outline">
+        <button onclick="changeMemberRole(${escHtml(JSON.stringify(m.id))}, ${m.role === 'admin' ? '"member"' : '"admin"'})" class="btn btn-sm btn-outline">
           ${m.role === 'admin' ? 'Demote' : 'Promote'}
         </button>` : '';
       return `
@@ -1329,8 +1329,8 @@ async function openGroupMembers(groupId) {
           ${!isMe ? `
           <div class="member-actions">
             ${promoteBtn}
-            <button onclick="reportUser('${escHtml(m.id)}', '${escHtml(m.username)}')" class="btn btn-sm btn-danger">Report</button>
-            <button onclick="${isBlocked ? 'unblockUser' : 'blockUser'}('${escHtml(m.id)}', '${escHtml(groupId)}')" class="btn btn-sm btn-secondary">
+            <button onclick="reportUser(${escHtml(JSON.stringify(m.id))}, ${escHtml(JSON.stringify(m.username))})" class="btn btn-sm btn-danger">Report</button>
+            <button onclick="${isBlocked ? 'unblockUser' : 'blockUser'}(${escHtml(JSON.stringify(m.id))}, ${escHtml(JSON.stringify(groupId))})" class="btn btn-sm btn-secondary">
               ${isBlocked ? 'Unblock' : 'Block'}
             </button>
           </div>` : ''}

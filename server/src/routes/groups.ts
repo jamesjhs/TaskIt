@@ -4,10 +4,20 @@ import crypto from 'crypto';
 import QRCode from 'qrcode';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
+import { BASE_URL } from '../config';
 import { generateGroupName, generateSharedKey } from '../wordlists';
 import { sendGroupInvite } from '../services/mail';
 
 const router = Router();
+
+// Derive the public-facing base URL, preferring the configured BASE_URL over the
+// request Host header (which is user-controlled and can be spoofed).
+function getBaseUrl(req: Request): string {
+  return BASE_URL ?? `${req.protocol}://${req.get('host')}`;
+}
+
+// Simple email format check (no external library needed for this basic guard)
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // ─── Public routes (no auth required) ────────────────────────────────────────
 
@@ -95,14 +105,14 @@ router.post('/join', (req: Request, res: Response): void => {
   const { name, shared_key } = req.body;
   const userId = req.user!.id;
 
-  if (!name || !shared_key) {
+  if (!name || typeof name !== 'string' || !shared_key || typeof shared_key !== 'string') {
     res.status(400).json({ error: 'name and shared_key are required' });
     return;
   }
 
   const group = db.prepare('SELECT * FROM groups WHERE name = ? AND shared_key = ?').get(
-    String(name).trim(),
-    String(shared_key).trim()
+    name.trim(),
+    shared_key.trim()
   ) as { id: string; name: string; shared_key: string; created_by: string } | undefined;
 
   if (!group) {
@@ -238,6 +248,11 @@ router.post('/:id/invite', async (req: Request, res: Response): Promise<void> =>
 
   const invitedEmail: string | null = email && typeof email === 'string' ? email.trim().toLowerCase() : null;
 
+  if (invitedEmail && !EMAIL_RE.test(invitedEmail)) {
+    res.status(400).json({ error: 'Invalid email address' });
+    return;
+  }
+
   // Invalidate any unused previous invites for the same group+email
   if (invitedEmail) {
     db.prepare(
@@ -254,7 +269,7 @@ router.post('/:id/invite', async (req: Request, res: Response): Promise<void> =>
     'INSERT INTO group_invites (token, group_id, invited_email, multi_use, created_by, expires_at, used, created_at) VALUES (?, ?, ?, ?, ?, ?, 0, ?)'
   ).run(token, groupId, invitedEmail, isMultiUse, userId, expiresAt, now);
 
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const baseUrl = getBaseUrl(req);
   const inviteUrl = `${baseUrl}?invite=${token}`;
 
   if (invitedEmail) {
@@ -309,7 +324,7 @@ router.get('/:id/qr', async (req: Request, res: Response): Promise<void> => {
     'INSERT INTO group_invites (token, group_id, invited_email, multi_use, created_by, expires_at, used, created_at) VALUES (?, ?, NULL, 1, ?, ?, 0, ?)'
   ).run(token, groupId, userId, expiresAt, now);
 
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const baseUrl = getBaseUrl(req);
   const inviteUrl = `${baseUrl}?invite=${token}`;
 
   try {

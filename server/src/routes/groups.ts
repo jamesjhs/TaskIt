@@ -27,7 +27,17 @@ router.post('/', (req: Request, res: Response): void => {
 
   const id = uuidv4();
   const trimmedName = name && typeof name === 'string' ? name.trim() : '';
-  const groupName = trimmedName || generateGroupName();
+  let groupName: string;
+  if (trimmedName) {
+    groupName = trimmedName;
+  } else {
+    // Retry until a name not already in use is found
+    let candidate: string;
+    do {
+      candidate = generateGroupName();
+    } while (db.prepare('SELECT 1 FROM groups WHERE name = ?').get(candidate));
+    groupName = candidate;
+  }
   const sharedKey = generateSharedKey();
   const now = Date.now();
 

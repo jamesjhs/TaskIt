@@ -14,39 +14,62 @@ interface UserRow {
   email: string;
 }
 
+// Reminder thresholds: type name → milliseconds before deadline
+const REMINDER_WINDOWS: Array<{ type: string; minMs: number; maxMs: number; label: string }> = [
+  { type: '7_day',   minMs: 6 * 24 * 60 * 60 * 1000, maxMs: 8 * 24 * 60 * 60 * 1000, label: '7 days' },
+  { type: '1_day',   minMs: 0,                        maxMs: 2 * 24 * 60 * 60 * 1000, label: '1 day'  },
+  { type: 'overdue', minMs: -Infinity,                 maxMs: 0,                        label: 'overdue' },
+];
+
 async function sendReminders(): Promise<void> {
   const now = Date.now();
-  const in24h = now + 24 * 60 * 60 * 1000;
 
-  const tasks = db.prepare(`
-    SELECT id, title, due_date, created_by
-    FROM tasks
-    WHERE due_date IS NOT NULL
-      AND due_date > ?
-      AND due_date <= ?
-      AND status != 'complete'
-      AND archived = 0
-  `).all(now, in24h) as TaskRow[];
+  for (const window of REMINDER_WINDOWS) {
+    const minDue = now + window.minMs;
+    const maxDue = now + window.maxMs;
 
-  for (const task of tasks) {
-    const recipientIds = new Set<string>();
-    recipientIds.add(task.created_by);
+    const tasks = db.prepare(`
+      SELECT t.id, t.title, t.due_date, t.created_by
+      FROM tasks t
+      WHERE t.due_date IS NOT NULL
+        AND t.due_date > ?
+        AND t.due_date <= ?
+        AND t.status != 'complete'
+        AND t.archived = 0
+        AND NOT EXISTS (
+          SELECT 1 FROM task_reminders_sent trs
+          WHERE trs.task_id = t.id AND trs.reminder_type = ?
+        )
+    `).all(minDue, maxDue, window.type) as TaskRow[];
 
-    const assignees = db.prepare(
-      'SELECT user_id FROM task_assignees WHERE task_id = ?'
-    ).all(task.id) as Array<{ user_id: string }>;
+    for (const task of tasks) {
+      const recipientIds = new Set<string>();
+      recipientIds.add(task.created_by);
 
-    for (const a of assignees) {
-      recipientIds.add(a.user_id);
-    }
+      const assignees = db.prepare(
+        'SELECT user_id FROM task_assignees WHERE task_id = ?'
+      ).all(task.id) as Array<{ user_id: string }>;
 
-    for (const userId of recipientIds) {
-      const user = db.prepare('SELECT id, email FROM users WHERE id = ?').get(userId) as UserRow | undefined;
-      if (!user) continue;
-      try {
-        await sendTaskReminder(user.email, { title: task.title, due_date: task.due_date });
-      } catch (err) {
-        console.error(`[scheduler] Failed to send reminder to ${user.email}:`, err);
+      for (const a of assignees) {
+        recipientIds.add(a.user_id);
+      }
+
+      let anySent = false;
+      for (const userId of recipientIds) {
+        const user = db.prepare('SELECT id, email FROM users WHERE id = ?').get(userId) as UserRow | undefined;
+        if (!user) continue;
+        try {
+          await sendTaskReminder(user.email, { title: task.title, due_date: task.due_date }, window.label);
+          anySent = true;
+        } catch (err) {
+          console.error(`[scheduler] Failed to send reminder to ${user.email}:`, err);
+        }
+      }
+
+      if (anySent) {
+        db.prepare(
+          'INSERT OR IGNORE INTO task_reminders_sent (task_id, reminder_type, sent_at) VALUES (?, ?, ?)'
+        ).run(task.id, window.type, now);
       }
     }
   }
@@ -57,5 +80,5 @@ export function startScheduler(): void {
   cron.schedule('0 * * * *', () => {
     sendReminders().catch(err => console.error('[scheduler] Error in reminder job:', err));
   });
-  console.log('[scheduler] Task reminder scheduler started');
+  console.log('[scheduler] Task reminder scheduler started (up to 3 reminders per task)');
 }

@@ -26,7 +26,8 @@ router.post('/', (req: Request, res: Response): void => {
   const userId = req.user!.id;
 
   const id = uuidv4();
-  const groupName = (name && typeof name === 'string' && name.trim()) ? name.trim() : generateGroupName();
+  const trimmedName = name && typeof name === 'string' ? name.trim() : '';
+  const groupName = trimmedName || generateGroupName();
   const sharedKey = generateSharedKey();
   const now = Date.now();
 

@@ -64,7 +64,7 @@ function pick<T>(arr: T[]): T {
 }
 
 export function generateGroupName(): string {
-  return pick(ADJECTIVES) + pick(VERBS);
+  return pick(ADJECTIVES) + ' ' + pick(VERBS);
 }
 
 export function generateSharedKey(): string {

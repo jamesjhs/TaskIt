@@ -47,13 +47,13 @@ const authenticatedLimiter = rateLimit({
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       try {
-        const payload = jwt.verify(authHeader.slice(7), JWT_SECRET) as { id: string };
+        const payload = jwt.verify(authHeader.slice(7), JWT_SECRET, { algorithms: ['HS256'] }) as { id: string };
         return `user:${payload.id}`;
       } catch {
         // invalid/expired token – fall through to IP-based key
       }
     }
-    return req.ip ?? 'unknown';
+    return req.ip ?? req.socket?.remoteAddress ?? 'no-ip';
   },
 });
 

@@ -14,7 +14,7 @@ router.get('/', (req: Request, res: Response): void => {
   const userId = req.user!.id;
 
   // Build filters — all condition strings are hardcoded; only values use parameters
-  const { groupId, assignedToMe, status, archived } = req.query;
+  const { groupId, assignedToMe, status, archived, typeId } = req.query;
 
   // Validate status against allowed values to reject garbage before hitting the DB
   if (status && !ALLOWED_STATUSES.has(status as string)) {
@@ -38,6 +38,11 @@ router.get('/', (req: Request, res: Response): void => {
   if (groupId) {
     whereConditions.push('t.group_id = ?');
     params.push(groupId as string);
+  }
+
+  if (typeId) {
+    whereConditions.push('t.type_id = ?');
+    params.push(typeId as string);
   }
 
   if (assignedToMe === 'true') {

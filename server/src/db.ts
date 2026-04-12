@@ -162,6 +162,15 @@ db.exec(`
     created_at INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS user_alerts (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    message TEXT NOT NULL,
+    read_at INTEGER,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
 `);
 
 // Runtime migrations — add columns if they don't exist yet
@@ -191,6 +200,10 @@ addCol('users', 'last_active_at', 'INTEGER');
 addCol('tasks', 'due_date', 'INTEGER');
 // invite_name is the auto-generated two-word CamelCase pair (e.g. FastAntelope) used for joining
 addCol('groups', 'invite_name', "TEXT NOT NULL DEFAULT ''");
+addCol('feedback_messages', 'status', "TEXT NOT NULL DEFAULT 'not_started'");
+addCol('users', 'ics_token', 'TEXT');
+addCol('tasks', 'recur_interval', 'INTEGER');
+addCol('tasks', 'recur_unit', 'TEXT');
 // Backfill existing groups: generate a proper unique invite word pair for any group that lacks one
 {
   const ungrouped = db.prepare("SELECT id FROM groups WHERE invite_name = ''").all() as Array<{ id: string }>;

@@ -171,6 +171,10 @@
         <input type="checkbox" id="filterAssignedToMe" onchange="applyFilters()" />
         Assigned to Me
       </label>
+      <label class="toggle-label">
+        <input type="checkbox" id="filterShowGroupTasks" onchange="applyFilters()" checked />
+        Show Group Tasks
+      </label>
     </div>
     <div id="taskGrid"><div class="loading">Loading tasks…</div></div>
   </div>
@@ -264,21 +268,28 @@
       </button>
     </div>
 
+    <!-- Calendar Feed -->
+    <div class="card" style="margin-top:16px">
+      <p class="card-title">📅 Calendar Integration</p>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Subscribe to your Jobber tasks in any calendar app (Google Calendar, Apple Calendar, Outlook, etc.) using the private link below. Keep this link secret — anyone with it can view your tasks.</p>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+        <input id="icsLinkInput" type="text" readonly class="input" style="flex:1;font-size:.82rem" placeholder="Loading…" />
+        <button onclick="copyIcsLink()" class="btn btn-secondary btn-sm">Copy</button>
+      </div>
+      <button onclick="rotateIcsToken()" class="btn btn-outline btn-sm" style="font-size:.8rem">🔄 Regenerate Link</button>
+    </div>
+
     <!-- Send Feedback -->
     <div class="card" style="margin-top:16px">
       <p class="card-title">💬 Feedback &amp; Feature Requests</p>
-      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Have a suggestion or spotted a bug? Let us know. Tick the box if you're happy to be contacted for follow-up.</p>
-      <div class="form-group">
-        <label>Subject</label>
-        <input id="feedbackSubject" type="text" maxlength="200" placeholder="e.g. Feature request: dark mode" class="input" />
-      </div>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Have a suggestion or spotted a bug? Let us know. Tick the box if you'd like admin to reply to you in-app.</p>
       <div class="form-group">
         <label>Message</label>
         <textarea id="feedbackMessage" rows="4" maxlength="4000" placeholder="Describe your feedback or idea…" class="textarea"></textarea>
       </div>
       <div class="form-group" style="display:flex;align-items:center;gap:8px">
         <input id="feedbackContactOk" type="checkbox" style="width:18px;height:18px;accent-color:#1a56db;flex-shrink:0" />
-        <label style="font-size:.9rem;color:#374151;margin:0">I'm happy to be contacted about this feedback</label>
+        <label style="font-size:.9rem;color:#374151;margin:0">Allow admin to reply to me in-app</label>
       </div>
       <div style="font-size:.75rem;color:#9ca3af;margin-bottom:12px;line-height:1.4">⚠️ Do <strong>not</strong> include personal or sensitive information (e.g. health data, financial details, government records, or trade secrets) in your feedback.</div>
       <button onclick="submitFeedback()" class="btn btn-primary btn-full">Send Feedback</button>
@@ -469,6 +480,22 @@
             <option value="complete">Complete</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="taskRecurEnabled" onchange="toggleRecurFields()" style="width:16px;height:16px;accent-color:#1a56db;vertical-align:middle;margin-right:6px" />
+            Repeat Task
+          </label>
+        </div>
+        <div id="taskRecurFields" class="hidden" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-size:.9rem;color:#374151">Every</span>
+          <input id="taskRecurInterval" type="number" min="1" max="365" value="1" class="input" style="width:70px;flex-shrink:0" />
+          <select id="taskRecurUnit" class="select" style="flex:1;min-width:90px">
+            <option value="days">Days</option>
+            <option value="weeks">Weeks</option>
+            <option value="months">Months</option>
+            <option value="years">Years</option>
+          </select>
+        </div>
       </form>
     </div>
     <div class="modal-footer">
@@ -535,12 +562,21 @@
       <p id="detailNotes" style="font-size:.9rem;color:#6b7280;white-space:pre-wrap;margin-bottom:12px"></p>
       <div id="detailDueDate" class="hidden" style="font-size:.9rem;margin-bottom:12px"></div>
       <div id="detailAssignees" style="font-size:.85rem;color:#6b7280;margin-bottom:12px"></div>
+      <div id="detailRecurInfo" class="hidden" style="font-size:.85rem;color:#6b7280;margin-bottom:12px"></div>
       <div class="detail-section">
         <p class="detail-section-title">Change Status</p>
         <div class="status-btns">
           <button onclick="quickStatus('not_started')" class="status-btn status-btn-not-started">Not Started</button>
           <button onclick="quickStatus('started')" class="status-btn status-btn-started">Started</button>
           <button onclick="quickStatus('complete')" class="status-btn status-btn-complete">Complete</button>
+        </div>
+      </div>
+      <div id="deferSection" class="detail-section hidden">
+        <p class="detail-section-title">Defer Task</p>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="deferDateInput" type="datetime-local" class="input" style="flex:1" />
+          <button onclick="confirmDefer()" class="btn btn-primary btn-sm">Set Date</button>
+          <button onclick="document.getElementById('deferSection').classList.add('hidden')" class="btn btn-secondary btn-sm">✕</button>
         </div>
       </div>
       <div class="detail-section">
@@ -561,6 +597,7 @@
       </div>
     </div>
     <div class="modal-footer">
+      <button onclick="toggleDeferSection()" class="btn btn-outline btn-sm" style="flex:1">Defer</button>
       <button onclick="editCurrentTask()" class="btn btn-outline btn-sm" style="flex:1">Edit</button>
       <button onclick="archiveCurrentTask()" class="btn btn-secondary btn-sm" style="flex:1">Archive</button>
       <button onclick="deleteCurrentTask()" class="btn btn-danger btn-sm" style="flex:1">Delete</button>
@@ -642,7 +679,7 @@ let currentUser = JSON.parse(localStorage.getItem('jbUser') || 'null');
 let taskTypes = [];
 let groups = [];
 let tasksMap = new Map();
-let currentFilter = { status: '', groupId: '', typeId: '', archived: false, assignedToMe: false };
+let currentFilter = { status: '', groupId: '', typeId: '', archived: false, assignedToMe: false, showGroupTasks: true };
 let currentDetailTask = null;
 let blockedUserIds = new Set();
 
@@ -855,14 +892,12 @@ async function saveLocale() {
 }
 
 async function submitFeedback() {
-  const subject = document.getElementById('feedbackSubject').value.trim();
   const message = document.getElementById('feedbackMessage').value.trim();
   const contact_ok = document.getElementById('feedbackContactOk').checked;
-  if (!subject || !message) { toast('Please enter a subject and message.', 'error'); return; }
+  if (!message) { toast('Please enter a message.', 'error'); return; }
   try {
-    await api('POST', '/users/me/feedback', { subject, message, contact_ok });
+    await api('POST', '/users/me/feedback', { message, contact_ok });
     toast('Feedback submitted. Thank you!');
-    document.getElementById('feedbackSubject').value = '';
     document.getElementById('feedbackMessage').value = '';
     document.getElementById('feedbackContactOk').checked = false;
   } catch (err) { toast(err.message, 'error'); }
@@ -898,7 +933,7 @@ function showPage(page) {
   if (page === 'groups') renderGroups();
   if (page === 'admin') loadAdminPage();
   if (page === 'profile') {
-    // nothing extra needed
+    loadIcsLink();
   }
 }
 
@@ -959,10 +994,10 @@ function cancelAddNewType() {
 }
 
 function copyInviteLink() {
-  const url = window.location.origin;
+  const msg = "I'd like to introduce you to Jobber, a fast, lightweight collaborative task manager - create tasks, set due dates, organise by category, and keep your team in sync, all from your phone or browser. No ads or clutter! https://jobber.jahosi.co.uk/";
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).then(() => toast('Invite link copied!')).catch(() => fallbackCopy(url));
-  } else { fallbackCopy(url); }
+    navigator.clipboard.writeText(msg).then(() => toast('Invite message copied!')).catch(() => fallbackCopy(msg));
+  } else { fallbackCopy(msg); }
 }
 
 function fallbackCopy(text) {
@@ -1080,32 +1115,72 @@ async function loadTasks() {
 
 function renderTasks(tasks) {
   const grid = document.getElementById('taskGrid');
-  if (!tasks.length) {
+  let displayTasks = tasks;
+  if (!currentFilter.showGroupTasks) {
+    displayTasks = tasks.filter(t => !t.group_id);
+  }
+  if (!displayTasks.length) {
     grid.innerHTML = '<div class="loading"><div style="font-size:3rem;margin-bottom:12px">\ud83d\udccb</div><p>No tasks found. Create your first task!</p></div>';
     return;
   }
-  grid.innerHTML = tasks.map(t => {
-    const statusInfo = statusMeta(t.status);
-    const now = Date.now();
-    const overdue = t.due_date && t.due_date < now && t.status !== 'complete';
-    const dueSoon = t.due_date && t.status !== 'complete' && t.due_date > now && t.due_date <= now + 24 * 60 * 60 * 1000;
-    const isUrgent = (t.type_name || '').toLowerCase() === 'urgent';
-    // dueSoon takes precedence over isUrgent; a deadline in <24h is more time-sensitive than a type label
-    const cardClass = dueSoon ? 'task-card task-card-due-soon' : (isUrgent ? 'task-card task-card-urgent' : 'task-card');
-    return `
-      <div onclick="openDetailById('${escHtml(t.id)}')" class="${cardClass}">
-        <div class="task-card-title${t.group_id ? ' task-card-title-group' : ''}">${escHtml(t.title)}</div>
-        <div class="task-card-badges">
-          <span class="badge badge-blue">${escHtml(t.type_name || '')}</span>
-          <span class="badge ${statusInfo.cls}">${statusInfo.label}</span>
-          ${t.archived ? '<span class="badge badge-warn">Archived</span>' : ''}
+
+  const now = Date.now();
+
+  // Sort by urgency: overdue first (soonest overdue), then due soonest, then no due date
+  displayTasks = [...displayTasks].sort((a, b) => {
+    const aHasDue = !!a.due_date;
+    const bHasDue = !!b.due_date;
+    if (!aHasDue && !bHasDue) return 0;
+    if (!aHasDue) return 1;
+    if (!bHasDue) return -1;
+    return a.due_date - b.due_date;
+  });
+
+  // Group by: group name first (alphabetical), then "Personal", then by type within each
+  const grouped = new Map();
+  for (const t of displayTasks) {
+    const groupLabel = t.group_id ? (t.group_name || t.group_id) : '__personal__';
+    const typeLabel = t.type_name || 'Other';
+    const key = groupLabel + '|||' + typeLabel;
+    if (!grouped.has(key)) grouped.set(key, { groupLabel, typeLabel, tasks: [] });
+    grouped.get(key).tasks.push(t);
+  }
+
+  // Sort sections: non-personal groups alphabetically, personal last
+  const sections = Array.from(grouped.values()).sort((a, b) => {
+    if (a.groupLabel === '__personal__' && b.groupLabel !== '__personal__') return 1;
+    if (b.groupLabel === '__personal__' && a.groupLabel !== '__personal__') return -1;
+    const gc = a.groupLabel.localeCompare(b.groupLabel);
+    if (gc !== 0) return gc;
+    return a.typeLabel.localeCompare(b.typeLabel);
+  });
+
+  let html = '';
+  for (const section of sections) {
+    const groupDisplay = section.groupLabel === '__personal__' ? 'Personal' : escHtml(section.groupLabel);
+    html += `<div style="margin-bottom:8px;padding:6px 0 2px;border-bottom:1px solid #e5e7eb;font-size:.8rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">${groupDisplay} · ${escHtml(section.typeLabel)}</div>`;
+    html += section.tasks.map(t => {
+      const statusInfo = statusMeta(t.status);
+      const overdue = t.due_date && t.due_date < now && t.status !== 'complete';
+      const dueSoon = t.due_date && t.status !== 'complete' && t.due_date > now && t.due_date <= now + 24 * 60 * 60 * 1000;
+      const isUrgent = (t.type_name || '').toLowerCase() === 'urgent';
+      const cardClass = dueSoon ? 'task-card task-card-due-soon' : (isUrgent ? 'task-card task-card-urgent' : 'task-card');
+      return `
+        <div onclick="openDetailById('${escHtml(t.id)}')" class="${cardClass}">
+          <div class="task-card-title${t.group_id ? ' task-card-title-group' : ''}">${escHtml(t.title)}</div>
+          <div class="task-card-badges">
+            <span class="badge badge-blue">${escHtml(t.type_name || '')}</span>
+            <span class="badge ${statusInfo.cls}">${statusInfo.label}</span>
+            ${t.archived ? '<span class="badge badge-warn">Archived</span>' : ''}
+          </div>
+          ${t.assignees && t.assignees.length ? `<p class="task-card-meta">\ud83d\udc64 ${t.assignees.map(a => escHtml(a.username)).join(', ')}</p>` : ''}
+          ${t.due_date ? `<p class="task-card-meta ${overdue ? 'due-overdue' : ''}">\ud83d\udcc5 ${fmtDate(t.due_date)}</p>` : ''}
+          ${t.details ? `<p class="task-card-meta" style="margin-top:6px">${escHtml(t.details.length > 80 ? t.details.substring(0, 80) + '\u2026' : t.details)}</p>` : ''}
         </div>
-        ${t.assignees && t.assignees.length ? `<p class="task-card-meta">\ud83d\udc64 ${t.assignees.map(a => escHtml(a.username)).join(', ')}</p>` : ''}
-        ${t.due_date ? `<p class="task-card-meta ${overdue ? 'due-overdue' : ''}">\ud83d\udcc5 ${fmtDate(t.due_date)}</p>` : ''}
-        ${t.details ? `<p class="task-card-meta" style="margin-top:6px">${escHtml(t.details.length > 80 ? t.details.substring(0, 80) + '\u2026' : t.details)}</p>` : ''}
-      </div>
-    `;
-  }).join('');
+      `;
+    }).join('');
+  }
+  grid.innerHTML = html;
 }
 
 function statusMeta(status) {
@@ -1134,6 +1209,7 @@ function applyFilters() {
   currentFilter.typeId = document.getElementById('filterType').value;
   currentFilter.archived = document.getElementById('filterArchived').checked;
   currentFilter.assignedToMe = document.getElementById('filterAssignedToMe').checked;
+  currentFilter.showGroupTasks = document.getElementById('filterShowGroupTasks').checked;
   loadTasks();
 }
 
@@ -1167,6 +1243,13 @@ function openTaskModal(task = null) {
     groupSelect.value = task.group_id || '';
     document.getElementById('taskStatusRow').classList.remove('hidden');
     document.getElementById('taskStatus').value = task.status || 'not_started';
+    const hasRecur = task.recur_interval && task.recur_unit;
+    document.getElementById('taskRecurEnabled').checked = !!hasRecur;
+    document.getElementById('taskRecurFields').classList.toggle('hidden', !hasRecur);
+    if (hasRecur) {
+      document.getElementById('taskRecurInterval').value = task.recur_interval;
+      document.getElementById('taskRecurUnit').value = task.recur_unit;
+    }
     if (task.due_date) {
       const d = new Date(task.due_date);
       const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -1182,6 +1265,10 @@ function openTaskModal(task = null) {
     const iso = new Date(tonight.getTime() - tonight.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     document.getElementById('taskDueDate').value = iso;
     document.getElementById('taskStatusRow').classList.add('hidden');
+    document.getElementById('taskRecurEnabled').checked = false;
+    document.getElementById('taskRecurFields').classList.add('hidden');
+    document.getElementById('taskRecurInterval').value = '1';
+    document.getElementById('taskRecurUnit').value = 'weeks';
     document.getElementById('assigneeContainer').innerHTML = '<span style="font-size:.9rem;color:#9ca3af;font-style:italic">Select a group to see members</span>';
   }
   document.getElementById('taskModal').classList.remove('hidden');
@@ -1223,6 +1310,14 @@ async function handleTaskSubmit(e) {
     dueDate: (() => { const v = document.getElementById('taskDueDate').value; return v ? new Date(v).getTime() : null; })(),
   };
   if (editId) body.status = document.getElementById('taskStatus').value;
+  const recurEnabled = document.getElementById('taskRecurEnabled').checked;
+  if (recurEnabled) {
+    body.recurInterval = parseInt(document.getElementById('taskRecurInterval').value, 10) || 1;
+    body.recurUnit = document.getElementById('taskRecurUnit').value;
+  } else {
+    body.recurInterval = null;
+    body.recurUnit = null;
+  }
   try {
     if (editId) { await api('PATCH', '/tasks/' + editId, body); toast('Task updated!'); }
     else { await api('POST', '/tasks', body); toast('Task created!'); }
@@ -1256,6 +1351,15 @@ function openDetail(task) {
   if (task.assignees && task.assignees.length) {
     assigneesEl.textContent = 'Assigned to: ' + task.assignees.map(a => a.username).join(', ');
   } else { assigneesEl.textContent = ''; }
+  const recurInfoEl = document.getElementById('detailRecurInfo');
+  if (recurInfoEl) {
+    if (task.recur_interval && task.recur_unit) {
+      recurInfoEl.textContent = '🔁 Repeats every ' + task.recur_interval + ' ' + task.recur_unit;
+      recurInfoEl.classList.remove('hidden');
+    } else {
+      recurInfoEl.classList.add('hidden');
+    }
+  }
   document.getElementById('addNoteForm').classList.add('hidden');
   document.getElementById('newNoteText').value = '';
   document.getElementById('taskDetailModal').classList.remove('hidden');
@@ -1299,6 +1403,7 @@ async function submitNote() {
 
 function closeDetailModal() {
   document.getElementById('taskDetailModal').classList.add('hidden');
+  document.getElementById('deferSection').classList.add('hidden');
   currentDetailTask = null;
 }
 
@@ -1323,6 +1428,35 @@ async function archiveCurrentTask() {
     currentDetailTask = updated; tasksMap.set(updated.id, updated);
     openDetail(updated); loadTasks();
     toast(updated.archived ? 'Task archived' : 'Task unarchived');
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+function toggleDeferSection() {
+  const section = document.getElementById('deferSection');
+  section.classList.toggle('hidden');
+  if (!section.classList.contains('hidden')) {
+    const inp = document.getElementById('deferDateInput');
+    if (currentDetailTask && currentDetailTask.due_date) {
+      const d = new Date(currentDetailTask.due_date);
+      const pad = n => String(n).padStart(2, '0');
+      inp.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    } else {
+      inp.value = '';
+    }
+    inp.focus();
+  }
+}
+
+async function confirmDefer() {
+  if (!currentDetailTask) return;
+  const val = document.getElementById('deferDateInput').value;
+  if (!val) { toast('Please select a due date', 'error'); return; }
+  const dueDate = new Date(val).getTime();
+  try {
+    const updated = await api('PATCH', '/tasks/' + currentDetailTask.id, { dueDate });
+    currentDetailTask = updated; tasksMap.set(updated.id, updated);
+    document.getElementById('deferSection').classList.add('hidden');
+    openDetail(updated); loadTasks(); toast('Due date updated!');
   } catch (err) { toast(err.message, 'error'); }
 }
 
@@ -1385,7 +1519,7 @@ async function openGroupMembers(groupId) {
       const isBlocked = blockedUserIds.has(m.id);
       const roleBadge = `<span class="badge ${m.role === 'admin' ? 'badge-purple' : 'badge-gray'}">${m.role}</span>`;
       const promoteBtn = isAdmin && !isMe ? `
-        <button onclick="changeMemberRole(${escHtml(JSON.stringify(m.id))}, ${m.role === 'admin' ? '"member"' : '"admin"'})" class="btn btn-sm btn-outline">
+        <button onclick="changeMemberRole('${escHtml(m.id)}', '${m.role === 'admin' ? 'member' : 'admin'}')" class="btn btn-sm btn-outline">
           ${m.role === 'admin' ? 'Demote' : 'Promote'}
         </button>` : '';
       return `
@@ -1587,21 +1721,52 @@ async function loadAdminFeedback() {
   try {
     const items = await api('GET', '/admin/feedback');
     if (!items.length) { listEl.innerHTML = '<div class="loading">No feedback yet.</div>'; return; }
-    listEl.innerHTML = items.map(f => `
-      <div class="card" style="margin-bottom:8px;${f.read_at ? 'opacity:.65' : ''}">
-        <p style="font-size:.9rem;font-weight:700;margin-bottom:2px">${escHtml(f.subject)}</p>
-        <p style="font-size:.85rem;color:#374151;margin-bottom:6px;white-space:pre-wrap">${escHtml(f.message)}</p>
-        <p style="font-size:.78rem;color:#6b7280">From: ${escHtml(f.username)} (${escHtml(f.email)}) &nbsp;·&nbsp; ${fmtDateTime(f.created_at)}</p>
-        ${f.contact_ok ? '<p style="font-size:.78rem;color:#1a56db;margin-top:2px">✉️ Happy to be contacted</p>' : ''}
-        ${f.read_at ? '<p style="font-size:.75rem;color:#16a34a;margin-top:4px">✓ Read</p>' :
-          `<div style="margin-top:10px"><button onclick="markFeedbackRead('${escHtml(f.id)}')" class="btn btn-sm btn-secondary">Mark as Read</button></div>`}
-      </div>`).join('');
+    listEl.innerHTML = items.map(f => {
+      const statusLabel = { not_started: 'Not Started', in_progress: 'In Progress', completed: 'Completed', archived: 'Archived' };
+      const statusColor = { not_started: '#6b7280', in_progress: '#d97706', completed: '#16a34a', archived: '#9ca3af' };
+      const st = f.status || 'not_started';
+      return `
+        <div class="card" style="margin-bottom:8px;${st === 'archived' ? 'opacity:.55' : ''}">
+          <p style="font-size:.9rem;font-weight:700;margin-bottom:2px">${escHtml(f.subject || '(no subject)')}</p>
+          <p style="font-size:.85rem;color:#374151;margin-bottom:6px;white-space:pre-wrap">${escHtml(f.message)}</p>
+          <p style="font-size:.78rem;color:#6b7280">From: ${escHtml(f.username)} (${escHtml(f.email)}) &nbsp;·&nbsp; ${fmtDateTime(f.created_at)}</p>
+          ${f.contact_ok ? `
+            <p style="font-size:.78rem;color:#1a56db;margin-top:2px">✉️ User happy to be contacted — send in-app alert:</p>
+            <div style="display:flex;gap:6px;margin-top:4px">
+              <input id="replyMsg_${escHtml(f.id)}" type="text" placeholder="Reply message…" class="input" style="flex:1;font-size:.85rem" />
+              <button onclick="sendFeedbackReply('${escHtml(f.id)}')" class="btn btn-sm btn-primary">Send</button>
+            </div>` : ''}
+          <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+            <label style="font-size:.8rem;color:#6b7280">Status:</label>
+            <select onchange="setFeedbackStatus('${escHtml(f.id)}', this.value)" class="select" style="font-size:.85rem;padding:4px 8px;height:auto">
+              <option value="not_started" ${st === 'not_started' ? 'selected' : ''}>Not Started</option>
+              <option value="in_progress" ${st === 'in_progress' ? 'selected' : ''}>In Progress</option>
+              <option value="completed" ${st === 'completed' ? 'selected' : ''}>Completed</option>
+              <option value="archived" ${st === 'archived' ? 'selected' : ''}>Archive</option>
+            </select>
+            <span style="font-size:.78rem;color:${statusColor[st] || '#6b7280'};font-weight:600">${statusLabel[st] || st}</span>
+          </div>
+        </div>`;
+    }).join('');
   } catch (err) { listEl.innerHTML = `<div class="loading" style="color:#dc2626">${escHtml(err.message)}</div>`; }
 }
 
-async function markFeedbackRead(id) {
-  try { await api('PUT', '/admin/feedback/' + id + '/read'); loadAdminFeedback(); }
-  catch (err) { toast(err.message, 'error'); }
+async function setFeedbackStatus(id, status) {
+  try {
+    await api('PATCH', '/admin/feedback/' + id + '/status', { status });
+    loadAdminFeedback();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function sendFeedbackReply(id) {
+  const inp = document.getElementById('replyMsg_' + id);
+  const message = inp ? inp.value.trim() : '';
+  if (!message) { toast('Please enter a reply message', 'error'); return; }
+  try {
+    await api('POST', '/admin/feedback/' + id + '/reply', { message });
+    inp.value = '';
+    toast('Alert sent to user!');
+  } catch (err) { toast(err.message, 'error'); }
 }
 
 // ========== Notifications ==========
@@ -1615,21 +1780,35 @@ function toggleNotifModal() {
 async function refreshNotifications() {
   try {
     const params = new URLSearchParams({ archived: 'false' });
-    const tasks = await api('GET', '/tasks?' + params.toString());
+    const [tasks, userAlerts] = await Promise.all([
+      api('GET', '/tasks?' + params.toString()),
+      api('GET', '/users/me/alerts').catch(() => [])
+    ]);
     const now = Date.now();
     const in24h = now + 24 * 60 * 60 * 1000;
-    const alerts = tasks.filter(t =>
+    const taskAlerts = tasks.filter(t =>
       t.due_date && t.status !== 'complete' && !t.archived &&
       (t.due_date < now || t.due_date <= in24h)
     );
+    const unreadAlerts = userAlerts.filter(a => !a.read_at);
+    const totalBadge = taskAlerts.length + unreadAlerts.length;
     const badge = document.getElementById('notifBadge');
-    if (alerts.length > 0) {
-      badge.textContent = alerts.length > 9 ? '9+' : String(alerts.length);
+    if (totalBadge > 0) {
+      badge.textContent = totalBadge > 9 ? '9+' : String(totalBadge);
       badge.removeAttribute('hidden');
     } else { badge.setAttribute('hidden', ''); }
     const listEl = document.getElementById('notificationList');
-    if (!alerts.length) { listEl.innerHTML = '<div class="loading">No outstanding alerts</div>'; return; }
-    listEl.innerHTML = alerts.map(t => {
+    if (!taskAlerts.length && !unreadAlerts.length) {
+      listEl.innerHTML = '<div class="loading">No outstanding alerts</div>';
+      return;
+    }
+    const alertsHtml = unreadAlerts.map(a => `
+      <div class="notif-item" style="border-left:3px solid #1a56db;background:#eff6ff">
+        <p class="notif-item-title">💬 ${escHtml(a.message)}</p>
+        <p class="notif-item-sub" style="color:#6b7280">${fmtDateTime(a.created_at)}</p>
+        <button onclick="dismissAlert('${escHtml(a.id)}')" class="btn btn-sm btn-secondary" style="margin-top:4px">Dismiss</button>
+      </div>`).join('');
+    const taskHtml = taskAlerts.map(t => {
       const overdue = t.due_date < now;
       return `
         <div onclick="openDetailById('${escHtml(t.id)}'); toggleNotifModal();" class="notif-item">
@@ -1639,7 +1818,18 @@ async function refreshNotifications() {
           </p>
         </div>`;
     }).join('');
-  } catch { /* ignore */ }
+    listEl.innerHTML = alertsHtml + taskHtml;
+  } catch (err) {
+    const listEl = document.getElementById('notificationList');
+    listEl.innerHTML = '<div class="loading">No outstanding alerts</div>';
+  }
+}
+
+async function dismissAlert(alertId) {
+  try {
+    await api('PATCH', '/users/me/alerts/' + alertId + '/read');
+    refreshNotifications();
+  } catch (err) { toast(err.message, 'error'); }
 }
 
 // Close notif modal when clicking the overlay backdrop
@@ -1688,6 +1878,39 @@ document.addEventListener('click', function(e) {
 
   if (token && currentUser) initApp();
 })();
+
+// ========== ICS Calendar Feed ==========
+async function loadIcsLink() {
+  try {
+    const data = await api('GET', '/users/me/ics-token');
+    const url = window.location.origin + '/calendar/' + data.token + '/tasks.ics';
+    document.getElementById('icsLinkInput').value = url;
+  } catch { /* ignore */ }
+}
+
+function copyIcsLink() {
+  const val = document.getElementById('icsLinkInput').value;
+  if (!val || val === 'Loading…') return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(val).then(() => toast('Calendar link copied!')).catch(() => fallbackCopy(val));
+  } else { fallbackCopy(val); }
+}
+
+async function rotateIcsToken() {
+  if (!confirm('This will invalidate your current calendar link. Any apps using the old link will stop working. Continue?')) return;
+  try {
+    const data = await api('POST', '/users/me/ics-token/rotate');
+    const url = window.location.origin + '/calendar/' + data.token + '/tasks.ics';
+    document.getElementById('icsLinkInput').value = url;
+    toast('Calendar link regenerated!');
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+// ========== Task Recurrence ==========
+function toggleRecurFields() {
+  const enabled = document.getElementById('taskRecurEnabled').checked;
+  document.getElementById('taskRecurFields').classList.toggle('hidden', !enabled);
+}
 </script>
 </body>
 </html>

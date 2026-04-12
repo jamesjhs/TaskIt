@@ -67,10 +67,12 @@ router.get('/', (req: Request, res: Response): void => {
 
   const tasks = db.prepare(`
     SELECT t.*, tt.name AS type_name,
-      u.username AS created_by_username
+      u.username AS created_by_username,
+      g.name AS group_name
     FROM tasks t
     JOIN task_types tt ON tt.id = t.type_id
     JOIN users u ON u.id = t.created_by
+    LEFT JOIN groups g ON g.id = t.group_id
     ${whereClause}
     ORDER BY t.updated_at DESC
   `).all(...params) as Array<Record<string, unknown>>;

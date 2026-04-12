@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
 import { authMiddleware } from '../middleware/auth';
 import { adminMiddleware } from '../middleware/admin';
 import db from '../db';
@@ -152,8 +153,51 @@ router.put('/feedback/:id/read', (req: Request, res: Response): void => {
   const fbId = req.params.id;
   const row = db.prepare('SELECT id FROM feedback_messages WHERE id = ?').get(fbId);
   if (!row) { res.status(404).json({ error: 'Feedback not found' }); return; }
-  db.prepare('UPDATE feedback_messages SET read_at = ? WHERE id = ?').run(Date.now(), fbId);
+  db.prepare("UPDATE feedback_messages SET read_at = ?, status = 'completed' WHERE id = ?").run(Date.now(), fbId);
   res.json({ message: 'Marked as read' });
+});
+
+router.patch('/feedback/:id/status', (req: Request, res: Response): void => {
+  const fbId = req.params.id;
+  const { status } = req.body;
+  const VALID_STATUSES = new Set(['not_started', 'in_progress', 'completed', 'archived']);
+  if (!status || !VALID_STATUSES.has(status)) {
+    res.status(400).json({ error: 'status must be one of: not_started, in_progress, completed, archived' });
+    return;
+  }
+  const row = db.prepare('SELECT id FROM feedback_messages WHERE id = ?').get(fbId);
+  if (!row) { res.status(404).json({ error: 'Feedback not found' }); return; }
+  const now = Date.now();
+  if (status !== 'not_started') {
+    db.prepare('UPDATE feedback_messages SET status = ?, read_at = COALESCE(read_at, ?) WHERE id = ?').run(status, now, fbId);
+  } else {
+    db.prepare('UPDATE feedback_messages SET status = ? WHERE id = ?').run(status, fbId);
+  }
+  res.json({ message: 'Status updated' });
+});
+
+router.post('/feedback/:id/reply', (req: Request, res: Response): void => {
+  const fbId = req.params.id;
+  const { message } = req.body;
+
+  if (!message || typeof message !== 'string' || !message.trim()) {
+    res.status(400).json({ error: 'message is required' });
+    return;
+  }
+
+  const fb = db.prepare('SELECT id, user_id FROM feedback_messages WHERE id = ?').get(fbId) as
+    | { id: string; user_id: string }
+    | undefined;
+
+  if (!fb) { res.status(404).json({ error: 'Feedback not found' }); return; }
+
+  const id = uuidv4();
+  const now = Date.now();
+  db.prepare(
+    'INSERT INTO user_alerts (id, user_id, message, created_at) VALUES (?, ?, ?, ?)'
+  ).run(id, fb.user_id, message.trim(), now);
+
+  res.status(201).json({ message: 'Alert sent to user' });
 });
 
 export default router;

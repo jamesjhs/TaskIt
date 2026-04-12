@@ -42,7 +42,7 @@ export async function sendMagicLink(to: string, token: string, baseUrl: string):
   });
 }
 
-export async function sendTaskReminder(to: string, task: { title: string; due_date: number }): Promise<void> {
+export async function sendTaskReminder(to: string, task: { title: string; due_date: number }, reminderLabel?: string): Promise<void> {
   const transporter = await getTransporter();
   if (!transporter) {
     console.warn('[mail] SMTP not configured or disabled — skipping task reminder email');
@@ -51,11 +51,15 @@ export async function sendTaskReminder(to: string, task: { title: string; due_da
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
   const from = settings?.from_addr || 'noreply@jobber.app';
   const dueStr = new Date(task.due_date).toLocaleString();
-  await transporter.sendMail({
-    from,
-    to,
-    subject: `Reminder: "${task.title}" is due soon`,
-    text: `This is a reminder that the task "${task.title}" is due on ${dueStr}.`,
-    html: `<p>This is a reminder that the task <strong>${task.title}</strong> is due on <strong>${dueStr}</strong>.</p>`,
-  });
+  const isOverdue = task.due_date < Date.now();
+  const subject = isOverdue
+    ? `Overdue: "${task.title}" was due on ${dueStr}`
+    : `Reminder (${reminderLabel ?? 'upcoming'}): "${task.title}" is due soon`;
+  const bodyText = isOverdue
+    ? `The task "${task.title}" was due on ${dueStr} and has not been completed.`
+    : `This is a reminder that the task "${task.title}" is due on ${dueStr}.`;
+  const bodyHtml = isOverdue
+    ? `<p>The task <strong>${task.title}</strong> was due on <strong>${dueStr}</strong> and has not been completed.</p>`
+    : `<p>This is a reminder that the task <strong>${task.title}</strong> is due on <strong>${dueStr}</strong>.</p>`;
+  await transporter.sendMail({ from, to, subject, text: bodyText, html: bodyHtml });
 }

@@ -103,4 +103,68 @@ router.get('/:id/members', (req: Request, res: Response): void => {
   res.json(members);
 });
 
+router.patch('/:id/name', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const groupId = req.params.id;
+  const { name } = req.body;
+
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    res.status(400).json({ error: 'name is required' });
+    return;
+  }
+
+  const membership = db.prepare(
+    'SELECT role FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(groupId, userId) as { role: string } | undefined;
+
+  if (!membership) {
+    res.status(403).json({ error: 'Not a member of this group' });
+    return;
+  }
+  if (membership.role !== 'admin') {
+    res.status(403).json({ error: 'Only group admins can rename the group' });
+    return;
+  }
+
+  db.prepare('UPDATE groups SET name = ? WHERE id = ?').run(name.trim(), groupId);
+  const group = db.prepare('SELECT * FROM groups WHERE id = ?').get(groupId);
+  res.json(group);
+});
+
+router.patch('/:id/members/:userId/role', (req: Request, res: Response): void => {
+  const requesterId = req.user!.id;
+  const groupId = req.params.id;
+  const targetUserId = req.params.userId;
+  const { role } = req.body;
+
+  if (role !== 'admin' && role !== 'member') {
+    res.status(400).json({ error: 'role must be "admin" or "member"' });
+    return;
+  }
+
+  const requesterMembership = db.prepare(
+    'SELECT role FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(groupId, requesterId) as { role: string } | undefined;
+
+  if (!requesterMembership || requesterMembership.role !== 'admin') {
+    res.status(403).json({ error: 'Only group admins can change member roles' });
+    return;
+  }
+
+  const targetMembership = db.prepare(
+    'SELECT role FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(groupId, targetUserId);
+
+  if (!targetMembership) {
+    res.status(404).json({ error: 'User is not a member of this group' });
+    return;
+  }
+
+  db.prepare(
+    'UPDATE group_members SET role = ? WHERE group_id = ? AND user_id = ?'
+  ).run(role, groupId, targetUserId);
+
+  res.json({ message: 'Role updated' });
+});
+
 export default router;

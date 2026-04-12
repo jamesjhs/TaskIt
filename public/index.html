@@ -145,6 +145,15 @@
           class="hidden px-3 py-1.5 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors">
           Admin
         </button>
+        <!-- Notification bell -->
+        <button onclick="toggleNotificationPanel()" id="navNotifBtn"
+          class="relative px-2 py-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+          title="Notifications">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+          <span id="notifBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold"></span>
+        </button>
         <div class="w-px h-5 bg-white/20 mx-1"></div>
         <button onclick="logout()"
           class="px-3 py-1.5 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-red-500/20 transition-colors">
@@ -333,6 +342,27 @@
     </div>
 
   </main>
+
+  <!-- Footer -->
+  <footer class="bg-indigo-800 dark:bg-slate-900 text-white/60 text-xs text-center py-3 px-4 mt-auto">
+    Jobber v<span id="footerVersion">0.5.2</span> &nbsp;|&nbsp; Copyright J Rowson 2026 &nbsp;|&nbsp;
+    <a href="https://jahosi.co.uk" target="_blank" rel="noopener" class="hover:text-white/90 underline">jahosi.co.uk</a>
+  </footer>
+</div>
+
+<!-- ===== NOTIFICATION PANEL ===== -->
+<div id="notificationPanel" class="hidden fixed top-14 right-4 z-50 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+  <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+    <h3 class="font-semibold text-sm text-slate-800 dark:text-white">Notifications</h3>
+    <button onclick="toggleNotificationPanel()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+  <div id="notificationList" class="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
+    <div class="p-4 text-sm text-slate-400 text-center">No alerts</div>
+  </div>
 </div>
 
 <!-- ===== TASK MODAL ===== -->
@@ -469,7 +499,7 @@
 
 <!-- ===== TASK DETAIL MODAL ===== -->
 <div id="taskDetailModal" class="hidden fixed inset-0 z-40 modal-backdrop bg-black/40 flex items-center justify-center p-4">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
       <h3 id="detailTitle" class="text-lg font-bold text-slate-800 dark:text-white">Task</h3>
       <button onclick="closeDetailModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
@@ -504,6 +534,30 @@
         </button>
       </div>
 
+      <!-- Progress Notes section -->
+      <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Progress Notes</h4>
+          <button onclick="toggleAddNoteForm()"
+            class="px-3 py-1 text-xs font-medium rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors">
+            + Add Note
+          </button>
+        </div>
+        <div id="addNoteForm" class="hidden mb-3">
+          <textarea id="newNoteText" rows="2" placeholder="Enter progress note…"
+            class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none mb-2"></textarea>
+          <div class="flex gap-2">
+            <button onclick="toggleAddNoteForm()"
+              class="flex-1 py-1.5 text-xs border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Cancel</button>
+            <button onclick="submitNote()"
+              class="flex-1 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">Save Note</button>
+          </div>
+        </div>
+        <div id="taskNotesList" class="space-y-2 max-h-48 overflow-y-auto">
+          <div class="text-xs text-slate-400 italic">Loading notes…</div>
+        </div>
+      </div>
+
       <div class="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
         <button onclick="editCurrentTask()"
           class="flex-1 py-2 text-sm font-medium rounded-xl border border-indigo-300 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
@@ -526,12 +580,24 @@
 <div id="groupMembersModal" class="hidden fixed inset-0 z-40 modal-backdrop bg-black/40 flex items-center justify-center p-4">
   <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto">
     <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
-      <h3 id="groupMembersTitle" class="text-lg font-bold text-slate-800 dark:text-white">Group Members</h3>
+      <div>
+        <h3 id="groupMembersTitle" class="text-lg font-bold text-slate-800 dark:text-white">Group Members</h3>
+        <p id="groupMembersKey" class="text-xs text-slate-400 mt-0.5"></p>
+      </div>
       <button onclick="document.getElementById('groupMembersModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
+    </div>
+    <!-- Admin: rename group -->
+    <div id="groupAdminControls" class="hidden px-4 pt-4 pb-2 border-b border-slate-100 dark:border-slate-700">
+      <p class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-2 uppercase tracking-wide">Admin Controls</p>
+      <div class="flex gap-2">
+        <input id="renameGroupInput" type="text" placeholder="New group name"
+          class="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        <button onclick="renameGroup()" class="px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">Rename</button>
+      </div>
     </div>
     <div id="groupMembersList" class="p-4 space-y-2">
       <div class="text-center text-slate-400 text-sm py-4">Loading…</div>
@@ -549,6 +615,7 @@ let tasksMap = new Map(); // keyed by task id
 let currentFilter = { status: '', groupId: '', archived: false, assignedToMe: false };
 let currentDetailTask = null;
 let blockedUserIds = new Set();
+let currentGroupId = null; // active group in members modal
 window._serverVersion = null;
 
 // ========== API ==========
@@ -698,12 +765,17 @@ function initApp() {
       document.getElementById('navAdmin').classList.add('hidden');
     }
   }
+  // Populate footer version from server
+  fetch('/api/version').then(r => r.json()).then(d => {
+    if (d.version) document.getElementById('footerVersion').textContent = d.version;
+  }).catch(() => {});
   loadTypes();
   loadGroups();
   loadBlockedUsers();
   showPage('tasks');
   checkVersion();
   setInterval(checkVersion, 5 * 60 * 1000);
+  setInterval(refreshNotifications, 5 * 60 * 1000);
 }
 
 // ========== Navigation ==========
@@ -845,6 +917,7 @@ async function loadTasks() {
     const tasks = await api('GET', '/tasks?' + params.toString());
     tasksMap = new Map(tasks.map(t => [t.id, t]));
     renderTasks(tasks);
+    refreshNotifications();
   } catch (err) {
     grid.innerHTML = '<div class="col-span-full text-center py-12 text-red-400">' + escHtml(err.message) + '</div>';
   }
@@ -955,7 +1028,11 @@ function openTaskModal(task = null) {
     editId.value = '';
     document.getElementById('taskTitle').value = '';
     document.getElementById('taskDetails').value = '';
-    document.getElementById('taskDueDate').value = '';
+    // Default due date: tonight at midnight
+    const tonight = new Date();
+    tonight.setHours(23, 59, 0, 0);
+    const iso = new Date(tonight.getTime() - tonight.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('taskDueDate').value = iso;
     document.getElementById('taskStatusRow').classList.add('hidden');
     document.getElementById('assigneeContainer').innerHTML = '<span class="text-sm text-slate-400 italic">Select a group to see members</span>';
   }
@@ -1035,7 +1112,10 @@ function openDetail(task) {
   document.getElementById('detailNotes').textContent = task.details || 'No notes.';
   const dueDateEl = document.getElementById('detailDueDate');
   if (task.due_date) {
-    dueDateEl.textContent = '📅 Due: ' + new Date(task.due_date).toLocaleString();
+    const now = Date.now();
+    const overdue = task.due_date < now && task.status !== 'complete';
+    dueDateEl.textContent = (overdue ? '⚠️ OVERDUE — was due: ' : '📅 Due: ') + new Date(task.due_date).toLocaleString();
+    dueDateEl.className = 'text-sm ' + (overdue ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-slate-600 dark:text-slate-400');
     dueDateEl.classList.remove('hidden');
   } else {
     dueDateEl.classList.add('hidden');
@@ -1046,7 +1126,53 @@ function openDetail(task) {
   } else {
     assigneesEl.textContent = '';
   }
+  // Reset notes section
+  document.getElementById('addNoteForm').classList.add('hidden');
+  document.getElementById('newNoteText').value = '';
   document.getElementById('taskDetailModal').classList.remove('hidden');
+  loadTaskNotes(task.id);
+}
+
+async function loadTaskNotes(taskId) {
+  const listEl = document.getElementById('taskNotesList');
+  try {
+    const notes = await api('GET', '/tasks/' + taskId + '/notes');
+    if (!notes.length) {
+      listEl.innerHTML = '<div class="text-xs text-slate-400 italic">No progress notes yet.</div>';
+      return;
+    }
+    listEl.innerHTML = notes.map(n => `
+      <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg px-3 py-2">
+        <p class="text-xs text-slate-700 dark:text-slate-200 whitespace-pre-wrap">${escHtml(n.note)}</p>
+        <p class="text-xs text-slate-400 mt-1">${escHtml(n.username)} · ${new Date(n.created_at).toLocaleString()}</p>
+      </div>
+    `).join('');
+  } catch {
+    listEl.innerHTML = '<div class="text-xs text-red-400">Failed to load notes.</div>';
+  }
+}
+
+function toggleAddNoteForm() {
+  const form = document.getElementById('addNoteForm');
+  form.classList.toggle('hidden');
+  if (!form.classList.contains('hidden')) {
+    document.getElementById('newNoteText').focus();
+  }
+}
+
+async function submitNote() {
+  if (!currentDetailTask) return;
+  const note = document.getElementById('newNoteText').value.trim();
+  if (!note) { toast('Note cannot be empty', 'error'); return; }
+  try {
+    await api('POST', '/tasks/' + currentDetailTask.id + '/notes', { note });
+    document.getElementById('newNoteText').value = '';
+    document.getElementById('addNoteForm').classList.add('hidden');
+    toast('Note added!');
+    loadTaskNotes(currentDetailTask.id);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
 }
 
 function closeDetailModal() {
@@ -1069,9 +1195,10 @@ async function quickStatus(status) {
 }
 
 function editCurrentTask() {
-  if (!currentDetailTask) return;
+  const task = currentDetailTask;
+  if (!task) return;
   closeDetailModal();
-  openTaskModal(currentDetailTask);
+  openTaskModal(task);
 }
 
 async function archiveCurrentTask() {
@@ -1133,12 +1260,26 @@ async function loadBlockedUsers() {
 
 // ========== Group Members ==========
 async function openGroupMembers(groupId) {
+  currentGroupId = groupId;
   const modal = document.getElementById('groupMembersModal');
   const listEl = document.getElementById('groupMembersList');
   modal.classList.remove('hidden');
   listEl.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">Loading…</div>';
+
+  // Show group ID in subtitle
+  const group = groups.find(g => g.id === groupId);
+  document.getElementById('groupMembersTitle').textContent = group ? group.name : 'Group Members';
+  document.getElementById('groupMembersKey').textContent = group ? 'Join key: ' + group.shared_key : '';
+  if (group) document.getElementById('renameGroupInput').value = group.name;
+
   try {
     const members = await api('GET', '/groups/' + groupId + '/members');
+    const myMembership = members.find(m => currentUser && m.id === currentUser.id);
+    const isAdmin = myMembership && myMembership.role === 'admin';
+
+    // Show/hide admin controls
+    document.getElementById('groupAdminControls').classList.toggle('hidden', !isAdmin);
+
     if (!members.length) {
       listEl.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">No members found.</div>';
       return;
@@ -1146,14 +1287,23 @@ async function openGroupMembers(groupId) {
     listEl.innerHTML = members.map(m => {
       const isMe = currentUser && m.id === currentUser.id;
       const isBlocked = blockedUserIds.has(m.id);
+      const roleBadge = `<span class="px-1.5 py-0.5 rounded text-xs font-medium ${m.role === 'admin' ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}">${m.role}</span>`;
+      const promoteBtn = isAdmin && !isMe ? `
+        <button onclick="changeMemberRole('${m.id}', '${m.role === 'admin' ? 'member' : 'admin'}')"
+          class="px-2 py-1 text-xs rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors">
+          ${m.role === 'admin' ? 'Demote' : 'Promote'}
+        </button>` : '';
       return `
         <div class="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50">
           <div>
-            <p class="text-sm font-medium text-slate-800 dark:text-white">${escHtml(m.username)} ${isMe ? '<span class="text-xs text-indigo-500">(you)</span>' : ''}</p>
+            <p class="text-sm font-medium text-slate-800 dark:text-white flex items-center gap-1.5">
+              ${escHtml(m.username)} ${isMe ? '<span class="text-xs text-indigo-500">(you)</span>' : ''} ${roleBadge}
+            </p>
             <p class="text-xs text-slate-400">${escHtml(m.email)}</p>
           </div>
           ${!isMe ? `
           <div class="flex gap-1">
+            ${promoteBtn}
             <button onclick="reportUser('${m.id}', '${escHtml(m.username)}')"
               class="px-2 py-1 text-xs rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors">Report</button>
             <button onclick="${isBlocked ? 'unblockUser' : 'blockUser'}('${m.id}', '${groupId}')"
@@ -1166,6 +1316,32 @@ async function openGroupMembers(groupId) {
     }).join('');
   } catch (err) {
     listEl.innerHTML = `<div class="text-center text-red-400 text-sm py-4">${escHtml(err.message)}</div>`;
+  }
+}
+
+async function renameGroup() {
+  if (!currentGroupId) return;
+  const name = document.getElementById('renameGroupInput').value.trim();
+  if (!name) { toast('Group name cannot be empty', 'error'); return; }
+  try {
+    await api('PATCH', '/groups/' + currentGroupId + '/name', { name });
+    toast('Group renamed!');
+    await loadGroups();
+    renderGroups();
+    openGroupMembers(currentGroupId);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function changeMemberRole(userId, newRole) {
+  if (!currentGroupId) return;
+  try {
+    await api('PATCH', '/groups/' + currentGroupId + '/members/' + userId + '/role', { role: newRole });
+    toast('Role updated!');
+    openGroupMembers(currentGroupId);
+  } catch (err) {
+    toast(err.message, 'error');
   }
 }
 
@@ -1323,6 +1499,67 @@ async function resolveReport(reportId) {
     toast(err.message, 'error');
   }
 }
+
+// ========== Notifications ==========
+let notificationPanelOpen = false;
+
+function toggleNotificationPanel() {
+  const panel = document.getElementById('notificationPanel');
+  notificationPanelOpen = !notificationPanelOpen;
+  panel.classList.toggle('hidden', !notificationPanelOpen);
+  if (notificationPanelOpen) refreshNotifications();
+}
+
+async function refreshNotifications() {
+  try {
+    const params = new URLSearchParams({ archived: 'false' });
+    const tasks = await api('GET', '/tasks?' + params.toString());
+    const now = Date.now();
+    const in24h = now + 24 * 60 * 60 * 1000;
+    const alerts = tasks.filter(t =>
+      t.due_date && t.status !== 'complete' && !t.archived &&
+      (t.due_date < now || t.due_date <= in24h)
+    );
+    // Update badge
+    const badge = document.getElementById('notifBadge');
+    if (alerts.length > 0) {
+      badge.textContent = alerts.length > 9 ? '9+' : String(alerts.length);
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+    // Update panel list
+    const listEl = document.getElementById('notificationList');
+    if (!alerts.length) {
+      listEl.innerHTML = '<div class="p-4 text-sm text-slate-400 text-center">No outstanding alerts</div>';
+      return;
+    }
+    listEl.innerHTML = alerts.map(t => {
+      const overdue = t.due_date < now;
+      return `
+        <div onclick="openDetailById('${escHtml(t.id)}'); toggleNotificationPanel();"
+          class="px-4 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+          <p class="text-sm font-medium text-slate-800 dark:text-white">${escHtml(t.title)}</p>
+          <p class="text-xs ${overdue ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-amber-600 dark:text-amber-400'}">
+            ${overdue ? '⚠️ Overdue — was due ' : '⏰ Due '} ${new Date(t.due_date).toLocaleDateString()}
+          </p>
+        </div>
+      `;
+    }).join('');
+  } catch {
+    // ignore
+  }
+}
+
+// Close notification panel when clicking outside
+document.addEventListener('click', function(e) {
+  const panel = document.getElementById('notificationPanel');
+  const btn = document.getElementById('navNotifBtn');
+  if (notificationPanelOpen && !panel.contains(e.target) && !btn.contains(e.target)) {
+    notificationPanelOpen = false;
+    panel.classList.add('hidden');
+  }
+});
 
 // ========== Bootstrap ==========
 (async function() {

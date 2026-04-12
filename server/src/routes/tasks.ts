@@ -322,9 +322,100 @@ router.delete('/:id', (req: Request, res: Response): void => {
   }
 
   db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(taskId);
+  db.prepare('DELETE FROM task_notes WHERE task_id = ?').run(taskId);
+  db.prepare('DELETE FROM task_reminders_sent WHERE task_id = ?').run(taskId);
   db.prepare('DELETE FROM tasks WHERE id = ?').run(taskId);
 
   res.status(204).send();
+});
+
+// ─── Task Notes ───────────────────────────────────────────────────────────────
+
+router.get('/:id/notes', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const taskId = req.params.id;
+
+  // Check access: creator, assignee, or group member
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
+    | { id: string; created_by: string; group_id: string | null }
+    | undefined;
+
+  if (!task) {
+    res.status(404).json({ error: 'Task not found' });
+    return;
+  }
+
+  const isCreator = task.created_by === userId;
+  const isAssignee = !!db.prepare(
+    'SELECT 1 FROM task_assignees WHERE task_id = ? AND user_id = ?'
+  ).get(taskId, userId);
+  const isGroupMember = task.group_id ? !!db.prepare(
+    'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(task.group_id, userId) : false;
+
+  if (!isCreator && !isAssignee && !isGroupMember) {
+    res.status(403).json({ error: 'Not authorized' });
+    return;
+  }
+
+  const notes = db.prepare(`
+    SELECT tn.id, tn.note, tn.created_at, u.username
+    FROM task_notes tn
+    JOIN users u ON u.id = tn.user_id
+    WHERE tn.task_id = ?
+    ORDER BY tn.created_at ASC
+  `).all(taskId);
+
+  res.json(notes);
+});
+
+router.post('/:id/notes', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const taskId = req.params.id;
+  const { note } = req.body;
+
+  if (!note || typeof note !== 'string' || !note.trim()) {
+    res.status(400).json({ error: 'note is required' });
+    return;
+  }
+
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
+    | { id: string; created_by: string; group_id: string | null }
+    | undefined;
+
+  if (!task) {
+    res.status(404).json({ error: 'Task not found' });
+    return;
+  }
+
+  const isCreator = task.created_by === userId;
+  const isAssignee = !!db.prepare(
+    'SELECT 1 FROM task_assignees WHERE task_id = ? AND user_id = ?'
+  ).get(taskId, userId);
+  const isGroupMember = task.group_id ? !!db.prepare(
+    'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(task.group_id, userId) : false;
+
+  if (!isCreator && !isAssignee && !isGroupMember) {
+    res.status(403).json({ error: 'Not authorized' });
+    return;
+  }
+
+  const id = uuidv4();
+  const now = Date.now();
+
+  db.prepare(
+    'INSERT INTO task_notes (id, task_id, user_id, note, created_at) VALUES (?, ?, ?, ?, ?)'
+  ).run(id, taskId, userId, note.trim(), now);
+
+  const created = db.prepare(`
+    SELECT tn.id, tn.note, tn.created_at, u.username
+    FROM task_notes tn
+    JOIN users u ON u.id = tn.user_id
+    WHERE tn.id = ?
+  `).get(id);
+
+  res.status(201).json(created);
 });
 
 export default router;

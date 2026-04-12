@@ -1,6 +1,6 @@
 # 👋 Jobber – User Guide
 
-**Version 0.7.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 0.7.2** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 Jobber is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -158,4 +158,4 @@ Any group admin can find the join key by clicking **View Members** on the group 
 
 ---
 
-*Jobber v0.7.1 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*Jobber v0.7.2 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*

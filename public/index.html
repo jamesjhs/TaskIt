@@ -1126,8 +1126,11 @@ function renderTasks(tasks) {
 
   const now = Date.now();
 
-  // Sort by urgency: overdue first (soonest overdue), then due soonest, then no due date
+  // Sort: urgent tasks first, then by due date (overdue soonest, then due soonest, then no due date)
   displayTasks = [...displayTasks].sort((a, b) => {
+    const aIsUrgent = (a.type_name || '').toLowerCase() === 'urgent';
+    const bIsUrgent = (b.type_name || '').toLowerCase() === 'urgent';
+    if (aIsUrgent !== bIsUrgent) return aIsUrgent ? -1 : 1;
     const aHasDue = !!a.due_date;
     const bHasDue = !!b.due_date;
     if (!aHasDue && !bHasDue) return 0;

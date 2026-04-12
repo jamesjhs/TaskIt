@@ -162,6 +162,7 @@ addCol('users', 'locked_until', 'INTEGER');
 addCol('users', 'email_verified', 'INTEGER NOT NULL DEFAULT 1');
 // locale defaults to en-GB (British English) for all users including existing accounts
 addCol('users', 'locale', "TEXT NOT NULL DEFAULT 'en-GB'");
+addCol('users', 'last_active_at', 'INTEGER');
 addCol('tasks', 'due_date', 'INTEGER');
 
 // Ensure smtp_settings has exactly one row (singleton pattern)

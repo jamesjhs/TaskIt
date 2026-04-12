@@ -133,7 +133,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">Jobber v0.5.4 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a></p>
+      <p class="version-footer" style="margin-top:16px">Jobber v0.6.2 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a></p>
     </div>
   </div>
 </div>
@@ -156,6 +156,9 @@
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
       <select id="filterGroup" onchange="applyFilters()" class="filter-select">
         <option value="">All Groups</option>
+      </select>
+      <select id="filterType" onchange="applyFilters()" class="filter-select">
+        <option value="">All Types</option>
       </select>
       <label class="toggle-label">
         <input type="checkbox" id="filterArchived" onchange="applyFilters()" />
@@ -264,6 +267,24 @@
   <!-- ===== ADMIN PAGE ===== -->
   <div id="adminPage" class="view hidden">
     <div class="view-header"><h1>Admin Panel</h1></div>
+    <div id="adminStats" class="card" style="margin-bottom:16px;display:flex;gap:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:120px;text-align:center">
+        <p style="font-size:.78rem;color:#6b7280;margin-bottom:2px">Total Users</p>
+        <p id="statTotalUsers" style="font-size:1.6rem;font-weight:700;color:#1a1a2e">—</p>
+      </div>
+      <div style="flex:1;min-width:120px;text-align:center">
+        <p style="font-size:.78rem;color:#6b7280;margin-bottom:2px">Active Today</p>
+        <p id="statActiveToday" style="font-size:1.6rem;font-weight:700;color:#16a34a">—</p>
+      </div>
+      <div style="flex:1;min-width:120px;text-align:center">
+        <p style="font-size:.78rem;color:#6b7280;margin-bottom:2px">Total Tasks</p>
+        <p id="statTotalTasks" style="font-size:1.6rem;font-weight:700;color:#1a1a2e">—</p>
+      </div>
+      <div style="flex:1;min-width:120px;text-align:center">
+        <p style="font-size:.78rem;color:#6b7280;margin-bottom:2px">Tasks Today</p>
+        <p id="statTasksToday" style="font-size:1.6rem;font-weight:700;color:#1a56db">—</p>
+      </div>
+    </div>
     <div class="tab-group" style="margin-bottom:20px">
       <button onclick="showAdminTab('smtp')" id="adminTabSmtp" class="tab-btn active">SMTP</button>
       <button onclick="showAdminTab('locked')" id="adminTabLocked" class="tab-btn">Locked</button>
@@ -561,7 +582,7 @@ let currentUser = JSON.parse(localStorage.getItem('jbUser') || 'null');
 let taskTypes = [];
 let groups = [];
 let tasksMap = new Map();
-let currentFilter = { status: '', groupId: '', archived: false, assignedToMe: false };
+let currentFilter = { status: '', groupId: '', typeId: '', archived: false, assignedToMe: false };
 let currentDetailTask = null;
 let blockedUserIds = new Set();
 
@@ -779,8 +800,18 @@ function showPage(page) {
 
 // ========== Task Types ==========
 async function loadTypes() {
-  try { taskTypes = await api('GET', '/task-types'); }
-  catch (err) { toast('Failed to load task types', 'error'); }
+  try {
+    taskTypes = await api('GET', '/task-types');
+    const sel = document.getElementById('filterType');
+    if (sel) {
+      sel.innerHTML = '<option value="">All Types</option>';
+      taskTypes.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id; opt.textContent = t.name + (t.group_id ? ' (group)' : '');
+        sel.appendChild(opt);
+      });
+    }
+  } catch (err) { toast('Failed to load task types', 'error'); }
 }
 
 // ========== Inline Add New Type (in task modal) ==========
@@ -870,7 +901,7 @@ function renderGroups() {
           <span class="group-key-code">${escHtml(g.shared_key)}</span>
           <button onclick="copyToClipboard('${escHtml(g.shared_key)}')" class="btn btn-sm btn-secondary">Copy</button>
         </div>` : ''}
-        <button onclick="openGroupMembers('${escHtml(g.id)}')" class="btn btn-secondary btn-full btn-sm">View Members</button>
+        <button onclick="openGroupMembers('${escHtml(g.id)}')" class="btn btn-secondary btn-full btn-sm">${g.role === 'admin' ? 'Edit or Delete' : 'View Members'}</button>
       </div>
     `).join('');
   });
@@ -920,6 +951,7 @@ async function loadTasks() {
     const params = new URLSearchParams();
     if (currentFilter.status) params.set('status', currentFilter.status);
     if (currentFilter.groupId) params.set('groupId', currentFilter.groupId);
+    if (currentFilter.typeId) params.set('typeId', currentFilter.typeId);
     if (currentFilter.archived) params.set('archived', 'true');
     if (currentFilter.assignedToMe) params.set('assignedToMe', 'true');
     const tasks = await api('GET', '/tasks?' + params.toString());
@@ -946,7 +978,7 @@ function renderTasks(tasks) {
     const cardClass = dueSoon ? 'task-card task-card-due-soon' : (isUrgent ? 'task-card task-card-urgent' : 'task-card');
     return `
       <div onclick="openDetailById('${escHtml(t.id)}')" class="${cardClass}">
-        <div class="task-card-title">${escHtml(t.title)}</div>
+        <div class="task-card-title${t.group_id ? ' task-card-title-group' : ''}">${escHtml(t.title)}</div>
         <div class="task-card-badges">
           <span class="badge badge-blue">${escHtml(t.type_name || '')}</span>
           <span class="badge ${statusInfo.cls}">${statusInfo.label}</span>
@@ -983,6 +1015,7 @@ function setFilter(key, value) {
 
 function applyFilters() {
   currentFilter.groupId = document.getElementById('filterGroup').value;
+  currentFilter.typeId = document.getElementById('filterType').value;
   currentFilter.archived = document.getElementById('filterArchived').checked;
   currentFilter.assignedToMe = document.getElementById('filterAssignedToMe').checked;
   loadTasks();
@@ -1310,6 +1343,16 @@ async function unblockUser(userId, groupId) {
 }
 
 // ========== Admin Panel ==========
+async function loadAdminStats() {
+  try {
+    const stats = await api('GET', '/admin/stats');
+    document.getElementById('statTotalUsers').textContent = stats.totalUsers;
+    document.getElementById('statActiveToday').textContent = stats.activeToday;
+    document.getElementById('statTotalTasks').textContent = stats.totalTasks;
+    document.getElementById('statTasksToday').textContent = stats.tasksToday;
+  } catch { /* ignore */ }
+}
+
 function showAdminTab(tab) {
   ['smtp', 'locked', 'reports'].forEach(t => {
     document.getElementById('admin' + t.charAt(0).toUpperCase() + t.slice(1) + 'Tab').classList.toggle('hidden', t !== tab);
@@ -1321,6 +1364,7 @@ function showAdminTab(tab) {
 }
 
 async function loadAdminPage() {
+  loadAdminStats();
   try {
     const smtp = await api('GET', '/admin/smtp');
     document.getElementById('smtpHost').value = smtp.host || '';

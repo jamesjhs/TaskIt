@@ -126,4 +126,15 @@ router.put('/reports/:id/resolve', (req: Request, res: Response): void => {
   res.json({ message: 'Report resolved' });
 });
 
+router.get('/stats', (_req: Request, res: Response): void => {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayMs = todayStart.getTime();
+  const totalUsers = (db.prepare('SELECT COUNT(*) as cnt FROM users').get() as { cnt: number }).cnt;
+  const activeToday = (db.prepare('SELECT COUNT(*) as cnt FROM users WHERE last_active_at >= ?').get(todayMs) as { cnt: number }).cnt;
+  const totalTasks = (db.prepare('SELECT COUNT(*) as cnt FROM tasks').get() as { cnt: number }).cnt;
+  const tasksToday = (db.prepare('SELECT COUNT(*) as cnt FROM tasks WHERE created_at >= ?').get(todayMs) as { cnt: number }).cnt;
+  res.json({ totalUsers, activeToday, totalTasks, tasksToday });
+});
+
 export default router;

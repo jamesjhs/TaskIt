@@ -417,6 +417,7 @@ a:hover { text-decoration: underline; }
 }
 .task-card:active { transform: scale(.99); }
 .task-card-title { font-weight: 700; font-size: 1rem; margin-bottom: 8px; color: #1a1a2e; }
+.task-card-title-group { color: #1a56db; }
 .task-card-meta { font-size: .82rem; color: #6b7280; margin-top: 6px; }
 .task-card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
 
@@ -619,7 +620,7 @@ a:hover { text-decoration: underline; }
 
 /* Task card urgency / due-soon highlights */
 .task-card-urgent   { background: #fff0f0; }
-.task-card-due-soon { background: #fca5a5; }
+.task-card-due-soon { border: 2px solid #dc2626; }
 
 /* Inline new-type row in task modal */
 .new-type-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }

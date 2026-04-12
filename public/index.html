@@ -268,6 +268,17 @@
       </button>
     </div>
 
+    <!-- Calendar Feed -->
+    <div class="card" style="margin-top:16px">
+      <p class="card-title">📅 Calendar Integration</p>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Subscribe to your Jobber tasks in any calendar app (Google Calendar, Apple Calendar, Outlook, etc.) using the private link below. Keep this link secret — anyone with it can view your tasks.</p>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+        <input id="icsLinkInput" type="text" readonly class="input" style="flex:1;font-size:.82rem" placeholder="Loading…" />
+        <button onclick="copyIcsLink()" class="btn btn-secondary btn-sm">Copy</button>
+      </div>
+      <button onclick="rotateIcsToken()" class="btn btn-outline btn-sm" style="font-size:.8rem">🔄 Regenerate Link</button>
+    </div>
+
     <!-- Send Feedback -->
     <div class="card" style="margin-top:16px">
       <p class="card-title">💬 Feedback &amp; Feature Requests</p>
@@ -469,6 +480,22 @@
             <option value="complete">Complete</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="taskRecurEnabled" onchange="toggleRecurFields()" style="width:16px;height:16px;accent-color:#1a56db;vertical-align:middle;margin-right:6px" />
+            Repeat Task
+          </label>
+        </div>
+        <div id="taskRecurFields" class="hidden" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-size:.9rem;color:#374151">Every</span>
+          <input id="taskRecurInterval" type="number" min="1" max="365" value="1" class="input" style="width:70px;flex-shrink:0" />
+          <select id="taskRecurUnit" class="select" style="flex:1;min-width:90px">
+            <option value="days">Days</option>
+            <option value="weeks">Weeks</option>
+            <option value="months">Months</option>
+            <option value="years">Years</option>
+          </select>
+        </div>
       </form>
     </div>
     <div class="modal-footer">
@@ -535,6 +562,7 @@
       <p id="detailNotes" style="font-size:.9rem;color:#6b7280;white-space:pre-wrap;margin-bottom:12px"></p>
       <div id="detailDueDate" class="hidden" style="font-size:.9rem;margin-bottom:12px"></div>
       <div id="detailAssignees" style="font-size:.85rem;color:#6b7280;margin-bottom:12px"></div>
+      <div id="detailRecurInfo" class="hidden" style="font-size:.85rem;color:#6b7280;margin-bottom:12px"></div>
       <div class="detail-section">
         <p class="detail-section-title">Change Status</p>
         <div class="status-btns">
@@ -905,7 +933,7 @@ function showPage(page) {
   if (page === 'groups') renderGroups();
   if (page === 'admin') loadAdminPage();
   if (page === 'profile') {
-    // nothing extra needed
+    loadIcsLink();
   }
 }
 
@@ -966,10 +994,10 @@ function cancelAddNewType() {
 }
 
 function copyInviteLink() {
-  const url = window.location.origin;
+  const msg = "I'd like to introduce you to Jobber, a fast, lightweight collaborative task manager - create tasks, set due dates, organise by category, and keep your team in sync, all from your phone or browser. No ads or clutter! https://jobber.jahosi.co.uk/";
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).then(() => toast('Invite link copied!')).catch(() => fallbackCopy(url));
-  } else { fallbackCopy(url); }
+    navigator.clipboard.writeText(msg).then(() => toast('Invite message copied!')).catch(() => fallbackCopy(msg));
+  } else { fallbackCopy(msg); }
 }
 
 function fallbackCopy(text) {
@@ -1215,6 +1243,13 @@ function openTaskModal(task = null) {
     groupSelect.value = task.group_id || '';
     document.getElementById('taskStatusRow').classList.remove('hidden');
     document.getElementById('taskStatus').value = task.status || 'not_started';
+    const hasRecur = task.recur_interval && task.recur_unit;
+    document.getElementById('taskRecurEnabled').checked = !!hasRecur;
+    document.getElementById('taskRecurFields').classList.toggle('hidden', !hasRecur);
+    if (hasRecur) {
+      document.getElementById('taskRecurInterval').value = task.recur_interval;
+      document.getElementById('taskRecurUnit').value = task.recur_unit;
+    }
     if (task.due_date) {
       const d = new Date(task.due_date);
       const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -1230,6 +1265,10 @@ function openTaskModal(task = null) {
     const iso = new Date(tonight.getTime() - tonight.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     document.getElementById('taskDueDate').value = iso;
     document.getElementById('taskStatusRow').classList.add('hidden');
+    document.getElementById('taskRecurEnabled').checked = false;
+    document.getElementById('taskRecurFields').classList.add('hidden');
+    document.getElementById('taskRecurInterval').value = '1';
+    document.getElementById('taskRecurUnit').value = 'weeks';
     document.getElementById('assigneeContainer').innerHTML = '<span style="font-size:.9rem;color:#9ca3af;font-style:italic">Select a group to see members</span>';
   }
   document.getElementById('taskModal').classList.remove('hidden');
@@ -1271,6 +1310,14 @@ async function handleTaskSubmit(e) {
     dueDate: (() => { const v = document.getElementById('taskDueDate').value; return v ? new Date(v).getTime() : null; })(),
   };
   if (editId) body.status = document.getElementById('taskStatus').value;
+  const recurEnabled = document.getElementById('taskRecurEnabled').checked;
+  if (recurEnabled) {
+    body.recurInterval = parseInt(document.getElementById('taskRecurInterval').value, 10) || 1;
+    body.recurUnit = document.getElementById('taskRecurUnit').value;
+  } else {
+    body.recurInterval = null;
+    body.recurUnit = null;
+  }
   try {
     if (editId) { await api('PATCH', '/tasks/' + editId, body); toast('Task updated!'); }
     else { await api('POST', '/tasks', body); toast('Task created!'); }
@@ -1304,6 +1351,15 @@ function openDetail(task) {
   if (task.assignees && task.assignees.length) {
     assigneesEl.textContent = 'Assigned to: ' + task.assignees.map(a => a.username).join(', ');
   } else { assigneesEl.textContent = ''; }
+  const recurInfoEl = document.getElementById('detailRecurInfo');
+  if (recurInfoEl) {
+    if (task.recur_interval && task.recur_unit) {
+      recurInfoEl.textContent = '🔁 Repeats every ' + task.recur_interval + ' ' + task.recur_unit;
+      recurInfoEl.classList.remove('hidden');
+    } else {
+      recurInfoEl.classList.add('hidden');
+    }
+  }
   document.getElementById('addNoteForm').classList.add('hidden');
   document.getElementById('newNoteText').value = '';
   document.getElementById('taskDetailModal').classList.remove('hidden');
@@ -1822,6 +1878,39 @@ document.addEventListener('click', function(e) {
 
   if (token && currentUser) initApp();
 })();
+
+// ========== ICS Calendar Feed ==========
+async function loadIcsLink() {
+  try {
+    const data = await api('GET', '/users/me/ics-token');
+    const url = window.location.origin + '/calendar/' + data.token + '/tasks.ics';
+    document.getElementById('icsLinkInput').value = url;
+  } catch { /* ignore */ }
+}
+
+function copyIcsLink() {
+  const val = document.getElementById('icsLinkInput').value;
+  if (!val || val === 'Loading…') return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(val).then(() => toast('Calendar link copied!')).catch(() => fallbackCopy(val));
+  } else { fallbackCopy(val); }
+}
+
+async function rotateIcsToken() {
+  if (!confirm('This will invalidate your current calendar link. Any apps using the old link will stop working. Continue?')) return;
+  try {
+    const data = await api('POST', '/users/me/ics-token/rotate');
+    const url = window.location.origin + '/calendar/' + data.token + '/tasks.ics';
+    document.getElementById('icsLinkInput').value = url;
+    toast('Calendar link regenerated!');
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+// ========== Task Recurrence ==========
+function toggleRecurFields() {
+  const enabled = document.getElementById('taskRecurEnabled').checked;
+  document.getElementById('taskRecurFields').classList.toggle('hidden', !enabled);
+}
 </script>
 </body>
 </html>

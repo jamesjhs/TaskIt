@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
 import { ALLOWED_LOCALES } from '../constants';
@@ -191,6 +192,25 @@ router.patch('/me/alerts/:id/read', (req: Request, res: Response): void => {
   if (!alert) { res.status(404).json({ error: 'Alert not found' }); return; }
   db.prepare('UPDATE user_alerts SET read_at = ? WHERE id = ?').run(Date.now(), alertId);
   res.json({ message: 'Alert marked as read' });
+});
+
+router.get('/me/ics-token', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const user = db.prepare('SELECT ics_token FROM users WHERE id = ?').get(userId) as { ics_token: string | null } | undefined;
+  if (!user) { res.status(404).json({ error: 'User not found' }); return; }
+  let token = user.ics_token;
+  if (!token) {
+    token = crypto.randomBytes(32).toString('hex');
+    db.prepare('UPDATE users SET ics_token = ? WHERE id = ?').run(token, userId);
+  }
+  res.json({ token });
+});
+
+router.post('/me/ics-token/rotate', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const token = crypto.randomBytes(32).toString('hex');
+  db.prepare('UPDATE users SET ics_token = ? WHERE id = ?').run(token, userId);
+  res.json({ token });
 });
 
 export default router;

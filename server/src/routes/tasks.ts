@@ -7,6 +7,18 @@ const router = Router();
 
 // Allowed values for validated enum fields
 const ALLOWED_STATUSES = new Set(['not_started', 'started', 'complete']);
+const ALLOWED_RECUR_UNITS = new Set(['days', 'weeks', 'months', 'years']);
+
+function computeNextDue(dueDateMs: number, interval: number, unit: string): number {
+  const d = new Date(dueDateMs);
+  switch (unit) {
+    case 'days':   d.setDate(d.getDate() + interval); break;
+    case 'weeks':  d.setDate(d.getDate() + interval * 7); break;
+    case 'months': d.setMonth(d.getMonth() + interval); break;
+    case 'years':  d.setFullYear(d.getFullYear() + interval); break;
+  }
+  return d.getTime();
+}
 
 router.use(authMiddleware);
 
@@ -107,11 +119,23 @@ router.get('/', (req: Request, res: Response): void => {
 
 router.post('/', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const { title, details, typeId, groupId, assigneeIds, dueDate } = req.body;
+  const { title, details, typeId, groupId, assigneeIds, dueDate, recurInterval, recurUnit } = req.body;
 
   if (!title || !typeId) {
     res.status(400).json({ error: 'title and typeId are required' });
     return;
+  }
+
+  if (recurInterval !== undefined || recurUnit !== undefined) {
+    const interval = recurInterval != null ? parseInt(String(recurInterval), 10) : NaN;
+    if (!Number.isInteger(interval) || interval < 1 || interval > 365) {
+      res.status(400).json({ error: 'recurInterval must be an integer between 1 and 365' });
+      return;
+    }
+    if (!recurUnit || !ALLOWED_RECUR_UNITS.has(recurUnit)) {
+      res.status(400).json({ error: 'recurUnit must be one of: days, weeks, months, years' });
+      return;
+    }
   }
 
   // Verify type exists
@@ -136,9 +160,11 @@ router.post('/', (req: Request, res: Response): void => {
   const now = Date.now();
 
   db.prepare(`
-    INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date)
-    VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?)
-  `).run(id, title, details || null, typeId, userId, groupId || null, now, now, dueDate || null);
+    INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit)
+    VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?)
+  `).run(id, title, details || null, typeId, userId, groupId || null, now, now, dueDate || null,
+    recurInterval ? parseInt(String(recurInterval), 10) : null,
+    recurUnit || null);
 
   // Insert assignees
   const ids: string[] = Array.isArray(assigneeIds) ? assigneeIds : [];
@@ -183,12 +209,27 @@ router.patch('/:id', (req: Request, res: Response): void => {
     return;
   }
 
-  const { title, details, typeId, status, assigneeIds, dueDate } = req.body;
+  const { title, details, typeId, status, assigneeIds, dueDate, recurInterval, recurUnit } = req.body;
 
   // Validate status if provided
   if (status !== undefined && !ALLOWED_STATUSES.has(status as string)) {
     res.status(400).json({ error: 'Invalid status value' });
     return;
+  }
+
+  // Validate recurrence if provided
+  if (recurInterval !== undefined || recurUnit !== undefined) {
+    if (recurInterval !== null && recurUnit !== null) {
+      const interval = recurInterval != null ? parseInt(String(recurInterval), 10) : NaN;
+      if (!Number.isInteger(interval) || interval < 1 || interval > 365) {
+        res.status(400).json({ error: 'recurInterval must be an integer between 1 and 365' });
+        return;
+      }
+      if (!recurUnit || !ALLOWED_RECUR_UNITS.has(recurUnit)) {
+        res.status(400).json({ error: 'recurUnit must be one of: days, weeks, months, years' });
+        return;
+      }
+    }
   }
 
   const now = Date.now();
@@ -203,6 +244,8 @@ router.patch('/:id', (req: Request, res: Response): void => {
   if (typeId !== undefined) { setClauses.push('type_id = ?'); vals.push(typeId); }
   if (status !== undefined) { setClauses.push('status = ?'); vals.push(status); }
   if (dueDate !== undefined) { setClauses.push('due_date = ?'); vals.push(dueDate || null); }
+  if (recurInterval !== undefined) { setClauses.push('recur_interval = ?'); vals.push(recurInterval ? parseInt(String(recurInterval), 10) : null); }
+  if (recurUnit !== undefined) { setClauses.push('recur_unit = ?'); vals.push(recurUnit || null); }
   setClauses.push('updated_at = ?');
   vals.push(now);
   vals.push(taskId);
@@ -266,6 +309,31 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
   }
 
   db.prepare('UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?').run(status, Date.now(), taskId);
+
+  // If task is completed and has recurrence, spawn the next occurrence
+  if (status === 'complete') {
+    const fullTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as {
+      id: string; title: string; details: string | null; type_id: string; created_by: string;
+      group_id: string | null; due_date: number | null; recur_interval: number | null; recur_unit: string | null;
+    } | undefined;
+
+    if (fullTask && fullTask.recur_interval && fullTask.recur_unit && fullTask.due_date) {
+      const nextDue = computeNextDue(fullTask.due_date, fullTask.recur_interval, fullTask.recur_unit);
+      const newId = uuidv4();
+      const now2 = Date.now();
+      db.prepare(`
+        INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit)
+        VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?)
+      `).run(newId, fullTask.title, fullTask.details, fullTask.type_id, fullTask.created_by,
+        fullTask.group_id, now2, now2, nextDue, fullTask.recur_interval, fullTask.recur_unit);
+
+      const assignees = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(taskId) as Array<{ user_id: string }>;
+      const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
+      for (const a of assignees) {
+        insertAssignee.run(newId, a.user_id);
+      }
+    }
+  }
 
   const updated = db.prepare(`
     SELECT t.*, tt.name AS type_name

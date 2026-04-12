@@ -30,7 +30,8 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
     const payload = jwt.verify(token, JWT_SECRET) as AuthPayload;
     req.user = payload;
     // Update last_active_at at most once per day per user
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
     const todayMs = todayStart.getTime();
     const row = db.prepare('SELECT last_active_at FROM users WHERE id = ?').get(payload.id) as { last_active_at: number | null } | undefined;
     if (!row?.last_active_at || row.last_active_at < todayMs) {

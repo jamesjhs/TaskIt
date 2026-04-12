@@ -133,7 +133,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">Jobber v0.5.3 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a></p>
+      <p class="version-footer" style="margin-top:16px">Jobber v0.5.4 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a></p>
     </div>
   </div>
 </div>
@@ -245,26 +245,6 @@
         </select>
       </div>
       <button onclick="saveLocale()" class="btn btn-primary btn-full">Save Format</button>
-    </div>
-
-    <!-- Manage Categories -->
-    <div class="card" style="margin-top:16px">
-      <p class="card-title">Manage Categories</p>
-      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Add your own task categories, personal or shared with a group.</p>
-      <div id="customCategoryList" style="margin-bottom:14px"><div class="loading">Loading…</div></div>
-      <form onsubmit="addCustomCategory(event)" style="display:flex;flex-direction:column;gap:10px">
-        <div class="form-group" style="margin:0">
-          <label>New category name</label>
-          <input id="newCategoryName" type="text" maxlength="60" placeholder="e.g. Fitness" class="input" required />
-        </div>
-        <div class="form-group" style="margin:0">
-          <label>Scope (optional group)</label>
-          <select id="newCategoryGroup" class="select">
-            <option value="">Personal (just me)</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-primary">Add Category</button>
-      </form>
     </div>
 
     <!-- Invite to Jobber -->
@@ -395,7 +375,12 @@
         </div>
         <div class="form-group">
           <label>Type <span style="color:#dc2626">*</span></label>
-          <select id="taskType" required class="select"><option value="">Select type…</option></select>
+          <select id="taskType" required class="select" onchange="handleTypeSelectChange()"><option value="">Select type…</option></select>
+          <div id="addNewTypeRow" class="new-type-row hidden">
+            <input id="newTypeNameInput" type="text" maxlength="60" placeholder="New type name…" class="input" style="flex:1;min-height:40px;padding:8px 12px;font-size:.95rem" />
+            <button type="button" onclick="confirmAddNewType()" class="btn btn-primary btn-sm">Add</button>
+            <button type="button" onclick="cancelAddNewType()" class="btn btn-secondary btn-sm">✕</button>
+          </div>
         </div>
         <div class="form-group">
           <label>Group</label>
@@ -787,14 +772,7 @@ function showPage(page) {
   if (page === 'groups') renderGroups();
   if (page === 'admin') loadAdminPage();
   if (page === 'profile') {
-    // Populate group selector in the category form
-    const sel = document.getElementById('newCategoryGroup');
-    sel.innerHTML = '<option value="">Personal (just me)</option>';
-    groups.forEach(g => {
-      const opt = document.createElement('option');
-      opt.value = g.id; opt.textContent = g.name; sel.appendChild(opt);
-    });
-    loadCategoryManagement();
+    // nothing extra needed
   }
 }
 
@@ -804,54 +782,44 @@ async function loadTypes() {
   catch (err) { toast('Failed to load task types', 'error'); }
 }
 
-// ========== Category Management ==========
-async function loadCategoryManagement() {
-  const listEl = document.getElementById('customCategoryList');
-  try {
-    const types = await api('GET', '/task-types');
-    // Show only non-system categories (created_by not null)
-    const custom = types.filter(t => t.created_by);
-    if (!custom.length) {
-      listEl.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">No custom categories yet.</p>';
-      return;
-    }
-    const groupName = gId => { const g = groups.find(g => g.id === gId); return g ? g.name : 'Unknown group'; };
-    listEl.innerHTML = custom.map(t => `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6">
-        <span style="font-size:.9rem;color:#1a1a2e">
-          ${escHtml(t.name)}
-          ${t.group_id ? `<span style="font-size:.75rem;color:#6b7280;margin-left:6px">(${escHtml(groupName(t.group_id))})</span>` : '<span style="font-size:.75rem;color:#9ca3af;margin-left:6px">(personal)</span>'}
-        </span>
-        <button onclick="deleteCustomCategory('${t.id}')" class="btn btn-sm btn-danger" style="flex-shrink:0">Delete</button>
-      </div>`).join('');
-  } catch (err) {
-    listEl.innerHTML = `<p style="font-size:.85rem;color:#dc2626">${escHtml(err.message)}</p>`;
+// ========== Inline Add New Type (in task modal) ==========
+function handleTypeSelectChange() {
+  const sel = document.getElementById('taskType');
+  if (sel.value === '__add_new__') {
+    sel.value = '';
+    document.getElementById('addNewTypeRow').classList.remove('hidden');
+    document.getElementById('newTypeNameInput').focus();
   }
 }
 
-async function addCustomCategory(e) {
-  e.preventDefault();
-  const name = document.getElementById('newCategoryName').value.trim();
-  const groupId = document.getElementById('newCategoryGroup').value || null;
-  if (!name) { toast('Category name is required', 'error'); return; }
+async function confirmAddNewType() {
+  const name = document.getElementById('newTypeNameInput').value.trim();
+  if (!name) { toast('Type name is required', 'error'); return; }
   try {
-    await api('POST', '/task-types', { name, groupId });
-    document.getElementById('newCategoryName').value = '';
-    document.getElementById('newCategoryGroup').value = '';
-    toast('Category added!');
+    const newType = await api('POST', '/task-types', { name, groupId: null });
     await loadTypes();
-    loadCategoryManagement();
+    // Re-populate type select and select the new type
+    const typeSelect = document.getElementById('taskType');
+    typeSelect.innerHTML = '<option value="">Select type\u2026</option>';
+    taskTypes.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id; opt.textContent = t.name + (t.group_id ? ' (group)' : '');
+      typeSelect.appendChild(opt);
+    });
+    const addOpt = document.createElement('option');
+    addOpt.value = '__add_new__'; addOpt.textContent = '\u2795 Add new type\u2026';
+    typeSelect.appendChild(addOpt);
+    typeSelect.value = newType.id;
+    document.getElementById('addNewTypeRow').classList.add('hidden');
+    document.getElementById('newTypeNameInput').value = '';
+    toast('Type added!');
   } catch (err) { toast(err.message, 'error'); }
 }
 
-async function deleteCustomCategory(typeId) {
-  if (!confirm('Delete this category? Tasks using it will keep their existing assignment.')) return;
-  try {
-    await api('DELETE', '/task-types/' + typeId);
-    toast('Category deleted');
-    await loadTypes();
-    loadCategoryManagement();
-  } catch (err) { toast(err.message, 'error'); }
+function cancelAddNewType() {
+  document.getElementById('addNewTypeRow').classList.add('hidden');
+  document.getElementById('newTypeNameInput').value = '';
+  document.getElementById('taskType').value = '';
 }
 
 function copyInviteLink() {
@@ -971,8 +939,12 @@ function renderTasks(tasks) {
     const statusInfo = statusMeta(t.status);
     const now = Date.now();
     const overdue = t.due_date && t.due_date < now && t.status !== 'complete';
+    const dueSoon = t.due_date && t.status !== 'complete' && t.due_date > now && t.due_date <= now + 24 * 60 * 60 * 1000;
+    const isUrgent = (t.type_name || '').toLowerCase() === 'urgent';
+    // dueSoon takes precedence over isUrgent; a deadline in <24h is more time-sensitive than a type label
+    const cardClass = dueSoon ? 'task-card task-card-due-soon' : (isUrgent ? 'task-card task-card-urgent' : 'task-card');
     return `
-      <div onclick="openDetailById('${escHtml(t.id)}')" class="task-card">
+      <div onclick="openDetailById('${escHtml(t.id)}')" class="${cardClass}">
         <div class="task-card-title">${escHtml(t.title)}</div>
         <div class="task-card-badges">
           <span class="badge badge-blue">${escHtml(t.type_name || '')}</span>
@@ -1024,6 +996,11 @@ function openTaskModal(task = null) {
     opt.value = t.id; opt.textContent = t.name + (t.group_id ? ' (group)' : '');
     typeSelect.appendChild(opt);
   });
+  const addOpt = document.createElement('option');
+  addOpt.value = '__add_new__'; addOpt.textContent = '\u2795 Add new type\u2026';
+  typeSelect.appendChild(addOpt);
+  document.getElementById('addNewTypeRow').classList.add('hidden');
+  document.getElementById('newTypeNameInput').value = '';
   const groupSelect = document.getElementById('taskGroup');
   groupSelect.innerHTML = '<option value="">Personal (no group)</option>';
   groups.forEach(g => {

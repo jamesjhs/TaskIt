@@ -16,8 +16,20 @@ function getBaseUrl(req: Request): string {
   return BASE_URL ?? `${req.protocol}://${req.get('host')}`;
 }
 
-// Simple email format check (no external library needed for this basic guard)
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Basic email format guard using only string operations (no regex) to avoid any ReDoS risk.
+function isValidEmail(email: string): boolean {
+  const at = email.indexOf('@');
+  // Must have exactly one '@', at least one char before it
+  if (at < 1 || email.indexOf('@', at + 1) !== -1) return false;
+  const local = email.slice(0, at);
+  const domain = email.slice(at + 1);
+  // Local part must not be empty; domain must contain a dot not at start/end
+  if (!local || !domain) return false;
+  const lastDot = domain.lastIndexOf('.');
+  if (lastDot < 1 || lastDot === domain.length - 1) return false;
+  // No whitespace anywhere
+  return !/\s/.test(email);
+}
 
 // ─── Public routes (no auth required) ────────────────────────────────────────
 
@@ -248,7 +260,7 @@ router.post('/:id/invite', async (req: Request, res: Response): Promise<void> =>
 
   const invitedEmail: string | null = email && typeof email === 'string' ? email.trim().toLowerCase() : null;
 
-  if (invitedEmail && !EMAIL_RE.test(invitedEmail)) {
+  if (invitedEmail && !isValidEmail(invitedEmail)) {
     res.status(400).json({ error: 'Invalid email address' });
     return;
   }

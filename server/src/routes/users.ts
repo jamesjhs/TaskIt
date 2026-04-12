@@ -2,26 +2,11 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
+import { ALLOWED_LOCALES } from '../constants';
 
 const router = Router();
 
 router.use(authMiddleware);
-
-// BCP 47 locale tags users are allowed to set
-const ALLOWED_LOCALES: ReadonlySet<string> = new Set([
-  'en-GB', 'en-US', 'en-AU', 'en-CA', 'en-NZ', 'en-ZA',
-  'fr-FR', 'fr-BE', 'fr-CA', 'fr-CH',
-  'de-DE', 'de-AT', 'de-CH',
-  'es-ES', 'es-MX', 'es-AR',
-  'it-IT', 'pt-PT', 'pt-BR',
-  'nl-NL', 'nl-BE',
-  'pl-PL', 'cs-CZ', 'sk-SK', 'hu-HU', 'ro-RO',
-  'sv-SE', 'nb-NO', 'da-DK', 'fi-FI',
-  'ru-RU', 'uk-UA',
-  'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR',
-  'ar-SA', 'he-IL', 'tr-TR',
-  'hi-IN', 'id-ID', 'th-TH',
-]);
 
 // PATCH /api/users/me/locale — update the authenticated user's date/time locale
 router.patch('/me/locale', (req: Request, res: Response): void => {

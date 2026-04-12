@@ -137,4 +137,23 @@ router.get('/stats', (_req: Request, res: Response): void => {
   res.json({ totalUsers, activeToday, totalTasks, tasksToday });
 });
 
+router.get('/feedback', (_req: Request, res: Response): void => {
+  const rows = db.prepare(`
+    SELECT f.id, f.subject, f.message, f.contact_ok, f.read_at, f.created_at,
+           u.username, u.email
+    FROM feedback_messages f
+    JOIN users u ON u.id = f.user_id
+    ORDER BY f.created_at DESC
+  `).all();
+  res.json(rows);
+});
+
+router.put('/feedback/:id/read', (req: Request, res: Response): void => {
+  const fbId = req.params.id;
+  const row = db.prepare('SELECT id FROM feedback_messages WHERE id = ?').get(fbId);
+  if (!row) { res.status(404).json({ error: 'Feedback not found' }); return; }
+  db.prepare('UPDATE feedback_messages SET read_at = ? WHERE id = ?').run(Date.now(), fbId);
+  res.json({ message: 'Marked as read' });
+});
+
 export default router;

@@ -151,6 +151,17 @@ db.exec(`
     FOREIGN KEY (group_id) REFERENCES groups(id),
     FOREIGN KEY (created_by) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS feedback_messages (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    message TEXT NOT NULL,
+    contact_ok INTEGER NOT NULL DEFAULT 0,
+    read_at INTEGER,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
 `);
 
 // Runtime migrations — add columns if they don't exist yet

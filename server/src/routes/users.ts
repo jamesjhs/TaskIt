@@ -111,4 +111,67 @@ router.get('/blocks', (req: Request, res: Response): void => {
   res.json(blocked);
 });
 
+router.post('/me/feedback', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const { subject, message, contact_ok } = req.body;
+  if (!subject || !message) {
+    res.status(400).json({ error: 'subject and message are required' });
+    return;
+  }
+  if (subject.length > 200 || message.length > 4000) {
+    res.status(400).json({ error: 'subject must be ≤200 chars and message ≤4000 chars' });
+    return;
+  }
+  const id = uuidv4();
+  const now = Date.now();
+  db.prepare(
+    'INSERT INTO feedback_messages (id, user_id, subject, message, contact_ok, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(id, userId, subject.trim(), message.trim(), contact_ok ? 1 : 0, now);
+  res.status(201).json({ message: 'Feedback submitted. Thank you!' });
+});
+
+router.delete('/me', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+
+  // Delete all user data in dependency order
+  const deleteInOrder = db.transaction(() => {
+    db.prepare('DELETE FROM task_reminders_sent WHERE task_id IN (SELECT id FROM tasks WHERE created_by = ?)').run(userId);
+    db.prepare('DELETE FROM task_notes WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM task_notes WHERE task_id IN (SELECT id FROM tasks WHERE created_by = ?)').run(userId);
+    db.prepare('DELETE FROM task_assignees WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM task_assignees WHERE task_id IN (SELECT id FROM tasks WHERE created_by = ?)').run(userId);
+    db.prepare('DELETE FROM tasks WHERE created_by = ?').run(userId);
+    db.prepare('DELETE FROM group_invites WHERE created_by = ?').run(userId);
+    // Remove from groups; if sole admin of a group, delete the group
+    const ownedGroups = db.prepare(
+      "SELECT g.id FROM groups g WHERE g.created_by = ?"
+    ).all(userId) as Array<{ id: string }>;
+    for (const g of ownedGroups) {
+      const otherAdmins = db.prepare(
+        "SELECT 1 FROM group_members WHERE group_id = ? AND user_id != ? AND role = 'admin'"
+      ).get(g.id, userId);
+      if (!otherAdmins) {
+        // No other admin — delete the group entirely
+        db.prepare('DELETE FROM task_reminders_sent WHERE task_id IN (SELECT id FROM tasks WHERE group_id = ?)').run(g.id);
+        db.prepare('DELETE FROM task_notes WHERE task_id IN (SELECT id FROM tasks WHERE group_id = ?)').run(g.id);
+        db.prepare('DELETE FROM task_assignees WHERE task_id IN (SELECT id FROM tasks WHERE group_id = ?)').run(g.id);
+        db.prepare('DELETE FROM tasks WHERE group_id = ?').run(g.id);
+        db.prepare('DELETE FROM group_invites WHERE group_id = ?').run(g.id);
+        db.prepare('DELETE FROM group_members WHERE group_id = ?').run(g.id);
+        db.prepare('DELETE FROM groups WHERE id = ?').run(g.id);
+      }
+    }
+    db.prepare('DELETE FROM group_members WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM user_blocks WHERE blocker_id = ? OR blocked_id = ?').run(userId, userId);
+    db.prepare('DELETE FROM user_reports WHERE reporter_id = ? OR reported_id = ?').run(userId, userId);
+    db.prepare('DELETE FROM otp_tokens WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM magic_tokens WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM feedback_messages WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+  });
+
+  deleteInOrder();
+  res.json({ message: 'Your account and all associated data have been permanently deleted.' });
+});
+
 export default router;

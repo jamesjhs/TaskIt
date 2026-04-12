@@ -15,6 +15,10 @@ import userRoutes from './routes/users';
 
 const app = express();
 
+// Trust the first proxy hop (e.g. nginx/Cloudflare) so that
+// express-rate-limit can correctly read the client IP from X-Forwarded-For
+app.set('trust proxy', 1);
+
 // Rate limiting
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

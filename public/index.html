@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Jobber – Task Management</title>
   <link rel="stylesheet" href="/tailwind.css" />
+  <!-- PWA / installable web app -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#4F46E5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Jobber" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
   <style>
     [x-cloak] { display: none !important; }
     .toast { animation: slideIn 0.3s ease, fadeOut 0.5s ease 3s forwards; }
@@ -95,7 +103,12 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
-            <input id="regPassword" type="password" required placeholder="••••••••" minlength="6" autocomplete="new-password"
+            <input id="regPassword" type="password" required placeholder="••••••••" minlength="8" autocomplete="new-password"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Confirm Password</label>
+            <input id="regConfirmPassword" type="password" required placeholder="••••••••" minlength="8" autocomplete="new-password"
               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
           </div>
           <button type="submit"
@@ -574,9 +587,48 @@
       </div>
     </div>
   </div>
+  <!-- Auth page footer -->
+  <footer class="mt-8 text-center text-xs text-slate-400">
+    Jobber v0.5.1 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp;
+    <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:underline">jahosi.co.uk</a>
+    &nbsp;·&nbsp;
+    <a href="/privacy-policy.html" class="text-indigo-400 hover:underline">Privacy Policy</a>
+  </footer>
 </div>
 
-<!-- ===== GROUP MEMBERS MODAL ===== -->
+<!-- ===== OTP MODAL (2FA) ===== -->
+<div id="otpModal" class="hidden fixed inset-0 z-50 modal-backdrop bg-black/40 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-8">
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 mb-4 shadow-lg">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+      </div>
+      <h2 class="text-xl font-bold text-slate-800 dark:text-white">Two-Factor Authentication</h2>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+        We sent a 6-digit code to your email.<br/>Enter it below to sign in.
+      </p>
+    </div>
+    <div class="space-y-4">
+      <input id="otpCode" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+        placeholder="000000" autocomplete="one-time-code"
+        onkeydown="if(event.key==='Enter') handleOTPVerify()"
+        class="w-full text-center text-2xl font-mono tracking-[0.5em] px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+      <button onclick="handleOTPVerify()"
+        class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors shadow-md">
+        Verify Code
+      </button>
+      <p class="text-center text-xs text-slate-400">
+        Code expires in 10 minutes.
+        <button type="button" onclick="cancelOTP()" class="text-indigo-500 hover:underline ml-1">Cancel</button>
+      </p>
+    </div>
+  </div>
+</div>
+
+
 <div id="groupMembersModal" class="hidden fixed inset-0 z-40 modal-backdrop bg-black/40 flex items-center justify-center p-4">
   <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto">
     <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
@@ -683,16 +735,46 @@ async function handleMagicLinkSend(e) {
   }
 }
 
+let _otpSessionId = null;
+
 async function handlePasswordLogin() {
   try {
     const data = await api('POST', '/auth/login', {
       email: document.getElementById('loginEmail').value,
       password: document.getElementById('loginPassword').value,
     });
+    if (data.status === 'otp_required') {
+      _otpSessionId = data.sessionId;
+      document.getElementById('otpCode').value = '';
+      document.getElementById('otpModal').classList.remove('hidden');
+    } else {
+      storeAuth(data);
+    }
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function handleOTPVerify() {
+  const code = document.getElementById('otpCode').value.trim();
+  if (!code || code.length !== 6) {
+    toast('Please enter the 6-digit code from your email.', 'error');
+    return;
+  }
+  try {
+    const data = await api('POST', '/auth/verify-otp', { sessionId: _otpSessionId, code });
+    document.getElementById('otpModal').classList.add('hidden');
+    _otpSessionId = null;
     storeAuth(data);
   } catch (err) {
     toast(err.message, 'error');
   }
+}
+
+function cancelOTP() {
+  _otpSessionId = null;
+  document.getElementById('otpModal').classList.add('hidden');
+  document.getElementById('loginPassword').value = '';
 }
 
 async function handleLogin(e) {
@@ -720,13 +802,22 @@ function showTab(tab) {
 
 async function handleRegister(e) {
   e.preventDefault();
+  const password = document.getElementById('regPassword').value;
+  const confirm  = document.getElementById('regConfirmPassword').value;
+  if (password !== confirm) {
+    toast('Passwords do not match.', 'error');
+    return;
+  }
   try {
     const data = await api('POST', '/auth/register', {
       username: document.getElementById('regUsername').value,
       email: document.getElementById('regEmail').value,
-      password: document.getElementById('regPassword').value,
+      password,
     });
-    storeAuth(data);
+    // Registration no longer auto-logs in — user must verify email first
+    document.getElementById('registerForm').reset();
+    showTab('login');
+    toast(data.message || 'Registration successful! Check your email to verify your account.', 'info');
   } catch (err) {
     toast(err.message, 'error');
   }

@@ -4,7 +4,7 @@ import path from 'path';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import db from './db'; // initialize database
-import { APP_VERSION, JWT_SECRET, PORT } from './config';
+import { APP_VERSION, BASE_URL, JWT_SECRET, PORT } from './config';
 import { startScheduler } from './services/scheduler';
 
 import authRoutes from './routes/auth';
@@ -115,7 +115,7 @@ app.get('/calendar/:token/tasks.ics', generalLimiter, (req, res): void => {
   }>;
 
   const escIcs = (s: string) =>
-    s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+    s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r\n|\r|\n/g, '\\n');
 
   const toIcsDate = (ts: number) => {
     const d = new Date(ts);
@@ -149,7 +149,8 @@ app.get('/calendar/:token/tasks.ics', generalLimiter, (req, res): void => {
     const dtDue = toIcsDate(t.due_date);
     const dtCreated = toIcsDate(t.created_at);
     const dtStamp = toIcsDate(t.updated_at);
-    const uid = `${t.id}@jobber.jahosi.co.uk`;
+    const uidDomain = BASE_URL ? BASE_URL.replace(/^https?:\/\//, '') : 'jobber.jahosi.co.uk';
+    const uid = `${t.id}@${uidDomain}`;
     const descParts: string[] = [];
     if (t.details) descParts.push(t.details);
     descParts.push(`Type: ${t.type_name}`);

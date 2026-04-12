@@ -1519,7 +1519,7 @@ async function openGroupMembers(groupId) {
       const isBlocked = blockedUserIds.has(m.id);
       const roleBadge = `<span class="badge ${m.role === 'admin' ? 'badge-purple' : 'badge-gray'}">${m.role}</span>`;
       const promoteBtn = isAdmin && !isMe ? `
-        <button onclick="changeMemberRole('${m.id}', '${m.role === 'admin' ? 'member' : 'admin'}')" class="btn btn-sm btn-outline">
+        <button onclick="changeMemberRole('${escHtml(m.id)}', '${m.role === 'admin' ? 'member' : 'admin'}')" class="btn btn-sm btn-outline">
           ${m.role === 'admin' ? 'Demote' : 'Promote'}
         </button>` : '';
       return `

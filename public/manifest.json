@@ -5,8 +5,8 @@
   "start_url": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#4F46E5",
-  "theme_color": "#4F46E5",
+  "background_color": "#f0f4ff",
+  "theme_color": "#1a56db",
   "lang": "en-GB",
   "icons": [
     { "src": "/icons/icon-72x72.png",   "sizes": "72x72",   "type": "image/png", "purpose": "maskable any" },

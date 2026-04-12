@@ -140,7 +140,7 @@ router.get('/stats', (_req: Request, res: Response): void => {
 
 router.get('/feedback', (_req: Request, res: Response): void => {
   const rows = db.prepare(`
-    SELECT f.id, f.subject, f.message, f.contact_ok, f.read_at, f.created_at,
+    SELECT f.id, f.subject, f.message, f.contact_ok, f.status, f.read_at, f.created_at,
            u.username, u.email
     FROM feedback_messages f
     JOIN users u ON u.id = f.user_id

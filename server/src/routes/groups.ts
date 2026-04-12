@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
+import { generateGroupName, generateSharedKey } from '../wordlists';
 
 const router = Router();
 
@@ -24,18 +25,14 @@ router.post('/', (req: Request, res: Response): void => {
   const { name } = req.body;
   const userId = req.user!.id;
 
-  if (!name) {
-    res.status(400).json({ error: 'name is required' });
-    return;
-  }
-
   const id = uuidv4();
-  const sharedKey = uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase();
+  const groupName = (name && typeof name === 'string' && name.trim()) ? name.trim() : generateGroupName();
+  const sharedKey = generateSharedKey();
   const now = Date.now();
 
   db.prepare(
     'INSERT INTO groups (id, name, shared_key, created_by, created_at) VALUES (?, ?, ?, ?, ?)'
-  ).run(id, name, sharedKey, userId, now);
+  ).run(id, groupName, sharedKey, userId, now);
 
   db.prepare(
     'INSERT INTO group_members (group_id, user_id, role, joined_at) VALUES (?, ?, ?, ?)'

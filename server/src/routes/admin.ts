@@ -171,7 +171,7 @@ router.patch('/feedback/:id/status', (req: Request, res: Response): void => {
   if (status !== 'not_started') {
     db.prepare('UPDATE feedback_messages SET status = ?, read_at = COALESCE(read_at, ?) WHERE id = ?').run(status, now, fbId);
   } else {
-    db.prepare('UPDATE feedback_messages SET status = ? WHERE id = ?').run(status, fbId);
+    db.prepare('UPDATE feedback_messages SET status = ?, read_at = NULL WHERE id = ?').run(status, fbId);
   }
   res.json({ message: 'Status updated' });
 });

@@ -1727,10 +1727,10 @@ async function loadAdminFeedback() {
       const st = f.status || 'not_started';
       return `
         <div class="card" style="margin-bottom:8px;${st === 'archived' ? 'opacity:.55' : ''}">
-          <p style="font-size:.9rem;font-weight:700;margin-bottom:2px">${escHtml(f.subject || '(no subject)')}</p>
+          <p style="font-size:.78rem;color:#6b7280;margin-bottom:4px">${fmtDateTime(f.created_at)}</p>
           <p style="font-size:.85rem;color:#374151;margin-bottom:6px;white-space:pre-wrap">${escHtml(f.message)}</p>
-          <p style="font-size:.78rem;color:#6b7280">From: ${escHtml(f.username)} (${escHtml(f.email)}) &nbsp;·&nbsp; ${fmtDateTime(f.created_at)}</p>
           ${f.contact_ok ? `
+            <p style="font-size:.78rem;color:#6b7280;margin-bottom:4px">From: ${escHtml(f.username)}</p>
             <p style="font-size:.78rem;color:#1a56db;margin-top:2px">✉️ User happy to be contacted — send in-app alert:</p>
             <div style="display:flex;gap:6px;margin-top:4px">
               <input id="replyMsg_${escHtml(f.id)}" type="text" placeholder="Reply message…" class="input" style="flex:1;font-size:.85rem" />

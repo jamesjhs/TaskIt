@@ -21,7 +21,7 @@
 <!-- Update banner -->
 <div id="update-banner" hidden>
   ⚡ A new version is available — please refresh.
-  <button onclick="window.location.reload()">Refresh</button>
+  <button onclick="performAppUpdate()">Refresh</button>
 </div>
 
 <!-- ===== AUTH PAGE ===== -->
@@ -133,7 +133,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">Jobber v0.7.1 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a> &nbsp;·&nbsp; <a href="/howto.html">How To</a></p>
+      <p class="version-footer" style="margin-top:16px">Jobber v<span id="authFooterVersion">0.7.1</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a> &nbsp;·&nbsp; <a href="/howto.html">How To</a></p>
     </div>
   </div>
 </div>
@@ -688,7 +688,7 @@ function userLocale() { return (currentUser && currentUser.locale) || 'en-GB'; }
 function fmtDate(ts) { return new Date(ts).toLocaleDateString(userLocale()); }
 function fmtDateTime(ts) { return new Date(ts).toLocaleString(userLocale()); }
 let currentGroupId = null;
-window._serverVersion = null;
+window._serverVersion = null; // kept for compatibility; version check uses localStorage
 
 // ========== API ==========
 async function api(method, path, body) {
@@ -1479,11 +1479,50 @@ function escHtml(str) {
 }
 
 // ========== Version Check ==========
-async function checkVersion() {
+const JOBBER_VERSION_KEY = 'jobber_app_version';
+let _lastVersionCheckAt = 0;
+
+/** Clear all SW caches, SW registrations, and app localStorage, then hard-reload. */
+async function performAppUpdate() {
+  const btn = document.querySelector('#update-banner button');
+  if (btn) { btn.disabled = true; btn.textContent = 'Updating\u2026'; }
+  // Capture the server's current version before wiping localStorage so we can
+  // write it back immediately — preventing the banner from looping on reload.
+  let latestVersion = null;
   try {
-    const data = await fetch('/api/version').then(r => r.json());
-    if (!window._serverVersion) { window._serverVersion = data.version; }
-    else if (data.version !== window._serverVersion) {
+    const r = await fetch('/api/version', { cache: 'no-store' });
+    if (r.ok) ({ version: latestVersion } = await r.json());
+  } catch (e) { /* best-effort */ }
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(reg => reg.unregister()));
+    }
+    localStorage.clear();
+    if (latestVersion) localStorage.setItem(JOBBER_VERSION_KEY, latestVersion);
+  } catch (e) { /* best-effort */ }
+  window.location.reload();
+}
+
+async function checkVersion() {
+  if (Date.now() - _lastVersionCheckAt < 60000) return; // debounce: 60 s
+  _lastVersionCheckAt = Date.now();
+  try {
+    const r = await fetch('/api/version', { cache: 'no-store' });
+    if (!r.ok) return;
+    const { version } = await r.json();
+    const stored = localStorage.getItem(JOBBER_VERSION_KEY);
+    // First visit — no version stored yet. Silently record the current version
+    // so the app loads normally, then return (no update required).
+    if (stored === null) {
+      localStorage.setItem(JOBBER_VERSION_KEY, version);
+      return;
+    }
+    if (stored !== version) {
       document.getElementById('update-banner').removeAttribute('hidden');
     }
   } catch { /* ignore */ }
@@ -1853,6 +1892,15 @@ document.addEventListener('click', function(e) {
   const magicToken = params.get('token');
   const inviteToken = params.get('invite');
 
+  // Check version on every page open so stale caches are caught before login
+  checkVersion();
+  fetch('/api/version', { cache: 'no-store' }).then(r => r.json()).then(d => {
+    if (d.version) {
+      const authEl = document.getElementById('authFooterVersion');
+      if (authEl) authEl.textContent = d.version;
+    }
+  }).catch(() => {});
+
   if (magicToken) {
     try {
       const data = await api('GET', '/auth/magic-link/verify?token=' + encodeURIComponent(magicToken));
@@ -1915,6 +1963,13 @@ async function rotateIcsToken() {
 function toggleRecurFields() {
   const enabled = document.getElementById('taskRecurEnabled').checked;
   document.getElementById('taskRecurFields').classList.toggle('hidden', !enabled);
+}
+
+// ========== Service Worker ==========
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
 }
 </script>
 </body>

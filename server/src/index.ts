@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
@@ -187,8 +188,32 @@ app.use('/api/task-types', authenticatedLimiter, taskTypeRoutes);
 app.use('/api/admin', authenticatedLimiter, adminRoutes);
 app.use('/api/users', authenticatedLimiter, userRoutes);
 
+// Serve sw.js dynamically so its CACHE_NAME always reflects the current app
+// version. The SW's activate handler deletes every cache whose name doesn't
+// match CACHE_NAME, so changing the name on each deploy automatically cleans
+// up the previous version's cached assets — even if checkVersion() never
+// runs (e.g. on a first load after an update, or while offline).
+const swContent = fs
+  .readFileSync(path.join(__dirname, '..', '..', 'public', 'sw.js'), 'utf8')
+  .replace(/'jobber-__APP_VERSION__'/g, `'jobber-${APP_VERSION}'`);
+
+app.get('/sw.js', (_req, res) => {
+  res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.send(swContent);
+});
+
 // Serve static frontend files
-app.use(generalLimiter, express.static(path.join(__dirname, '..', '..', 'public')));
+app.use(generalLimiter, express.static(path.join(__dirname, '..', '..', 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('index.html')) {
+      // Always revalidate the HTML shell so clients pick up new asset fingerprints
+      // immediately, even when the Service Worker has been bypassed or not yet active.
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  },
+}));
 
 // SPA fallback
 app.get('*', generalLimiter, (_req, res) => {

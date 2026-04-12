@@ -60,6 +60,7 @@ data class UpdateStatusRequest(
 data class Group(
     val id: String,
     val name: String,
+    @SerializedName("invite_name") val inviteName: String,
     @SerializedName("shared_key") val sharedKey: String?,
     @SerializedName("created_by") val createdBy: String,
     @SerializedName("member_count") val memberCount: Int?
@@ -70,5 +71,6 @@ data class CreateGroupRequest(
 )
 
 data class JoinGroupRequest(
+    @SerializedName("invite_name") val inviteName: String,
     @SerializedName("shared_key") val sharedKey: String
 )

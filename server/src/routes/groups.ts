@@ -86,23 +86,28 @@ router.post('/', (req: Request, res: Response): void => {
   const userId = req.user!.id;
 
   const id = uuidv4();
-  const trimmedName = name && typeof name === 'string' ? name.trim() : '';
-  let groupName: string;
-  if (trimmedName) {
-    groupName = trimmedName;
-  } else {
-    let candidate: string;
-    do {
-      candidate = generateGroupName();
-    } while (db.prepare('SELECT 1 FROM groups WHERE name = ?').get(candidate));
-    groupName = candidate;
-  }
-  const sharedKey = generateSharedKey();
   const now = Date.now();
 
+  // Always auto-generate a unique invite word pair
+  let inviteName: string;
+  let attempts = 0;
+  do {
+    if (++attempts > 1000) {
+      res.status(500).json({ error: 'Could not generate a unique invite name — please try again' });
+      return;
+    }
+    inviteName = generateGroupName();
+  } while (db.prepare('SELECT 1 FROM groups WHERE invite_name = ?').get(inviteName));
+
+  // Display name is optional — falls back to the invite word pair
+  const trimmedName = name && typeof name === 'string' ? name.trim() : '';
+  const groupName = trimmedName || inviteName;
+
+  const sharedKey = generateSharedKey();
+
   db.prepare(
-    'INSERT INTO groups (id, name, shared_key, created_by, created_at) VALUES (?, ?, ?, ?, ?)'
-  ).run(id, groupName, sharedKey, userId, now);
+    'INSERT INTO groups (id, name, invite_name, shared_key, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(id, groupName, inviteName, sharedKey, userId, now);
 
   db.prepare(
     'INSERT INTO group_members (group_id, user_id, role, joined_at) VALUES (?, ?, ?, ?)'
@@ -112,20 +117,20 @@ router.post('/', (req: Request, res: Response): void => {
   res.status(201).json(group);
 });
 
-// POST /api/groups/join  — join by group name + secret key
+// POST /api/groups/join  — join by invite word pair + secret key
 router.post('/join', (req: Request, res: Response): void => {
-  const { name, shared_key } = req.body;
+  const { invite_name, shared_key } = req.body;
   const userId = req.user!.id;
 
-  if (!name || typeof name !== 'string' || !shared_key || typeof shared_key !== 'string') {
-    res.status(400).json({ error: 'name and shared_key are required' });
+  if (!invite_name || typeof invite_name !== 'string' || !shared_key || typeof shared_key !== 'string') {
+    res.status(400).json({ error: 'invite_name and shared_key are required' });
     return;
   }
 
-  const group = db.prepare('SELECT * FROM groups WHERE name = ? AND shared_key = ?').get(
-    name.trim(),
+  const group = db.prepare('SELECT * FROM groups WHERE invite_name = ? AND shared_key = ?').get(
+    invite_name.trim(),
     shared_key.trim()
-  ) as { id: string; name: string; shared_key: string; created_by: string } | undefined;
+  ) as { id: string; name: string; invite_name: string; shared_key: string; created_by: string } | undefined;
 
   if (!group) {
     res.status(404).json({ error: 'Group not found or secret key is incorrect' });

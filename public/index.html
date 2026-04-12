@@ -443,11 +443,11 @@
   <div class="modal-sheet">
     <div class="modal-body">
       <h2 class="modal-title">Create Group</h2>
-      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Leave the name blank to auto-generate a unique two-word name.</p>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Give your group a friendly display name (optional — defaults to the auto-generated invite word pair).</p>
       <form id="createGroupForm" onsubmit="handleCreateGroup(event)">
         <div class="form-group">
-          <label>Group Name <span style="font-weight:400;color:#9ca3af">(optional)</span></label>
-          <input id="createGroupName" type="text" placeholder="e.g. Brave Achieve (auto-generated if blank)" class="input" />
+          <label>Display Name <span style="font-weight:400;color:#9ca3af">(optional)</span></label>
+          <input id="createGroupName" type="text" placeholder="e.g. Household Chores (defaults to invite word pair)" class="input" />
         </div>
       </form>
     </div>
@@ -463,11 +463,11 @@
   <div class="modal-sheet">
     <div class="modal-body">
       <h2 class="modal-title">Join Group</h2>
-      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Enter the group's two-word name and its secret key to join.</p>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Enter the group's invite word pair and its secret key to join.</p>
       <form id="joinGroupForm" onsubmit="handleJoinGroup(event)">
         <div class="form-group">
-          <label>Group Name</label>
-          <input id="joinGroupName" type="text" required placeholder="e.g. Brave Achieve" class="input" />
+          <label>Invite Word Pair</label>
+          <input id="joinGroupName" type="text" required placeholder="e.g. FastAntelope" class="input" />
         </div>
         <div class="form-group">
           <label>Secret Key</label>
@@ -933,10 +933,10 @@ function renderGroups() {
         </div>
         <p style="font-size:.82rem;color:#6b7280;margin-bottom:8px">${g.member_count || 1} member(s)</p>
         <div style="margin-bottom:8px">
-          <p style="font-size:.75rem;color:#9ca3af;margin-bottom:2px">Group name (share to let others find you):</p>
+          <p style="font-size:.75rem;color:#9ca3af;margin-bottom:2px">Invite word pair (share so others can find you):</p>
           <div class="group-key-box">
-            <span class="group-key-code" style="font-size:.9rem">${escHtml(g.name)}</span>
-            <button onclick="copyToClipboard(${escHtml(JSON.stringify(g.name))})" class="btn btn-sm btn-secondary">Copy</button>
+            <span class="group-key-code" style="font-size:.9rem">${escHtml(g.invite_name)}</span>
+            <button onclick="copyToClipboard(${escHtml(JSON.stringify(g.invite_name))})" class="btn btn-sm btn-secondary">Copy</button>
           </div>
         </div>
         ${g.shared_key ? `
@@ -983,9 +983,9 @@ function closeJoinGroupModal() { document.getElementById('joinGroupModal').class
 async function handleJoinGroup(e) {
   e.preventDefault();
   try {
-    const name = document.getElementById('joinGroupName').value.trim();
+    const invite_name = document.getElementById('joinGroupName').value.trim();
     const key = document.getElementById('joinGroupKey').value.trim();
-    await api('POST', '/groups/join', { name, shared_key: key });
+    await api('POST', '/groups/join', { invite_name, shared_key: key });
     closeJoinGroupModal(); toast('Joined group!');
     await loadGroups(); renderGroups();
   } catch (err) { toast(err.message, 'error'); }
@@ -1300,7 +1300,7 @@ async function openGroupMembers(groupId) {
   const group = groups.find(g => g.id === groupId);
   document.getElementById('groupMembersTitle').textContent = group ? group.name : 'Group Members';
   document.getElementById('groupMembersShareInfo').textContent = group
-    ? 'Name: ' + group.name + '  \u2022  Secret key: ' + group.shared_key
+    ? 'Invite word pair: ' + group.invite_name + '  \u2022  Secret key: ' + group.shared_key
     : '';
   if (group) document.getElementById('renameGroupInput').value = group.name;
   // Reset invite/QR area

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Guide – Jobber</title>
+  <link rel="stylesheet" href="/tailwind.css" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 font-sans min-h-screen flex flex-col">
+
+<header class="bg-indigo-700 shadow-md">
+  <div class="max-w-4xl mx-auto px-4 flex items-center gap-3 h-14">
+    <a href="/" class="flex items-center gap-3 text-white font-bold text-xl hover:opacity-90 transition-opacity">
+      <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
+               M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+      </div>
+      Jobber
+    </a>
+  </div>
+</header>
+
+<main class="flex-1 max-w-4xl mx-auto w-full px-4 py-10">
+  <article class="prose prose-slate dark:prose-invert max-w-none bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-8">
+
+    <h1>👋 Welcome to Jobber!</h1>
+    <p class="lead">Jobber is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.</p>
+
+    <hr />
+
+    <h2>🚀 Getting Started</h2>
+
+    <h3>Creating your account</h3>
+    <ol>
+      <li>Open Jobber in your browser and click <strong>Register</strong>.</li>
+      <li>Enter a username, your email address, and a password.</li>
+      <li>Click <strong>Register</strong> – you're in!</li>
+    </ol>
+    <p>The very first person to register becomes the <strong>system administrator</strong>, with access to extra settings.</p>
+
+    <h3>Logging in</h3>
+    <p>There are two ways to log in:</p>
+    <ul>
+      <li><strong>Magic link</strong> – enter your email and click <em>Send Magic Link</em>. Check your inbox for a one-click login link (requires email to be configured by your admin).</li>
+      <li><strong>Password</strong> – click <em>Use password instead</em> and enter your email and password.</li>
+    </ul>
+    <blockquote>
+      <p>💡 If you forget your password, use the magic link option to log in, then update your password from your Profile page.</p>
+    </blockquote>
+
+    <hr />
+
+    <h2>✅ Managing Tasks</h2>
+
+    <h3>Creating a task</h3>
+    <ol>
+      <li>Go to the <strong>Tasks</strong> page and click <strong>New Task</strong>.</li>
+      <li>Give your task a <strong>title</strong> and choose a <strong>type</strong> (e.g. Urgent, Routine, Hobby).</li>
+      <li>Optionally set a <strong>group</strong>, <strong>assignees</strong>, any <strong>notes</strong>, and a <strong>due date</strong>.</li>
+      <li>Click <strong>Save Task</strong>.</li>
+    </ol>
+    <p>Due dates default to midnight tonight — handy for quick captures!</p>
+
+    <h3>Updating a task</h3>
+    <p>Click any task card to open the detail panel. From here you can:</p>
+    <ul>
+      <li>Move it through the stages: <strong>Not Started → Started → Complete</strong></li>
+      <li><strong>Edit</strong> any of the task's details</li>
+      <li><strong>Archive</strong> it to tidy your view (archived tasks can always be brought back)</li>
+      <li><strong>Delete</strong> it permanently</li>
+    </ul>
+
+    <h3>Filtering your task list</h3>
+    <p>Use the filter bar at the top of the Tasks page to narrow down what you see — filter by status, group, archived tasks, or tasks assigned specifically to you.</p>
+
+    <h3>Adding progress notes</h3>
+    <p>Inside the task detail panel, you'll find a <strong>Progress Notes</strong> section — a running log of updates.</p>
+    <ol>
+      <li>Click <strong>+ Add Note</strong>.</li>
+      <li>Type your update and click <strong>Save Note</strong>.</li>
+    </ol>
+    <p>Notes are visible to everyone involved with that task.</p>
+
+    <hr />
+
+    <h2>🔔 Notifications</h2>
+    <p>The <strong>bell icon</strong> in the top navigation shows a red badge whenever you have tasks that are:</p>
+    <ul>
+      <li><strong>Overdue</strong> – the deadline has passed and the task isn't complete yet</li>
+      <li><strong>Due within 24 hours</strong> – approaching fast!</li>
+    </ul>
+    <p>Click the bell to see what needs your attention, and click any item to jump straight to that task.</p>
+
+    <hr />
+
+    <h2>👥 Groups</h2>
+    <p>Groups let you collaborate with others — share tasks, assign work to teammates, and stay in sync.</p>
+
+    <h3>Creating a group</h3>
+    <ol>
+      <li>Go to the <strong>Groups</strong> page and click <strong>New Group</strong>.</li>
+      <li>Enter a name, or leave it blank for a fun random name to be generated for you.</li>
+      <li>Your new group appears with a unique <strong>join key</strong>. Share this key with anyone you'd like to invite.</li>
+    </ol>
+
+    <h3>Joining a group</h3>
+    <ol>
+      <li>Click <strong>Join Group</strong>.</li>
+      <li>Enter the join key your group admin gave you and click <strong>Join</strong>.</li>
+    </ol>
+
+    <h3>Viewing members</h3>
+    <p>Click <strong>View Members</strong> on any group card to see who's in the group and their roles.</p>
+
+    <hr />
+
+    <h2>🛡️ Group Admin Features</h2>
+    <p>When you create a group you're automatically its <strong>admin</strong>. Other admins can be promoted by any existing admin.</p>
+    <p>From the <strong>View Members</strong> panel, admins can:</p>
+    <ul>
+      <li><strong>Rename</strong> the group — enter a new name and click <em>Rename</em></li>
+      <li><strong>Promote</strong> a member to admin, or <strong>Demote</strong> an admin back to member</li>
+      <li><strong>Delete</strong> the group — removes it for everyone (use with care!)</li>
+    </ul>
+    <blockquote>
+      <p>🔑 The group's join key is shown in the members panel. Only people who have the key can join — the group ID alone isn't enough.</p>
+    </blockquote>
+
+    <hr />
+
+    <h2>📧 Email Reminders</h2>
+    <p>When email is enabled by your admin, Jobber sends automatic reminders for tasks with due dates:</p>
+    <ul>
+      <li><strong>7-day reminder</strong> – a heads-up when the deadline is about a week away</li>
+      <li><strong>1-day reminder</strong> – a nudge the day before it's due</li>
+      <li><strong>Overdue alert</strong> – a prompt when the deadline has passed</li>
+    </ul>
+    <p>Each reminder is sent once per task. Reminders stop once the task is marked complete.</p>
+
+    <hr />
+
+    <h2>⚙️ Your Profile</h2>
+    <p>Click <strong>Profile</strong> in the navigation to:</p>
+    <ul>
+      <li>Update your <strong>username</strong></li>
+      <li>Change your <strong>password</strong></li>
+      <li>Review your account details</li>
+    </ul>
+
+    <hr />
+
+    <h2>🛠️ Admin Panel <em>(admins only)</em></h2>
+    <p>System administrators see an extra <strong>Admin</strong> menu item. From here you can:</p>
+    <ul>
+      <li><strong>SMTP Settings</strong> – configure the outgoing email server for magic links and reminders</li>
+      <li><strong>Locked Accounts</strong> – view and unlock accounts blocked after too many failed login attempts</li>
+      <li><strong>User Reports</strong> – review reports submitted by users and mark them as resolved</li>
+    </ul>
+
+    <hr />
+
+    <h2>❓ Common Questions</h2>
+
+    <h3>I can't log in</h3>
+    <p>Your account may be locked after too many failed attempts. Ask your system admin to unlock it via <em>Admin → Locked Accounts</em>. You can also try the magic link option if email is configured.</p>
+
+    <h3>My tasks aren't showing</h3>
+    <p>Check the filter bar — filters like <em>Show Archived</em> or <em>Assigned to Me</em> can hide tasks. Also make sure you're a member of the group a task belongs to.</p>
+
+    <h3>I'm not receiving emails</h3>
+    <p>Email sending requires SMTP to be configured and enabled by your admin. Check with them to confirm it's set up correctly.</p>
+
+    <h3>I lost my join key</h3>
+    <p>Any group admin can find the join key by clicking <strong>View Members</strong> on the group card.</p>
+
+    <hr />
+
+    <p style="font-size:.9rem;color:#6b7280">Jobber v0.6.1 &nbsp;·&nbsp; Copyright &copy; J Rowson 2026 &nbsp;·&nbsp;
+      <a href="https://jahosi.co.uk" class="text-indigo-500 hover:underline" target="_blank" rel="noopener noreferrer">jahosi.co.uk</a>
+    </p>
+
+  </article>
+</main>
+
+<footer class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 mt-8 py-4 text-center text-sm text-slate-500 dark:text-slate-400">
+  <span>Jobber v0.6.1 &nbsp;·&nbsp; Copyright &copy; J Rowson 2026 &nbsp;·&nbsp;
+    <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer"
+       class="text-indigo-500 hover:underline">jahosi.co.uk</a>
+    &nbsp;·&nbsp;
+    <a href="/privacy-policy.html" class="text-indigo-500 hover:underline">Privacy Policy</a>
+    &nbsp;·&nbsp;
+    <a href="/user-guide.html" class="text-indigo-500 hover:underline">User Guide</a>
+  </span>
+</footer>
+
+</body>
+</html>

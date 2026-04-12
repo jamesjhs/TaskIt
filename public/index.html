@@ -541,10 +541,11 @@
       </div>
       <div id="groupAdminControls" class="hidden" style="margin-bottom:16px">
         <p class="section-heading" style="margin-top:0">Admin Controls</p>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
           <input id="renameGroupInput" type="text" placeholder="New group name" class="input" style="flex:1" />
           <button onclick="renameGroup()" class="btn btn-primary btn-sm">Rename</button>
         </div>
+        <button onclick="deleteGroup()" class="btn btn-danger btn-sm btn-full">Delete Group</button>
       </div>
       <div id="groupMembersList"><div class="loading">Loading…</div></div>
     </div>
@@ -1259,6 +1260,19 @@ async function renameGroup() {
   try {
     await api('PATCH', '/groups/' + currentGroupId + '/name', { name });
     toast('Group renamed!'); await loadGroups(); renderGroups(); openGroupMembers(currentGroupId);
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function deleteGroup() {
+  if (!currentGroupId) return;
+  const group = groups.find(g => g.id === currentGroupId);
+  const groupName = group ? group.name : 'this group';
+  if (!confirm('Are you sure you want to delete "' + groupName + '"? This cannot be undone.')) return;
+  try {
+    await api('DELETE', '/groups/' + currentGroupId);
+    document.getElementById('groupMembersModal').classList.add('hidden');
+    toast('Group deleted');
+    await loadGroups(); renderGroups();
   } catch (err) { toast(err.message, 'error'); }
 }
 

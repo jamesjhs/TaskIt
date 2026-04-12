@@ -139,6 +139,29 @@ router.patch('/:id/name', (req: Request, res: Response): void => {
   res.json(group);
 });
 
+router.delete('/:id', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const groupId = req.params.id;
+
+  const membership = db.prepare(
+    'SELECT role FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(groupId, userId) as { role: string } | undefined;
+
+  if (!membership) {
+    res.status(403).json({ error: 'Not a member of this group' });
+    return;
+  }
+  if (membership.role !== 'admin') {
+    res.status(403).json({ error: 'Only group admins can delete the group' });
+    return;
+  }
+
+  db.prepare('DELETE FROM group_members WHERE group_id = ?').run(groupId);
+  db.prepare('DELETE FROM groups WHERE id = ?').run(groupId);
+
+  res.json({ message: 'Group deleted' });
+});
+
 router.patch('/:id/members/:userId/role', (req: Request, res: Response): void => {
   const requesterId = req.user!.id;
   const groupId = req.params.id;

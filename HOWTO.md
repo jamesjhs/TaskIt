@@ -1,6 +1,6 @@
 # Jobber – How-To Manual
 
-**Version 0.5.2**  
+**Version 0.6.1**  
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -235,6 +235,7 @@ Admins can access controls from the **View Members** panel:
 
 - **Rename the group** – enter a new name and click *Rename*
 - **Promote / Demote members** – click *Promote* next to a member to make them an admin, or *Demote* to revert to member
+- **Delete the group** – permanently removes the group for all members (use with care)
 
 The group's **join key** is displayed in the members panel header and on the group card. Only users who have been given the key can join — guessing the group ID alone is not sufficient to join.
 
@@ -292,4 +293,4 @@ Each reminder is sent only **once** per task. Reminders are checked every hour.
 
 ---
 
-*Jobber v0.5.2 – Copyright J Rowson 2026 | jahosi.co.uk*
+*Jobber v0.6.1 – Copyright J Rowson 2026 | jahosi.co.uk*

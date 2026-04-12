@@ -16,6 +16,7 @@ function computeNextDue(dueDateMs: number, interval: number, unit: string): numb
     case 'weeks':  d.setDate(d.getDate() + interval * 7); break;
     case 'months': d.setMonth(d.getMonth() + interval); break;
     case 'years':  d.setFullYear(d.getFullYear() + interval); break;
+    default: throw new Error(`Invalid recur_unit: ${unit}`);
   }
   return d.getTime();
 }

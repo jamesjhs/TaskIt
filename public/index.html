@@ -1480,12 +1480,13 @@ function escHtml(str) {
 
 // ========== Version Check ==========
 const JOBBER_VERSION_KEY = 'jobber_app_version';
+const VERSION_CHECK_DEBOUNCE_MS = 60 * 1000; // 60 s — min gap between foreground checks
 let _lastVersionCheckAt = 0;
 
 /** Clear all SW caches, SW registrations, and app localStorage, then hard-reload. */
 async function performAppUpdate() {
   const btn = document.querySelector('#update-banner button');
-  if (btn) { btn.disabled = true; btn.textContent = 'Updating\u2026'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Updating…'; }
   // Capture the server's current version before wiping localStorage so we can
   // write it back immediately — preventing the banner from looping on reload.
   let latestVersion = null;
@@ -1509,7 +1510,7 @@ async function performAppUpdate() {
 }
 
 async function checkVersion() {
-  if (Date.now() - _lastVersionCheckAt < 60000) return; // debounce: 60 s
+  if (Date.now() - _lastVersionCheckAt < VERSION_CHECK_DEBOUNCE_MS) return;
   _lastVersionCheckAt = Date.now();
   try {
     const r = await fetch('/api/version', { cache: 'no-store' });

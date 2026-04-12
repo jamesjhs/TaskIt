@@ -291,11 +291,7 @@
   </span>
 </footer>
 
-<script>
-fetch('/api/version', { cache: 'no-store' }).then(r => r.json()).then(d => {
-  if (d.version) document.querySelectorAll('.page-version').forEach(el => { el.textContent = d.version; });
-}).catch(() => {});
-</script>
+<script src="/js/version.js"></script>
 
 </body>
 </html>

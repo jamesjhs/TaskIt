@@ -193,9 +193,15 @@ app.use('/api/users', authenticatedLimiter, userRoutes);
 // match CACHE_NAME, so changing the name on each deploy automatically cleans
 // up the previous version's cached assets — even if checkVersion() never
 // runs (e.g. on a first load after an update, or while offline).
-const swContent = fs
-  .readFileSync(path.join(__dirname, '..', '..', 'public', 'sw.js'), 'utf8')
-  .replace(/'jobber-__APP_VERSION__'/g, `'jobber-${APP_VERSION}'`);
+let swContent: string;
+try {
+  swContent = fs
+    .readFileSync(path.join(__dirname, '..', '..', 'public', 'sw.js'), 'utf8')
+    .replace(/'jobber-__APP_VERSION__'/g, `'jobber-${APP_VERSION}'`);
+} catch (err) {
+  console.error('Failed to read public/sw.js:', err);
+  swContent = '/* sw.js not found */';
+}
 
 app.get('/sw.js', (_req, res) => {
   res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');

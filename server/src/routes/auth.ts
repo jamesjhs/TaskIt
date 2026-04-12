@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import db from '../db';
 import { JWT_SECRET, MAX_LOGIN_ATTEMPTS, LOCKOUT_MINUTES, ADMIN_EMAIL } from '../config';
-import { sendMagicLink } from '../services/mail';
+import { sendMagicLink, sendOTP } from '../services/mail';
 
 const router = Router();
 
@@ -17,9 +17,12 @@ interface UserRow {
   role: string;
   failed_logins: number;
   locked_until: number | null;
+  email_verified: number;
 }
 
-router.post('/register', (req: Request, res: Response): void => {
+// POST /api/auth/register
+// Creates an unverified account and sends an email verification magic link.
+router.post('/register', async (req: Request, res: Response): Promise<void> => {
   const { username, email, password } = req.body;
 
   if (!username || !email || !password) {
@@ -48,15 +51,31 @@ router.post('/register', (req: Request, res: Response): void => {
     }
   }
 
+  // Insert with email_verified = 0; magic link will flip this to 1
   db.prepare(
-    'INSERT INTO users (id, username, email, password_hash, created_at, role) VALUES (?, ?, ?, ?, ?, ?)'
+    'INSERT INTO users (id, username, email, password_hash, created_at, role, email_verified) VALUES (?, ?, ?, ?, ?, ?, 0)'
   ).run(id, username, email, passwordHash, now, role);
 
-  const token = jwt.sign({ id, username, email, role }, JWT_SECRET, { expiresIn: '7d' });
-  res.status(201).json({ token, user: { id, username, email, role } });
+  // Generate and store a verification magic token
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = now + 15 * 60 * 1000; // 15 minutes
+  db.prepare(
+    'INSERT INTO magic_tokens (token, user_id, expires_at, used, created_at) VALUES (?, ?, ?, 0, ?)'
+  ).run(token, id, expiresAt, now);
+
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  try {
+    await sendMagicLink(email, token, baseUrl, 'verify');
+  } catch (err) {
+    console.error('[auth] Failed to send verification email:', err);
+  }
+
+  res.status(201).json({ message: 'Registration successful. Please check your email to verify your account before signing in.' });
 });
 
-router.post('/login', (req: Request, res: Response): void => {
+// POST /api/auth/login
+// Validates credentials, then sends a one-time OTP for 2FA.
+router.post('/login', async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -66,14 +85,13 @@ router.post('/login', (req: Request, res: Response): void => {
 
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as UserRow | undefined;
 
-  // Check if account is locked (do this before password check to avoid timing oracle)
+  // Check if account is locked
   if (user && user.locked_until && user.locked_until > Date.now()) {
     res.status(423).json({ error: 'Account locked. Please contact an administrator.' });
     return;
   }
 
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
-    // Increment failed_logins if user exists
     if (user) {
       const newFailedLogins = (user.failed_logins || 0) + 1;
       if (newFailedLogins >= MAX_LOGIN_ATTEMPTS) {
@@ -89,8 +107,67 @@ router.post('/login', (req: Request, res: Response): void => {
     return;
   }
 
-  // Successful login — reset counters
+  // Check email verification
+  if (!user.email_verified) {
+    res.status(403).json({ error: 'Email address not yet verified. Please check your inbox for the verification link.' });
+    return;
+  }
+
+  // Credentials valid — reset failed-login counter
   db.prepare('UPDATE users SET failed_logins = 0, locked_until = NULL WHERE id = ?').run(user.id);
+
+  // Generate a 6-digit OTP for 2FA
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const sessionId = uuidv4();
+  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+  db.prepare(
+    'INSERT INTO otp_tokens (id, user_id, code, expires_at, used, created_at) VALUES (?, ?, ?, ?, 0, ?)'
+  ).run(sessionId, user.id, code, expiresAt, Date.now());
+
+  try {
+    await sendOTP(user.email, code);
+  } catch (err) {
+    console.error('[auth] Failed to send OTP email:', err);
+  }
+
+  res.json({ status: 'otp_required', sessionId });
+});
+
+// POST /api/auth/verify-otp
+// Second step of password login: validates the email OTP and issues a JWT.
+router.post('/verify-otp', (req: Request, res: Response): void => {
+  const { sessionId, code } = req.body;
+
+  if (!sessionId || !code) {
+    res.status(400).json({ error: 'sessionId and code are required' });
+    return;
+  }
+
+  const otpRow = db.prepare('SELECT * FROM otp_tokens WHERE id = ?').get(sessionId) as
+    | { id: string; user_id: string; code: string; expires_at: number; used: number }
+    | undefined;
+
+  if (!otpRow || otpRow.used === 1 || otpRow.expires_at < Date.now()) {
+    res.status(400).json({ error: 'Invalid or expired verification code' });
+    return;
+  }
+
+  if (otpRow.code !== String(code).trim()) {
+    res.status(401).json({ error: 'Incorrect verification code' });
+    return;
+  }
+
+  db.prepare('UPDATE otp_tokens SET used = 1 WHERE id = ?').run(sessionId);
+
+  const user = db.prepare('SELECT id, username, email, role FROM users WHERE id = ?').get(otpRow.user_id) as
+    | { id: string; username: string; email: string; role: string }
+    | undefined;
+
+  if (!user) {
+    res.status(400).json({ error: 'User not found' });
+    return;
+  }
 
   const token = jwt.sign(
     { id: user.id, username: user.username, email: user.email, role: user.role },
@@ -100,6 +177,7 @@ router.post('/login', (req: Request, res: Response): void => {
   res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: user.role } });
 });
 
+// POST /api/auth/magic-link
 router.post('/magic-link', async (req: Request, res: Response): Promise<void> => {
   const { email } = req.body;
   const ALWAYS_OK = { message: 'If that email is registered, a login link has been sent.' };
@@ -128,7 +206,7 @@ router.post('/magic-link', async (req: Request, res: Response): Promise<void> =>
 
   const baseUrl = `${req.protocol}://${req.get('host')}`;
   try {
-    await sendMagicLink(user.email, token, baseUrl);
+    await sendMagicLink(user.email, token, baseUrl, 'login');
   } catch (err) {
     console.error('[auth] Failed to send magic link email:', err);
   }
@@ -136,6 +214,7 @@ router.post('/magic-link', async (req: Request, res: Response): Promise<void> =>
   res.json(ALWAYS_OK);
 });
 
+// GET /api/auth/magic-link/verify
 router.get('/magic-link/verify', (req: Request, res: Response): void => {
   const { token } = req.query;
 
@@ -158,8 +237,9 @@ router.get('/magic-link/verify', (req: Request, res: Response): void => {
     return;
   }
 
-  // Mark token as used
+  // Mark token as used and mark the user's email as verified
   db.prepare('UPDATE magic_tokens SET used = 1 WHERE token = ?').run(token);
+  db.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').run(magicToken.user_id);
 
   const user = db.prepare('SELECT id, username, email, role FROM users WHERE id = ?').get(magicToken.user_id) as
     | { id: string; username: string; email: string; role: string }

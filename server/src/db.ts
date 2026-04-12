@@ -81,6 +81,16 @@ db.exec(`
     updated_at INTEGER NOT NULL DEFAULT 0
   );
 
+  CREATE TABLE IF NOT EXISTS otp_tokens (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    code TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    used INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
   CREATE TABLE IF NOT EXISTS magic_tokens (
     token TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
@@ -130,6 +140,8 @@ function addCol(table: string, col: string, def: string) {
 addCol('users', 'role', "TEXT NOT NULL DEFAULT 'user'");
 addCol('users', 'failed_logins', 'INTEGER NOT NULL DEFAULT 0');
 addCol('users', 'locked_until', 'INTEGER');
+// email_verified defaults to 1 so existing users stay accessible; new registrations set it to 0 explicitly
+addCol('users', 'email_verified', 'INTEGER NOT NULL DEFAULT 1');
 addCol('tasks', 'due_date', 'INTEGER');
 
 // Ensure smtp_settings has exactly one row (singleton pattern)

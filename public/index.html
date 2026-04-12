@@ -133,7 +133,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">Jobber v0.6.3 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/howto.html">How To</a></p>
+      <p class="version-footer" style="margin-top:16px">Jobber v0.7.1 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a> &nbsp;·&nbsp; <a href="/howto.html">How To</a></p>
     </div>
   </div>
 </div>
@@ -302,7 +302,7 @@
       <button onclick="confirmDeleteAccount()" class="btn btn-danger btn-full">Delete My Account</button>
     </div>
 
-    <p class="version-footer">Jobber v<span id="footerVersion">—</span> &middot; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &middot; Copyright J Rowson 2026</p>
+    <p class="version-footer">Jobber v<span id="footerVersion">—</span> &middot; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &middot; &copy; J Rowson 2026 &middot; <a href="/privacy-policy.html">Privacy Policy</a> &middot; <a href="/user-guide.html">User Guide</a> &middot; <a href="/howto.html">How To</a></p>
   </div>
 
   <!-- ===== ADMIN PAGE ===== -->
@@ -829,22 +829,6 @@ function storeAuth(data) {
   localStorage.setItem('jbToken', token);
   localStorage.setItem('jbUser', JSON.stringify(currentUser));
   initApp();
-  // Accept any pending invite
-  const pendingInvite = sessionStorage.getItem('pendingInvite');
-  if (pendingInvite) {
-    sessionStorage.removeItem('pendingInvite');
-    api('POST', '/groups/invite/' + encodeURIComponent(pendingInvite) + '/accept')
-      .then(data => {
-        const name = data.group && data.group.name ? data.group.name : 'the group';
-        if (data.alreadyMember) {
-          toast('You\u2019re already a member of "' + name + '".');
-        } else {
-          toast('Joined "' + name + '"!');
-        }
-        loadGroups(); renderGroups();
-      })
-      .catch(err => toast('Invite error: ' + err.message, 'error'));
-  }
 }
 
 function logout() {
@@ -873,6 +857,22 @@ function initApp() {
   fetch('/api/version').then(r => r.json()).then(d => {
     if (d.version) document.getElementById('footerVersion').textContent = d.version;
   }).catch(() => {});
+  // Accept any pending invite (handles both fresh login and already-logged-in invite links)
+  const pendingInvite = sessionStorage.getItem('pendingInvite');
+  if (pendingInvite) {
+    sessionStorage.removeItem('pendingInvite');
+    api('POST', '/groups/invite/' + encodeURIComponent(pendingInvite) + '/accept')
+      .then(data => {
+        const name = data.group && data.group.name ? data.group.name : 'the group';
+        if (data.alreadyMember) {
+          toast('You\u2019re already a member of "' + name + '".');
+        } else {
+          toast('Joined "' + name + '"!');
+        }
+        loadGroups(); renderGroups();
+      })
+      .catch(err => toast('Invite error: ' + err.message, 'error'));
+  }
   loadTypes(); loadGroups(); loadBlockedUsers();
   showPage('tasks'); checkVersion();
   setInterval(checkVersion, 5 * 60 * 1000);
@@ -1453,7 +1453,7 @@ async function confirmDefer() {
   if (!val) { toast('Please select a due date', 'error'); return; }
   const dueDate = new Date(val).getTime();
   try {
-    const updated = await api('PATCH', '/tasks/' + currentDetailTask.id, { dueDate });
+    const updated = await api('PATCH', '/tasks/' + currentDetailTask.id + '/defer', { dueDate });
     currentDetailTask = updated; tasksMap.set(updated.id, updated);
     document.getElementById('deferSection').classList.add('hidden');
     openDetail(updated); loadTasks(); toast('Due date updated!');
@@ -1727,10 +1727,10 @@ async function loadAdminFeedback() {
       const st = f.status || 'not_started';
       return `
         <div class="card" style="margin-bottom:8px;${st === 'archived' ? 'opacity:.55' : ''}">
-          <p style="font-size:.9rem;font-weight:700;margin-bottom:2px">${escHtml(f.subject || '(no subject)')}</p>
+          <p style="font-size:.78rem;color:#6b7280;margin-bottom:4px">${fmtDateTime(f.created_at)}</p>
           <p style="font-size:.85rem;color:#374151;margin-bottom:6px;white-space:pre-wrap">${escHtml(f.message)}</p>
-          <p style="font-size:.78rem;color:#6b7280">From: ${escHtml(f.username)} (${escHtml(f.email)}) &nbsp;·&nbsp; ${fmtDateTime(f.created_at)}</p>
           ${f.contact_ok ? `
+            <p style="font-size:.78rem;color:#6b7280;margin-bottom:4px">From: ${escHtml(f.username)}</p>
             <p style="font-size:.78rem;color:#1a56db;margin-top:2px">✉️ User happy to be contacted — send in-app alert:</p>
             <div style="display:flex;gap:6px;margin-top:4px">
               <input id="replyMsg_${escHtml(f.id)}" type="text" placeholder="Reply message…" class="input" style="flex:1;font-size:.85rem" />
@@ -1869,11 +1869,13 @@ document.addEventListener('click', function(e) {
     // Store the invite token so it can be used after authentication
     sessionStorage.setItem('pendingInvite', inviteToken);
     history.replaceState(null, '', window.location.pathname);
-    // Show invite info before user logs in / registers
-    try {
-      const info = await api('GET', '/groups/invite/' + encodeURIComponent(inviteToken));
-      toast('You\u2019ve been invited to join "' + info.group.name + '". Sign in or create an account to accept.', 'info');
-    } catch (err) { /* invite may be invalid, just show auth page */ }
+    if (!token || !currentUser) {
+      // Not logged in — prompt them to sign in / register
+      try {
+        const info = await api('GET', '/groups/invite/' + encodeURIComponent(inviteToken));
+        toast('You\u2019ve been invited to join "' + info.group.name + '". Sign in or create an account to accept.', 'info');
+      } catch (err) { /* invite may be invalid, just show auth page */ }
+    }
   }
 
   if (token && currentUser) initApp();

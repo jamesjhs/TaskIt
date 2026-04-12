@@ -346,6 +346,53 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
   res.json({ ...updated, archived: updated.archived === 1 });
 });
 
+router.patch('/:id/defer', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const taskId = req.params.id;
+
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
+    | { id: string; created_by: string; group_id: string | null }
+    | undefined;
+
+  if (!task) {
+    res.status(404).json({ error: 'Task not found' });
+    return;
+  }
+
+  // Allow creator or any group member to defer
+  const isCreator = task.created_by === userId;
+  const isGroupMember = task.group_id ? !!db.prepare(
+    'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(task.group_id, userId) : false;
+
+  if (!isCreator && !isGroupMember) {
+    res.status(403).json({ error: 'Not authorized' });
+    return;
+  }
+
+  const { dueDate } = req.body;
+
+  db.prepare('UPDATE tasks SET due_date = ?, updated_at = ? WHERE id = ?').run(
+    dueDate !== undefined ? dueDate : null, Date.now(), taskId
+  );
+
+  const updated = db.prepare(`
+    SELECT t.*, tt.name AS type_name
+    FROM tasks t
+    JOIN task_types tt ON tt.id = t.type_id
+    WHERE t.id = ?
+  `).get(taskId) as Record<string, unknown>;
+
+  const assignees = db.prepare(`
+    SELECT u.id, u.username, u.email
+    FROM task_assignees ta
+    JOIN users u ON u.id = ta.user_id
+    WHERE ta.task_id = ?
+  `).all(taskId);
+
+  res.json({ ...updated, archived: updated.archived === 1, assignees });
+});
+
 router.patch('/:id/archive', (req: Request, res: Response): void => {
   const userId = req.user!.id;
   const taskId = req.params.id;

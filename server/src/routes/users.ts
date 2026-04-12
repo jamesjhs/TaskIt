@@ -2,10 +2,35 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
+import { ALLOWED_LOCALES } from '../constants';
 
 const router = Router();
 
 router.use(authMiddleware);
+
+// PATCH /api/users/me/locale — update the authenticated user's date/time locale
+router.patch('/me/locale', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const { locale } = req.body;
+
+  if (!locale || !ALLOWED_LOCALES.has(locale)) {
+    res.status(400).json({ error: 'Invalid or unsupported locale', allowedLocales: Array.from(ALLOWED_LOCALES) });
+    return;
+  }
+
+  db.prepare('UPDATE users SET locale = ? WHERE id = ?').run(locale, userId);
+
+  const user = db.prepare('SELECT id, username, email, role, locale FROM users WHERE id = ?').get(userId) as
+    | { id: string; username: string; email: string; role: string; locale: string }
+    | undefined;
+
+  if (!user) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  res.json({ message: 'Locale updated', user });
+});
 
 router.post('/:id/report', (req: Request, res: Response): void => {
   const reporterId = req.user!.id;

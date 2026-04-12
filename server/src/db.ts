@@ -119,6 +119,24 @@ db.exec(`
     FOREIGN KEY (blocker_id) REFERENCES users(id),
     FOREIGN KEY (blocked_id) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS task_notes (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    note TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (task_id) REFERENCES tasks(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS task_reminders_sent (
+    task_id TEXT NOT NULL,
+    reminder_type TEXT NOT NULL,
+    sent_at INTEGER NOT NULL,
+    PRIMARY KEY (task_id, reminder_type),
+    FOREIGN KEY (task_id) REFERENCES tasks(id)
+  );
 `);
 
 // Runtime migrations — add columns if they don't exist yet

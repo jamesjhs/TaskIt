@@ -86,7 +86,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">Jobber v0.5.1 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a></p>
+      <p class="version-footer" style="margin-top:16px">Jobber v0.5.3 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a></p>
     </div>
   </div>
 </div>
@@ -145,6 +145,38 @@
       </div>
       <button onclick="logout()" class="btn btn-danger btn-full">Sign Out</button>
     </div>
+
+    <!-- Manage Categories -->
+    <div class="card" style="margin-top:16px">
+      <p class="card-title">Manage Categories</p>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Add your own task categories, personal or shared with a group.</p>
+      <div id="customCategoryList" style="margin-bottom:14px"><div class="loading">Loading…</div></div>
+      <form onsubmit="addCustomCategory(event)" style="display:flex;flex-direction:column;gap:10px">
+        <div class="form-group" style="margin:0">
+          <label>New category name</label>
+          <input id="newCategoryName" type="text" maxlength="60" placeholder="e.g. Fitness" class="input" required />
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Scope (optional group)</label>
+          <select id="newCategoryGroup" class="select">
+            <option value="">Personal (just me)</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Category</button>
+      </form>
+    </div>
+
+    <!-- Invite to Jobber -->
+    <div class="card" style="margin-top:16px">
+      <p class="card-title">Invite to Jobber</p>
+      <p style="font-size:.88rem;color:#374151;line-height:1.55;margin-bottom:14px">
+        <strong>Jobber</strong> is a fast, lightweight collaborative task manager — create tasks, set due dates, organise by category, and keep your team in sync, all from your phone or browser. No ads, no clutter.
+      </p>
+      <button onclick="copyInviteLink()" class="btn btn-secondary btn-full" id="copyInviteBtn">
+        📋 Copy Invite Link
+      </button>
+    </div>
+
     <p class="version-footer">Jobber v<span id="footerVersion">—</span> &middot; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &middot; Copyright J Rowson 2026</p>
   </div>
 
@@ -633,12 +665,87 @@ function showPage(page) {
   if (page === 'tasks') loadTasks();
   if (page === 'groups') renderGroups();
   if (page === 'admin') loadAdminPage();
+  if (page === 'profile') {
+    // Populate group selector in the category form
+    const sel = document.getElementById('newCategoryGroup');
+    sel.innerHTML = '<option value="">Personal (just me)</option>';
+    groups.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id; opt.textContent = g.name; sel.appendChild(opt);
+    });
+    loadCategoryManagement();
+  }
 }
 
 // ========== Task Types ==========
 async function loadTypes() {
   try { taskTypes = await api('GET', '/task-types'); }
   catch (err) { toast('Failed to load task types', 'error'); }
+}
+
+// ========== Category Management ==========
+async function loadCategoryManagement() {
+  const listEl = document.getElementById('customCategoryList');
+  try {
+    const types = await api('GET', '/task-types');
+    // Show only non-system categories (created_by not null)
+    const custom = types.filter(t => t.created_by);
+    if (!custom.length) {
+      listEl.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">No custom categories yet.</p>';
+      return;
+    }
+    const groupName = gId => { const g = groups.find(g => g.id === gId); return g ? g.name : 'Unknown group'; };
+    listEl.innerHTML = custom.map(t => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6">
+        <span style="font-size:.9rem;color:#1a1a2e">
+          ${escHtml(t.name)}
+          ${t.group_id ? `<span style="font-size:.75rem;color:#6b7280;margin-left:6px">(${escHtml(groupName(t.group_id))})</span>` : '<span style="font-size:.75rem;color:#9ca3af;margin-left:6px">(personal)</span>'}
+        </span>
+        <button onclick="deleteCustomCategory('${t.id}')" class="btn btn-sm btn-danger" style="flex-shrink:0">Delete</button>
+      </div>`).join('');
+  } catch (err) {
+    listEl.innerHTML = `<p style="font-size:.85rem;color:#dc2626">${escHtml(err.message)}</p>`;
+  }
+}
+
+async function addCustomCategory(e) {
+  e.preventDefault();
+  const name = document.getElementById('newCategoryName').value.trim();
+  const groupId = document.getElementById('newCategoryGroup').value || null;
+  if (!name) { toast('Category name is required', 'error'); return; }
+  try {
+    await api('POST', '/task-types', { name, groupId });
+    document.getElementById('newCategoryName').value = '';
+    document.getElementById('newCategoryGroup').value = '';
+    toast('Category added!');
+    await loadTypes();
+    loadCategoryManagement();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function deleteCustomCategory(typeId) {
+  if (!confirm('Delete this category? Tasks using it will keep their existing assignment.')) return;
+  try {
+    await api('DELETE', '/task-types/' + typeId);
+    toast('Category deleted');
+    await loadTypes();
+    loadCategoryManagement();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+function copyInviteLink() {
+  const url = window.location.origin;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => toast('Invite link copied!')).catch(() => fallbackCopy(url));
+  } else { fallbackCopy(url); }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); toast('Invite link copied!'); } catch { toast('Could not copy — URL: ' + text, 'info'); }
+  document.body.removeChild(ta);
 }
 
 // ========== Groups ==========

@@ -2,7 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8FAFC"
+    android:background="@color/background"
     android:padding="24dp">
 
     <LinearLayout
@@ -11,27 +11,37 @@
         android:orientation="vertical"
         android:gravity="center">
 
+        <!-- App icon circle -->
+        <FrameLayout
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:background="#FF1A56DB"
+            android:layout_marginBottom="12dp"/>
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Jobber"
-            android:textSize="36sp"
+            android:textSize="32sp"
             android:textStyle="bold"
-            android:textColor="#4F46E5"
-            android:layout_marginBottom="8dp"/>
+            android:textColor="@color/on_surface"
+            android:layout_marginBottom="4dp"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Task Management"
+            android:text="Collaborative task management"
             android:textSize="14sp"
-            android:textColor="#64748B"
+            android:textColor="@color/text_secondary"
             android:layout_marginBottom="32dp"/>
 
+        <!-- Tab strip -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:background="#FFF1F5F9"
+            android:padding="4dp"
             android:layout_marginBottom="24dp">
 
             <Button
@@ -40,7 +50,9 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Login"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+                android:backgroundTint="@color/surface"
+                android:textColor="@color/blue_primary"
+                style="@style/Widget.MaterialComponents.Button.TextButton"/>
 
             <Button
                 android:id="@+id/tabRegister"
@@ -48,7 +60,9 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Register"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+                android:backgroundTint="@color/background"
+                android:textColor="@color/text_secondary"
+                style="@style/Widget.MaterialComponents.Button.TextButton"/>
         </LinearLayout>
 
         <!-- Login Form -->
@@ -89,9 +103,10 @@
             <Button
                 android:id="@+id/btnLogin"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Login"
-                android:backgroundTint="#4F46E5"/>
+                android:layout_height="56dp"
+                android:text="Sign In"
+                android:textSize="16sp"
+                android:backgroundTint="@color/blue_primary"/>
         </LinearLayout>
 
         <!-- Register Form -->
@@ -146,9 +161,10 @@
             <Button
                 android:id="@+id/btnRegister"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Register"
-                android:backgroundTint="#4F46E5"/>
+                android:layout_height="56dp"
+                android:text="Create Account"
+                android:textSize="16sp"
+                android:backgroundTint="@color/blue_primary"/>
         </LinearLayout>
 
     </LinearLayout>

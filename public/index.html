@@ -133,7 +133,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">Jobber v0.6.3 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/howto.html">How To</a></p>
+      <p class="version-footer" style="margin-top:16px">Jobber v0.7.1 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/howto.html">How To</a></p>
     </div>
   </div>
 </div>
@@ -1453,7 +1453,7 @@ async function confirmDefer() {
   if (!val) { toast('Please select a due date', 'error'); return; }
   const dueDate = new Date(val).getTime();
   try {
-    const updated = await api('PATCH', '/tasks/' + currentDetailTask.id, { dueDate });
+    const updated = await api('PATCH', '/tasks/' + currentDetailTask.id + '/defer', { dueDate });
     currentDetailTask = updated; tasksMap.set(updated.id, updated);
     document.getElementById('deferSection').classList.add('hidden');
     openDetail(updated); loadTasks(); toast('Due date updated!');

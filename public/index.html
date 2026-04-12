@@ -694,14 +694,14 @@ async function loadCategoryManagement() {
       listEl.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">No custom categories yet.</p>';
       return;
     }
-    const groupName = id => { const g = groups.find(g => g.id === id); return g ? g.name : 'Unknown group'; };
+    const groupName = gId => { const g = groups.find(g => g.id === gId); return g ? g.name : 'Unknown group'; };
     listEl.innerHTML = custom.map(t => `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6">
         <span style="font-size:.9rem;color:#1a1a2e">
           ${escHtml(t.name)}
           ${t.group_id ? `<span style="font-size:.75rem;color:#6b7280;margin-left:6px">(${escHtml(groupName(t.group_id))})</span>` : '<span style="font-size:.75rem;color:#9ca3af;margin-left:6px">(personal)</span>'}
         </span>
-        <button onclick="deleteCustomCategory('${escHtml(t.id)}')" class="btn btn-sm btn-danger" style="flex-shrink:0">Delete</button>
+        <button onclick="deleteCustomCategory('${t.id}')" class="btn btn-sm btn-danger" style="flex-shrink:0">Delete</button>
       </div>`).join('');
   } catch (err) {
     listEl.innerHTML = `<p style="font-size:.85rem;color:#dc2626">${escHtml(err.message)}</p>`;

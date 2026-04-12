@@ -57,9 +57,16 @@ router.post('/', (req: Request, res: Response): void => {
   res.status(201).json(type);
 });
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 router.delete('/:id', (req: Request, res: Response): void => {
   const userId = req.user!.id;
   const typeId = req.params.id;
+
+  if (!UUID_RE.test(typeId)) {
+    res.status(400).json({ error: 'Invalid category id' });
+    return;
+  }
 
   const type = db.prepare('SELECT * FROM task_types WHERE id = ?').get(typeId) as
     | { id: string; name: string; group_id: string | null; created_by: string | null }

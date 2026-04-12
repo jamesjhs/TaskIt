@@ -133,7 +133,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">Jobber v0.6.2 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a></p>
+      <p class="version-footer" style="margin-top:16px">Jobber v0.6.3 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/howto.html">How To</a></p>
     </div>
   </div>
 </div>
@@ -145,7 +145,10 @@
   <div id="tasksPage" class="view">
     <div class="view-header">
       <h1>My Tasks</h1>
-      <button onclick="openTaskModal()" class="btn btn-primary btn-sm">+ New Task</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <a href="/howto.html" target="_blank" class="btn btn-outline btn-sm" title="How To Guide">❓ How To</a>
+        <button onclick="openTaskModal()" class="btn btn-primary btn-sm">+ New Task</button>
+      </div>
     </div>
     <div class="filter-chips">
       <button onclick="setFilter('status','')" id="filterAll" class="chip active">All</button>
@@ -261,6 +264,33 @@
       </button>
     </div>
 
+    <!-- Send Feedback -->
+    <div class="card" style="margin-top:16px">
+      <p class="card-title">💬 Feedback &amp; Feature Requests</p>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Have a suggestion or spotted a bug? Let us know. Tick the box if you're happy to be contacted for follow-up.</p>
+      <div class="form-group">
+        <label>Subject</label>
+        <input id="feedbackSubject" type="text" maxlength="200" placeholder="e.g. Feature request: dark mode" class="input" />
+      </div>
+      <div class="form-group">
+        <label>Message</label>
+        <textarea id="feedbackMessage" rows="4" maxlength="4000" placeholder="Describe your feedback or idea…" class="textarea"></textarea>
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:8px">
+        <input id="feedbackContactOk" type="checkbox" style="width:18px;height:18px;accent-color:#1a56db;flex-shrink:0" />
+        <label style="font-size:.9rem;color:#374151;margin:0">I'm happy to be contacted about this feedback</label>
+      </div>
+      <div style="font-size:.75rem;color:#9ca3af;margin-bottom:12px;line-height:1.4">⚠️ Do <strong>not</strong> include personal or sensitive information (e.g. health data, financial details, government records, or trade secrets) in your feedback.</div>
+      <button onclick="submitFeedback()" class="btn btn-primary btn-full">Send Feedback</button>
+    </div>
+
+    <!-- Delete Account -->
+    <div class="card" style="margin-top:16px;border:1px solid #fca5a5">
+      <p class="card-title" style="color:#dc2626">⚠️ Delete My Account</p>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Permanently delete your account and all associated data (tasks, notes, group memberships). This cannot be undone. No administrator action is required.</p>
+      <button onclick="confirmDeleteAccount()" class="btn btn-danger btn-full">Delete My Account</button>
+    </div>
+
     <p class="version-footer">Jobber v<span id="footerVersion">—</span> &middot; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &middot; Copyright J Rowson 2026</p>
   </div>
 
@@ -289,6 +319,7 @@
       <button onclick="showAdminTab('smtp')" id="adminTabSmtp" class="tab-btn active">SMTP</button>
       <button onclick="showAdminTab('locked')" id="adminTabLocked" class="tab-btn">Locked</button>
       <button onclick="showAdminTab('reports')" id="adminTabReports" class="tab-btn">Reports</button>
+      <button onclick="showAdminTab('feedback')" id="adminTabFeedback" class="tab-btn">Feedback</button>
     </div>
     <div id="adminSmtpTab">
       <div class="card">
@@ -344,6 +375,15 @@
           <button onclick="loadUserReports()" class="btn btn-sm btn-secondary">Refresh</button>
         </div>
         <div id="userReportsList"><div class="loading">Loading…</div></div>
+      </div>
+    </div>
+    <div id="adminFeedbackTab" class="hidden">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <p class="card-title" style="margin:0">Feedback &amp; Feature Requests</p>
+          <button onclick="loadAdminFeedback()" class="btn btn-sm btn-secondary">Refresh</button>
+        </div>
+        <div id="adminFeedbackList"><div class="loading">Loading…</div></div>
       </div>
     </div>
   </div>
@@ -812,6 +852,34 @@ async function saveLocale() {
   } catch (err) {
     toast(err.message, 'error');
   }
+}
+
+async function submitFeedback() {
+  const subject = document.getElementById('feedbackSubject').value.trim();
+  const message = document.getElementById('feedbackMessage').value.trim();
+  const contact_ok = document.getElementById('feedbackContactOk').checked;
+  if (!subject || !message) { toast('Please enter a subject and message.', 'error'); return; }
+  try {
+    await api('POST', '/users/me/feedback', { subject, message, contact_ok });
+    toast('Feedback submitted. Thank you!');
+    document.getElementById('feedbackSubject').value = '';
+    document.getElementById('feedbackMessage').value = '';
+    document.getElementById('feedbackContactOk').checked = false;
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function confirmDeleteAccount() {
+  const confirmed = window.confirm(
+    'Are you absolutely sure?\n\nThis will permanently delete your account and ALL your data — tasks, notes, group memberships, and everything else.\n\nThis action CANNOT be undone.'
+  );
+  if (!confirmed) return;
+  const doubleCheck = window.confirm('Last chance — really delete everything?');
+  if (!doubleCheck) return;
+  try {
+    await api('DELETE', '/users/me');
+    toast('Your account has been deleted. Goodbye!');
+    setTimeout(logout, 1500);
+  } catch (err) { toast(err.message, 'error'); }
 }
 
 // ========== Navigation ==========
@@ -1431,13 +1499,14 @@ async function loadAdminStats() {
 }
 
 function showAdminTab(tab) {
-  ['smtp', 'locked', 'reports'].forEach(t => {
+  ['smtp', 'locked', 'reports', 'feedback'].forEach(t => {
     document.getElementById('admin' + t.charAt(0).toUpperCase() + t.slice(1) + 'Tab').classList.toggle('hidden', t !== tab);
     const btn = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
     btn.classList.toggle('active', t === tab);
   });
   if (tab === 'locked') loadLockedAccounts();
   if (tab === 'reports') loadUserReports();
+  if (tab === 'feedback') loadAdminFeedback();
 }
 
 async function loadAdminPage() {
@@ -1510,6 +1579,28 @@ async function loadUserReports() {
 
 async function resolveReport(reportId) {
   try { await api('PUT', '/admin/reports/' + reportId + '/resolve'); toast('Report resolved'); loadUserReports(); }
+  catch (err) { toast(err.message, 'error'); }
+}
+
+async function loadAdminFeedback() {
+  const listEl = document.getElementById('adminFeedbackList');
+  try {
+    const items = await api('GET', '/admin/feedback');
+    if (!items.length) { listEl.innerHTML = '<div class="loading">No feedback yet.</div>'; return; }
+    listEl.innerHTML = items.map(f => `
+      <div class="card" style="margin-bottom:8px;${f.read_at ? 'opacity:.65' : ''}">
+        <p style="font-size:.9rem;font-weight:700;margin-bottom:2px">${escHtml(f.subject)}</p>
+        <p style="font-size:.85rem;color:#374151;margin-bottom:6px;white-space:pre-wrap">${escHtml(f.message)}</p>
+        <p style="font-size:.78rem;color:#6b7280">From: ${escHtml(f.username)} (${escHtml(f.email)}) &nbsp;·&nbsp; ${fmtDateTime(f.created_at)}</p>
+        ${f.contact_ok ? '<p style="font-size:.78rem;color:#1a56db;margin-top:2px">✉️ Happy to be contacted</p>' : ''}
+        ${f.read_at ? '<p style="font-size:.75rem;color:#16a34a;margin-top:4px">✓ Read</p>' :
+          `<div style="margin-top:10px"><button onclick="markFeedbackRead('${escHtml(f.id)}')" class="btn btn-sm btn-secondary">Mark as Read</button></div>`}
+      </div>`).join('');
+  } catch (err) { listEl.innerHTML = `<div class="loading" style="color:#dc2626">${escHtml(err.message)}</div>`; }
+}
+
+async function markFeedbackRead(id) {
+  try { await api('PUT', '/admin/feedback/' + id + '/read'); loadAdminFeedback(); }
   catch (err) { toast(err.message, 'error'); }
 }
 

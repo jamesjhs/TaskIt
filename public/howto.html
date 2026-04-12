@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How To Use Jobber – Pictorial Guide</title>
+  <link rel="stylesheet" href="/tailwind.css" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <style>
+    .guide-step { display:flex; gap:16px; align-items:flex-start; margin-bottom:12px; }
+    .step-num { flex-shrink:0; width:32px; height:32px; border-radius:50%; background:#1a56db; color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.95rem; }
+    .mockup-card { background:#f8fafc; border:2px solid #e2e8f0; border-radius:12px; padding:16px; margin:16px 0; }
+    .mockup-field { background:white; border:1px solid #cbd5e1; border-radius:6px; padding:8px 12px; margin-bottom:8px; font-size:.85rem; color:#94a3b8; }
+    .mockup-btn { background:#1a56db; color:white; border-radius:6px; padding:8px 16px; font-size:.85rem; font-weight:600; display:inline-block; margin-top:4px; }
+    .mockup-btn-outline { background:white; color:#1a56db; border:1px solid #1a56db; border-radius:6px; padding:8px 16px; font-size:.85rem; font-weight:600; display:inline-block; margin-top:4px; }
+    .status-flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:16px 0; }
+    .status-box { background:#f1f5f9; border:2px solid #cbd5e1; border-radius:8px; padding:10px 16px; font-weight:600; font-size:.9rem; text-align:center; }
+    .status-box.active { background:#1a56db; color:white; border-color:#1a56db; }
+    .arrow { color:#94a3b8; font-size:1.2rem; font-weight:700; }
+    .tip-box { background:#eff6ff; border-left:4px solid #1a56db; border-radius:0 8px 8px 0; padding:12px 16px; margin:12px 0; font-size:.9rem; color:#1e40af; }
+    .warn-box { background:#fef3c7; border-left:4px solid #f59e0b; border-radius:0 8px 8px 0; padding:12px 16px; margin:12px 0; font-size:.9rem; color:#92400e; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 font-sans min-h-screen flex flex-col">
+
+<header class="bg-indigo-700 shadow-md">
+  <div class="max-w-4xl mx-auto px-4 flex items-center gap-3 h-14">
+    <a href="/" class="flex items-center gap-3 text-white font-bold text-xl hover:opacity-90 transition-opacity">
+      <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
+               M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+      </div>
+      Jobber
+    </a>
+  </div>
+</header>
+
+<main class="flex-1 max-w-4xl mx-auto w-full px-4 py-10">
+  <article class="prose prose-slate dark:prose-invert max-w-none bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-8">
+
+    <h1>📖 How To Use Jobber</h1>
+    <p class="lead">Step-by-step pictorial guides to help you get the most out of Jobber — from your very first login to collaborating with a team.</p>
+
+    <hr/>
+
+    <!-- ===== SECTION 1: Getting Started ===== -->
+    <h2>1. Getting Started — Register &amp; Log In</h2>
+
+    <h3>🖊️ Creating your account</h3>
+    <p>Open Jobber in your browser. You'll see the login / register screen:</p>
+
+    <div class="mockup-card">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:4px">
+          <div style="width:36px;height:36px;border-radius:8px;background:#1a56db;display:inline-flex;align-items:center;justify-content:center">
+            <svg width="20" height="20" fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          </div>
+          <span style="font-size:1.4rem;font-weight:700;color:#1a1a2e">Jobber</span>
+        </div>
+        <p style="color:#6b7280;font-size:.9rem;margin:0">Collaborative task management</p>
+      </div>
+      <div style="display:flex;gap:0;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:16px">
+        <div style="flex:1;padding:8px;text-align:center;background:#1a56db;color:white;font-weight:600;font-size:.9rem">Login</div>
+        <div style="flex:1;padding:8px;text-align:center;background:white;color:#6b7280;font-size:.9rem">Register</div>
+      </div>
+      <div class="mockup-field">📧 you@example.com</div>
+      <div class="mockup-btn">Send Magic Link</div>
+      <div style="text-align:center;margin-top:8px;font-size:.82rem;color:#6b7280">or <span style="color:#1a56db;text-decoration:underline;cursor:pointer">Use password instead</span></div>
+    </div>
+
+    <div class="guide-step"><div class="step-num">1</div><div>Click the <strong>Register</strong> tab.</div></div>
+    <div class="guide-step"><div class="step-num">2</div><div>Enter your <strong>Username</strong>, <strong>Email address</strong>, and a <strong>Password</strong> (min. 8 characters).</div></div>
+    <div class="guide-step"><div class="step-num">3</div><div>Choose your preferred <strong>Date &amp; Time Format</strong>.</div></div>
+    <div class="guide-step"><div class="step-num">4</div><div>Click <strong>Create Account</strong>. Check your email for a verification link and click it.</div></div>
+
+    <div class="tip-box">💡 <strong>First user gets admin.</strong> The very first person to register automatically becomes the system administrator.</div>
+
+    <h3>🔑 Logging in</h3>
+
+    <div class="mockup-card">
+      <div style="margin-bottom:12px">
+        <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:4px">Email</p>
+        <div class="mockup-field">you@example.com</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <div class="mockup-btn" style="flex:1;text-align:center">Send Magic Link</div>
+      </div>
+      <p style="font-size:.8rem;color:#6b7280;text-align:center;margin-top:8px">— or —</p>
+      <div style="margin-bottom:8px">
+        <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:4px">Password</p>
+        <div class="mockup-field">••••••••</div>
+      </div>
+      <div class="mockup-btn" style="text-align:center;width:100%">Sign In</div>
+    </div>
+
+    <p>You have <strong>two ways</strong> to log in:</p>
+    <ul>
+      <li><strong>Magic Link</strong> — enter your email, click <em>Send Magic Link</em>, then click the link in the email you receive. No password needed.</li>
+      <li><strong>Password</strong> — click <em>Use password instead</em>, enter your email and password. You'll receive a one-time verification code by email to confirm it's you.</li>
+    </ul>
+
+    <hr/>
+
+    <!-- ===== SECTION 2: Creating a Task ===== -->
+    <h2>2. Creating Your First Task</h2>
+
+    <p>After logging in you'll land on the <strong>Tasks</strong> page. Click <strong>+ New Task</strong> in the top-right corner.</p>
+
+    <div class="mockup-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <span style="font-size:1.1rem;font-weight:700;color:#1a1a2e">New Task</span>
+        <span style="font-size:.8rem;color:#94a3b8">✕</span>
+      </div>
+      <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:4px">Title <span style="color:#dc2626">*</span></p>
+      <div class="mockup-field">Buy groceries</div>
+      <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:4px;margin-top:10px">Type <span style="color:#dc2626">*</span></p>
+      <div class="mockup-field" style="color:#374151">Routine ▾</div>
+      <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:4px;margin-top:10px">Group</p>
+      <div class="mockup-field">Personal (no group) ▾</div>
+      <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:4px;margin-top:10px">Notes</p>
+      <div class="mockup-field" style="height:56px">Milk, bread, eggs…</div>
+      <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:4px;margin-top:10px">Due Date</p>
+      <div class="mockup-field">Tonight at midnight (default)</div>
+      <div class="mockup-btn" style="width:100%;text-align:center;margin-top:12px">Save Task</div>
+    </div>
+
+    <div class="guide-step"><div class="step-num">1</div><div>Enter a <strong>Title</strong> — keep it short and descriptive.</div></div>
+    <div class="guide-step"><div class="step-num">2</div><div>Choose a <strong>Type</strong> (e.g. Urgent, Routine, Hobby). You can add custom types too.</div></div>
+    <div class="guide-step"><div class="step-num">3</div><div>Optionally set a <strong>Group</strong>, assign it to <strong>people</strong>, add <strong>notes</strong>, and set a <strong>due date</strong>.</div></div>
+    <div class="guide-step"><div class="step-num">4</div><div>Click <strong>Save Task</strong>. It appears on your board straight away.</div></div>
+
+    <div class="warn-box">⚠️ <strong>Important:</strong> Do not enter sensitive personal data (health records, financial details, government IDs, trade secrets) in task titles or notes. See the <a href="/privacy-policy.html" style="color:#92400e;text-decoration:underline">Privacy Policy</a> for full details.</div>
+
+    <hr/>
+
+    <!-- ===== SECTION 3: Task Status ===== -->
+    <h2>3. Managing Task Status</h2>
+
+    <p>Every task moves through three stages. Click a task card to open it and use the status buttons to advance it.</p>
+
+    <div class="status-flow">
+      <div class="status-box">📋 Not Started</div>
+      <div class="arrow">→</div>
+      <div class="status-box active">🔄 Started</div>
+      <div class="arrow">→</div>
+      <div class="status-box" style="border-color:#16a34a;color:#16a34a">✅ Complete</div>
+    </div>
+
+    <div class="mockup-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div>
+          <p style="font-size:1rem;font-weight:700;color:#1a1a2e;margin-bottom:2px">Buy groceries</p>
+          <span style="background:#dbeafe;color:#1d4ed8;border-radius:20px;padding:2px 10px;font-size:.75rem;font-weight:600">Routine</span>
+        </div>
+        <span style="background:#fef9c3;color:#854d0e;border-radius:20px;padding:2px 10px;font-size:.75rem;font-weight:600">Not Started</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <div class="mockup-btn-outline" style="font-size:.8rem;padding:6px 12px">▶ Start</div>
+        <div class="mockup-btn-outline" style="font-size:.8rem;padding:6px 12px">✏️ Edit</div>
+        <div class="mockup-btn-outline" style="font-size:.8rem;padding:6px 12px">📦 Archive</div>
+        <div style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:6px 12px;font-size:.8rem;font-weight:600;display:inline-block">🗑 Delete</div>
+      </div>
+    </div>
+
+    <ul>
+      <li>Click <strong>▶ Start</strong> to mark it as "Started".</li>
+      <li>Click <strong>✔ Complete</strong> to mark it done.</li>
+      <li>Use <strong>Archive</strong> to tidy your view without deleting. Archived tasks can be shown again via the <em>Show Archived</em> filter.</li>
+    </ul>
+
+    <h3>Adding Progress Notes</h3>
+    <p>Inside a task's detail panel, scroll down to find the <strong>Progress Notes</strong> section. Click <strong>+ Add Note</strong>, type your update, and save. Notes are visible to everyone in the task's group.</p>
+
+    <hr/>
+
+    <!-- ===== SECTION 4: Groups ===== -->
+    <h2>4. Collaborating with Groups</h2>
+
+    <p>Groups let you share tasks and work together. Go to the <strong>Groups</strong> tab in the bottom navigation.</p>
+
+    <div class="mockup-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:1rem;font-weight:700;color:#1a1a2e">🏠 Family Chores</span>
+        <span style="background:#ede9fe;color:#6d28d9;border-radius:20px;padding:2px 8px;font-size:.75rem;font-weight:600">admin</span>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;font-size:.82rem;color:#15803d;margin-bottom:10px">
+        🔑 Join Key: <strong>FastAntelope</strong>
+      </div>
+      <p style="font-size:.78rem;color:#6b7280;margin-bottom:10px">3 members · Created 10 Apr 2026</p>
+      <div style="display:flex;gap:6px">
+        <div class="mockup-btn" style="font-size:.8rem;padding:6px 14px">Manage / Invite</div>
+      </div>
+    </div>
+
+    <h3>Creating a group</h3>
+    <div class="guide-step"><div class="step-num">1</div><div>Click <strong>+ New</strong> on the Groups page.</div></div>
+    <div class="guide-step"><div class="step-num">2</div><div>Enter a name (or leave it blank for a fun auto-generated name).</div></div>
+    <div class="guide-step"><div class="step-num">3</div><div>Share the <strong>Join Key</strong> (shown on the group card) with anyone you want to invite.</div></div>
+
+    <h3>Joining a group</h3>
+    <div class="guide-step"><div class="step-num">1</div><div>Click <strong>Join</strong> on the Groups page.</div></div>
+    <div class="guide-step"><div class="step-num">2</div><div>Enter the <strong>Join Key</strong> given to you by the group admin.</div></div>
+    <div class="guide-step"><div class="step-num">3</div><div>Click <strong>Join</strong> — you're in! Group tasks now appear in your task list.</div></div>
+
+    <div class="tip-box">💡 <strong>Tip:</strong> If you create a group you become its admin. Admins can rename the group, promote/demote members, and delete the group.</div>
+
+    <hr/>
+
+    <!-- ===== SECTION 5: Notifications ===== -->
+    <h2>5. Task Alerts &amp; Notifications</h2>
+
+    <p>The 🔔 <strong>Alerts</strong> button in the bottom navigation shows a red badge when tasks need attention.</p>
+
+    <div class="mockup-card" style="max-width:280px">
+      <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-bottom:8px">
+        <p style="font-size:.85rem;font-weight:700;color:#dc2626;margin-bottom:2px">🚨 Overdue</p>
+        <p style="font-size:.82rem;color:#374151;margin:0">Submit quarterly report</p>
+        <p style="font-size:.75rem;color:#9ca3af;margin-top:2px">Due: 10 Apr 2026</p>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px">
+        <p style="font-size:.85rem;font-weight:700;color:#d97706;margin-bottom:2px">⏰ Due Soon</p>
+        <p style="font-size:.82rem;color:#374151;margin:0">Team meeting prep</p>
+        <p style="font-size:.75rem;color:#9ca3af;margin-top:2px">Due: tomorrow</p>
+      </div>
+    </div>
+
+    <ul>
+      <li><strong>Red badge on the bell</strong> — you have overdue or due-soon tasks.</li>
+      <li><strong>Click 🔔 Alerts</strong> — see the list; click any item to jump to that task.</li>
+      <li><strong>Email reminders</strong> — if your admin has configured email, you'll also get reminders 7 days, 1 day before, and after the due date.</li>
+    </ul>
+
+    <hr/>
+
+    <!-- ===== SECTION 6: Profile & Account ===== -->
+    <h2>6. Your Profile &amp; Account Settings</h2>
+
+    <p>Tap <strong>👤 Profile</strong> in the bottom navigation to access your account settings.</p>
+
+    <div class="mockup-card">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="width:56px;height:56px;border-radius:50%;background:#1a56db;color:white;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;margin:0 auto 8px">J</div>
+        <p style="font-weight:700;color:#1a1a2e;margin:0">johndoe</p>
+        <p style="color:#6b7280;font-size:.85rem;margin:0">john@example.com</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;font-size:.85rem;color:#374151;font-weight:600">📅 Date &amp; Time Format</div>
+        <div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;font-size:.85rem;color:#374151;font-weight:600">💬 Feedback &amp; Feature Requests</div>
+        <div style="border:2px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:.85rem;color:#dc2626;font-weight:600">⚠️ Delete My Account</div>
+      </div>
+    </div>
+
+    <ul>
+      <li><strong>Date &amp; Time Format</strong> — choose the locale used to display dates (e.g. DD/MM/YYYY vs MM/DD/YYYY).</li>
+      <li><strong>Feedback &amp; Feature Requests</strong> — send a message to the administrator (see section 7).</li>
+      <li><strong>Delete My Account</strong> — permanently removes your account and all your data immediately, without needing to contact the administrator (see section 8).</li>
+    </ul>
+
+    <hr/>
+
+    <!-- ===== SECTION 7: Feedback ===== -->
+    <h2>7. Sending Feedback or Feature Requests</h2>
+
+    <p>Found a bug? Have an idea? Use the <strong>Feedback &amp; Feature Requests</strong> card on your Profile page.</p>
+
+    <div class="mockup-card">
+      <p style="font-weight:700;color:#1a1a2e;margin-bottom:12px">💬 Feedback &amp; Feature Requests</p>
+      <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:4px">Subject</p>
+      <div class="mockup-field">Feature request: dark mode</div>
+      <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:4px;margin-top:10px">Message</p>
+      <div class="mockup-field" style="height:64px">It would be great to have a dark theme option for use at night…</div>
+      <div style="display:flex;align-items:center;gap:8px;margin:10px 0">
+        <div style="width:16px;height:16px;border:1px solid #cbd5e1;border-radius:3px;flex-shrink:0"></div>
+        <span style="font-size:.85rem;color:#374151">I'm happy to be contacted about this feedback</span>
+      </div>
+      <div class="mockup-btn" style="width:100%;text-align:center">Send Feedback</div>
+    </div>
+
+    <div class="guide-step"><div class="step-num">1</div><div>Go to <strong>👤 Profile</strong> → scroll to the <strong>Feedback &amp; Feature Requests</strong> card.</div></div>
+    <div class="guide-step"><div class="step-num">2</div><div>Enter a <strong>Subject</strong> and your <strong>Message</strong>.</div></div>
+    <div class="guide-step"><div class="step-num">3</div><div>Tick the box if you're happy to be contacted about your feedback.</div></div>
+    <div class="guide-step"><div class="step-num">4</div><div>Click <strong>Send Feedback</strong>.</div></div>
+
+    <div class="warn-box">⚠️ Do <strong>not</strong> include personal, medical, financial, or otherwise sensitive information in your feedback message.</div>
+
+    <hr/>
+
+    <!-- ===== SECTION 8: Delete Account ===== -->
+    <h2>8. Deleting Your Account (Right to Erasure)</h2>
+
+    <p>Under UK GDPR you have the right to have your personal data erased. Jobber lets you do this yourself, instantly, without contacting the administrator.</p>
+
+    <div class="mockup-card" style="border:2px solid #fca5a5">
+      <p style="font-weight:700;color:#dc2626;margin-bottom:8px">⚠️ Delete My Account</p>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Permanently delete your account and all associated data (tasks, notes, group memberships). This cannot be undone.</p>
+      <div style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:8px 16px;font-size:.85rem;font-weight:600;text-align:center">Delete My Account</div>
+    </div>
+
+    <div class="guide-step"><div class="step-num">1</div><div>Go to <strong>👤 Profile</strong> → scroll to the bottom → <strong>⚠️ Delete My Account</strong>.</div></div>
+    <div class="guide-step"><div class="step-num">2</div><div>Confirm twice when prompted. This is intentionally a two-step process to prevent accidental deletion.</div></div>
+    <div class="guide-step"><div class="step-num">3</div><div>All your data — tasks, notes, group memberships, and your account — are permanently and immediately removed.</div></div>
+
+    <div class="tip-box">ℹ️ If you were the sole admin of a group, that group and all its tasks are also deleted. If there are other group admins, the group continues without you.</div>
+    <div class="warn-box">⚠️ User reports you submitted or that were made against you may be retained for up to 7 years under safeguarding obligations. See the <a href="/privacy-policy.html" style="color:#92400e;text-decoration:underline">Privacy Policy</a> for details.</div>
+
+    <hr/>
+
+    <p style="font-size:.9rem;color:#6b7280">Jobber v0.6.3 &nbsp;·&nbsp; Copyright &copy; J Rowson 2026 &nbsp;·&nbsp;
+      <a href="https://jahosi.co.uk" class="text-indigo-500 hover:underline" target="_blank" rel="noopener noreferrer">jahosi.co.uk</a> &nbsp;·&nbsp;
+      <a href="/privacy-policy.html" class="text-indigo-500 hover:underline">Privacy Policy</a> &nbsp;·&nbsp;
+      <a href="/user-guide.html" class="text-indigo-500 hover:underline">User Guide</a>
+    </p>
+
+  </article>
+</main>
+
+<footer class="border-t border-slate-200 dark:border-slate-700 py-4 mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
+  <span>Jobber v0.6.3 &nbsp;·&nbsp; Copyright &copy; J Rowson 2026 &nbsp;·&nbsp;
+    <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer"
+       class="text-indigo-500 hover:underline">jahosi.co.uk</a>
+    &nbsp;·&nbsp;
+    <a href="/privacy-policy.html" class="text-indigo-500 hover:underline">Privacy Policy</a>
+    &nbsp;·&nbsp;
+    <a href="/user-guide.html" class="text-indigo-500 hover:underline">User Guide</a>
+    &nbsp;·&nbsp;
+    <a href="/howto.html" class="text-indigo-500 hover:underline">How To</a>
+  </span>
+</footer>
+
+</body>
+</html>

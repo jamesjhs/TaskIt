@@ -29,7 +29,7 @@
 
     <h1>Data Protection &amp; Privacy Policy</h1>
     <p class="text-sm text-slate-500 dark:text-slate-400">
-      Version 0.5.1 &nbsp;·&nbsp; Effective date: 12 April 2026 &nbsp;·&nbsp;
+      Version 0.6.3 &nbsp;·&nbsp; Effective date: 12 April 2026 &nbsp;·&nbsp;
       Prepared by the Data Protection, Workflow &amp; Security Officer, Jobber
     </p>
 
@@ -104,6 +104,45 @@
       We do <strong>not</strong> collect special-category data (Article 9 UK GDPR), payment
       information, or data relating to children's identities beyond what a user voluntarily
       provides as part of a task description.
+    </p>
+
+    <h2>3a. Important: Do Not Submit Sensitive or Special-Category Data</h2>
+    <div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:16px;margin:16px 0">
+      <p style="margin:0 0 8px;font-weight:700;color:#92400e">⚠️ Sensitive Data Warning</p>
+      <p style="margin:0 0 8px;color:#78350f">Jobber is a <strong>general-purpose task manager</strong>. It is <strong>not</strong> approved or certified for processing special-category personal data under Article 9 UK GDPR or any equivalent regulation. You <strong>must not</strong> submit any of the following in task titles, notes, group names, feedback, or any other field:</p>
+      <ul style="color:#78350f;margin:0 0 8px;padding-left:20px">
+        <li>Healthcare or medical information (diagnoses, medications, treatment records)</li>
+        <li>Government-issued identifiers (passport numbers, National Insurance numbers, tax IDs)</li>
+        <li>Industrial, commercial, or trade secrets</li>
+        <li>Financial account details (bank account numbers, credit card numbers)</li>
+        <li>Biometric or genetic data</li>
+        <li>Data revealing racial or ethnic origin, political opinions, religious beliefs, or sexual orientation</li>
+        <li>Criminal records or allegations</li>
+      </ul>
+      <p style="margin:0;color:#78350f">Submitting such data is a breach of these Terms. If you inadvertently submit sensitive data, delete it immediately using the in-app tools, or use the self-service account deletion feature.</p>
+    </div>
+
+    <h2>3b. What the Administrator Can and Cannot See</h2>
+    <p>
+      The system administrator of this Jobber instance has access to the following through the Admin Panel:
+    </p>
+    <ul>
+      <li>Registered usernames and email addresses (for account management purposes)</li>
+      <li>Aggregate usage statistics (total user count, task count — not individual task content)</li>
+      <li>Accounts locked due to failed login attempts</li>
+      <li>User reports submitted via the in-app reporting feature</li>
+      <li>Feedback and feature requests submitted via the Feedback form</li>
+    </ul>
+    <p>
+      The administrator <strong>cannot easily view</strong> individual task titles, task details, task notes,
+      or group contents through the standard Admin Panel interface. Such data is stored in the database
+      and would require direct database access to retrieve. The design intent is that task content
+      remains private to the users who create and share it within their groups.
+    </p>
+    <p>
+      Notwithstanding the above, as the data controller has physical or logical access to the server
+      and database, no absolute technical barrier exists. Users should not rely on administrative
+      privacy alone as a substitute for not submitting sensitive data in the first place.
     </p>
 
     <h2>4. Lawful Bases for Processing</h2>
@@ -193,8 +232,12 @@
     <ul>
       <li><strong>Access</strong> the personal data we hold about you.</li>
       <li><strong>Rectification</strong> of inaccurate or incomplete data.</li>
-      <li><strong>Erasure</strong> ("right to be forgotten") where there is no lawful basis to
-        continue processing.</li>
+      <li><strong>Erasure</strong> ("right to be forgotten") — you may delete your account and all
+        associated data immediately and without administrator involvement by using the
+        <strong>Delete My Account</strong> button in your Profile page. This permanently removes
+        your account, tasks, notes, group memberships, and all other personal data. For data held
+        under a safeguarding obligation (user reports, 7-year retention — see §6), a separate
+        erasure request must be submitted to the Data Controller.</li>
       <li><strong>Restriction</strong> of processing in certain circumstances.</li>
       <li><strong>Data portability</strong> where processing is based on consent or contract and
         is carried out by automated means.</li>
@@ -227,12 +270,16 @@
       Data Protection Officer contact:<br/>
       <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer">jahosi.co.uk</a>
     </p>
+    <p>
+      To submit feedback, feature requests, or to contact the administrator, use the
+      <strong>Feedback &amp; Feature Requests</strong> form in the app's Profile section.
+    </p>
 
   </article>
 </main>
 
 <footer class="border-t border-slate-200 dark:border-slate-700 py-4 mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-  <span>Jobber v0.6.1 &nbsp;·&nbsp; Copyright &copy; J Rowson 2026 &nbsp;·&nbsp;
+  <span>Jobber v0.6.3 &nbsp;·&nbsp; Copyright &copy; J Rowson 2026 &nbsp;·&nbsp;
     <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer"
        class="text-indigo-500 hover:underline">jahosi.co.uk</a>
     &nbsp;·&nbsp;

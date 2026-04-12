@@ -9,6 +9,22 @@ import { sendMagicLink, sendOTP } from '../services/mail';
 
 const router = Router();
 
+// BCP 47 locale tags we accept at registration / profile update
+const ALLOWED_LOCALES: ReadonlySet<string> = new Set([
+  'en-GB', 'en-US', 'en-AU', 'en-CA', 'en-NZ', 'en-ZA',
+  'fr-FR', 'fr-BE', 'fr-CA', 'fr-CH',
+  'de-DE', 'de-AT', 'de-CH',
+  'es-ES', 'es-MX', 'es-AR',
+  'it-IT', 'pt-PT', 'pt-BR',
+  'nl-NL', 'nl-BE',
+  'pl-PL', 'cs-CZ', 'sk-SK', 'hu-HU', 'ro-RO',
+  'sv-SE', 'nb-NO', 'da-DK', 'fi-FI',
+  'ru-RU', 'uk-UA',
+  'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR',
+  'ar-SA', 'he-IL', 'tr-TR',
+  'hi-IN', 'id-ID', 'th-TH',
+]);
+
 interface UserRow {
   id: string;
   username: string;
@@ -18,17 +34,21 @@ interface UserRow {
   failed_logins: number;
   locked_until: number | null;
   email_verified: number;
+  locale: string;
 }
 
 // POST /api/auth/register
 // Creates an unverified account and sends an email verification magic link.
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
-  const { username, email, password } = req.body;
+  const { username, email, password, locale } = req.body;
 
   if (!username || !email || !password) {
     res.status(400).json({ error: 'username, email, and password are required' });
     return;
   }
+
+  // Default to British English; reject unrecognised locale tags
+  const userLocale: string = locale && ALLOWED_LOCALES.has(locale) ? locale : 'en-GB';
 
   const existing = db.prepare('SELECT id FROM users WHERE email = ? OR username = ?').get(email, username);
   if (existing) {
@@ -53,8 +73,8 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
 
   // Insert with email_verified = 0; magic link will flip this to 1
   db.prepare(
-    'INSERT INTO users (id, username, email, password_hash, created_at, role, email_verified) VALUES (?, ?, ?, ?, ?, ?, 0)'
-  ).run(id, username, email, passwordHash, now, role);
+    'INSERT INTO users (id, username, email, password_hash, created_at, role, email_verified, locale) VALUES (?, ?, ?, ?, ?, ?, 0, ?)'
+  ).run(id, username, email, passwordHash, now, role, userLocale);
 
   // Generate and store a verification magic token
   const token = crypto.randomBytes(32).toString('hex');
@@ -160,8 +180,8 @@ router.post('/verify-otp', (req: Request, res: Response): void => {
 
   db.prepare('UPDATE otp_tokens SET used = 1 WHERE id = ?').run(sessionId);
 
-  const user = db.prepare('SELECT id, username, email, role FROM users WHERE id = ?').get(otpRow.user_id) as
-    | { id: string; username: string; email: string; role: string }
+  const user = db.prepare('SELECT id, username, email, role, locale FROM users WHERE id = ?').get(otpRow.user_id) as
+    | { id: string; username: string; email: string; role: string; locale: string }
     | undefined;
 
   if (!user) {
@@ -170,11 +190,11 @@ router.post('/verify-otp', (req: Request, res: Response): void => {
   }
 
   const token = jwt.sign(
-    { id: user.id, username: user.username, email: user.email, role: user.role },
+    { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale },
     JWT_SECRET,
     { expiresIn: '7d' }
   );
-  res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: user.role } });
+  res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale } });
 });
 
 // POST /api/auth/magic-link
@@ -241,8 +261,8 @@ router.get('/magic-link/verify', (req: Request, res: Response): void => {
   db.prepare('UPDATE magic_tokens SET used = 1 WHERE token = ?').run(token);
   db.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').run(magicToken.user_id);
 
-  const user = db.prepare('SELECT id, username, email, role FROM users WHERE id = ?').get(magicToken.user_id) as
-    | { id: string; username: string; email: string; role: string }
+  const user = db.prepare('SELECT id, username, email, role, locale FROM users WHERE id = ?').get(magicToken.user_id) as
+    | { id: string; username: string; email: string; role: string; locale: string }
     | undefined;
 
   if (!user) {
@@ -251,12 +271,12 @@ router.get('/magic-link/verify', (req: Request, res: Response): void => {
   }
 
   const jwtToken = jwt.sign(
-    { id: user.id, username: user.username, email: user.email, role: user.role },
+    { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale },
     JWT_SECRET,
     { expiresIn: '7d' }
   );
 
-  res.json({ token: jwtToken, user: { id: user.id, username: user.username, email: user.email, role: user.role } });
+  res.json({ token: jwtToken, user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale } });
 });
 
 export default router;

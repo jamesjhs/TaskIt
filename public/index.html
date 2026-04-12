@@ -84,6 +84,53 @@
           <label>Confirm Password</label>
           <input id="regConfirmPassword" type="password" required placeholder="••••••••" minlength="8" autocomplete="new-password" class="input" />
         </div>
+        <div class="form-group">
+          <label>Date &amp; Time Format</label>
+          <select id="regLocale" class="select">
+            <option value="en-GB">British English (DD/MM/YYYY)</option>
+            <option value="en-US">US English (MM/DD/YYYY)</option>
+            <option value="en-AU">Australian English</option>
+            <option value="en-CA">Canadian English</option>
+            <option value="en-NZ">New Zealand English</option>
+            <option value="en-ZA">South African English</option>
+            <option value="fr-FR">French (France)</option>
+            <option value="fr-BE">French (Belgium)</option>
+            <option value="fr-CA">French (Canada)</option>
+            <option value="fr-CH">French (Switzerland)</option>
+            <option value="de-DE">German (Germany)</option>
+            <option value="de-AT">German (Austria)</option>
+            <option value="de-CH">German (Switzerland)</option>
+            <option value="es-ES">Spanish (Spain)</option>
+            <option value="es-MX">Spanish (Mexico)</option>
+            <option value="es-AR">Spanish (Argentina)</option>
+            <option value="it-IT">Italian</option>
+            <option value="pt-PT">Portuguese (Portugal)</option>
+            <option value="pt-BR">Portuguese (Brazil)</option>
+            <option value="nl-NL">Dutch (Netherlands)</option>
+            <option value="nl-BE">Dutch (Belgium)</option>
+            <option value="pl-PL">Polish</option>
+            <option value="cs-CZ">Czech</option>
+            <option value="sk-SK">Slovak</option>
+            <option value="hu-HU">Hungarian</option>
+            <option value="ro-RO">Romanian</option>
+            <option value="sv-SE">Swedish</option>
+            <option value="nb-NO">Norwegian</option>
+            <option value="da-DK">Danish</option>
+            <option value="fi-FI">Finnish</option>
+            <option value="ru-RU">Russian</option>
+            <option value="uk-UA">Ukrainian</option>
+            <option value="zh-CN">Chinese (Simplified)</option>
+            <option value="zh-TW">Chinese (Traditional)</option>
+            <option value="ja-JP">Japanese</option>
+            <option value="ko-KR">Korean</option>
+            <option value="ar-SA">Arabic (Saudi Arabia)</option>
+            <option value="he-IL">Hebrew</option>
+            <option value="tr-TR">Turkish</option>
+            <option value="hi-IN">Hindi</option>
+            <option value="id-ID">Indonesian</option>
+            <option value="th-TH">Thai</option>
+          </select>
+        </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
       <p class="version-footer" style="margin-top:16px">Jobber v0.5.3 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a></p>
@@ -144,6 +191,60 @@
         <p id="profileEmail" style="font-size:.9rem;color:#6b7280">—</p>
       </div>
       <button onclick="logout()" class="btn btn-danger btn-full">Sign Out</button>
+    </div>
+
+    <!-- Date & Time Format -->
+    <div class="card" style="margin-top:16px">
+      <p class="card-title">Date &amp; Time Format</p>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Choose the locale used to format dates and times throughout the app.</p>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Locale</label>
+        <select id="profileLocale" class="select">
+          <option value="en-GB">British English (DD/MM/YYYY)</option>
+          <option value="en-US">US English (MM/DD/YYYY)</option>
+          <option value="en-AU">Australian English</option>
+          <option value="en-CA">Canadian English</option>
+          <option value="en-NZ">New Zealand English</option>
+          <option value="en-ZA">South African English</option>
+          <option value="fr-FR">French (France)</option>
+          <option value="fr-BE">French (Belgium)</option>
+          <option value="fr-CA">French (Canada)</option>
+          <option value="fr-CH">French (Switzerland)</option>
+          <option value="de-DE">German (Germany)</option>
+          <option value="de-AT">German (Austria)</option>
+          <option value="de-CH">German (Switzerland)</option>
+          <option value="es-ES">Spanish (Spain)</option>
+          <option value="es-MX">Spanish (Mexico)</option>
+          <option value="es-AR">Spanish (Argentina)</option>
+          <option value="it-IT">Italian</option>
+          <option value="pt-PT">Portuguese (Portugal)</option>
+          <option value="pt-BR">Portuguese (Brazil)</option>
+          <option value="nl-NL">Dutch (Netherlands)</option>
+          <option value="nl-BE">Dutch (Belgium)</option>
+          <option value="pl-PL">Polish</option>
+          <option value="cs-CZ">Czech</option>
+          <option value="sk-SK">Slovak</option>
+          <option value="hu-HU">Hungarian</option>
+          <option value="ro-RO">Romanian</option>
+          <option value="sv-SE">Swedish</option>
+          <option value="nb-NO">Norwegian</option>
+          <option value="da-DK">Danish</option>
+          <option value="fi-FI">Finnish</option>
+          <option value="ru-RU">Russian</option>
+          <option value="uk-UA">Ukrainian</option>
+          <option value="zh-CN">Chinese (Simplified)</option>
+          <option value="zh-TW">Chinese (Traditional)</option>
+          <option value="ja-JP">Japanese</option>
+          <option value="ko-KR">Korean</option>
+          <option value="ar-SA">Arabic (Saudi Arabia)</option>
+          <option value="he-IL">Hebrew</option>
+          <option value="tr-TR">Turkish</option>
+          <option value="hi-IN">Hindi</option>
+          <option value="id-ID">Indonesian</option>
+          <option value="th-TH">Thai</option>
+        </select>
+      </div>
+      <button onclick="saveLocale()" class="btn btn-primary btn-full">Save Format</button>
     </div>
 
     <!-- Manage Categories -->
@@ -477,6 +578,11 @@ let tasksMap = new Map();
 let currentFilter = { status: '', groupId: '', archived: false, assignedToMe: false };
 let currentDetailTask = null;
 let blockedUserIds = new Set();
+
+// ========== Locale-aware date formatting ==========
+function userLocale() { return (currentUser && currentUser.locale) || 'en-GB'; }
+function fmtDate(ts) { return new Date(ts).toLocaleDateString(userLocale()); }
+function fmtDateTime(ts) { return new Date(ts).toLocaleString(userLocale()); }
 let currentGroupId = null;
 window._serverVersion = null;
 
@@ -603,6 +709,7 @@ async function handleRegister(e) {
       username: document.getElementById('regUsername').value,
       email: document.getElementById('regEmail').value,
       password,
+      locale: document.getElementById('regLocale').value || 'en-GB',
     });
     // Registration no longer auto-logs in — user must verify email first
     document.getElementById('registerForm').reset();
@@ -635,6 +742,8 @@ function initApp() {
     document.getElementById('profileUsername').textContent = currentUser.username;
     document.getElementById('profileEmail').textContent = currentUser.email;
     document.getElementById('profileAvatar').textContent = (currentUser.username || '?')[0].toUpperCase();
+    const localeSelect = document.getElementById('profileLocale');
+    if (localeSelect) localeSelect.value = currentUser.locale || 'en-GB';
     if (currentUser.role === 'admin') {
       document.getElementById('navAdmin').classList.remove('hidden');
     } else {
@@ -648,6 +757,18 @@ function initApp() {
   showPage('tasks'); checkVersion();
   setInterval(checkVersion, 5 * 60 * 1000);
   setInterval(refreshNotifications, 5 * 60 * 1000);
+}
+
+async function saveLocale() {
+  const locale = document.getElementById('profileLocale').value;
+  try {
+    const data = await api('PATCH', '/users/me/locale', { locale });
+    currentUser = { ...currentUser, locale: data.user.locale };
+    localStorage.setItem('jbUser', JSON.stringify(currentUser));
+    toast('Date format saved!');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
 }
 
 // ========== Navigation ==========
@@ -859,7 +980,7 @@ function renderTasks(tasks) {
           ${t.archived ? '<span class="badge badge-warn">Archived</span>' : ''}
         </div>
         ${t.assignees && t.assignees.length ? `<p class="task-card-meta">\ud83d\udc64 ${t.assignees.map(a => escHtml(a.username)).join(', ')}</p>` : ''}
-        ${t.due_date ? `<p class="task-card-meta ${overdue ? 'due-overdue' : ''}">\ud83d\udcc5 ${new Date(t.due_date).toLocaleDateString()}</p>` : ''}
+        ${t.due_date ? `<p class="task-card-meta ${overdue ? 'due-overdue' : ''}">\ud83d\udcc5 ${fmtDate(t.due_date)}</p>` : ''}
         ${t.details ? `<p class="task-card-meta" style="margin-top:6px">${escHtml(t.details.length > 80 ? t.details.substring(0, 80) + '\u2026' : t.details)}</p>` : ''}
       </div>
     `;
@@ -999,7 +1120,7 @@ function openDetail(task) {
   if (task.due_date) {
     const now = Date.now();
     const overdue = task.due_date < now && task.status !== 'complete';
-    dueDateEl.textContent = (overdue ? '\u26a0\ufe0f OVERDUE \u2014 was due: ' : '\ud83d\udcc5 Due: ') + new Date(task.due_date).toLocaleString();
+    dueDateEl.textContent = (overdue ? '\u26a0\ufe0f OVERDUE \u2014 was due: ' : '\ud83d\udcc5 Due: ') + fmtDateTime(task.due_date);
     dueDateEl.className = overdue ? 'due-overdue' : '';
     dueDateEl.style.fontSize = '.9rem'; dueDateEl.style.marginBottom = '12px';
     dueDateEl.classList.remove('hidden');
@@ -1025,7 +1146,7 @@ async function loadTaskNotes(taskId) {
     listEl.innerHTML = notes.map(n => `
       <div class="note-item">
         <p class="note-item-text">${escHtml(n.note)}</p>
-        <p class="note-item-meta">${escHtml(n.username)} \xb7 ${new Date(n.created_at).toLocaleString()}</p>
+        <p class="note-item-meta">${escHtml(n.username)} \xb7 ${fmtDateTime(n.created_at)}</p>
       </div>
     `).join('');
   } catch { listEl.innerHTML = '<div style="font-size:.85rem;color:#dc2626">Failed to load notes.</div>'; }
@@ -1246,7 +1367,7 @@ async function loadLockedAccounts() {
       <div class="card" style="margin-bottom:8px">
         <p style="font-weight:700;font-size:.95rem">${escHtml(u.username)}</p>
         <p style="font-size:.82rem;color:#6b7280">${escHtml(u.email)}</p>
-        <p style="font-size:.82rem;color:#d97706;margin-top:2px">Locked until: ${new Date(u.locked_until).toLocaleString()}</p>
+        <p style="font-size:.82rem;color:#d97706;margin-top:2px">Locked until: ${fmtDateTime(u.locked_until)}</p>
         <div style="margin-top:10px"><button onclick="unlockAccount('${escHtml(u.id)}')" class="btn btn-sm btn-primary">Unlock</button></div>
       </div>`).join('');
   } catch (err) { listEl.innerHTML = `<div class="loading" style="color:#dc2626">${escHtml(err.message)}</div>`; }
@@ -1269,7 +1390,7 @@ async function loadUserReports() {
           <span style="color:#1a56db">${escHtml(r.reported_username)}</span>
         </p>
         ${r.reason ? `<p style="font-size:.85rem;color:#6b7280;font-style:italic;margin-bottom:4px">"${escHtml(r.reason)}"</p>` : ''}
-        <p style="font-size:.75rem;color:#9ca3af">${new Date(r.created_at).toLocaleString()} \xb7 ${r.resolved ? '<span style="color:#16a34a">Resolved</span>' : '<span style="color:#d97706">Open</span>'}</p>
+        <p style="font-size:.75rem;color:#9ca3af">${fmtDateTime(r.created_at)} \xb7 ${r.resolved ? '<span style="color:#16a34a">Resolved</span>' : '<span style="color:#d97706">Open</span>'}</p>
         ${!r.resolved ? `<div style="margin-top:10px"><button onclick="resolveReport('${escHtml(r.id)}')" class="btn btn-sm btn-primary">Resolve</button></div>` : ''}
       </div>`).join('');
   } catch (err) { listEl.innerHTML = `<div class="loading" style="color:#dc2626">${escHtml(err.message)}</div>`; }
@@ -1311,7 +1432,7 @@ async function refreshNotifications() {
         <div onclick="openDetailById('${escHtml(t.id)}'); toggleNotifModal();" class="notif-item">
           <p class="notif-item-title">${escHtml(t.title)}</p>
           <p class="notif-item-sub ${overdue ? 'overdue' : 'soon'}">
-            ${overdue ? '\u26a0\ufe0f Overdue \u2014 was due ' : '\u23f0 Due '} ${new Date(t.due_date).toLocaleDateString()}
+            ${overdue ? '\u26a0\ufe0f Overdue \u2014 was due ' : '\u23f0 Due '} ${fmtDate(t.due_date)}
           </p>
         </div>`;
     }).join('');

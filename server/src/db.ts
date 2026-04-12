@@ -137,6 +137,19 @@ db.exec(`
     PRIMARY KEY (task_id, reminder_type),
     FOREIGN KEY (task_id) REFERENCES tasks(id)
   );
+
+  CREATE TABLE IF NOT EXISTS group_invites (
+    token TEXT PRIMARY KEY,
+    group_id TEXT NOT NULL,
+    invited_email TEXT,
+    multi_use INTEGER NOT NULL DEFAULT 0,
+    created_by TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    used INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (group_id) REFERENCES groups(id),
+    FOREIGN KEY (created_by) REFERENCES users(id)
+  );
 `);
 
 // Runtime migrations — add columns if they don't exist yet

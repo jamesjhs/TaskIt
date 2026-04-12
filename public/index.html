@@ -443,10 +443,11 @@
   <div class="modal-sheet">
     <div class="modal-body">
       <h2 class="modal-title">Create Group</h2>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Leave the name blank to auto-generate a unique two-word name.</p>
       <form id="createGroupForm" onsubmit="handleCreateGroup(event)">
         <div class="form-group">
-          <label>Group Name</label>
-          <input id="createGroupName" type="text" required placeholder="My Team" class="input" />
+          <label>Group Name <span style="font-weight:400;color:#9ca3af">(optional)</span></label>
+          <input id="createGroupName" type="text" placeholder="e.g. Brave Achieve (auto-generated if blank)" class="input" />
         </div>
       </form>
     </div>
@@ -462,10 +463,15 @@
   <div class="modal-sheet">
     <div class="modal-body">
       <h2 class="modal-title">Join Group</h2>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Enter the group's two-word name and its secret key to join.</p>
       <form id="joinGroupForm" onsubmit="handleJoinGroup(event)">
         <div class="form-group">
-          <label>Shared Key</label>
-          <input id="joinGroupKey" type="text" required placeholder="Enter group key" class="input" style="text-transform:uppercase" />
+          <label>Group Name</label>
+          <input id="joinGroupName" type="text" required placeholder="e.g. Brave Achieve" class="input" />
+        </div>
+        <div class="form-group">
+          <label>Secret Key</label>
+          <input id="joinGroupKey" type="text" required placeholder="e.g. spark482" class="input" />
         </div>
       </form>
     </div>
@@ -558,13 +564,27 @@
     <div class="modal-body">
       <div style="margin-bottom:16px">
         <h2 id="groupMembersTitle" class="modal-title" style="margin-bottom:2px">Group Members</h2>
-        <p id="groupMembersKey" style="font-size:.8rem;color:#9ca3af"></p>
+        <p id="groupMembersShareInfo" style="font-size:.8rem;color:#9ca3af"></p>
       </div>
       <div id="groupAdminControls" class="hidden" style="margin-bottom:16px">
         <p class="section-heading" style="margin-top:0">Admin Controls</p>
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <input id="renameGroupInput" type="text" placeholder="New group name" class="input" style="flex:1" />
           <button onclick="renameGroup()" class="btn btn-primary btn-sm">Rename</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="inviteEmailInput" type="email" placeholder="Invite by email address" class="input" style="flex:1" />
+          <button onclick="sendEmailInvite()" class="btn btn-primary btn-sm">Send Invite</button>
+        </div>
+        <button onclick="generateGroupQR()" class="btn btn-outline btn-sm btn-full" style="margin-bottom:8px">📷 Generate QR Code / Invite Link</button>
+        <div id="groupQRArea" class="hidden" style="text-align:center;padding:12px;background:#f9fafb;border-radius:8px;margin-bottom:8px">
+          <img id="groupQRImage" src="" alt="QR Code" style="width:200px;height:200px;display:block;margin:0 auto 8px" />
+          <p style="font-size:.75rem;color:#6b7280;margin-bottom:6px">Scan to join, or share the link:</p>
+          <div style="display:flex;gap:6px;align-items:center;justify-content:center">
+            <input id="groupQRLink" type="text" readonly class="input" style="font-size:.75rem;flex:1" />
+            <button onclick="copyToClipboard(document.getElementById('groupQRLink').value)" class="btn btn-sm btn-secondary">Copy</button>
+          </div>
+          <p id="groupQRExpiry" style="font-size:.7rem;color:#9ca3af;margin-top:6px"></p>
         </div>
         <button onclick="deleteGroup()" class="btn btn-danger btn-sm btn-full">Delete Group</button>
       </div>
@@ -732,6 +752,22 @@ function storeAuth(data) {
   localStorage.setItem('jbToken', token);
   localStorage.setItem('jbUser', JSON.stringify(currentUser));
   initApp();
+  // Accept any pending invite
+  const pendingInvite = sessionStorage.getItem('pendingInvite');
+  if (pendingInvite) {
+    sessionStorage.removeItem('pendingInvite');
+    api('POST', '/groups/invite/' + encodeURIComponent(pendingInvite) + '/accept')
+      .then(data => {
+        const name = data.group && data.group.name ? data.group.name : 'the group';
+        if (data.alreadyMember) {
+          toast('You\u2019re already a member of "' + name + '".');
+        } else {
+          toast('Joined "' + name + '"!');
+        }
+        loadGroups(); renderGroups();
+      })
+      .catch(err => toast('Invite error: ' + err.message, 'error'));
+  }
 }
 
 function logout() {
@@ -896,12 +932,22 @@ function renderGroups() {
           <span class="badge ${g.role === 'admin' ? 'badge-purple' : 'badge-gray'}">${escHtml(g.role || '')}</span>
         </div>
         <p style="font-size:.82rem;color:#6b7280;margin-bottom:8px">${g.member_count || 1} member(s)</p>
+        <div style="margin-bottom:8px">
+          <p style="font-size:.75rem;color:#9ca3af;margin-bottom:2px">Group name (share to let others find you):</p>
+          <div class="group-key-box">
+            <span class="group-key-code" style="font-size:.9rem">${escHtml(g.name)}</span>
+            <button onclick="copyToClipboard('${escHtml(g.name)}')" class="btn btn-sm btn-secondary">Copy</button>
+          </div>
+        </div>
         ${g.shared_key ? `
-        <div class="group-key-box">
-          <span class="group-key-code">${escHtml(g.shared_key)}</span>
-          <button onclick="copyToClipboard('${escHtml(g.shared_key)}')" class="btn btn-sm btn-secondary">Copy</button>
+        <div style="margin-bottom:8px">
+          <p style="font-size:.75rem;color:#9ca3af;margin-bottom:2px">Secret key (keep private — needed to join):</p>
+          <div class="group-key-box">
+            <span class="group-key-code">${escHtml(g.shared_key)}</span>
+            <button onclick="copyToClipboard('${escHtml(g.shared_key)}')" class="btn btn-sm btn-secondary">Copy</button>
+          </div>
         </div>` : ''}
-        <button onclick="openGroupMembers('${escHtml(g.id)}')" class="btn btn-secondary btn-full btn-sm">${g.role === 'admin' ? 'Edit or Delete' : 'View Members'}</button>
+        <button onclick="openGroupMembers('${escHtml(g.id)}')" class="btn btn-secondary btn-full btn-sm">${g.role === 'admin' ? 'Manage / Invite' : 'View Members'}</button>
       </div>
     `).join('');
   });
@@ -928,6 +974,7 @@ async function handleCreateGroup(e) {
 }
 
 function openJoinGroupModal() {
+  document.getElementById('joinGroupName').value = '';
   document.getElementById('joinGroupKey').value = '';
   document.getElementById('joinGroupModal').classList.remove('hidden');
 }
@@ -936,8 +983,9 @@ function closeJoinGroupModal() { document.getElementById('joinGroupModal').class
 async function handleJoinGroup(e) {
   e.preventDefault();
   try {
-    const key = document.getElementById('joinGroupKey').value.trim().toUpperCase();
-    await api('POST', '/groups/join', { shared_key: key });
+    const name = document.getElementById('joinGroupName').value.trim();
+    const key = document.getElementById('joinGroupKey').value.trim();
+    await api('POST', '/groups/join', { name, shared_key: key });
     closeJoinGroupModal(); toast('Joined group!');
     await loadGroups(); renderGroups();
   } catch (err) { toast(err.message, 'error'); }
@@ -1251,8 +1299,13 @@ async function openGroupMembers(groupId) {
   listEl.innerHTML = '<div class="loading">Loading\u2026</div>';
   const group = groups.find(g => g.id === groupId);
   document.getElementById('groupMembersTitle').textContent = group ? group.name : 'Group Members';
-  document.getElementById('groupMembersKey').textContent = group ? 'Join key: ' + group.shared_key : '';
+  document.getElementById('groupMembersShareInfo').textContent = group
+    ? 'Name: ' + group.name + '  \u2022  Secret key: ' + group.shared_key
+    : '';
   if (group) document.getElementById('renameGroupInput').value = group.name;
+  // Reset invite/QR area
+  document.getElementById('inviteEmailInput').value = '';
+  document.getElementById('groupQRArea').classList.add('hidden');
   try {
     const members = await api('GET', '/groups/' + groupId + '/members');
     const myMembership = members.find(m => currentUser && m.id === currentUser.id);
@@ -1284,6 +1337,30 @@ async function openGroupMembers(groupId) {
         </div>`;
     }).join('');
   } catch (err) { listEl.innerHTML = `<div class="loading" style="color:#dc2626">${escHtml(err.message)}</div>`; }
+}
+
+async function sendEmailInvite() {
+  if (!currentGroupId) return;
+  const email = document.getElementById('inviteEmailInput').value.trim();
+  if (!email) { toast('Please enter an email address', 'error'); return; }
+  try {
+    await api('POST', '/groups/' + currentGroupId + '/invite', { email });
+    document.getElementById('inviteEmailInput').value = '';
+    toast('Invite sent to ' + email + '!');
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function generateGroupQR() {
+  if (!currentGroupId) return;
+  const area = document.getElementById('groupQRArea');
+  try {
+    const data = await api('GET', '/groups/' + currentGroupId + '/qr');
+    document.getElementById('groupQRImage').src = data.qr;
+    document.getElementById('groupQRLink').value = data.invite_url;
+    const expiry = data.expires_at ? 'Expires: ' + fmtDate(data.expires_at) : '';
+    document.getElementById('groupQRExpiry').textContent = expiry;
+    area.classList.remove('hidden');
+  } catch (err) { toast(err.message, 'error'); }
 }
 
 async function renameGroup() {
@@ -1490,10 +1567,15 @@ document.addEventListener('click', function(e) {
 (async function() {
   const params = new URLSearchParams(window.location.search);
   const magicToken = params.get('token');
+  const inviteToken = params.get('invite');
+
   if (magicToken) {
     try {
       const data = await api('GET', '/auth/magic-link/verify?token=' + encodeURIComponent(magicToken));
       history.replaceState(null, '', window.location.pathname);
+      // Preserve any pending invite token through the auth flow
+      const pendingInvite = sessionStorage.getItem('pendingInvite') || inviteToken;
+      if (pendingInvite) sessionStorage.setItem('pendingInvite', pendingInvite);
       storeAuth(data);
     } catch (err) {
       history.replaceState(null, '', window.location.pathname);
@@ -1501,6 +1583,18 @@ document.addEventListener('click', function(e) {
     }
     return;
   }
+
+  if (inviteToken) {
+    // Store the invite token so it can be used after authentication
+    sessionStorage.setItem('pendingInvite', inviteToken);
+    history.replaceState(null, '', window.location.pathname);
+    // Show invite info before user logs in / registers
+    try {
+      const info = await api('GET', '/groups/invite/' + encodeURIComponent(inviteToken));
+      toast('You\u2019ve been invited to join "' + info.group.name + '". Sign in or create an account to accept.', 'info');
+    } catch (err) { /* invite may be invalid, just show auth page */ }
+  }
+
   if (token && currentUser) initApp();
 })();
 </script>

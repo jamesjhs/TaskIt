@@ -84,6 +84,25 @@ export const VERBS = [
   'Reach', 'Rise', 'Serve', 'Shine', 'Thrive',
 ];
 
+// Common animals — form the second word of an invite word pair
+export const ANIMALS = [
+  'Antelope', 'Badger', 'Bear', 'Beaver', 'Bison',
+  'Buffalo', 'Camel', 'Cheetah', 'Chipmunk', 'Condor',
+  'Cougar', 'Crane', 'Cub', 'Deer', 'Dolphin',
+  'Eagle', 'Elephant', 'Falcon', 'Ferret', 'Finch',
+  'Fox', 'Gazelle', 'Giraffe', 'Gorilla', 'Hawk',
+  'Hedgehog', 'Heron', 'Hippo', 'Husky', 'Ibis',
+  'Jaguar', 'Kestrel', 'Kingfisher', 'Kite', 'Koala',
+  'Leopard', 'Lion', 'Llama', 'Lynx', 'Magpie',
+  'Marmot', 'Moose', 'Narwhal', 'Ocelot', 'Osprey',
+  'Otter', 'Owl', 'Panda', 'Panther', 'Parrot',
+  'Pelican', 'Penguin', 'Puffin', 'Quail', 'Rabbit',
+  'Raccoon', 'Raven', 'Robin', 'Salamander', 'Seal',
+  'Shark', 'Sparrow', 'Stag', 'Swan', 'Tiger',
+  'Toucan', 'Viper', 'Vole', 'Walrus', 'Weasel',
+  'Wolf', 'Wolverine', 'Wombat', 'Yak', 'Zebra',
+];
+
 // Positive, easy-to-remember words of 5–8 letters
 const PASSWORD_WORDS = [
   'amber', 'bliss', 'bloom', 'brave', 'breeze',
@@ -119,7 +138,7 @@ function pick<T>(arr: T[]): T {
 }
 
 export function generateGroupName(): string {
-  return pick(ADJECTIVES) + ' ' + pick(VERBS);
+  return pick(ADJECTIVES) + pick(ANIMALS);
 }
 
 export function generateSharedKey(): string {

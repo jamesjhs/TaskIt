@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { DB_PATH as DB_PATH_OVERRIDE } from './config';
+import { generateGroupName } from './wordlists';
 
 const DB_PATH = DB_PATH_OVERRIDE || path.join(__dirname, '..', 'jobber.db');
 
@@ -177,6 +178,22 @@ addCol('users', 'email_verified', 'INTEGER NOT NULL DEFAULT 1');
 addCol('users', 'locale', "TEXT NOT NULL DEFAULT 'en-GB'");
 addCol('users', 'last_active_at', 'INTEGER');
 addCol('tasks', 'due_date', 'INTEGER');
+// invite_name is the auto-generated two-word CamelCase pair (e.g. FastAntelope) used for joining
+addCol('groups', 'invite_name', "TEXT NOT NULL DEFAULT ''");
+// Backfill existing groups: generate a proper unique invite word pair for any group that lacks one
+{
+  const ungrouped = db.prepare("SELECT id FROM groups WHERE invite_name = ''").all() as Array<{ id: string }>;
+  const update = db.prepare('UPDATE groups SET invite_name = ? WHERE id = ?');
+  for (const row of ungrouped) {
+    let candidate: string;
+    let attempts = 0;
+    do {
+      if (++attempts > 1000) throw new Error('Could not generate a unique invite_name after 1000 attempts');
+      candidate = generateGroupName();
+    } while (db.prepare('SELECT 1 FROM groups WHERE invite_name = ?').get(candidate));
+    update.run(candidate, row.id);
+  }
+}
 
 // Ensure smtp_settings has exactly one row (singleton pattern)
 const smtpRow = db.prepare('SELECT id FROM smtp_settings WHERE id = 1').get();

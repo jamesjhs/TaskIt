@@ -71,6 +71,31 @@ export async function sendOTP(to: string, code: string): Promise<void> {
   });
 }
 
+export async function sendGroupInvite(to: string, groupName: string, inviteUrl: string, inviterName?: string): Promise<void> {
+  const transporter = await getTransporter();
+
+  if (!transporter) {
+    console.warn('[mail] SMTP not configured or disabled — group invite not emailed');
+    console.info(`[mail] Group invite for ${to} to join "${groupName}": ${inviteUrl}`);
+    return;
+  }
+  const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
+  const from = settings?.from_addr || 'noreply@jobber.app';
+
+  const inviterLabel = inviterName ? `${inviterName} has` : 'You have been';
+  const subject = `${inviterLabel} invited you to join "${groupName}" on Jobber`;
+  const intro = `${inviterLabel} invited you to join the group <strong>${groupName}</strong> on Jobber.`;
+  const body = `Click the link below to accept the invitation and join the group (link expires in 7 days):`;
+
+  await transporter.sendMail({
+    from,
+    to,
+    subject,
+    text: `${inviterLabel} invited you to join "${groupName}" on Jobber.\n\n${body}\n\n${inviteUrl}\n\nIf you did not expect this invitation, you can safely ignore this email.`,
+    html: `<p>${intro}</p><p>${body}</p><p><a href="${inviteUrl}">${inviteUrl}</a></p><p>If you did not expect this invitation, you can safely ignore this email.</p>`,
+  });
+}
+
 export async function sendTaskReminder(to: string, task: { title: string; due_date: number }, reminderLabel?: string): Promise<void> {
   const transporter = await getTransporter();
   if (!transporter) {

@@ -4,22 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Jobber – Task Management</title>
-  <link rel="stylesheet" href="/tailwind.css" />
+  <link rel="stylesheet" href="/app.css" />
   <!-- PWA / installable web app -->
   <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#4F46E5" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#1a56db" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Jobber" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
-  <style>
-    [x-cloak] { display: none !important; }
-    .toast { animation: slideIn 0.3s ease, fadeOut 0.5s ease 3s forwards; }
-    @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    @keyframes fadeOut { to { opacity: 0; pointer-events: none; } }
-    .modal-backdrop { backdrop-filter: blur(2px); }
-  </style>
 </head>
 <body>
 
@@ -54,7 +46,7 @@
     <form id="loginForm" onsubmit="handleMagicLinkSend(event)">
       <div class="form-group">
         <label>Email</label>
-        <input id="loginEmail" type="email" required placeholder="you@example.com" class="input" />
+        <input id="loginEmail" type="email" required placeholder="you@example.com" autocomplete="email" class="input" />
       </div>
       <div id="magicLinkMode">
         <button type="submit" class="btn btn-primary btn-full">Send Magic Link</button>
@@ -76,33 +68,25 @@
 
       <!-- Register Form -->
       <form id="registerForm" class="hidden" onsubmit="handleRegister(event)">
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Username</label>
-            <input id="regUsername" type="text" required placeholder="johndoe"
-              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
-            <input id="regEmail" type="email" required placeholder="you@example.com"
-              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
-            <input id="regPassword" type="password" required placeholder="••••••••" minlength="8" autocomplete="new-password"
-              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Confirm Password</label>
-            <input id="regConfirmPassword" type="password" required placeholder="••••••••" minlength="8" autocomplete="new-password"
-              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
-          </div>
-          <button type="submit"
-            class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors shadow-md">
-            Create Account
-          </button>
+        <div class="form-group">
+          <label>Username</label>
+          <input id="regUsername" type="text" required placeholder="johndoe" autocomplete="username" class="input" />
         </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input id="regEmail" type="email" required placeholder="you@example.com" autocomplete="email" class="input" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input id="regPassword" type="password" required placeholder="••••••••" minlength="8" autocomplete="new-password" class="input" />
+        </div>
+        <div class="form-group">
+          <label>Confirm Password</label>
+          <input id="regConfirmPassword" type="password" required placeholder="••••••••" minlength="8" autocomplete="new-password" class="input" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
+      <p class="version-footer" style="margin-top:16px">Jobber v0.5.1 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a></p>
     </div>
   </div>
 </div>
@@ -398,54 +382,44 @@
       <button onclick="closeDetailModal()" class="btn btn-secondary btn-sm">✕</button>
     </div>
   </div>
-  <!-- Auth page footer -->
-  <footer class="mt-8 text-center text-xs text-slate-400">
-    Jobber v0.5.1 &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp;
-    <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:underline">jahosi.co.uk</a>
-    &nbsp;·&nbsp;
-    <a href="/privacy-policy.html" class="text-indigo-400 hover:underline">Privacy Policy</a>
-  </footer>
 </div>
 
 <!-- ===== OTP MODAL (2FA) ===== -->
-<div id="otpModal" class="hidden fixed inset-0 z-50 modal-backdrop bg-black/40 flex items-center justify-center p-4">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-8">
-    <div class="text-center mb-6">
-      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 mb-4 shadow-lg">
-        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+<div id="otpModal" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-body" style="text-align:center">
+      <div class="auth-logo-icon" style="margin:0 auto 16px">
+        <svg width="28" height="28" fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
             d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
         </svg>
       </div>
-      <h2 class="text-xl font-bold text-slate-800 dark:text-white">Two-Factor Authentication</h2>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+      <h2 class="modal-title">Two-Factor Authentication</h2>
+      <p style="font-size:.9rem;color:#6b7280;margin-bottom:20px">
         We sent a 6-digit code to your email.<br/>Enter it below to sign in.
       </p>
-    </div>
-    <div class="space-y-4">
-      <input id="otpCode" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
-        placeholder="000000" autocomplete="one-time-code"
-        onkeydown="if(event.key==='Enter') handleOTPVerify()"
-        class="w-full text-center text-2xl font-mono tracking-[0.5em] px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-      <button onclick="handleOTPVerify()"
-        class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors shadow-md">
-        Verify Code
-      </button>
-      <p class="text-center text-xs text-slate-400">
+      <div class="form-group">
+        <input id="otpCode" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+          placeholder="000000" autocomplete="one-time-code"
+          onkeydown="if(event.key==='Enter') handleOTPVerify()"
+          class="input" style="text-align:center;font-size:1.5rem;font-family:monospace;letter-spacing:.5em" />
+      </div>
+      <button onclick="handleOTPVerify()" class="btn btn-primary btn-full">Verify Code</button>
+      <p style="font-size:.8rem;color:#9ca3af;margin-top:12px">
         Code expires in 10 minutes.
-        <button type="button" onclick="cancelOTP()" class="text-indigo-500 hover:underline ml-1">Cancel</button>
+        <button type="button" onclick="cancelOTP()" class="link-btn" style="font-size:.8rem">Cancel</button>
       </p>
     </div>
   </div>
 </div>
 
 
-<div id="groupMembersModal" class="hidden fixed inset-0 z-40 modal-backdrop bg-black/40 flex items-center justify-center p-4">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto">
-    <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
-      <div>
-        <h3 id="groupMembersTitle" class="text-lg font-bold text-slate-800 dark:text-white">Group Members</h3>
-        <p id="groupMembersKey" class="text-xs text-slate-400 mt-0.5"></p>
+<div id="groupMembersModal" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-body">
+      <div style="margin-bottom:16px">
+        <h2 id="groupMembersTitle" class="modal-title" style="margin-bottom:2px">Group Members</h2>
+        <p id="groupMembersKey" style="font-size:.8rem;color:#9ca3af"></p>
       </div>
       <div id="groupAdminControls" class="hidden" style="margin-bottom:16px">
         <p class="section-heading" style="margin-top:0">Admin Controls</p>

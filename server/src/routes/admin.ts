@@ -153,7 +153,7 @@ router.put('/feedback/:id/read', (req: Request, res: Response): void => {
   const fbId = req.params.id;
   const row = db.prepare('SELECT id FROM feedback_messages WHERE id = ?').get(fbId);
   if (!row) { res.status(404).json({ error: 'Feedback not found' }); return; }
-  db.prepare("UPDATE feedback_messages SET read_at = ?, status = 'completed' WHERE id = ?").run(Date.now(), fbId);
+  db.prepare('UPDATE feedback_messages SET read_at = ? WHERE id = ?').run(Date.now(), fbId);
   res.json({ message: 'Marked as read' });
 });
 

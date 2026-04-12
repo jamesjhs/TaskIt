@@ -617,6 +617,13 @@ a:hover { text-decoration: underline; }
 .due-overdue { color: #dc2626; font-weight: 700; }
 .due-soon    { color: #d97706; font-weight: 600; }
 
+/* Task card urgency / due-soon highlights */
+.task-card-urgent   { background: #fff0f0; }
+.task-card-due-soon { background: #fca5a5; }
+
+/* Inline new-type row in task modal */
+.new-type-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+
 /* Detail modal sections */
 .detail-section { margin-bottom: 16px; }
 .detail-section-title { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #9ca3af; margin-bottom: 8px; }

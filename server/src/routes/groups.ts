@@ -1,0 +1,106 @@
+import { Router, Request, Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import { authMiddleware } from '../middleware/auth';
+import db from '../db';
+
+const router = Router();
+
+router.use(authMiddleware);
+
+router.get('/', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const groups = db.prepare(`
+    SELECT g.*, gm.role,
+      (SELECT COUNT(*) FROM group_members WHERE group_id = g.id) AS member_count
+    FROM groups g
+    JOIN group_members gm ON gm.group_id = g.id
+    WHERE gm.user_id = ?
+    ORDER BY g.created_at DESC
+  `).all(userId);
+  res.json(groups);
+});
+
+router.post('/', (req: Request, res: Response): void => {
+  const { name } = req.body;
+  const userId = req.user!.id;
+
+  if (!name) {
+    res.status(400).json({ error: 'name is required' });
+    return;
+  }
+
+  const id = uuidv4();
+  const sharedKey = uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase();
+  const now = Date.now();
+
+  db.prepare(
+    'INSERT INTO groups (id, name, shared_key, created_by, created_at) VALUES (?, ?, ?, ?, ?)'
+  ).run(id, name, sharedKey, userId, now);
+
+  db.prepare(
+    'INSERT INTO group_members (group_id, user_id, role, joined_at) VALUES (?, ?, ?, ?)'
+  ).run(id, userId, 'admin', now);
+
+  const group = db.prepare('SELECT * FROM groups WHERE id = ?').get(id);
+  res.status(201).json(group);
+});
+
+router.post('/join', (req: Request, res: Response): void => {
+  const { shared_key } = req.body;
+  const userId = req.user!.id;
+
+  if (!shared_key) {
+    res.status(400).json({ error: 'shared_key is required' });
+    return;
+  }
+
+  const group = db.prepare('SELECT * FROM groups WHERE shared_key = ?').get(shared_key) as
+    | { id: string; name: string; shared_key: string; created_by: string }
+    | undefined;
+
+  if (!group) {
+    res.status(404).json({ error: 'Group not found' });
+    return;
+  }
+
+  const existing = db.prepare(
+    'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(group.id, userId);
+
+  if (existing) {
+    res.status(409).json({ error: 'Already a member of this group' });
+    return;
+  }
+
+  db.prepare(
+    'INSERT INTO group_members (group_id, user_id, role, joined_at) VALUES (?, ?, ?, ?)'
+  ).run(group.id, userId, 'member', Date.now());
+
+  res.json(group);
+});
+
+router.get('/:id/members', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const groupId = req.params.id;
+
+  const membership = db.prepare(
+    'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(groupId, userId);
+
+  if (!membership) {
+    res.status(403).json({ error: 'Not a member of this group' });
+    return;
+  }
+
+  const members = db.prepare(`
+    SELECT u.id, u.username, u.email, gm.role, gm.joined_at
+    FROM users u
+    JOIN group_members gm ON gm.user_id = u.id
+    WHERE gm.group_id = ?
+    ORDER BY gm.joined_at ASC
+  `).all(groupId);
+
+  res.json(members);
+});
+
+export default router;

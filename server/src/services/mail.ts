@@ -24,21 +24,50 @@ export async function getTransporter(): Promise<nodemailer.Transporter | null> {
   });
 }
 
-export async function sendMagicLink(to: string, token: string, baseUrl: string): Promise<void> {
+export async function sendMagicLink(to: string, token: string, baseUrl: string, purpose: 'login' | 'verify' = 'login'): Promise<void> {
   const transporter = await getTransporter();
+  const link = `${baseUrl}?token=${token}`;
+
   if (!transporter) {
-    console.warn('[mail] SMTP not configured or disabled — skipping magic link email');
+    console.warn('[mail] SMTP not configured or disabled — magic link not emailed');
+    console.info(`[mail] Magic link (${purpose}) for ${to}: ${link}`);
     return;
   }
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
   const from = settings?.from_addr || 'noreply@jobber.app';
-  const link = `${baseUrl}?token=${token}`;
+
+  const isVerify = purpose === 'verify';
+  const subject = isVerify ? 'Verify your Jobber account' : 'Your Jobber login link';
+  const intro = isVerify
+    ? 'Click the link below to verify your email address and activate your Jobber account (expires in 15 minutes):'
+    : 'Click the link below to sign in to Jobber (expires in 15 minutes):';
+
   await transporter.sendMail({
     from,
     to,
-    subject: 'Your Jobber login link',
-    text: `Click the link below to sign in to Jobber (expires in 15 minutes):\n\n${link}\n\nIf you did not request this, you can safely ignore this email.`,
-    html: `<p>Click the link below to sign in to Jobber (expires in 15 minutes):</p><p><a href="${link}">${link}</a></p><p>If you did not request this, you can safely ignore this email.</p>`,
+    subject,
+    text: `${intro}\n\n${link}\n\nIf you did not request this, you can safely ignore this email.`,
+    html: `<p>${intro}</p><p><a href="${link}">${link}</a></p><p>If you did not request this, you can safely ignore this email.</p>`,
+  });
+}
+
+export async function sendOTP(to: string, code: string): Promise<void> {
+  const transporter = await getTransporter();
+
+  if (!transporter) {
+    console.warn('[mail] SMTP not configured or disabled — OTP not emailed');
+    console.info(`[mail] 2FA OTP for ${to}: ${code}`);
+    return;
+  }
+  const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
+  const from = settings?.from_addr || 'noreply@jobber.app';
+
+  await transporter.sendMail({
+    from,
+    to,
+    subject: 'Your Jobber verification code',
+    text: `Your Jobber two-factor authentication code is: ${code}\n\nThis code expires in 10 minutes. Do not share it with anyone.`,
+    html: `<p>Your Jobber two-factor authentication code is:</p><h2 style="letter-spacing:0.2em;">${code}</h2><p>This code expires in 10 minutes. Do not share it with anyone.</p>`,
   });
 }
 

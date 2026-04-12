@@ -73,6 +73,7 @@ Open `http://localhost:3000` after starting the server. No separate build step n
 | POST   | /api/groups             | Create group         |
 | POST   | /api/groups/join        | Join with shared key |
 | GET    | /api/groups/:id/members | List members         |
+| DELETE | /api/groups/:id         | Delete group (admin) |
 
 ### Task Types
 | Method | Path            | Description              |

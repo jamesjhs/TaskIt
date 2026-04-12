@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
+import { generateGroupName, generateSharedKey } from '../wordlists';
 
 const router = Router();
 
@@ -24,18 +25,25 @@ router.post('/', (req: Request, res: Response): void => {
   const { name } = req.body;
   const userId = req.user!.id;
 
-  if (!name) {
-    res.status(400).json({ error: 'name is required' });
-    return;
-  }
-
   const id = uuidv4();
-  const sharedKey = uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase();
+  const trimmedName = name && typeof name === 'string' ? name.trim() : '';
+  let groupName: string;
+  if (trimmedName) {
+    groupName = trimmedName;
+  } else {
+    // Retry until a name not already in use is found
+    let candidate: string;
+    do {
+      candidate = generateGroupName();
+    } while (db.prepare('SELECT 1 FROM groups WHERE name = ?').get(candidate));
+    groupName = candidate;
+  }
+  const sharedKey = generateSharedKey();
   const now = Date.now();
 
   db.prepare(
     'INSERT INTO groups (id, name, shared_key, created_by, created_at) VALUES (?, ?, ?, ?, ?)'
-  ).run(id, name, sharedKey, userId, now);
+  ).run(id, groupName, sharedKey, userId, now);
 
   db.prepare(
     'INSERT INTO group_members (group_id, user_id, role, joined_at) VALUES (?, ?, ?, ?)'
@@ -129,6 +137,29 @@ router.patch('/:id/name', (req: Request, res: Response): void => {
   db.prepare('UPDATE groups SET name = ? WHERE id = ?').run(name.trim(), groupId);
   const group = db.prepare('SELECT * FROM groups WHERE id = ?').get(groupId);
   res.json(group);
+});
+
+router.delete('/:id', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const groupId = req.params.id;
+
+  const membership = db.prepare(
+    'SELECT role FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(groupId, userId) as { role: string } | undefined;
+
+  if (!membership) {
+    res.status(403).json({ error: 'Not a member of this group' });
+    return;
+  }
+  if (membership.role !== 'admin') {
+    res.status(403).json({ error: 'Only group admins can delete the group' });
+    return;
+  }
+
+  db.prepare('DELETE FROM group_members WHERE group_id = ?').run(groupId);
+  db.prepare('DELETE FROM groups WHERE id = ?').run(groupId);
+
+  res.json({ message: 'Group deleted' });
 });
 
 router.patch('/:id/members/:userId/role', (req: Request, res: Response): void => {

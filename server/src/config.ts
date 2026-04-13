@@ -12,6 +12,7 @@ export const JWT_SECRET = secret ?? 'jobber-dev-secret-change-before-deploy';
 
 export const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 export const DB_PATH: string | undefined = process.env.DB_PATH;
+export const DB_ENCRYPTION_KEY: string | undefined = process.env.DB_ENCRYPTION_KEY || undefined;
 export const MAX_LOGIN_ATTEMPTS = process.env.MAX_LOGIN_ATTEMPTS ? parseInt(process.env.MAX_LOGIN_ATTEMPTS, 10) : 5;
 export const LOCKOUT_MINUTES = process.env.LOCKOUT_MINUTES ? parseInt(process.env.LOCKOUT_MINUTES, 10) : 30;
 export const ADMIN_EMAIL: string | null = process.env.ADMIN_EMAIL || null;
@@ -22,6 +23,21 @@ export const APP_VERSION: string = pkg.version;
 // development / single-domain deployments but not recommended for production
 // where the Host header can be spoofed).
 export const BASE_URL: string | null = process.env.BASE_URL ? process.env.BASE_URL.replace(/\/$/, '') : null;
+
+// Allowed CORS origin(s).  Set CORS_ORIGIN to a comma-separated list of
+// permitted origins (e.g. "https://app.example.com") to allow cross-origin
+// requests.  Defaults to BASE_URL when set, or no CORS otherwise.
+// Since the SPA is served directly from this Express server (same origin),
+// CORS is typically only needed for non-browser clients or split deployments.
+export const CORS_ORIGIN: string | string[] | false = (() => {
+  if (process.env.CORS_ORIGIN) {
+    const origins = process.env.CORS_ORIGIN.split(',').map(o => o.trim()).filter(Boolean);
+    return origins.length === 1 ? origins[0] : origins;
+  }
+  if (BASE_URL) return BASE_URL;
+  // Default: no cross-origin access.  Set CORS_ORIGIN or BASE_URL to enable.
+  return false;
+})();
 
 export const SMTP = {
   host: process.env.SMTP_HOST || '',

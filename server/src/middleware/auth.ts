@@ -28,15 +28,34 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
   const token = authHeader.slice(7);
   try {
     const payload = jwt.verify(token, JWT_SECRET) as AuthPayload;
+
+    // Re-verify the user still exists and is not currently locked.
+    // This ensures that deleted, locked, or password-changed accounts cannot
+    // continue using an old JWT for the remainder of its 7-day lifetime.
+    const userRow = db.prepare(
+      'SELECT last_active_at, locked_until FROM users WHERE id = ?'
+    ).get(payload.id) as { last_active_at: number | null; locked_until: number | null } | undefined;
+
+    if (!userRow) {
+      res.status(401).json({ error: 'Invalid or expired token' });
+      return;
+    }
+
+    if (userRow.locked_until && userRow.locked_until > Date.now()) {
+      res.status(423).json({ error: 'Account is locked' });
+      return;
+    }
+
     req.user = payload;
+
     // Update last_active_at at most once per day per user
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayMs = todayStart.getTime();
-    const row = db.prepare('SELECT last_active_at FROM users WHERE id = ?').get(payload.id) as { last_active_at: number | null } | undefined;
-    if (!row?.last_active_at || row.last_active_at < todayMs) {
+    if (!userRow.last_active_at || userRow.last_active_at < todayMs) {
       db.prepare('UPDATE users SET last_active_at = ? WHERE id = ?').run(Date.now(), payload.id);
     }
+
     next();
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' });

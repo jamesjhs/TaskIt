@@ -7,6 +7,10 @@ interface TaskRow {
   title: string;
   due_date: number;
   created_by: string;
+  notify_email: number;
+  notify_7day: number;
+  notify_1day: number;
+  notify_overdue: number;
 }
 
 interface UserRow {
@@ -29,13 +33,15 @@ async function sendReminders(): Promise<void> {
     const maxDue = now + window.maxMs;
 
     const tasks = db.prepare(`
-      SELECT t.id, t.title, t.due_date, t.created_by
+      SELECT t.id, t.title, t.due_date, t.created_by,
+             t.notify_email, t.notify_7day, t.notify_1day, t.notify_overdue
       FROM tasks t
       WHERE t.due_date IS NOT NULL
         AND t.due_date > ?
         AND t.due_date <= ?
         AND t.status != 'complete'
         AND t.archived = 0
+        AND t.notify_email = 1
         AND NOT EXISTS (
           SELECT 1 FROM task_reminders_sent trs
           WHERE trs.task_id = t.id AND trs.reminder_type = ?
@@ -43,6 +49,10 @@ async function sendReminders(): Promise<void> {
     `).all(minDue, maxDue, window.type) as TaskRow[];
 
     for (const task of tasks) {
+      // Respect per-reminder-type flags
+      if (window.type === '7_day' && !task.notify_7day) continue;
+      if (window.type === '1_day' && !task.notify_1day) continue;
+      if (window.type === 'overdue' && !task.notify_overdue) continue;
       const recipientIds = new Set<string>();
       recipientIds.add(task.created_by);
 

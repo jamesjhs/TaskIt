@@ -9,6 +9,19 @@ const router = Router();
 const ALLOWED_STATUSES = new Set(['not_started', 'started', 'complete']);
 const ALLOWED_RECUR_UNITS = new Set(['days', 'weeks', 'months', 'years']);
 
+// Returns true when the requesting user may act on a task — either because they
+// created it, or because the task belongs to a group the user is a member of.
+// Personal (non-group) tasks remain accessible only to their creator.
+function hasTaskAccess(task: { created_by: string; group_id: string | null }, userId: string): boolean {
+  if (task.created_by === userId) return true;
+  if (task.group_id) {
+    return !!db.prepare(
+      'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
+    ).get(task.group_id, userId);
+  }
+  return false;
+}
+
 function computeNextDue(dueDateMs: number, interval: number, unit: string): number {
   const d = new Date(dueDateMs);
   switch (unit) {
@@ -120,14 +133,15 @@ router.get('/', (req: Request, res: Response): void => {
 
 router.post('/', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const { title, details, typeId, groupId, assigneeIds, dueDate, recurInterval, recurUnit } = req.body;
+  const { title, details, typeId, groupId, assigneeIds, dueDate, recurInterval, recurUnit,
+          notifyEmail, notify7day, notify1day, notifyOverdue } = req.body;
 
   if (!title || !typeId) {
     res.status(400).json({ error: 'title and typeId are required' });
     return;
   }
 
-  if (recurInterval !== undefined || recurUnit !== undefined) {
+  if ((recurInterval !== undefined && recurInterval !== null) || (recurUnit !== undefined && recurUnit !== null)) {
     const interval = recurInterval != null ? parseInt(String(recurInterval), 10) : NaN;
     if (!Number.isInteger(interval) || interval < 1 || interval > 365) {
       res.status(400).json({ error: 'recurInterval must be an integer between 1 and 365' });
@@ -161,18 +175,35 @@ router.post('/', (req: Request, res: Response): void => {
   const now = Date.now();
 
   db.prepare(`
-    INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit)
-    VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?)
+    INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_overdue)
+    VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(id, title, details || null, typeId, userId, groupId || null, now, now, dueDate || null,
     recurInterval ? parseInt(String(recurInterval), 10) : null,
-    recurUnit || null);
+    recurUnit || null,
+    notifyEmail === false || notifyEmail === 0 ? 0 : 1,
+    notify7day === false || notify7day === 0 ? 0 : 1,
+    notify1day === false || notify1day === 0 ? 0 : 1,
+    notifyOverdue === false || notifyOverdue === 0 ? 0 : 1);
 
-  // Insert assignees
-  const ids: string[] = Array.isArray(assigneeIds) ? assigneeIds : [];
+  // Insert assignees — validate each ID refers to a real user before inserting
+  // to avoid a FK constraint exception (and a 500 response) on bad input.
+  // Batch-validate all IDs in a single query to avoid N+1 round trips.
+  const ids: string[] = (Array.isArray(assigneeIds) ? assigneeIds : []).filter(
+    (id): id is string => typeof id === 'string'
+  );
+  const validAssigneeIds: Set<string> = new Set();
+  if (ids.length > 0) {
+    const placeholders = ids.map(() => '?').join(',');
+    const validRows = db.prepare(
+      `SELECT id FROM users WHERE id IN (${placeholders})`
+    ).all(...ids) as Array<{ id: string }>;
+    for (const r of validRows) validAssigneeIds.add(r.id);
+  }
+
   const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
   const insertAlert = db.prepare('INSERT INTO user_alerts (id, user_id, message, created_at) VALUES (?, ?, ?, ?)');
 
-  for (const aId of ids) {
+  for (const aId of validAssigneeIds) {
     insertAssignee.run(id, aId);
     // Don't notify the creator
     if (aId !== userId) {
@@ -210,13 +241,14 @@ router.patch('/:id', (req: Request, res: Response): void => {
     return;
   }
 
-  // Only creator can update
-  if (task.created_by !== userId) {
+  // Creator always has access; group members have full write access to group tasks
+  if (!hasTaskAccess(task, userId)) {
     res.status(403).json({ error: 'Not authorized' });
     return;
   }
 
-  const { title, details, typeId, status, assigneeIds, dueDate, recurInterval, recurUnit } = req.body;
+  const { title, details, typeId, status, assigneeIds, dueDate, recurInterval, recurUnit,
+          notifyEmail, notify7day, notify1day, notifyOverdue } = req.body;
 
   // Validate status if provided
   if (status !== undefined && !ALLOWED_STATUSES.has(status as string)) {
@@ -253,6 +285,10 @@ router.patch('/:id', (req: Request, res: Response): void => {
   if (dueDate !== undefined) { setClauses.push('due_date = ?'); vals.push(dueDate || null); }
   if (recurInterval !== undefined) { setClauses.push('recur_interval = ?'); vals.push(recurInterval ? parseInt(String(recurInterval), 10) : null); }
   if (recurUnit !== undefined) { setClauses.push('recur_unit = ?'); vals.push(recurUnit || null); }
+  if (notifyEmail !== undefined) { setClauses.push('notify_email = ?'); vals.push(notifyEmail === false || notifyEmail === 0 ? 0 : 1); }
+  if (notify7day !== undefined) { setClauses.push('notify_7day = ?'); vals.push(notify7day === false || notify7day === 0 ? 0 : 1); }
+  if (notify1day !== undefined) { setClauses.push('notify_1day = ?'); vals.push(notify1day === false || notify1day === 0 ? 0 : 1); }
+  if (notifyOverdue !== undefined) { setClauses.push('notify_overdue = ?'); vals.push(notifyOverdue === false || notifyOverdue === 0 ? 0 : 1); }
   setClauses.push('updated_at = ?');
   vals.push(now);
   vals.push(taskId);
@@ -263,9 +299,17 @@ router.patch('/:id', (req: Request, res: Response): void => {
 
   if (Array.isArray(assigneeIds)) {
     db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(taskId);
-    const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
-    for (const aId of assigneeIds) {
-      insertAssignee.run(taskId, aId);
+    // Batch-validate all assignee IDs in a single query
+    const validIds = (assigneeIds as unknown[]).filter((id): id is string => typeof id === 'string');
+    if (validIds.length > 0) {
+      const placeholders = validIds.map(() => '?').join(',');
+      const validRows = db.prepare(
+        `SELECT id FROM users WHERE id IN (${placeholders})`
+      ).all(...validIds) as Array<{ id: string }>;
+      const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
+      for (const row of validRows) {
+        insertAssignee.run(taskId, row.id);
+      }
     }
   }
 
@@ -297,7 +341,7 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
   }
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string }
+    | { id: string; created_by: string; group_id: string | null }
     | undefined;
 
   if (!task) {
@@ -305,12 +349,12 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
     return;
   }
 
-  // Allow creator or assignee to update status
-  const isAssignee = db.prepare(
+  // Allow creator, assignee, or any group member to update status
+  const isAssignee = !!db.prepare(
     'SELECT 1 FROM task_assignees WHERE task_id = ? AND user_id = ?'
   ).get(taskId, userId);
 
-  if (task.created_by !== userId && !isAssignee) {
+  if (!hasTaskAccess(task, userId) && !isAssignee) {
     res.status(403).json({ error: 'Not authorized' });
     return;
   }
@@ -322,6 +366,7 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
     const fullTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as {
       id: string; title: string; details: string | null; type_id: string; created_by: string;
       group_id: string | null; due_date: number | null; recur_interval: number | null; recur_unit: string | null;
+      notify_email: number; notify_7day: number; notify_1day: number; notify_overdue: number;
     } | undefined;
 
     if (fullTask && fullTask.recur_interval && fullTask.recur_unit && fullTask.due_date) {
@@ -329,10 +374,11 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
       const newId = uuidv4();
       const now2 = Date.now();
       db.prepare(`
-        INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit)
-        VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?)
+        INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_overdue)
+        VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(newId, fullTask.title, fullTask.details, fullTask.type_id, fullTask.created_by,
-        fullTask.group_id, now2, now2, nextDue, fullTask.recur_interval, fullTask.recur_unit);
+        fullTask.group_id, now2, now2, nextDue, fullTask.recur_interval, fullTask.recur_unit,
+        fullTask.notify_email, fullTask.notify_7day, fullTask.notify_1day, fullTask.notify_overdue);
 
       const assignees = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(taskId) as Array<{ user_id: string }>;
       const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
@@ -404,7 +450,7 @@ router.patch('/:id/archive', (req: Request, res: Response): void => {
   const taskId = req.params.id;
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string; archived: number }
+    | { id: string; created_by: string; group_id: string | null; archived: number }
     | undefined;
 
   if (!task) {
@@ -412,7 +458,7 @@ router.patch('/:id/archive', (req: Request, res: Response): void => {
     return;
   }
 
-  if (task.created_by !== userId) {
+  if (!hasTaskAccess(task, userId)) {
     res.status(403).json({ error: 'Not authorized' });
     return;
   }
@@ -437,7 +483,7 @@ router.delete('/:id', (req: Request, res: Response): void => {
   const taskId = req.params.id;
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string }
+    | { id: string; created_by: string; group_id: string | null }
     | undefined;
 
   if (!task) {
@@ -445,7 +491,7 @@ router.delete('/:id', (req: Request, res: Response): void => {
     return;
   }
 
-  if (task.created_by !== userId) {
+  if (!hasTaskAccess(task, userId)) {
     res.status(403).json({ error: 'Not authorized' });
     return;
   }

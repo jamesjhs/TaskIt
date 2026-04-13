@@ -1,12 +1,24 @@
-import Database from 'better-sqlite3';
+import Database from 'better-sqlite3-multiple-ciphers';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { DB_PATH as DB_PATH_OVERRIDE } from './config';
+import { DB_PATH as DB_PATH_OVERRIDE, DB_ENCRYPTION_KEY } from './config';
 import { generateGroupName } from './wordlists';
 
 const DB_PATH = DB_PATH_OVERRIDE || path.join(__dirname, '..', 'jobber.db');
 
 const db = new Database(DB_PATH);
+
+// Enable SQLCipher encryption when a key is configured.
+// On an existing plaintext database the key must be '' (no passphrase) — if you
+// are enabling encryption for the first time on an existing installation you must
+// export and re-import the data after setting DB_ENCRYPTION_KEY.
+if (DB_ENCRYPTION_KEY) {
+  // Use the hex key form so no user-supplied characters are interpolated into SQL.
+  // x'...' is the SQLCipher raw-key syntax; hex digits [0-9a-f] cannot contain
+  // SQL metacharacters, so this is injection-safe regardless of the key content.
+  const hexKey = Buffer.from(DB_ENCRYPTION_KEY, 'utf8').toString('hex');
+  db.pragma(`key = "x'${hexKey}'"`);
+}
 
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
@@ -204,6 +216,13 @@ addCol('feedback_messages', 'status', "TEXT NOT NULL DEFAULT 'not_started'");
 addCol('users', 'ics_token', 'TEXT');
 addCol('tasks', 'recur_interval', 'INTEGER');
 addCol('tasks', 'recur_unit', 'TEXT');
+// Per-task email notification preferences (all enabled by default)
+addCol('tasks', 'notify_email', 'INTEGER NOT NULL DEFAULT 1');
+addCol('tasks', 'notify_7day', 'INTEGER NOT NULL DEFAULT 1');
+addCol('tasks', 'notify_1day', 'INTEGER NOT NULL DEFAULT 1');
+addCol('tasks', 'notify_overdue', 'INTEGER NOT NULL DEFAULT 1');
+// purpose column on magic_tokens distinguishes login / verify / reset flows
+addCol('magic_tokens', 'purpose', "TEXT NOT NULL DEFAULT 'login'");
 // Backfill existing groups: generate a proper unique invite word pair for any group that lacks one
 {
   const ungrouped = db.prepare("SELECT id FROM groups WHERE invite_name = ''").all() as Array<{ id: string }>;

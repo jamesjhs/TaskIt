@@ -38,7 +38,9 @@
     <ol>
       <li>Open Jobber in your browser and click <strong>Register</strong>.</li>
       <li>Enter a username, your email address, and a password.</li>
-      <li>Click <strong>Register</strong> – you're in!</li>
+      <li>Choose your preferred <strong>Date &amp; Time Format</strong> (locale).</li>
+      <li>Click <strong>Create Account</strong>.</li>
+      <li>Check your inbox for a <strong>verification email</strong> and click the link to activate your account.</li>
     </ol>
     <p>The very first person to register becomes the <strong>system administrator</strong>, with access to extra settings.</p>
 
@@ -46,7 +48,7 @@
     <p>There are two ways to log in:</p>
     <ul>
       <li><strong>Magic link</strong> – enter your email and click <em>Send Magic Link</em>. Check your inbox for a one-click login link (requires email to be configured by your admin).</li>
-      <li><strong>Password</strong> – click <em>Use password instead</em> and enter your email and password.</li>
+      <li><strong>Password</strong> – click <em>Use password instead</em> and enter your email and password. You will be sent a <strong>one-time 6-digit code</strong> by email — enter it to complete sign-in.</li>
     </ul>
     <blockquote>
       <p>💡 If you forget your password, use the magic link option to log in, then update your password from your Profile page.</p>
@@ -59,23 +61,34 @@
     <h3>Creating a task</h3>
     <ol>
       <li>Go to the <strong>Tasks</strong> page and click <strong>New Task</strong>.</li>
-      <li>Give your task a <strong>title</strong> and choose a <strong>type</strong> (e.g. Urgent, Routine, Hobby).</li>
+      <li>Give your task a <strong>title</strong> and choose a <strong>type</strong> (e.g. Urgent, Routine, Hobby). Select <em>+ Add new type…</em> to create a custom type on the fly.</li>
       <li>Optionally set a <strong>group</strong>, <strong>assignees</strong>, any <strong>notes</strong>, and a <strong>due date</strong>.</li>
+      <li>To make the task repeat automatically, tick <strong>Repeat Task</strong> and choose the interval (e.g. every 2 weeks).</li>
       <li>Click <strong>Save Task</strong>.</li>
     </ol>
     <p>Due dates default to midnight tonight — handy for quick captures!</p>
+
+    <h3>Recurring tasks</h3>
+    <p>When <strong>Repeat Task</strong> is enabled, completing a task automatically creates the next occurrence with the due date advanced by the chosen interval (days, weeks, months, or years). Assignees are carried over to the new task.</p>
 
     <h3>Updating a task</h3>
     <p>Click any task card to open the detail panel. From here you can:</p>
     <ul>
       <li>Move it through the stages: <strong>Not Started → Started → Complete</strong></li>
       <li><strong>Edit</strong> any of the task's details</li>
+      <li><strong>Defer</strong> – click the <em>Defer</em> button to reschedule the due date without opening the full edit form</li>
       <li><strong>Archive</strong> it to tidy your view (archived tasks can always be brought back)</li>
       <li><strong>Delete</strong> it permanently</li>
     </ul>
 
     <h3>Filtering your task list</h3>
-    <p>Use the filter bar at the top of the Tasks page to narrow down what you see — filter by status, group, archived tasks, or tasks assigned specifically to you.</p>
+    <p>Use the filter bar at the top of the Tasks page to narrow down what you see:</p>
+    <ul>
+      <li>Filter by <strong>status</strong>, <strong>group</strong>, or <strong>type</strong></li>
+      <li><strong>Show Archived</strong> – include archived tasks in the list</li>
+      <li><strong>Assigned to Me</strong> – show only tasks you have been assigned to</li>
+      <li><strong>Show Group Tasks</strong> – toggle group tasks on/off to focus on your personal tasks</li>
+    </ul>
 
     <h3>Adding progress notes</h3>
     <p>Inside the task detail panel, you'll find a <strong>Progress Notes</strong> section — a running log of updates.</p>
@@ -102,33 +115,35 @@
 
     <h3>Creating a group</h3>
     <ol>
-      <li>Go to the <strong>Groups</strong> page and click <strong>New Group</strong>.</li>
+      <li>Go to the <strong>Groups</strong> page and click <strong>+ New</strong>.</li>
       <li>Enter a name, or leave it blank for a fun random name to be generated for you.</li>
-      <li>Your new group appears with a unique <strong>join key</strong>. Share this key with anyone you'd like to invite.</li>
+      <li>Your new group appears with a unique <strong>invite word pair</strong> and <strong>secret key</strong>. Share both with anyone you'd like to invite.</li>
     </ol>
 
     <h3>Joining a group</h3>
     <ol>
-      <li>Click <strong>Join Group</strong>.</li>
-      <li>Enter the join key your group admin gave you and click <strong>Join</strong>.</li>
+      <li>Click <strong>Join</strong> on the Groups page.</li>
+      <li>Enter the <strong>invite word pair</strong> and <strong>secret key</strong> your group admin gave you, then click <strong>Join</strong>.</li>
     </ol>
+    <blockquote>
+      <p>🔑 Both the invite word pair <em>and</em> the secret key are required — the word pair alone is not enough to join.</p>
+    </blockquote>
 
     <h3>Viewing members</h3>
-    <p>Click <strong>View Members</strong> on any group card to see who's in the group and their roles.</p>
+    <p>Click <strong>Manage / Invite</strong> on any group card to see who's in the group and their roles.</p>
 
     <hr />
 
     <h2>🛡️ Group Admin Features</h2>
     <p>When you create a group you're automatically its <strong>admin</strong>. Other admins can be promoted by any existing admin.</p>
-    <p>From the <strong>View Members</strong> panel, admins can:</p>
+    <p>From the <strong>Manage / Invite</strong> panel, admins can:</p>
     <ul>
       <li><strong>Rename</strong> the group — enter a new name and click <em>Rename</em></li>
+      <li><strong>Invite by email</strong> — enter an email address and click <em>Send Invite</em> to send a personalised invitation link</li>
+      <li><strong>Generate QR Code / Invite Link</strong> — creates a multi-use shareable link (valid 30 days) and a scannable QR code; anyone who scans or clicks can join without needing the secret key</li>
       <li><strong>Promote</strong> a member to admin, or <strong>Demote</strong> an admin back to member</li>
       <li><strong>Delete</strong> the group — removes it for everyone (use with care!)</li>
     </ul>
-    <blockquote>
-      <p>🔑 The group's join key is shown in the members panel. Only people who have the key can join — the group ID alone isn't enough.</p>
-    </blockquote>
 
     <hr />
 
@@ -144,21 +159,34 @@
     <hr />
 
     <h2>⚙️ Your Profile</h2>
-    <p>Click <strong>Profile</strong> in the navigation to:</p>
-    <ul>
-      <li>Update your <strong>username</strong></li>
-      <li>Change your <strong>password</strong></li>
-      <li>Review your account details</li>
-    </ul>
+    <p>Click <strong>Profile</strong> in the navigation to access your account settings:</p>
+
+    <h3>Date &amp; Time Format</h3>
+    <p>Choose the locale used to format dates and times throughout the app (e.g. DD/MM/YYYY vs. MM/DD/YYYY). Click <strong>Save Format</strong> to apply.</p>
+
+    <h3>📅 Calendar Integration</h3>
+    <p>Subscribe to your Jobber tasks in any calendar app (Google Calendar, Apple Calendar, Outlook, etc.) using the private <strong>ICS feed link</strong> shown in the <em>Calendar Integration</em> card. Copy the link and add it as a new calendar subscription in your calendar app.</p>
+    <p>Click <strong>🔄 Regenerate Link</strong> to invalidate the old link and create a new one (e.g. if you think the link has been shared unintentionally). Keep this link private — anyone who has it can view your tasks.</p>
+
+    <h3>Invite to Jobber</h3>
+    <p>Share Jobber with others — click <strong>Copy Invite Link</strong> to copy a link to your Jobber instance.</p>
+
+    <h3>💬 Feedback &amp; Feature Requests</h3>
+    <p>Found a bug or have an idea? Type your message and click <strong>Send Feedback</strong>. Tick the box if you'd like admin to reply to you in-app.</p>
+
+    <h3>⚠️ Delete My Account</h3>
+    <p>You can permanently delete your account and all your data at any time — no administrator action required. Scroll to the bottom of your Profile page and click <strong>Delete My Account</strong>, then confirm twice. All your tasks, notes, group memberships, and account details are removed immediately.</p>
 
     <hr />
 
     <h2>🛠️ Admin Panel <em>(admins only)</em></h2>
     <p>System administrators see an extra <strong>Admin</strong> menu item. From here you can:</p>
     <ul>
+      <li><strong>Stats</strong> – a dashboard showing total users, users active today, total tasks, and tasks created today</li>
       <li><strong>SMTP Settings</strong> – configure the outgoing email server for magic links and reminders</li>
       <li><strong>Locked Accounts</strong> – view and unlock accounts blocked after too many failed login attempts</li>
       <li><strong>User Reports</strong> – review reports submitted by users and mark them as resolved</li>
+      <li><strong>Feedback</strong> – read feedback messages from users, update their status, and send in-app replies</li>
     </ul>
 
     <hr />
@@ -169,17 +197,20 @@
     <p>Your account may be locked after too many failed attempts. Ask your system admin to unlock it via <em>Admin → Locked Accounts</em>. You can also try the magic link option if email is configured.</p>
 
     <h3>My tasks aren't showing</h3>
-    <p>Check the filter bar — filters like <em>Show Archived</em> or <em>Assigned to Me</em> can hide tasks. Also make sure you're a member of the group a task belongs to.</p>
+    <p>Check the filter bar — filters like <em>Show Archived</em>, <em>Assigned to Me</em>, or <em>Show Group Tasks</em> can hide tasks. Also make sure you're a member of the group a task belongs to.</p>
 
     <h3>I'm not receiving emails</h3>
     <p>Email sending requires SMTP to be configured and enabled by your admin. Check with them to confirm it's set up correctly.</p>
 
-    <h3>I lost my join key</h3>
-    <p>Any group admin can find the join key by clicking <strong>View Members</strong> on the group card.</p>
+    <h3>I lost my group's join details</h3>
+    <p>Any group admin can find the invite word pair and secret key by clicking <strong>Manage / Invite</strong> on the group card.</p>
+
+    <h3>I didn't receive my email verification link</h3>
+    <p>Check your spam folder. If SMTP is not configured by the admin, the link will not be delivered — ask the admin to configure email or manually verify your account.</p>
 
     <hr />
 
-    <p style="font-size:.9rem;color:#6b7280">Jobber v<span class="page-version">0.7.2</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp;
+    <p style="font-size:.9rem;color:#6b7280">Jobber v<span class="page-version">0.8.1</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp;
       <a href="https://jahosi.co.uk" class="text-indigo-500 hover:underline" target="_blank" rel="noopener noreferrer">jahosi.co.uk</a>
     </p>
 
@@ -187,7 +218,7 @@
 </main>
 
 <footer class="border-t border-slate-200 dark:border-slate-700 py-4 mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-  <span>Jobber v<span class="page-version">0.7.2</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp;
+  <span>Jobber v<span class="page-version">0.8.1</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp;
     <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer"
        class="text-indigo-500 hover:underline">jahosi.co.uk</a>
     &nbsp;·&nbsp;

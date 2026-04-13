@@ -1,6 +1,6 @@
 # Jobber – How-To Manual
 
-**Version 0.7.2**  
+**Version 0.8.1**  
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -15,11 +15,13 @@ Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 6. [Using Jobber](#using-jobber)
    - [Registering & Logging In](#registering--logging-in)
    - [Creating Tasks](#creating-tasks)
+   - [Recurring Tasks](#recurring-tasks)
    - [Managing Tasks](#managing-tasks)
    - [Progress Notes](#progress-notes)
    - [Task Notifications](#task-notifications)
    - [Groups](#groups)
    - [Group Admin Features](#group-admin-features)
+   - [Your Profile](#your-profile)
    - [Admin Panel](#admin-panel)
 7. [Email Reminders](#email-reminders)
 8. [Troubleshooting](#troubleshooting)
@@ -28,15 +30,21 @@ Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ## Introduction
 
-**Jobber** is a self-hosted, collaborative task management application. It runs as a Node.js server with a built-in web front-end. Features include:
+**Jobber** is a self-hosted, collaborative task management application. It runs as a Node.js server with a built-in web front-end and an Android app. Features include:
 
 - Personal and group task management with statuses, due dates, and assignees
+- Recurring tasks — automatically create the next occurrence when a task is completed
+- Task deferral — quickly reschedule a due date from the task detail panel
+- Custom task types per user and per group
 - Progress notes on each task for tracking updates
 - In-app notification bell for overdue and due-soon tasks
 - Up to three automated email reminder notifications per task (7-day, 1-day, overdue)
-- Group creation with admin controls — rename, promote members, shared join key
-- Magic-link and password login, with account lockout protection
-- Admin panel for SMTP configuration, locked accounts, and user reports
+- Calendar integration — subscribe to your tasks as an ICS feed in any calendar app
+- Group creation with admin controls — rename, promote/demote members, email invites, QR invite links, shared join key
+- Magic-link and password login (with two-factor authentication via OTP), email verification, and account lockout protection
+- User feedback submission with in-app admin replies
+- Self-service account deletion (right to erasure)
+- Admin panel with stats dashboard, SMTP configuration, locked accounts, user reports, and feedback management
 
 ---
 
@@ -45,7 +53,7 @@ Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 - **Node.js** v18 or later
 - **npm** v9 or later
 - A modern web browser (Chrome, Firefox, Safari, Edge)
-- (Optional) An SMTP email server for magic-link login and task reminders
+- (Optional) An SMTP email server for magic-link login, email verification, and task reminders
 
 ---
 
@@ -95,6 +103,7 @@ Create a `.env` file inside the `server/` directory. A template is provided at `
 | `JWT_SECRET`       | *(insecure dev default)*       | **Required in production.** Secret key for JWT tokens   |
 | `DB_PATH`          | `server/jobber.db`             | Path to the SQLite database file                         |
 | `ADMIN_EMAIL`      | *(none)*                       | Email address that is automatically granted admin role   |
+| `BASE_URL`         | *(derived from request host)*  | Public base URL used in invite links and magic links     |
 | `MAX_LOGIN_ATTEMPTS` | `5`                          | Failed logins before account lockout                     |
 | `LOCKOUT_MINUTES`  | `30`                           | Duration of account lockout in minutes                   |
 | `SMTP_HOST`        | *(none)*                       | SMTP server hostname                                     |
@@ -110,6 +119,7 @@ Create a `.env` file inside the `server/` directory. A template is provided at `
 PORT=3000
 JWT_SECRET=change-this-to-a-long-random-secret
 ADMIN_EMAIL=admin@example.com
+BASE_URL=https://jobber.example.com
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -119,6 +129,8 @@ SMTP_FROM=Jobber <noreply@example.com>
 ```
 
 > **Security note:** Always set a strong, unique `JWT_SECRET` before deploying to production.
+
+> **BASE_URL note:** Set this to your public-facing URL (e.g. `https://jobber.example.com`) so that invite links, magic links, and QR codes contain the correct address rather than the internal request host.
 
 ---
 
@@ -148,10 +160,11 @@ The application will be available at `http://localhost:3000` (or whichever port 
 ### Registering & Logging In
 
 1. Open the app in your browser.
-2. Click **Register** to create a new account — provide a username, email, and password.
-3. To log in:
+2. Click **Register** to create a new account — provide a username, email, password, and preferred date/time format (locale).
+3. Check your inbox for a **verification email** and click the link to activate your account (requires SMTP to be configured).
+4. To log in:
    - **Magic link:** Enter your email and click **Send Magic Link**. You will receive an email with a one-click login link (requires SMTP to be configured).
-   - **Password:** Click *Use password instead*, then enter your email and password.
+   - **Password:** Click *Use password instead*, then enter your email and password. A **one-time 6-digit code** will be sent to your email — enter it to complete sign-in (two-factor authentication).
 
 > The first user to register automatically becomes an administrator.
 
@@ -162,12 +175,24 @@ The application will be available at `http://localhost:3000` (or whichever port 
 1. Click the **New Task** button on the Tasks page.
 2. Fill in the form:
    - **Title** *(required)*
-   - **Type** *(required)* – choose from default types or group-specific types
+   - **Type** *(required)* – choose from default types, your own custom types, or group-specific types. Select *+ Add new type…* to create a new custom type on the fly.
    - **Group** – assign to a group (optional); this allows assigning to group members
    - **Assign To** – select group members to assign the task to (only visible when a group is selected)
    - **Notes** – free-text notes or description for the task
    - **Due Date** – defaults to **tonight at midnight**; adjust as needed
-3. Click **Save Task**.
+3. To make the task repeat, tick **Repeat Task** and set the interval (see [Recurring Tasks](#recurring-tasks)).
+4. Click **Save Task**.
+
+---
+
+### Recurring Tasks
+
+Tick **Repeat Task** when creating or editing a task to set a recurrence schedule:
+
+- Choose an interval (1–365) and unit: **Days**, **Weeks**, **Months**, or **Years**.
+- When the task is marked **Complete**, a new copy of the task is automatically created with the next due date calculated from the original.
+- Assignees are carried over to the new occurrence.
+- The completed task remains in your list and can be archived as normal.
 
 ---
 
@@ -176,11 +201,18 @@ The application will be available at `http://localhost:3000` (or whichever port 
 Click any task card to open the **Task Detail** panel, where you can:
 
 - Change the task **status**: Not Started → Started → Complete
-- **Edit** the task (title, type, group, assignees, notes, due date)
+- **Edit** the task (title, type, group, assignees, notes, due date, recurrence)
+- **Defer** the task — click the *Defer* button to set a new due date without opening the full edit form
 - **Toggle Archive** – hide/unhide the task from the main view
 - **Delete** the task permanently
 
-Use the **filter bar** at the top of the Tasks page to filter by status, group, archived state, or tasks assigned to you.
+Use the **filter bar** at the top of the Tasks page to filter by:
+
+- **Status** (Not Started, Started, Complete)
+- **Group** and **Type**
+- **Show Archived** – include archived tasks
+- **Assigned to Me** – show only tasks assigned to you
+- **Show Group Tasks** – toggle to hide or show group-owned tasks
 
 ---
 
@@ -214,16 +246,16 @@ Groups allow multiple users to share tasks, assign work to each other, and colla
 
 **Creating a group:**
 1. Go to the **Groups** page.
-2. Click **New Group** and enter a name.
-3. A unique **join key** is generated and displayed on the group card.
+2. Click **+ New** and optionally enter a name (or leave blank for an auto-generated name).
+3. A unique **invite word pair** and **secret key** are generated. Share both with users you want to invite.
 
 **Joining a group:**
-1. Click **Join Group**.
-2. Enter the join key provided by the group admin.
+1. Click **Join** on the Groups page.
+2. Enter the **invite word pair** and **secret key** provided by the group admin.
 3. Click **Join**.
 
 **Viewing group members:**
-Click **View Members** on any group card to see who is in the group.
+Click **Manage / Invite** on any group card to see who is in the group.
 
 ---
 
@@ -231,13 +263,27 @@ Click **View Members** on any group card to see who is in the group.
 
 Group creators are automatically assigned the **admin** role.
 
-Admins can access controls from the **View Members** panel:
+Admins can access controls from the **Manage / Invite** panel:
 
 - **Rename the group** – enter a new name and click *Rename*
+- **Invite by email** – enter an email address and click *Send Invite* to send a personalised invitation link by email
+- **Generate QR Code / Invite Link** – creates a multi-use invite link (valid 30 days) and displays a scannable QR code; sharing the link or QR code allows anyone to join without needing the secret key
 - **Promote / Demote members** – click *Promote* next to a member to make them an admin, or *Demote* to revert to member
 - **Delete the group** – permanently removes the group for all members (use with care)
 
-The group's **join key** is displayed in the members panel header and on the group card. Only users who have been given the key can join — guessing the group ID alone is not sufficient to join.
+The group's **invite word pair** and **secret key** are displayed in the panel header. Only users who have both can join via the key — email invites and QR links bypass the need for the key.
+
+---
+
+### Your Profile
+
+Click **Profile** in the navigation to access your account settings:
+
+- **Date & Time Format** – change the locale used to display dates and times (e.g. DD/MM/YYYY vs MM/DD/YYYY); click *Save Format* to apply
+- **Calendar Integration** – copy your personal ICS feed URL to subscribe to your tasks in any calendar app (Google Calendar, Apple Calendar, Outlook, etc.); click *Regenerate Link* to invalidate the old URL
+- **Invite to Jobber** – copy a shareable link to your Jobber instance
+- **Feedback & Feature Requests** – send a message to the admin; tick the box to allow an in-app reply
+- **Delete My Account** – permanently deletes your account and all associated data immediately, without contacting the admin
 
 ---
 
@@ -245,8 +291,11 @@ The group's **join key** is displayed in the members panel header and on the gro
 
 Accessible from the **Admin** menu item (visible to system admins only).
 
+**Stats:**  
+A real-time dashboard showing total users, users active today, total tasks, and tasks created today.
+
 **SMTP Settings:**  
-Configure the outgoing email server for magic-link logins and task reminders.  
+Configure the outgoing email server for magic-link logins, email verification, and task reminders.  
 Toggle the *Enabled* checkbox to activate or deactivate email sending.
 
 **Locked Accounts:**  
@@ -254,6 +303,9 @@ View accounts locked after too many failed login attempts, and unlock them manua
 
 **User Reports:**  
 Review reports submitted by users about other users. Mark reports as resolved once addressed.
+
+**Feedback:**  
+Read feedback messages and feature requests submitted by users. Update the status of each message (Not Started, In Progress, Completed, Archived) and send an in-app reply to the submitter.
 
 ---
 
@@ -286,11 +338,15 @@ Each reminder is sent only **once** per task. Reminders are checked every hour.
 **I can't log in**  
 - If your account is locked, an admin must unlock it via Admin → Locked Accounts
 - For magic links, ensure SMTP is configured; use password login as a fallback
+- For password login, check your email for the two-factor authentication code
 
 **Tasks are not showing**  
-- Check the filter bar — filters like *Show Archived* or *Assigned to Me* can hide tasks
+- Check the filter bar — filters like *Show Archived*, *Assigned to Me*, or *Show Group Tasks* can hide tasks
 - Ensure you are a member of the group the task belongs to
+
+**Invite links or QR codes point to the wrong URL**  
+- Set the `BASE_URL` environment variable to your public-facing URL (e.g. `https://jobber.example.com`) so generated links are correct
 
 ---
 
-*Jobber v0.7.2 – Copyright J Rowson 2026 | jahosi.co.uk*
+*Jobber v0.8.1 – Copyright J Rowson 2026 | jahosi.co.uk*

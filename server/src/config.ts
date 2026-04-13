@@ -24,6 +24,21 @@ export const APP_VERSION: string = pkg.version;
 // where the Host header can be spoofed).
 export const BASE_URL: string | null = process.env.BASE_URL ? process.env.BASE_URL.replace(/\/$/, '') : null;
 
+// Allowed CORS origin(s).  Set CORS_ORIGIN to a comma-separated list of
+// permitted origins (e.g. "https://app.example.com") to allow cross-origin
+// requests.  Defaults to BASE_URL when set, or no CORS otherwise.
+// Since the SPA is served directly from this Express server (same origin),
+// CORS is typically only needed for non-browser clients or split deployments.
+export const CORS_ORIGIN: string | string[] | false = (() => {
+  if (process.env.CORS_ORIGIN) {
+    const origins = process.env.CORS_ORIGIN.split(',').map(o => o.trim()).filter(Boolean);
+    return origins.length === 1 ? origins[0] : origins;
+  }
+  if (BASE_URL) return BASE_URL;
+  // Default: no cross-origin access.  Set CORS_ORIGIN or BASE_URL to enable.
+  return false;
+})();
+
 export const SMTP = {
   host: process.env.SMTP_HOST || '',
   port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587,

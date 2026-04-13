@@ -1,11 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import fs from 'fs';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import db from './db'; // initialize database
-import { APP_VERSION, BASE_URL, JWT_SECRET, PORT } from './config';
+import { APP_VERSION, BASE_URL, CORS_ORIGIN, JWT_SECRET, PORT } from './config';
 import { startScheduler } from './services/scheduler';
 
 import authRoutes from './routes/auth';
@@ -58,7 +59,24 @@ const authenticatedLimiter = rateLimit({
   },
 });
 
-app.use(cors());
+app.use(cors({ origin: CORS_ORIGIN }));
+// Security headers (helmet must come before static/route middleware)
+app.use(helmet({
+  // Allow the service worker to load and scripts to run from the same origin.
+  // Inline scripts are used by the SPA, so 'unsafe-inline' is kept for scripts.
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:'],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameSrc: ["'none'"],
+    },
+  },
+}));
 app.use(express.json());
 
 // ─── Health-check endpoint (exempt from auth and rate limiting) ──────────────

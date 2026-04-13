@@ -143,8 +143,8 @@ router.patch('/me/password', (req: Request, res: Response): void => {
     return;
   }
 
-  if (typeof newPassword !== 'string' || newPassword.length < 8) {
-    res.status(400).json({ error: 'New password must be at least 8 characters' });
+  if (typeof newPassword !== 'string' || newPassword.length < 8 || newPassword.length > 128) {
+    res.status(400).json({ error: 'New password must be between 8 and 128 characters' });
     return;
   }
 

@@ -172,12 +172,25 @@ router.post('/', (req: Request, res: Response): void => {
     notify1day === false || notify1day === 0 ? 0 : 1,
     notifyOverdue === false || notifyOverdue === 0 ? 0 : 1);
 
-  // Insert assignees
-  const ids: string[] = Array.isArray(assigneeIds) ? assigneeIds : [];
+  // Insert assignees — validate each ID refers to a real user before inserting
+  // to avoid a FK constraint exception (and a 500 response) on bad input.
+  // Batch-validate all IDs in a single query to avoid N+1 round trips.
+  const ids: string[] = (Array.isArray(assigneeIds) ? assigneeIds : []).filter(
+    (id): id is string => typeof id === 'string'
+  );
+  const validAssigneeIds: Set<string> = new Set();
+  if (ids.length > 0) {
+    const placeholders = ids.map(() => '?').join(',');
+    const validRows = db.prepare(
+      `SELECT id FROM users WHERE id IN (${placeholders})`
+    ).all(...ids) as Array<{ id: string }>;
+    for (const r of validRows) validAssigneeIds.add(r.id);
+  }
+
   const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
   const insertAlert = db.prepare('INSERT INTO user_alerts (id, user_id, message, created_at) VALUES (?, ?, ?, ?)');
 
-  for (const aId of ids) {
+  for (const aId of validAssigneeIds) {
     insertAssignee.run(id, aId);
     // Don't notify the creator
     if (aId !== userId) {
@@ -273,9 +286,17 @@ router.patch('/:id', (req: Request, res: Response): void => {
 
   if (Array.isArray(assigneeIds)) {
     db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(taskId);
-    const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
-    for (const aId of assigneeIds) {
-      insertAssignee.run(taskId, aId);
+    // Batch-validate all assignee IDs in a single query
+    const validIds = (assigneeIds as unknown[]).filter((id): id is string => typeof id === 'string');
+    if (validIds.length > 0) {
+      const placeholders = validIds.map(() => '?').join(',');
+      const validRows = db.prepare(
+        `SELECT id FROM users WHERE id IN (${placeholders})`
+      ).all(...validIds) as Array<{ id: string }>;
+      const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
+      for (const row of validRows) {
+        insertAssignee.run(taskId, row.id);
+      }
     }
   }
 

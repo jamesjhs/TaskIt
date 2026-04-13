@@ -9,6 +9,19 @@ const router = Router();
 const ALLOWED_STATUSES = new Set(['not_started', 'started', 'complete']);
 const ALLOWED_RECUR_UNITS = new Set(['days', 'weeks', 'months', 'years']);
 
+// Returns true when the requesting user may act on a task — either because they
+// created it, or because the task belongs to a group the user is a member of.
+// Personal (non-group) tasks remain accessible only to their creator.
+function hasTaskAccess(task: { created_by: string; group_id: string | null }, userId: string): boolean {
+  if (task.created_by === userId) return true;
+  if (task.group_id) {
+    return !!db.prepare(
+      'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
+    ).get(task.group_id, userId);
+  }
+  return false;
+}
+
 function computeNextDue(dueDateMs: number, interval: number, unit: string): number {
   const d = new Date(dueDateMs);
   switch (unit) {
@@ -228,8 +241,8 @@ router.patch('/:id', (req: Request, res: Response): void => {
     return;
   }
 
-  // Only creator can update
-  if (task.created_by !== userId) {
+  // Creator always has access; group members have full write access to group tasks
+  if (!hasTaskAccess(task, userId)) {
     res.status(403).json({ error: 'Not authorized' });
     return;
   }
@@ -328,7 +341,7 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
   }
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string }
+    | { id: string; created_by: string; group_id: string | null }
     | undefined;
 
   if (!task) {
@@ -336,12 +349,12 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
     return;
   }
 
-  // Allow creator or assignee to update status
-  const isAssignee = db.prepare(
+  // Allow creator, assignee, or any group member to update status
+  const isAssignee = !!db.prepare(
     'SELECT 1 FROM task_assignees WHERE task_id = ? AND user_id = ?'
   ).get(taskId, userId);
 
-  if (task.created_by !== userId && !isAssignee) {
+  if (!hasTaskAccess(task, userId) && !isAssignee) {
     res.status(403).json({ error: 'Not authorized' });
     return;
   }
@@ -437,7 +450,7 @@ router.patch('/:id/archive', (req: Request, res: Response): void => {
   const taskId = req.params.id;
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string; archived: number }
+    | { id: string; created_by: string; group_id: string | null; archived: number }
     | undefined;
 
   if (!task) {
@@ -445,7 +458,7 @@ router.patch('/:id/archive', (req: Request, res: Response): void => {
     return;
   }
 
-  if (task.created_by !== userId) {
+  if (!hasTaskAccess(task, userId)) {
     res.status(403).json({ error: 'Not authorized' });
     return;
   }
@@ -470,7 +483,7 @@ router.delete('/:id', (req: Request, res: Response): void => {
   const taskId = req.params.id;
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string }
+    | { id: string; created_by: string; group_id: string | null }
     | undefined;
 
   if (!task) {
@@ -478,7 +491,7 @@ router.delete('/:id', (req: Request, res: Response): void => {
     return;
   }
 
-  if (task.created_by !== userId) {
+  if (!hasTaskAccess(task, userId)) {
     res.status(403).json({ error: 'Not authorized' });
     return;
   }

@@ -1,6 +1,6 @@
 {
   "name": "jobber-server",
-  "version": "0.7.2",
+  "version": "0.8.1",
   "description": "Jobber task management server",
   "main": "dist/index.js",
   "scripts": {

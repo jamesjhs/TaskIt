@@ -4,13 +4,27 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 
 ## Features
 
-- User registration and authentication (JWT)
+- User registration with email verification
+- Magic-link and password login with two-factor authentication (OTP)
+- Account lockout protection
 - Create and manage tasks with types, notes, and status tracking
 - Task statuses: Not Started → Started → Complete
+- Recurring tasks — automatically create the next occurrence when complete
+- Task deferral — reschedule due date from the detail panel
+- Custom task types per user and per group
 - Archive and delete tasks
-- Group collaboration with shared invite keys
+- Group collaboration with invite word pairs and shared secret keys
+- Email invites and QR code / shareable invite links for groups
 - Assign tasks to group members
-- Custom task types per group
+- Progress notes on tasks
+- In-app alerts for overdue and due-soon tasks
+- Automated email reminders (7-day, 1-day, overdue — once per task)
+- Calendar integration — private ICS feed for any calendar app
+- Date & time locale preference per user
+- User reporting and blocking
+- User feedback submission with in-app admin replies
+- Self-service account deletion (GDPR right to erasure)
+- Admin panel: stats dashboard, SMTP configuration, locked accounts, user reports, feedback management
 
 ## Stack
 
@@ -29,8 +43,8 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 ```bash
 cd server
 npm install
-npm run dev       # development (ts-node-dev)
-npm run build     # compile TypeScript
+npm run dev       # development (tsx watch)
+npm run build     # compile TypeScript + CSS
 npm start         # run compiled output
 ```
 
@@ -51,35 +65,92 @@ Open `http://localhost:3000` after starting the server. No separate build step n
 ## API Endpoints
 
 ### Auth
-| Method | Path                | Description        |
-|--------|---------------------|--------------------|
-| POST   | /api/auth/register  | Register new user  |
-| POST   | /api/auth/login     | Login → JWT token  |
+| Method | Path                         | Description                              |
+|--------|------------------------------|------------------------------------------|
+| POST   | /api/auth/register           | Register new user                        |
+| POST   | /api/auth/login              | Login → JWT or OTP session               |
+| POST   | /api/auth/verify-otp         | Verify 2FA OTP code → JWT                |
+| GET    | /api/auth/magic-link/verify  | Verify magic link token → JWT            |
 
 ### Tasks
-| Method | Path                      | Description          |
-|--------|---------------------------|----------------------|
-| GET    | /api/tasks                | List tasks (filters) |
-| POST   | /api/tasks                | Create task          |
-| PATCH  | /api/tasks/:id            | Update task          |
-| PATCH  | /api/tasks/:id/status     | Update status only   |
-| PATCH  | /api/tasks/:id/archive    | Toggle archive       |
-| DELETE | /api/tasks/:id            | Delete task          |
+| Method | Path                      | Description                           |
+|--------|---------------------------|---------------------------------------|
+| GET    | /api/tasks                | List tasks (filters: status, groupId, typeId, archived, assignedToMe) |
+| POST   | /api/tasks                | Create task (supports recurrence)     |
+| PATCH  | /api/tasks/:id            | Update task                           |
+| PATCH  | /api/tasks/:id/status     | Update status only                    |
+| PATCH  | /api/tasks/:id/archive    | Toggle archive                        |
+| PATCH  | /api/tasks/:id/defer      | Update due date (defer)               |
+| DELETE | /api/tasks/:id            | Delete task                           |
+| GET    | /api/tasks/:id/notes      | List progress notes for a task        |
+| POST   | /api/tasks/:id/notes      | Add a progress note                   |
 
 ### Groups
-| Method | Path                    | Description          |
-|--------|-------------------------|----------------------|
-| GET    | /api/groups             | List my groups       |
-| POST   | /api/groups             | Create group         |
-| POST   | /api/groups/join        | Join with shared key |
-| GET    | /api/groups/:id/members | List members         |
-| DELETE | /api/groups/:id         | Delete group (admin) |
+| Method | Path                                    | Description                          |
+|--------|-----------------------------------------|--------------------------------------|
+| GET    | /api/groups                             | List my groups                       |
+| POST   | /api/groups                             | Create group                         |
+| POST   | /api/groups/join                        | Join with invite word pair + key     |
+| GET    | /api/groups/:id/members                 | List members                         |
+| PATCH  | /api/groups/:id/name                    | Rename group (admin)                 |
+| PATCH  | /api/groups/:id/members/:userId/role    | Change member role (admin)           |
+| POST   | /api/groups/:id/members/:userId/promote | Promote member to admin              |
+| POST   | /api/groups/:id/members/:userId/demote  | Demote admin to member               |
+| POST   | /api/groups/:id/invite                  | Send email invite (admin)            |
+| GET    | /api/groups/:id/qr                      | Generate QR invite link (admin)      |
+| GET    | /api/groups/invite/:token               | Look up invite by token              |
+| POST   | /api/groups/invite/:token/accept        | Accept invite link                   |
+| DELETE | /api/groups/:id                         | Delete group (admin)                 |
 
 ### Task Types
-| Method | Path            | Description              |
-|--------|-----------------|--------------------------|
-| GET    | /api/task-types | List available types     |
-| POST   | /api/task-types | Create custom type       |
+| Method | Path                | Description                       |
+|--------|---------------------|-----------------------------------|
+| GET    | /api/task-types     | List available types              |
+| POST   | /api/task-types     | Create custom type                |
+| DELETE | /api/task-types/:id | Delete a custom or group type     |
+
+### Users
+| Method | Path                          | Description                          |
+|--------|-------------------------------|--------------------------------------|
+| PATCH  | /api/users/me/locale          | Update date/time locale preference   |
+| GET    | /api/users/me/alerts          | List in-app alerts                   |
+| PATCH  | /api/users/me/alerts/:id/read | Mark alert as read                   |
+| GET    | /api/users/me/ics-token       | Get/create ICS calendar token        |
+| POST   | /api/users/me/ics-token/rotate| Rotate ICS calendar token            |
+| POST   | /api/users/me/feedback        | Submit feedback message              |
+| DELETE | /api/users/me                 | Delete own account (all data)        |
+| POST   | /api/users/:id/report         | Report a user                        |
+| POST   | /api/users/:id/block          | Block a user                         |
+| DELETE | /api/users/:id/block          | Unblock a user                       |
+| GET    | /api/users/blocks             | List blocked users                   |
+
+### Admin
+| Method | Path                          | Description                          |
+|--------|-------------------------------|--------------------------------------|
+| GET    | /api/admin/smtp               | Get SMTP settings                    |
+| PUT    | /api/admin/smtp               | Update SMTP settings                 |
+| GET    | /api/admin/users              | List all users                       |
+| GET    | /api/admin/locked             | List locked accounts                 |
+| POST   | /api/admin/users/:id/unlock   | Unlock account                       |
+| PUT    | /api/admin/users/:id/role     | Change user role                     |
+| GET    | /api/admin/reports            | List user reports                    |
+| PUT    | /api/admin/reports/:id/resolve| Resolve a user report                |
+| GET    | /api/admin/stats              | Stats dashboard                      |
+| GET    | /api/admin/feedback           | List feedback messages               |
+| PUT    | /api/admin/feedback/:id/read  | Mark feedback as read                |
+| PATCH  | /api/admin/feedback/:id/status| Update feedback status               |
+| POST   | /api/admin/feedback/:id/reply | Send in-app reply to user            |
+
+### Calendar
+| Method | Path                        | Description                             |
+|--------|-----------------------------|-----------------------------------------|
+| GET    | /calendar/:token/tasks.ics  | ICS calendar feed (no auth, token-based)|
+
+### Misc
+| Method | Path         | Description               |
+|--------|--------------|---------------------------|
+| GET    | /api/version | App version               |
+| GET    | /readyz      | Health check              |
 
 ## Default Task Types
 

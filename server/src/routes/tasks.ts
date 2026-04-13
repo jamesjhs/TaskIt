@@ -128,7 +128,7 @@ router.post('/', (req: Request, res: Response): void => {
     return;
   }
 
-  if (recurInterval !== undefined || recurUnit !== undefined) {
+  if ((recurInterval !== undefined && recurInterval !== null) || (recurUnit !== undefined && recurUnit !== null)) {
     const interval = recurInterval != null ? parseInt(String(recurInterval), 10) : NaN;
     if (!Number.isInteger(interval) || interval < 1 || interval > 365) {
       res.status(400).json({ error: 'recurInterval must be an integer between 1 and 365' });

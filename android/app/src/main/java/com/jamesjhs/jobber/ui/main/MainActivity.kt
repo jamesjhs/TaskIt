@@ -17,58 +17,70 @@ import com.jamesjhs.jobber.ui.auth.AuthActivity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+import androidx.fragment.app.Fragment
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.jamesjhs.jobber.databinding.ActivityMainBinding
+import com.jamesjhs.jobber.worker.AlertWorker
+import java.util.concurrent.TimeUnit
+
 class MainActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityMainBinding
     private lateinit var tokenManager: TokenManager
-    private var tasks: List<Task> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        tokenManager = TokenManager(this)
-        loadTasks()
-    }
-
-    private fun loadTasks() {
-        lifecycleScope.launch {
-            val token = tokenManager.token.first() ?: run {
-                logout()
-                return@launch
-            }
-            try {
-                val response = ApiClient.apiService.getTasks("Bearer $token")
-                if (response.isSuccessful) {
-                    tasks = response.body() ?: emptyList()
-                    updateTaskList()
-                } else if (response.code() == 401) {
-                    logout()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "Error loading tasks: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        
+        tokenManager = TokenManager.getInstance(this)
+        
+        setupNavigation()
+        setupAlertWorker()
+        
+        // Default fragment
+        if (savedInstanceState == null) {
+            binding.bottomNav.selectedItemId = R.id.nav_tasks
         }
     }
 
-    private fun updateTaskList() {
-        val recycler = findViewById<RecyclerView>(R.id.recyclerTasks)
-        recycler.layoutManager = LinearLayoutManager(this)
-        recycler.adapter = TaskAdapter(tasks) { task ->
-            Toast.makeText(this, "Task: ${task.title}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_logout -> {
-                logout()
-                true
+    private fun setupNavigation() {
+        binding.bottomNav.setOnItemSelectedListener { item ->
+            val fragment = when (item.itemId) {
+                R.id.nav_tasks -> TasksFragment()
+                R.id.nav_groups -> GroupsFragment()
+                R.id.nav_alerts -> AlertsFragment()
+                R.id.nav_profile -> ProfileFragment()
+                else -> TasksFragment()
             }
-            else -> super.onOptionsItemSelected(item)
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.contentFrame, fragment)
+                .commit()
+            true
         }
+    }
+
+    private fun setupAlertWorker() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+        }
+
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val alertRequest = PeriodicWorkRequestBuilder<AlertWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "AlertWorker",
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            alertRequest
+        )
     }
 
     private fun logout() {

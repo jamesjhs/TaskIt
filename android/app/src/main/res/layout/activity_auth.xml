@@ -15,8 +15,14 @@
         <FrameLayout
             android:layout_width="72dp"
             android:layout_height="72dp"
-            android:background="#FF1A56DB"
-            android:layout_marginBottom="12dp"/>
+            android:background="@drawable/ic_launcher_background"
+            android:layout_marginBottom="12dp">
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_launcher_foreground" />
+        </FrameLayout>
 
         <TextView
             android:layout_width="wrap_content"
@@ -107,6 +113,14 @@
                 android:text="Sign In"
                 android:textSize="16sp"
                 android:backgroundTint="@color/blue_primary"/>
+
+            <ProgressBar
+                android:id="@+id/progressLogin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone"
+                android:layout_marginTop="8dp"/>
         </LinearLayout>
 
         <!-- Register Form -->
@@ -165,6 +179,84 @@
                 android:text="Create Account"
                 android:textSize="16sp"
                 android:backgroundTint="@color/blue_primary"/>
+
+            <ProgressBar
+                android:id="@+id/progressRegister"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone"
+                android:layout_marginTop="8dp"/>
+        </LinearLayout>
+
+        <!-- OTP Form -->
+        <LinearLayout
+            android:id="@+id/otpForm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Enter Verification Code"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/on_surface"
+                android:layout_gravity="center"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="We've sent a 6-digit code to your email."
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:layout_gravity="center"
+                android:layout_marginBottom="24dp"/>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="6-digit Code"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_marginBottom="24dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/otpCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLength="6"
+                    android:letterSpacing="0.5"
+                    android:gravity="center"
+                    android:textSize="24sp"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <Button
+                android:id="@+id/btnVerifyOtp"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="Verify &amp; Sign In"
+                android:textSize="16sp"
+                android:backgroundTint="@color/blue_primary"/>
+
+            <ProgressBar
+                android:id="@+id/progressOtp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone"
+                android:layout_marginTop="8dp"/>
+
+            <Button
+                android:id="@+id/btnBackToLogin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Back to Login"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="8dp"/>
         </LinearLayout>
 
     </LinearLayout>

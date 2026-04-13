@@ -150,8 +150,16 @@ router.post('/join', (req: Request, res: Response): void => {
     'INSERT INTO group_members (group_id, user_id, role, joined_at) VALUES (?, ?, ?, ?)'
   ).run(group.id, userId, 'member', Date.now());
 
+  // Notify admins
+  const admins = db.prepare('SELECT user_id FROM group_members WHERE group_id = ? AND role = "admin"').all(group.id) as Array<{ user_id: string }>;
+  const user = db.prepare('SELECT username FROM users WHERE id = ?').get(userId) as { username: string };
+  const insertAlert = db.prepare('INSERT INTO user_alerts (id, user_id, message, created_at) VALUES (?, ?, ?, ?)');
+  for (const admin of admins) {
+    insertAlert.run(uuidv4(), admin.user_id, `${user.username} joined group: ${group.name}`, Date.now());
+  }
+
   res.json(group);
-});
+}
 
 // POST /api/groups/invite/:token/accept  — accept a group invite (authenticated user)
 router.post('/invite/:token/accept', (req: Request, res: Response): void => {

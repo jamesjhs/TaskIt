@@ -170,8 +170,14 @@ router.post('/', (req: Request, res: Response): void => {
   // Insert assignees
   const ids: string[] = Array.isArray(assigneeIds) ? assigneeIds : [];
   const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
+  const insertAlert = db.prepare('INSERT INTO user_alerts (id, user_id, message, created_at) VALUES (?, ?, ?, ?)');
+
   for (const aId of ids) {
     insertAssignee.run(id, aId);
+    // Don't notify the creator
+    if (aId !== userId) {
+      insertAlert.run(uuidv4(), aId, `You were assigned to task: ${title}`, now);
+    }
   }
 
   const task = db.prepare(`

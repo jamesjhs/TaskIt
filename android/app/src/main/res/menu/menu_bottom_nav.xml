@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/nav_tasks"   android:icon="@android:drawable/ic_menu_agenda"      android:title="Tasks"/>
-    <item android:id="@+id/nav_groups"  android:icon="@android:drawable/ic_menu_my_calendar"  android:title="Groups"/>
-    <item android:id="@+id/nav_alerts"  android:icon="@android:drawable/ic_dialog_alert"      android:title="Alerts"/>
-    <item android:id="@+id/nav_profile" android:icon="@android:drawable/ic_menu_myplaces"     android:title="Profile"/>
+    <item android:id="@+id/nav_tasks"   android:icon="@drawable/ic_nav_tasks"    android:title="Tasks"/>
+    <item android:id="@+id/nav_groups"  android:icon="@drawable/ic_nav_groups"   android:title="Groups"/>
+    <item android:id="@+id/nav_alerts"  android:icon="@drawable/ic_nav_alerts"   android:title="Alerts"/>
+    <item android:id="@+id/nav_profile" android:icon="@drawable/ic_nav_profile"  android:title="Profile"/>
 </menu>

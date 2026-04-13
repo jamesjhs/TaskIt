@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Jobber" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.Jobber" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">@color/blue_primary</item>
         <item name="colorPrimaryVariant">@color/blue_dark</item>
         <item name="colorOnPrimary">@color/on_primary</item>
@@ -10,5 +10,10 @@
         <item name="android:colorBackground">@color/background</item>
         <item name="android:statusBarColor">@color/blue_primary</item>
         <item name="android:windowLightStatusBar">false</item>
+
+        <!-- Force text visibility on light background -->
+        <item name="android:textColor">@color/on_surface</item>
+        <item name="android:textColorPrimary">@color/on_surface</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
     </style>
 </resources>

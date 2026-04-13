@@ -1,16 +1,25 @@
 package com.jamesjhs.jobber.models
 
 import com.google.gson.annotations.SerializedName
+import java.io.Serializable
 
 data class User(
     val id: String,
     val username: String,
     val email: String
-)
+) : Serializable
 
 data class AuthResponse(
-    val token: String,
-    val user: User
+    val token: String?,
+    val user: User?,
+    val status: String?,
+    val sessionId: String?,
+    val error: String?
+)
+
+data class VerifyOtpRequest(
+    val sessionId: String,
+    val code: String
 )
 
 data class RegisterRequest(
@@ -35,22 +44,29 @@ data class Task(
     val title: String,
     val details: String?,
     @SerializedName("type_id") val typeId: String,
-    val typeName: String?,
+    @SerializedName("type_name") val typeName: String?,
     val status: String,
     @SerializedName("created_by") val createdBy: String,
     @SerializedName("group_id") val groupId: String?,
+    @SerializedName("group_name") val groupName: String?,
     val archived: Boolean,
     val assignees: List<User>?,
+    @SerializedName("due_date") val dueDate: Long?,
+    @SerializedName("recur_interval") val recurInterval: Int?,
+    @SerializedName("recur_unit") val recurUnit: String?,
     @SerializedName("created_at") val createdAt: Long,
     @SerializedName("updated_at") val updatedAt: Long
-)
+) : Serializable
 
 data class CreateTaskRequest(
     val title: String,
     val details: String?,
-    val typeId: String,
-    val groupId: String?,
-    val assigneeIds: List<String>?
+    @SerializedName("type_id") val typeId: String,
+    @SerializedName("group_id") val groupId: String?,
+    @SerializedName("assignee_ids") val assigneeIds: List<String>?,
+    @SerializedName("due_date") val dueDate: Long?,
+    @SerializedName("recur_interval") val recurInterval: Int?,
+    @SerializedName("recur_unit") val recurUnit: String?
 )
 
 data class UpdateStatusRequest(
@@ -64,13 +80,20 @@ data class Group(
     @SerializedName("shared_key") val sharedKey: String?,
     @SerializedName("created_by") val createdBy: String,
     @SerializedName("member_count") val memberCount: Int?
-)
+) : Serializable
 
 data class CreateGroupRequest(
-    val name: String
+    val name: String? = null
 )
 
 data class JoinGroupRequest(
     @SerializedName("invite_name") val inviteName: String,
     @SerializedName("shared_key") val sharedKey: String
+)
+
+data class Alert(
+    val id: String,
+    val message: String,
+    @SerializedName("read_at") val readAt: Long?,
+    @SerializedName("created_at") val createdAt: Long
 )

@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Jobber</string>
+    <string name="invite_name_format">@%1$s</string>
     <string name="login">Login</string>
     <string name="register">Register</string>
     <string name="email">Email</string>
@@ -11,4 +12,33 @@
     <string name="not_started">Not Started</string>
     <string name="started">Started</string>
     <string name="complete">Complete</string>
+    <string name="create_task">Create Task</string>
+    <string name="edit_task">Edit Task</string>
+    <string name="update_task">Update Task</string>
+    <string name="new_task_type">New Task Type</string>
+    <string name="create_task_type_message">Enter the name for the new task type:</string>
+    <string name="create">Create</string>
+    <string name="cancel">Cancel</string>
+    <string name="task_type_hint">e.g. Household, Work, Shopping</string>
+    <string name="task_type_created">Task type created</string>
+    <string name="failed_create_task_type">Failed to create task type</string>
+    <string name="promote">Promote to Admin</string>
+    <string name="demote">Demote to Member</string>
+    <string name="report">Report User</string>
+    <string name="block">Block User</string>
+    <string name="user_actions">User Actions</string>
+    <string name="report_user_title">Report User</string>
+    <string name="report_reason_hint">Reason for report…</string>
+    <string name="user_reported">User reported</string>
+    <string name="user_blocked">User blocked</string>
+    <string name="member_promoted">Member promoted</string>
+    <string name="member_demoted">Member demoted</string>
+    <string name="scan_qr">Scan Invite QR Code</string>
+    <string name="qr_error">Could not find group information in QR code</string>
+    <string-array name="recur_units">
+        <item>days</item>
+        <item>weeks</item>
+        <item>months</item>
+        <item>years</item>
+    </string-array>
 </resources>

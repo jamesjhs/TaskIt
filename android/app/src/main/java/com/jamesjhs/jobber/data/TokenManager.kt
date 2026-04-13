@@ -1,35 +1,57 @@
 package com.jamesjhs.jobber.data
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "auth")
+class TokenManager(context: Context) {
+    private val masterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
 
-class TokenManager(private val context: Context) {
+    private val sharedPrefs: SharedPreferences = EncryptedSharedPreferences.create(
+        context,
+        "auth_secure",
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+
+    private val _token = MutableStateFlow(sharedPrefs.getString(TOKEN_KEY, null))
+    val token: Flow<String?> = _token.asStateFlow()
+
     companion object {
-        val TOKEN_KEY = stringPreferencesKey("jwt_token")
-        val USER_ID_KEY = stringPreferencesKey("user_id")
-        val USERNAME_KEY = stringPreferencesKey("username")
-    }
+        private const val TOKEN_KEY = "jwt_token"
+        private const val USER_ID_KEY = "user_id"
+        private const val USERNAME_KEY = "username"
 
-    val token: Flow<String?> = context.dataStore.data.map { it[TOKEN_KEY] }
+        @Volatile
+        private var INSTANCE: TokenManager? = null
 
-    suspend fun saveToken(token: String, userId: String, username: String) {
-        context.dataStore.edit { prefs ->
-            prefs[TOKEN_KEY] = token
-            prefs[USER_ID_KEY] = userId
-            prefs[USERNAME_KEY] = username
+        fun getInstance(context: Context): TokenManager {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: TokenManager(context.applicationContext).also { INSTANCE = it }
+            }
         }
     }
 
+    suspend fun saveToken(token: String, userId: String, username: String) {
+        sharedPrefs.edit().apply {
+            putString(TOKEN_KEY, token)
+            putString(USER_ID_KEY, userId)
+            putString(USERNAME_KEY, username)
+            apply()
+        }
+        _token.emit(token)
+    }
+
     suspend fun clearToken() {
-        context.dataStore.edit { it.clear() }
+        sharedPrefs.edit().clear().apply()
+        _token.emit(null)
     }
 
     fun getAuthHeader(token: String) = "Bearer $token"

@@ -6,6 +6,8 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 
 - User registration with email verification
 - Magic-link and password login with two-factor authentication (OTP)
+- **Forgot password** — self-service password reset via email link
+- **Change password** — users can update their password from the Profile page
 - Account lockout protection
 - Create and manage tasks with types, notes, and status tracking
 - Task statuses: Not Started → Started → Complete
@@ -18,23 +20,24 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - Assign tasks to group members
 - Progress notes on tasks
 - In-app alerts for overdue and due-soon tasks
-- Automated email reminders (7-day, 1-day, overdue — once per task)
+- **Per-task email notification preferences** — choose whether and when (7-day, 1-day, overdue) to receive email reminders for each task
 - Calendar integration — private ICS feed for any calendar app
 - Date & time locale preference per user
 - User reporting and blocking
 - User feedback submission with in-app admin replies
 - Self-service account deletion (GDPR right to erasure)
 - Admin panel: stats dashboard, SMTP configuration, locked accounts, user reports, feedback management
+- **Database encryption** — full SQLite file encryption at rest via SQLCipher (set `DB_ENCRYPTION_KEY` env var)
 
 ## Stack
 
-| Layer    | Technology                          |
-|----------|-------------------------------------|
-| Server   | Node.js, TypeScript, Express        |
-| Database | SQLite via `better-sqlite3`         |
-| Auth     | JWT + bcryptjs                      |
-| Frontend | Vanilla JS/TS, Tailwind CSS (CDN)   |
-| Android  | Kotlin, Retrofit, DataStore         |
+| Layer    | Technology                                               |
+|----------|----------------------------------------------------------|
+| Server   | Node.js, TypeScript, Express                             |
+| Database | SQLite via `better-sqlite3-multiple-ciphers` (SQLCipher) |
+| Auth     | JWT + bcryptjs + SQLCipher encryption at rest            |
+| Frontend | Vanilla JS/TS, Tailwind CSS (CDN)                        |
+| Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Setup
 
@@ -65,12 +68,14 @@ Open `http://localhost:3000` after starting the server. No separate build step n
 ## API Endpoints
 
 ### Auth
-| Method | Path                         | Description                              |
-|--------|------------------------------|------------------------------------------|
-| POST   | /api/auth/register           | Register new user                        |
-| POST   | /api/auth/login              | Login → JWT or OTP session               |
-| POST   | /api/auth/verify-otp         | Verify 2FA OTP code → JWT                |
-| GET    | /api/auth/magic-link/verify  | Verify magic link token → JWT            |
+| Method | Path                           | Description                              |
+|--------|--------------------------------|------------------------------------------|
+| POST   | /api/auth/register             | Register new user                        |
+| POST   | /api/auth/login                | Login → JWT or OTP session               |
+| POST   | /api/auth/verify-otp           | Verify 2FA OTP code → JWT                |
+| GET    | /api/auth/magic-link/verify    | Verify magic link token → JWT            |
+| POST   | /api/auth/forgot-password      | Send password-reset email                |
+| POST   | /api/auth/reset-password       | Set new password via reset token         |
 
 ### Tasks
 | Method | Path                      | Description                           |
@@ -113,6 +118,7 @@ Open `http://localhost:3000` after starting the server. No separate build step n
 | Method | Path                          | Description                          |
 |--------|-------------------------------|--------------------------------------|
 | PATCH  | /api/users/me/locale          | Update date/time locale preference   |
+| PATCH  | /api/users/me/password        | Change own password                  |
 | GET    | /api/users/me/alerts          | List in-app alerts                   |
 | PATCH  | /api/users/me/alerts/:id/read | Mark alert as read                   |
 | GET    | /api/users/me/ics-token       | Get/create ICS calendar token        |
@@ -155,3 +161,34 @@ Open `http://localhost:3000` after starting the server. No separate build step n
 ## Default Task Types
 
 Urgent · Routine · Hobby · Household · Kids · Financial · Vehicle · Leisure
+
+## Database Encryption
+
+Jobber uses **SQLCipher** (via `better-sqlite3-multiple-ciphers`) to encrypt the entire SQLite database file at rest, protecting all stored data including usernames, email addresses, task content, and all other records.
+
+### Enabling Encryption
+
+Set the `DB_ENCRYPTION_KEY` environment variable to a strong random passphrase **before** starting the server for the first time:
+
+```env
+DB_ENCRYPTION_KEY=change-me-to-a-long-random-passphrase
+```
+
+If this variable is not set (or is empty), the database runs without encryption — suitable for development but not recommended for production.
+
+### Migrating an Existing Unencrypted Database
+
+If you have an existing plaintext database and wish to enable encryption, you must migrate using the SQLite `sqlcipher_export` technique:
+
+```sql
+-- In the sqlite3 CLI (plaintext DB):
+ATTACH DATABASE 'encrypted.db' AS encrypted KEY 'your-passphrase';
+SELECT sqlcipher_export('encrypted');
+DETACH DATABASE encrypted;
+```
+
+Replace your existing `jobber.db` with `encrypted.db`, then set `DB_ENCRYPTION_KEY` accordingly.
+
+### Passwords
+
+User passwords are **never stored in plaintext**. They are hashed using **bcrypt** (cost factor 10) before being stored. The database encryption provides an additional layer of protection for all other personal data.

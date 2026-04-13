@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import db from '../db';
 import { JWT_SECRET, MAX_LOGIN_ATTEMPTS, LOCKOUT_MINUTES, ADMIN_EMAIL } from '../config';
-import { sendMagicLink, sendOTP } from '../services/mail';
+import { sendMagicLink, sendOTP, sendPasswordReset } from '../services/mail';
 import { ALLOWED_LOCALES } from '../constants';
 
 const router = Router();
@@ -65,8 +65,8 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = now + 15 * 60 * 1000; // 15 minutes
   db.prepare(
-    'INSERT INTO magic_tokens (token, user_id, expires_at, used, created_at) VALUES (?, ?, ?, 0, ?)'
-  ).run(token, id, expiresAt, now);
+    'INSERT INTO magic_tokens (token, user_id, expires_at, used, created_at, purpose) VALUES (?, ?, ?, 0, ?, ?)'
+  ).run(token, id, expiresAt, now, 'verify');
 
   const baseUrl = `${req.protocol}://${req.get('host')}`;
   try {
@@ -206,8 +206,8 @@ router.post('/magic-link', async (req: Request, res: Response): Promise<void> =>
   const expiresAt = now + 15 * 60 * 1000; // 15 minutes
 
   db.prepare(
-    'INSERT INTO magic_tokens (token, user_id, expires_at, used, created_at) VALUES (?, ?, ?, 0, ?)'
-  ).run(token, user.id, expiresAt, now);
+    'INSERT INTO magic_tokens (token, user_id, expires_at, used, created_at, purpose) VALUES (?, ?, ?, 0, ?, ?)'
+  ).run(token, user.id, expiresAt, now, 'login');
 
   const baseUrl = `${req.protocol}://${req.get('host')}`;
   try {
@@ -230,7 +230,7 @@ router.get('/magic-link/verify', (req: Request, res: Response): void => {
 
   const magicToken = db.prepare(
     'SELECT * FROM magic_tokens WHERE token = ?'
-  ).get(token) as { token: string; user_id: string; expires_at: number; used: number } | undefined;
+  ).get(token) as { token: string; user_id: string; expires_at: number; used: number; purpose: string } | undefined;
 
   if (!magicToken) {
     res.status(400).json({ error: 'Invalid or expired token' });
@@ -238,6 +238,12 @@ router.get('/magic-link/verify', (req: Request, res: Response): void => {
   }
 
   if (magicToken.used === 1 || magicToken.expires_at < Date.now()) {
+    res.status(400).json({ error: 'Invalid or expired token' });
+    return;
+  }
+
+  // Password-reset tokens must not be used for login
+  if (magicToken.purpose === 'reset') {
     res.status(400).json({ error: 'Invalid or expired token' });
     return;
   }
@@ -262,6 +268,78 @@ router.get('/magic-link/verify', (req: Request, res: Response): void => {
   );
 
   res.json({ token: jwtToken, user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale } });
+});
+
+// POST /api/auth/forgot-password
+// Sends a password-reset link to the supplied email address.  Always responds with the
+// same generic message to avoid leaking whether an address is registered.
+router.post('/forgot-password', async (req: Request, res: Response): Promise<void> => {
+  const ALWAYS_OK = { message: 'If that email is registered, a password-reset link has been sent.' };
+  const { email } = req.body;
+
+  if (!email) {
+    res.json(ALWAYS_OK);
+    return;
+  }
+
+  const user = db.prepare('SELECT id, email FROM users WHERE email = ?').get(email) as
+    | { id: string; email: string }
+    | undefined;
+
+  if (!user) {
+    res.json(ALWAYS_OK);
+    return;
+  }
+
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const now = Date.now();
+  const expiresAt = now + 15 * 60 * 1000; // 15 minutes
+
+  db.prepare(
+    'INSERT INTO magic_tokens (token, user_id, expires_at, used, created_at, purpose) VALUES (?, ?, ?, 0, ?, ?)'
+  ).run(resetToken, user.id, expiresAt, now, 'reset');
+
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  try {
+    await sendPasswordReset(user.email, resetToken, baseUrl);
+  } catch (err) {
+    console.error('[auth] Failed to send password-reset email:', err);
+  }
+
+  res.json(ALWAYS_OK);
+});
+
+// POST /api/auth/reset-password
+// Validates a password-reset token and sets a new password.
+router.post('/reset-password', async (req: Request, res: Response): Promise<void> => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    res.status(400).json({ error: 'token and newPassword are required' });
+    return;
+  }
+
+  if (typeof newPassword !== 'string' || newPassword.length < 8) {
+    res.status(400).json({ error: 'Password must be at least 8 characters' });
+    return;
+  }
+
+  const magicToken = db.prepare(
+    "SELECT * FROM magic_tokens WHERE token = ? AND purpose = 'reset'"
+  ).get(token) as { token: string; user_id: string; expires_at: number; used: number } | undefined;
+
+  if (!magicToken || magicToken.used === 1 || magicToken.expires_at < Date.now()) {
+    res.status(400).json({ error: 'Invalid or expired reset token' });
+    return;
+  }
+
+  const passwordHash = bcrypt.hashSync(newPassword, 10);
+  db.prepare('UPDATE magic_tokens SET used = 1 WHERE token = ?').run(token);
+  db.prepare('UPDATE users SET password_hash = ?, failed_logins = 0, locked_until = NULL WHERE id = ?').run(
+    passwordHash, magicToken.user_id
+  );
+
+  res.json({ message: 'Password has been reset. You can now sign in with your new password.' });
 });
 
 export default router;

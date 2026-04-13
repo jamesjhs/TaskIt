@@ -29,7 +29,7 @@
 
     <h1>Data Protection &amp; Privacy Policy</h1>
     <p class="text-sm text-slate-500 dark:text-slate-400">
-      Version 0.8.1 &nbsp;·&nbsp; Effective date: 13 April 2026 &nbsp;·&nbsp;
+      Version 1.0.1 &nbsp;·&nbsp; Effective date: 13 April 2026 &nbsp;·&nbsp;
       Prepared by the Data Protection, Workflow &amp; Security Officer, Jobber
     </p>
 
@@ -200,14 +200,16 @@
     <h2>7. Data Security</h2>
     <p>We apply the following technical and organisational measures:</p>
     <ul>
-      <li>Passwords are stored using bcrypt with a work factor of 10 (never in plain text).</li>
+      <li><strong>Database encryption at rest:</strong> The entire SQLite database file is encrypted using <strong>SQLCipher</strong> (AES-256 in CBC mode), ensuring that all stored data — including usernames, email addresses, task content, and all other records — is unreadable without the encryption key, even if the underlying storage is compromised.</li>
+      <li>Passwords are stored using <strong>bcrypt</strong> with a work factor of 10 (never in plain text). This means passwords cannot be recovered even by the data controller.</li>
       <li>All session tokens are cryptographically random (256-bit entropy) and single-use.</li>
+      <li>Password-reset tokens are purpose-bound (tagged <code>reset</code>) and cannot be reused for login; they expire after 15 minutes.</li>
       <li>Two-factor authentication (email OTP) is required for all password-based logins.</li>
       <li>Account lockout after repeated failed authentication attempts.</li>
       <li>Transport-layer security (TLS/HTTPS) is required between clients and the server.</li>
       <li>API rate limiting is applied to all endpoints to mitigate brute-force attacks.</li>
       <li>The database is stored on-server only; no third-party cloud database is used.</li>
-      <li>SMTP credentials are stored encrypted in the database and never exposed via the API.</li>
+      <li>SMTP credentials are stored within the encrypted database and never exposed via the API.</li>
     </ul>
 
     <h2>8. Sharing and Transfers</h2>
@@ -279,7 +281,7 @@
 </main>
 
 <footer class="border-t border-slate-200 dark:border-slate-700 py-4 mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-  <span>Jobber v<span class="page-version">0.8.1</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp;
+  <span>Jobber v<span class="page-version">1.0.1</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp;
     <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer"
        class="text-indigo-500 hover:underline">jahosi.co.uk</a>
     &nbsp;·&nbsp;

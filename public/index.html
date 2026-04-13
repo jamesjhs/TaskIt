@@ -62,6 +62,21 @@
         <button type="button" onclick="handlePasswordLogin()" class="btn btn-primary btn-full">Sign In</button>
         <p style="text-align:center;margin-top:12px">
           <button type="button" onclick="toggleLoginMode()" class="link-btn">Use magic link instead</button>
+          &nbsp;·&nbsp;
+          <button type="button" onclick="showForgotPassword()" class="link-btn">Forgot password?</button>
+        </p>
+      </div>
+
+      <!-- Forgot Password Form -->
+      <div id="forgotPasswordMode" class="hidden">
+        <p style="font-size:.88rem;color:#374151;margin-bottom:12px">Enter your email address and we'll send you a link to reset your password.</p>
+        <div class="form-group">
+          <label>Email</label>
+          <input id="forgotEmail" type="email" placeholder="you@example.com" autocomplete="email" class="input" />
+        </div>
+        <button type="button" onclick="handleForgotPassword()" class="btn btn-primary btn-full">Send Reset Link</button>
+        <p style="text-align:center;margin-top:12px">
+          <button type="button" onclick="hideForgotPassword()" class="link-btn">Back to sign in</button>
         </p>
       </div>
     </form>
@@ -257,7 +272,31 @@
       <button onclick="saveLocale()" class="btn btn-primary btn-full">Save Format</button>
     </div>
 
-    <!-- Invite to Jobber -->
+    <!-- Change Password -->
+    <div class="card" style="margin-top:16px">
+      <p class="card-title">🔑 Change Password</p>
+      <div id="changePasswordSection">
+        <button onclick="toggleChangePassword()" class="btn btn-outline btn-full">Change Password</button>
+      </div>
+      <div id="changePasswordForm" class="hidden">
+        <div class="form-group">
+          <label>Current Password</label>
+          <input id="currentPassword" type="password" placeholder="••••••••" autocomplete="current-password" class="input" />
+        </div>
+        <div class="form-group">
+          <label>New Password</label>
+          <input id="newPassword" type="password" placeholder="••••••••" minlength="8" autocomplete="new-password" class="input" />
+        </div>
+        <div class="form-group">
+          <label>Confirm New Password</label>
+          <input id="confirmNewPassword" type="password" placeholder="••••••••" minlength="8" autocomplete="new-password" class="input" />
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="handleChangePassword()" class="btn btn-primary" style="flex:1">Update Password</button>
+          <button onclick="toggleChangePassword()" class="btn btn-secondary" style="flex:1">Cancel</button>
+        </div>
+      </div>
+    </div>
     <div class="card" style="margin-top:16px">
       <p class="card-title">Invite to Jobber</p>
       <p style="font-size:.88rem;color:#374151;line-height:1.55;margin-bottom:14px">
@@ -496,6 +535,26 @@
             <option value="years">Years</option>
           </select>
         </div>
+        <div class="form-group" style="border-top:1px solid #e5e7eb;margin-top:8px;padding-top:12px">
+          <label>
+            <input type="checkbox" id="taskNotifyEmail" onchange="document.getElementById('taskNotifyOptions').style.display=this.checked?'flex':'none'" style="width:16px;height:16px;accent-color:#1a56db;vertical-align:middle;margin-right:6px" checked />
+            Email Reminders
+          </label>
+          <div id="taskNotifyOptions" style="margin-top:8px;margin-left:22px;display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:.88rem;color:#374151">
+              <input type="checkbox" id="taskNotify7day" style="width:14px;height:14px;accent-color:#1a56db;vertical-align:middle;margin-right:6px" checked />
+              7 days before due
+            </label>
+            <label style="font-size:.88rem;color:#374151">
+              <input type="checkbox" id="taskNotify1day" style="width:14px;height:14px;accent-color:#1a56db;vertical-align:middle;margin-right:6px" checked />
+              1 day before due
+            </label>
+            <label style="font-size:.88rem;color:#374151">
+              <input type="checkbox" id="taskNotifyOverdue" style="width:14px;height:14px;accent-color:#1a56db;vertical-align:middle;margin-right:6px" checked />
+              When overdue
+            </label>
+          </div>
+        </div>
       </form>
     </div>
     <div class="modal-footer">
@@ -635,6 +694,33 @@
   </div>
 </div>
 
+
+<!-- ===== RESET PASSWORD MODAL ===== -->
+<div id="resetPasswordModal" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-body" style="text-align:center">
+      <div class="auth-logo-icon" style="margin:0 auto 16px">
+        <svg width="28" height="28" fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+        </svg>
+      </div>
+      <h2 class="modal-title">Reset Your Password</h2>
+      <p style="font-size:.9rem;color:#6b7280;margin-bottom:20px">
+        Enter and confirm your new password below.
+      </p>
+      <div class="form-group" style="text-align:left">
+        <label>New Password</label>
+        <input id="resetNewPassword" type="password" placeholder="••••••••" minlength="8" autocomplete="new-password" class="input" />
+      </div>
+      <div class="form-group" style="text-align:left">
+        <label>Confirm New Password</label>
+        <input id="resetConfirmPassword" type="password" placeholder="••••••••" minlength="8" autocomplete="new-password" class="input" />
+      </div>
+      <button onclick="handleResetPassword()" class="btn btn-primary btn-full">Set New Password</button>
+    </div>
+  </div>
+</div>
 
 <div id="groupMembersModal" class="modal-overlay hidden">
   <div class="modal-sheet">
@@ -836,6 +922,80 @@ function logout() {
   localStorage.removeItem('jbToken'); localStorage.removeItem('jbUser');
   document.getElementById('appPage').classList.add('hidden');
   document.getElementById('authPage').classList.remove('hidden');
+}
+
+// ========== Forgot / Reset Password ==========
+function showForgotPassword() {
+  document.getElementById('passwordMode').classList.add('hidden');
+  document.getElementById('magicLinkMode').classList.add('hidden');
+  document.getElementById('forgotPasswordMode').classList.remove('hidden');
+  document.getElementById('forgotEmail').value = document.getElementById('loginEmail').value || '';
+}
+
+function hideForgotPassword() {
+  document.getElementById('forgotPasswordMode').classList.add('hidden');
+  if (loginMode === 'magic') {
+    document.getElementById('magicLinkMode').classList.remove('hidden');
+  } else {
+    document.getElementById('passwordMode').classList.remove('hidden');
+  }
+}
+
+async function handleForgotPassword() {
+  const email = document.getElementById('forgotEmail').value.trim();
+  if (!email) { toast('Please enter your email address.', 'error'); return; }
+  try {
+    const data = await api('POST', '/auth/forgot-password', { email });
+    toast(data.message || 'Check your email for a reset link.', 'info');
+    hideForgotPassword();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+let _resetToken = null;
+
+async function handleResetPassword() {
+  const newPassword = document.getElementById('resetNewPassword').value;
+  const confirm = document.getElementById('resetConfirmPassword').value;
+  if (!newPassword || newPassword.length < 8) {
+    toast('Password must be at least 8 characters.', 'error'); return;
+  }
+  if (newPassword !== confirm) {
+    toast('Passwords do not match.', 'error'); return;
+  }
+  try {
+    const data = await api('POST', '/auth/reset-password', { token: _resetToken, newPassword });
+    document.getElementById('resetPasswordModal').classList.add('hidden');
+    _resetToken = null;
+    toast(data.message || 'Password reset! You can now sign in.', 'info');
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+// ========== Change Password (Profile) ==========
+function toggleChangePassword() {
+  const form = document.getElementById('changePasswordForm');
+  const btn = document.getElementById('changePasswordSection');
+  const isHidden = form.classList.contains('hidden');
+  form.classList.toggle('hidden', !isHidden);
+  btn.classList.toggle('hidden', isHidden);
+  if (isHidden) {
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmNewPassword').value = '';
+  }
+}
+
+async function handleChangePassword() {
+  const current = document.getElementById('currentPassword').value;
+  const newPwd = document.getElementById('newPassword').value;
+  const confirm = document.getElementById('confirmNewPassword').value;
+  if (!current || !newPwd) { toast('Please fill in all password fields.', 'error'); return; }
+  if (newPwd.length < 8) { toast('New password must be at least 8 characters.', 'error'); return; }
+  if (newPwd !== confirm) { toast('Passwords do not match.', 'error'); return; }
+  try {
+    await api('PATCH', '/users/me/password', { currentPassword: current, newPassword: newPwd });
+    toast('Password updated successfully.');
+    toggleChangePassword();
+  } catch (err) { toast(err.message, 'error'); }
 }
 
 // ========== App init ==========
@@ -1253,6 +1413,12 @@ function openTaskModal(task = null) {
       document.getElementById('taskRecurInterval').value = task.recur_interval;
       document.getElementById('taskRecurUnit').value = task.recur_unit;
     }
+    // Populate notification preferences
+    document.getElementById('taskNotifyEmail').checked = task.notify_email !== 0;
+    document.getElementById('taskNotify7day').checked = task.notify_7day !== 0;
+    document.getElementById('taskNotify1day').checked = task.notify_1day !== 0;
+    document.getElementById('taskNotifyOverdue').checked = task.notify_overdue !== 0;
+    document.getElementById('taskNotifyOptions').style.display = task.notify_email !== 0 ? 'flex' : 'none';
     if (task.due_date) {
       const d = new Date(task.due_date);
       const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -1272,6 +1438,11 @@ function openTaskModal(task = null) {
     document.getElementById('taskRecurFields').classList.add('hidden');
     document.getElementById('taskRecurInterval').value = '1';
     document.getElementById('taskRecurUnit').value = 'weeks';
+    document.getElementById('taskNotifyEmail').checked = true;
+    document.getElementById('taskNotify7day').checked = true;
+    document.getElementById('taskNotify1day').checked = true;
+    document.getElementById('taskNotifyOverdue').checked = true;
+    document.getElementById('taskNotifyOptions').style.display = 'flex';
     document.getElementById('assigneeContainer').innerHTML = '<span style="font-size:.9rem;color:#9ca3af;font-style:italic">Select a group to see members</span>';
   }
   document.getElementById('taskModal').classList.remove('hidden');
@@ -1321,6 +1492,10 @@ async function handleTaskSubmit(e) {
     body.recurInterval = null;
     body.recurUnit = null;
   }
+  body.notifyEmail = document.getElementById('taskNotifyEmail').checked;
+  body.notify7day = document.getElementById('taskNotify7day').checked;
+  body.notify1day = document.getElementById('taskNotify1day').checked;
+  body.notifyOverdue = document.getElementById('taskNotifyOverdue').checked;
   try {
     if (editId) { await api('PATCH', '/tasks/' + editId, body); toast('Task updated!'); }
     else { await api('POST', '/tasks', body); toast('Task created!'); }
@@ -1892,6 +2067,7 @@ document.addEventListener('click', function(e) {
   const params = new URLSearchParams(window.location.search);
   const magicToken = params.get('token');
   const inviteToken = params.get('invite');
+  const resetToken = params.get('resetToken');
 
   // Check version on every page open so stale caches are caught before login
   checkVersion();
@@ -1901,6 +2077,14 @@ document.addEventListener('click', function(e) {
       if (authEl) authEl.textContent = d.version;
     }
   }).catch(() => {});
+
+  // Password-reset link clicked — show the reset password modal
+  if (resetToken) {
+    history.replaceState(null, '', window.location.pathname);
+    _resetToken = resetToken;
+    document.getElementById('resetPasswordModal').classList.remove('hidden');
+    return;
+  }
 
   if (magicToken) {
     try {

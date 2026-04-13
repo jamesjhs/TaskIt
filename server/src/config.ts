@@ -12,6 +12,7 @@ export const JWT_SECRET = secret ?? 'jobber-dev-secret-change-before-deploy';
 
 export const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 export const DB_PATH: string | undefined = process.env.DB_PATH;
+export const DB_ENCRYPTION_KEY: string | undefined = process.env.DB_ENCRYPTION_KEY || undefined;
 export const MAX_LOGIN_ATTEMPTS = process.env.MAX_LOGIN_ATTEMPTS ? parseInt(process.env.MAX_LOGIN_ATTEMPTS, 10) : 5;
 export const LOCKOUT_MINUTES = process.env.LOCKOUT_MINUTES ? parseInt(process.env.LOCKOUT_MINUTES, 10) : 30;
 export const ADMIN_EMAIL: string | null = process.env.ADMIN_EMAIL || null;

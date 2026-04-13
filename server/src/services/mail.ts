@@ -96,6 +96,27 @@ export async function sendGroupInvite(to: string, groupName: string, inviteUrl: 
   });
 }
 
+export async function sendPasswordReset(to: string, token: string, baseUrl: string): Promise<void> {
+  const transporter = await getTransporter();
+  const link = `${baseUrl}?resetToken=${token}`;
+
+  if (!transporter) {
+    console.warn('[mail] SMTP not configured or disabled — password reset link not emailed');
+    console.info(`[mail] Password reset link for ${to}: ${link}`);
+    return;
+  }
+  const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
+  const from = settings?.from_addr || 'noreply@jobber.app';
+
+  await transporter.sendMail({
+    from,
+    to,
+    subject: 'Reset your Jobber password',
+    text: `Click the link below to reset your Jobber password (expires in 15 minutes):\n\n${link}\n\nIf you did not request a password reset, you can safely ignore this email.`,
+    html: `<p>Click the link below to reset your Jobber password (expires in 15 minutes):</p><p><a href="${link}">${link}</a></p><p>If you did not request a password reset, you can safely ignore this email.</p>`,
+  });
+}
+
 export async function sendTaskReminder(to: string, task: { title: string; due_date: number }, reminderLabel?: string): Promise<void> {
   const transporter = await getTransporter();
   if (!transporter) {

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
 import { ALLOWED_LOCALES } from '../constants';
@@ -130,6 +131,41 @@ router.post('/me/feedback', (req: Request, res: Response): void => {
     'INSERT INTO feedback_messages (id, user_id, subject, message, contact_ok, created_at) VALUES (?, ?, ?, ?, ?, ?)'
   ).run(id, userId, subjectVal, message.trim(), contact_ok ? 1 : 0, now);
   res.status(201).json({ message: 'Feedback submitted. Thank you!' });
+});
+
+// PATCH /api/users/me/password — change the authenticated user's password
+router.patch('/me/password', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    res.status(400).json({ error: 'currentPassword and newPassword are required' });
+    return;
+  }
+
+  if (typeof newPassword !== 'string' || newPassword.length < 8) {
+    res.status(400).json({ error: 'New password must be at least 8 characters' });
+    return;
+  }
+
+  const user = db.prepare('SELECT id, password_hash FROM users WHERE id = ?').get(userId) as
+    | { id: string; password_hash: string }
+    | undefined;
+
+  if (!user) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  if (!bcrypt.compareSync(currentPassword, user.password_hash)) {
+    res.status(401).json({ error: 'Current password is incorrect' });
+    return;
+  }
+
+  const newHash = bcrypt.hashSync(newPassword, 10);
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, userId);
+
+  res.json({ message: 'Password updated successfully' });
 });
 
 router.delete('/me', (req: Request, res: Response): void => {

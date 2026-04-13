@@ -178,11 +178,11 @@ If this variable is not set (or is empty), the database runs without encryption 
 
 ### Migrating an Existing Unencrypted Database
 
-If you have an existing plaintext database and wish to enable encryption, you must migrate using the SQLite `sqlcipher_export` technique:
+If you have an existing plaintext database and wish to enable encryption, you must migrate using the SQLite `sqlcipher_export` technique. The server uses the `x'hex'` raw-key format internally; to replicate this in the SQLite CLI, first convert your passphrase to hex (e.g. with `xxd -p`):
 
 ```sql
--- In the sqlite3 CLI (plaintext DB):
-ATTACH DATABASE 'encrypted.db' AS encrypted KEY 'your-passphrase';
+-- In the sqlcipher CLI, specifying the raw hex key:
+ATTACH DATABASE 'encrypted.db' AS encrypted KEY "x'<hex-of-your-passphrase>'";
 SELECT sqlcipher_export('encrypted');
 DETACH DATABASE encrypted;
 ```

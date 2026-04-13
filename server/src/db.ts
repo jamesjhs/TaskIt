@@ -13,8 +13,11 @@ const db = new Database(DB_PATH);
 // are enabling encryption for the first time on an existing installation you must
 // export and re-import the data after setting DB_ENCRYPTION_KEY.
 if (DB_ENCRYPTION_KEY) {
-  // sqlcipher_export('encrypted') approach: apply key to the open DB
-  db.pragma(`key = "${DB_ENCRYPTION_KEY.replace(/"/g, '""')}"`);
+  // Use the hex key form so no user-supplied characters are interpolated into SQL.
+  // x'...' is the SQLCipher raw-key syntax; hex digits [0-9a-f] cannot contain
+  // SQL metacharacters, so this is injection-safe regardless of the key content.
+  const hexKey = Buffer.from(DB_ENCRYPTION_KEY, 'utf8').toString('hex');
+  db.pragma(`key = "x'${hexKey}'"`);
 }
 
 db.pragma('journal_mode = WAL');

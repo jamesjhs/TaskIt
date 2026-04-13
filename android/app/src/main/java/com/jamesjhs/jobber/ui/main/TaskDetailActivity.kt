@@ -235,7 +235,7 @@ class TaskDetailActivity : AppCompatActivity() {
                 return@launch
             }
             try {
-                val response = ApiClient.apiService.deferTask("Bearer $token", task!!.id, mapOf("until" to until))
+                val response = ApiClient.apiService.deferTask("Bearer $token", task!!.id, mapOf("dueDate" to until))
                 if (response.isSuccessful) {
                     Toast.makeText(this@TaskDetailActivity, "Task deferred", Toast.LENGTH_SHORT).show()
                     setResult(RESULT_OK)

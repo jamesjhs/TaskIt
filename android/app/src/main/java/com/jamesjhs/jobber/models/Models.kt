@@ -61,12 +61,12 @@ data class Task(
 data class CreateTaskRequest(
     val title: String,
     val details: String?,
-    @SerializedName("type_id") val typeId: String,
-    @SerializedName("group_id") val groupId: String?,
-    @SerializedName("assignee_ids") val assigneeIds: List<String>?,
-    @SerializedName("due_date") val dueDate: Long?,
-    @SerializedName("recur_interval") val recurInterval: Int?,
-    @SerializedName("recur_unit") val recurUnit: String?
+    val typeId: String,
+    val groupId: String?,
+    val assigneeIds: List<String>?,
+    val dueDate: Long?,
+    val recurInterval: Int?,
+    val recurUnit: String?
 )
 
 data class UpdateStatusRequest(

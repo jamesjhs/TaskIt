@@ -159,7 +159,7 @@ router.post('/join', (req: Request, res: Response): void => {
   }
 
   res.json(group);
-}
+});
 
 // POST /api/groups/invite/:token/accept  — accept a group invite (authenticated user)
 router.post('/invite/:token/accept', (req: Request, res: Response): void => {
@@ -413,6 +413,68 @@ router.delete('/:id', (req: Request, res: Response): void => {
   db.prepare('DELETE FROM groups WHERE id = ?').run(groupId);
 
   res.json({ message: 'Group deleted' });
+});
+
+// POST /api/groups/:id/members/:userId/promote  — promote a member to admin (Android convenience endpoint)
+router.post('/:id/members/:userId/promote', (req: Request, res: Response): void => {
+  const requesterId = req.user!.id;
+  const groupId = req.params.id;
+  const targetUserId = req.params.userId;
+
+  const requesterMembership = db.prepare(
+    'SELECT role FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(groupId, requesterId) as { role: string } | undefined;
+
+  if (!requesterMembership || requesterMembership.role !== 'admin') {
+    res.status(403).json({ error: 'Only group admins can change member roles' });
+    return;
+  }
+
+  const targetMembership = db.prepare(
+    'SELECT role FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(groupId, targetUserId);
+
+  if (!targetMembership) {
+    res.status(404).json({ error: 'User is not a member of this group' });
+    return;
+  }
+
+  db.prepare(
+    'UPDATE group_members SET role = ? WHERE group_id = ? AND user_id = ?'
+  ).run('admin', groupId, targetUserId);
+
+  res.json({ message: 'Member promoted to admin' });
+});
+
+// POST /api/groups/:id/members/:userId/demote  — demote an admin to member (Android convenience endpoint)
+router.post('/:id/members/:userId/demote', (req: Request, res: Response): void => {
+  const requesterId = req.user!.id;
+  const groupId = req.params.id;
+  const targetUserId = req.params.userId;
+
+  const requesterMembership = db.prepare(
+    'SELECT role FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(groupId, requesterId) as { role: string } | undefined;
+
+  if (!requesterMembership || requesterMembership.role !== 'admin') {
+    res.status(403).json({ error: 'Only group admins can change member roles' });
+    return;
+  }
+
+  const targetMembership = db.prepare(
+    'SELECT role FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(groupId, targetUserId);
+
+  if (!targetMembership) {
+    res.status(404).json({ error: 'User is not a member of this group' });
+    return;
+  }
+
+  db.prepare(
+    'UPDATE group_members SET role = ? WHERE group_id = ? AND user_id = ?'
+  ).run('member', groupId, targetUserId);
+
+  res.json({ message: 'Admin demoted to member' });
 });
 
 // PATCH /api/groups/:id/members/:userId/role

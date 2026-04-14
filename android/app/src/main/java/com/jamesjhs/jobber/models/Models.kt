@@ -73,6 +73,11 @@ data class UpdateStatusRequest(
     val status: String
 )
 
+data class StopRecurringRequest(
+    val recurInterval: Int? = null,
+    val recurUnit: String? = null
+)
+
 data class Group(
     val id: String,
     val name: String,

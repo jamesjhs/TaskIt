@@ -299,17 +299,9 @@ class TaskDetailActivity : AppCompatActivity() {
                 return@launch
             }
             try {
-                val request = com.jamesjhs.jobber.models.CreateTaskRequest(
-                    title = t.title,
-                    details = t.details,
-                    typeId = t.typeId,
-                    groupId = t.groupId,
-                    assigneeIds = t.assignees?.map { it.id },
-                    dueDate = t.dueDate,
-                    recurInterval = null,
-                    recurUnit = null
+                val response = ApiClient.apiService.stopRecurringTask(
+                    "Bearer $token", t.id, com.jamesjhs.jobber.models.StopRecurringRequest()
                 )
-                val response = ApiClient.apiService.updateTask("Bearer $token", t.id, request)
                 if (response.isSuccessful) {
                     Toast.makeText(this@TaskDetailActivity, "Task will no longer recur", Toast.LENGTH_SHORT).show()
                     setResult(RESULT_OK)

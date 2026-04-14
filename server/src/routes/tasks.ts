@@ -101,7 +101,7 @@ router.get('/', (req: Request, res: Response): void => {
     JOIN users u ON u.id = t.created_by
     LEFT JOIN groups g ON g.id = t.group_id
     ${whereClause}
-    ORDER BY t.updated_at DESC
+    ORDER BY CASE WHEN LOWER(tt.name) = 'urgent' THEN 0 ELSE 1 END, t.updated_at DESC
   `).all(userId, ...params) as Array<Record<string, unknown>>;
 
   // Attach assignees

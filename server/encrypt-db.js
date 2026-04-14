@@ -90,7 +90,7 @@ console.log('Migrating …');
 
 let db;
 try {
-  db = new Database(sourcePath, { readonly: true });
+  db = new Database(sourcePath);
 
   // ATTACH the destination database and set its key via PRAGMA before export.
   // hexKey contains only [0-9a-f] characters (validated above), so it cannot

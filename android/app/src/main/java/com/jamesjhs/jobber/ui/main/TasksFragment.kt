@@ -143,7 +143,7 @@ class TasksFragment : Fragment() {
         }
 
         // Ensure urgent tasks always appear at the top
-        val sortedTasks = filteredTasks.sortedWith(compareBy { if (it.typeName?.lowercase() == "urgent") 0 else 1 })
+        val sortedTasks = filteredTasks.sortedWith(compareBy { if ("urgent".equals(it.typeName, ignoreCase = true)) 0 else 1 })
 
         binding.recyclerTasks.layoutManager = LinearLayoutManager(context)
         binding.recyclerTasks.adapter = TaskAdapter(sortedTasks,

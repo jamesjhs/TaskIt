@@ -69,7 +69,7 @@
       <li>To make the task repeat automatically, tick <strong>Repeat Task</strong> and choose the interval (e.g. every 2 weeks).</li>
       <li>Click <strong>Save Task</strong>.</li>
     </ol>
-    <p>Due dates default to midnight tonight — handy for quick captures!</p>
+    <p>Due dates default to <strong>midnight on today's date (00:00)</strong> — handy for quick captures!</p>
 
     <h3>Recurring tasks</h3>
     <p>When <strong>Repeat Task</strong> is enabled, completing a task automatically creates the next occurrence with the due date advanced by the chosen interval (days, weeks, months, or years). Assignees are carried over to the new task.</p>
@@ -81,7 +81,7 @@
       <li><strong>Edit</strong> any of the task's details</li>
       <li><strong>Defer</strong> – click the <em>Defer</em> button to reschedule the due date without opening the full edit form</li>
       <li><strong>Archive</strong> it to tidy your view (archived tasks can always be brought back)</li>
-      <li><strong>Delete</strong> it permanently</li>
+      <li><strong>Delete</strong> it permanently — for group tasks, only the task creator or a group admin can delete; other group members can edit all other details</li>
     </ul>
 
     <h3>Filtering your task list</h3>
@@ -150,15 +150,36 @@
 
     <hr />
 
-    <h2>📧 Email Reminders</h2>
-    <p>When email is enabled by your admin, Jobber sends automatic reminders for tasks with due dates. You can control notification preferences <strong>per task</strong> when creating or editing a task:</p>
-    <ul>
-      <li><strong>Email Reminders</strong> – toggle on/off for the whole task</li>
-      <li><strong>7-day reminder</strong> – a heads-up when the deadline is about a week away</li>
-      <li><strong>1-day reminder</strong> – a nudge the day before it's due</li>
-      <li><strong>When overdue</strong> – a prompt when the deadline has passed</li>
-    </ul>
-    <p>Each reminder is sent once per task. Reminders stop once the task is marked complete.</p>
+    <h2>🔔 Notifications</h2>
+    <h3>In-app bell</h3>
+    <p>The <strong>bell icon</strong> at the top of the screen shows a red badge when you have tasks that are overdue or due within 24 hours. Click it to see what needs attention.</p>
+
+    <h3>Browser popup notifications</h3>
+    <p>Jobber can send native browser popup notifications when a task is approaching its deadline. When you first log in your browser will ask for notification permission — click <em>Allow</em> to enable them. Popups are fired while the app is open, using the timing columns you choose in the task's Reminders grid.</p>
+
+    <h2>📧 Email Reminders &amp; Notification Grid</h2>
+    <p>When email is enabled by your admin, Jobber sends reminders at the timings you choose per task. When creating or editing a task, the <strong>Reminders</strong> section shows a grid:</p>
+    <table style="border-collapse:collapse;font-size:.9rem;margin-bottom:8px">
+      <tr>
+        <th style="padding:4px 12px 4px 0;text-align:left;color:#6b7280;font-weight:400"></th>
+        <th style="padding:4px 8px;text-align:center;color:#6b7280;font-weight:400">7 days</th>
+        <th style="padding:4px 8px;text-align:center;color:#6b7280;font-weight:400">1 day</th>
+        <th style="padding:4px 8px;text-align:center;color:#6b7280;font-weight:400">On day</th>
+      </tr>
+      <tr>
+        <td style="padding:4px 12px 4px 0">📧 Email</td>
+        <td style="text-align:center">☑</td>
+        <td style="text-align:center">☑</td>
+        <td style="text-align:center">☑</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 12px 4px 0">🔔 Popup</td>
+        <td style="text-align:center">☐</td>
+        <td style="text-align:center">☐</td>
+        <td style="text-align:center">☐</td>
+      </tr>
+    </table>
+    <p>Tick each cell independently. Each reminder is sent once per task. Reminders stop once the task is marked complete.</p>
 
     <hr />
 
@@ -217,7 +238,7 @@
 
     <hr />
 
-    <p style="font-size:.9rem;color:#6b7280">Jobber v<span class="page-version">1.0.1</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp;
+    <p style="font-size:.9rem;color:#6b7280">Jobber v<span class="page-version">1.0.2</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp;
       <a href="https://jahosi.co.uk" class="text-indigo-500 hover:underline" target="_blank" rel="noopener noreferrer">jahosi.co.uk</a>
     </p>
 
@@ -225,7 +246,7 @@
 </main>
 
 <footer class="border-t border-slate-200 dark:border-slate-700 py-4 mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-  <span>Jobber v<span class="page-version">1.0.1</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp;
+  <span>Jobber v<span class="page-version">1.0.2</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp;
     <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer"
        class="text-indigo-500 hover:underline">jahosi.co.uk</a>
     &nbsp;·&nbsp;

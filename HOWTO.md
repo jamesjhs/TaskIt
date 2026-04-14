@@ -1,6 +1,6 @@
 # Jobber – How-To Manual
 
-**Version 0.8.1**  
+**Version 1.0.2**  
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -38,7 +38,8 @@ Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 - Custom task types per user and per group
 - Progress notes on each task for tracking updates
 - In-app notification bell for overdue and due-soon tasks
-- Up to three automated email reminder notifications per task (7-day, 1-day, overdue)
+- Per-task notification preferences — a grid to independently enable email and/or browser popup reminders at 7-day, 1-day, and on-the-day intervals
+- Group member access control — any group member can edit all aspects of a task; only the task creator or a group admin can delete a task
 - Calendar integration — subscribe to your tasks as an ICS feed in any calendar app
 - Group creation with admin controls — rename, promote/demote members, email invites, QR invite links, shared join key
 - Magic-link and password login (with two-factor authentication via OTP), email verification, and account lockout protection
@@ -228,7 +229,7 @@ The application will be available at `http://localhost:3000` (or whichever port 
    - **Group** – assign to a group (optional); this allows assigning to group members
    - **Assign To** – select group members to assign the task to (only visible when a group is selected)
    - **Notes** – free-text notes or description for the task
-   - **Due Date** – defaults to **tonight at midnight**; adjust as needed
+   - **Due Date** – defaults to **midnight on today's date** (00:00); adjust as needed
 3. To make the task repeat, tick **Repeat Task** and set the interval (see [Recurring Tasks](#recurring-tasks)).
 4. Click **Save Task**.
 
@@ -253,7 +254,7 @@ Click any task card to open the **Task Detail** panel, where you can:
 - **Edit** the task (title, type, group, assignees, notes, due date, recurrence)
 - **Defer** the task — click the *Defer* button to set a new due date without opening the full edit form
 - **Toggle Archive** – hide/unhide the task from the main view
-- **Delete** the task permanently
+- **Delete** the task permanently — for group tasks, only the task creator or a group admin can delete; other group members can edit all other details but cannot delete
 
 Use the **filter bar** at the top of the Tasks page to filter by:
 
@@ -280,12 +281,29 @@ Notes are visible to the task creator, assignees, and group members.
 
 ### Task Notifications
 
+#### In-app bell
+
 A **bell icon** in the top navigation bar shows a red badge when you have tasks that are:
 
 - **Overdue** – past their due date and not yet complete
 - **Due within 24 hours** – approaching deadline
 
 Click the bell to open the notification panel. Click any item to jump to that task.
+
+#### Browser popup notifications
+
+Jobber can send native browser popup notifications when tasks are approaching their deadline. When you first log in, your browser will prompt for **notification permission** — click *Allow* to enable them. Popups fire while the app is open in your browser, using the timing columns you configure in the task's Reminders grid.
+
+#### Reminders grid
+
+When creating or editing a task, the **Reminders** section shows a 2-row, 3-column grid:
+
+|          | 7 days | 1 day | On day |
+|----------|:------:|:-----:|:------:|
+| 📧 Email  | ✓      | ✓     | ✓      |
+| 🔔 Popup  |        |       |        |
+
+Each cell is an independent checkbox. Enable as many or as few as you like — the email and popup channels operate independently at each timing.
 
 ---
 
@@ -360,13 +378,13 @@ Read feedback messages and feature requests submitted by users. Update the statu
 
 ## Email Reminders
 
-When SMTP is configured and enabled, Jobber automatically sends up to **three reminder emails** for each incomplete task that has a due date:
+When SMTP is configured and enabled, Jobber automatically sends reminder emails for each incomplete task that has a due date, according to the **Reminders grid** you configure per task:
 
-| Reminder       | Timing                              |
-|----------------|-------------------------------------|
-| 7-day reminder | Sent when the deadline is 6–8 days away |
-| 1-day reminder | Sent when the deadline is within 2 days |
-| Overdue alert  | Sent when the deadline has passed    |
+| Reminder       | Timing                                   |
+|----------------|------------------------------------------|
+| 7-day reminder | Sent when the deadline is 6–8 days away  |
+| 1-day reminder | Sent when the deadline is 22–50 hours away |
+| On-day reminder | Sent on the day the task is due (0–25 hours before) |
 
 Each reminder is sent only **once** per task. Reminders are checked every hour.
 
@@ -398,4 +416,4 @@ Each reminder is sent only **once** per task. Reminders are checked every hour.
 
 ---
 
-*Jobber v0.8.1 – Copyright J Rowson 2026 | jahosi.co.uk*
+*Jobber v1.0.2 – Copyright J Rowson 2026 | jahosi.co.uk*

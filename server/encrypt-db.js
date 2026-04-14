@@ -72,8 +72,15 @@ if (fs.existsSync(destPath)) {
 }
 
 // Convert the passphrase to hex — this matches the x'...' raw-key format
-// used by the server in src/db.ts.
+// used by the server in src/db.ts.  Buffer.from(...).toString('hex') produces
+// only lowercase [0-9a-f] characters, so the result is safe to interpolate
+// into both the SQL KEY clause and the x'...' pragma value.
 const hexKey = Buffer.from(encryptionKey, 'utf8').toString('hex');
+if (!/^[0-9a-f]+$/.test(hexKey)) {
+  // Defensive guard — should never trigger given the Buffer conversion above.
+  console.error('Error: hex key contains unexpected characters. Aborting.');
+  process.exit(1);
+}
 
 // ── Run the migration ────────────────────────────────────────────────────────
 
@@ -86,26 +93,37 @@ try {
   db = new Database(sourcePath, { readonly: true });
 
   // ATTACH the destination database and set its key via PRAGMA before export.
-  // The x'hex' form is the SQLCipher raw-key syntax; hex digits cannot contain
-  // SQL metacharacters, so this is injection-safe regardless of passphrase content.
+  // hexKey contains only [0-9a-f] characters (validated above), so it cannot
+  // contain SQL metacharacters and is safe to interpolate into the KEY clause.
   db.exec(`ATTACH DATABASE '${destPath.replace(/'/g, "''")}' AS encrypted KEY "x'${hexKey}'";`);
   db.exec(`SELECT sqlcipher_export('encrypted');`);
   db.exec(`DETACH DATABASE encrypted;`);
 
+  // Shell-quote a path for safe inclusion in printed commands.
+  // Wraps the path in single quotes and escapes any embedded single quotes.
+  const sq = (p) => `'${p.replace(/'/g, "'\\''")}'`;
+
   console.log('Done.');
   console.log('');
   console.log('Next steps:');
-  console.log(`  1. Verify the encrypted database opens correctly:`);
-  console.log(`       node -e "const D=require('better-sqlite3-multiple-ciphers'); const db=new D('${destPath}'); db.pragma(\\"key = \\\\"x'${hexKey}'\\\\"\\"); console.log(db.prepare('SELECT count(*) as n FROM sqlite_master').get());"`);
-  console.log(`  2. Back up your original: cp ${sourcePath} ${sourcePath}.bak`);
-  console.log(`  3. Replace the database:  mv ${destPath} ${sourcePath}`);
-  console.log(`  4. Ensure DB_ENCRYPTION_KEY is set in server/.env, then restart the server.`);
+  console.log('  1. Verify the encrypted database opens correctly:');
+  // hexKey is [0-9a-f] only (validated above) so no shell escaping needed for it.
+  console.log(`       node -e "const D=require('better-sqlite3-multiple-ciphers'); const db=new D(${sq(destPath)}); db.pragma(\\"key = \\\\"x'${hexKey}'\\\\"\\"); console.log(db.prepare('SELECT count(*) as n FROM sqlite_master').get());"`);
+  console.log(`  2. Back up your original: cp ${sq(sourcePath)} ${sq(sourcePath + '.bak')}`);
+  console.log(`  3. Replace the database:  mv ${sq(destPath)} ${sq(sourcePath)}`);
+  console.log('  4. Ensure DB_ENCRYPTION_KEY is set in server/.env, then restart the server.');
 } catch (err) {
   console.error('Migration failed:', err.message);
   // Remove a partially written destination file to avoid leaving corrupt data.
   if (fs.existsSync(destPath)) {
-    try { fs.unlinkSync(destPath); } catch (_) {}
-    console.error('Partial destination file removed.');
+    try {
+      fs.unlinkSync(destPath);
+      console.error('Partial destination file removed.');
+    } catch (unlinkErr) {
+      if (unlinkErr.code !== 'ENOENT') {
+        console.error('Could not remove partial destination file:', unlinkErr.message);
+      }
+    }
   }
   process.exit(1);
 } finally {

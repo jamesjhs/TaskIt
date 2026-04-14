@@ -9,6 +9,9 @@ const router = Router();
 const ALLOWED_STATUSES = new Set(['not_started', 'started', 'complete']);
 const ALLOWED_RECUR_UNITS = new Set(['days', 'weeks', 'months', 'years']);
 
+// The system task type that is always sorted to the top of the task list
+const URGENT_TASK_TYPE = 'urgent';
+
 // Returns true when the requesting user may act on a task — either because they
 // created it, or because the task belongs to a group the user is a member of.
 // Personal (non-group) tasks remain accessible only to their creator.
@@ -101,7 +104,7 @@ router.get('/', (req: Request, res: Response): void => {
     JOIN users u ON u.id = t.created_by
     LEFT JOIN groups g ON g.id = t.group_id
     ${whereClause}
-    ORDER BY CASE WHEN LOWER(tt.name) = 'urgent' THEN 0 ELSE 1 END, t.updated_at DESC
+    ORDER BY CASE WHEN LOWER(tt.name) = '${URGENT_TASK_TYPE}' THEN 0 ELSE 1 END, t.updated_at DESC
   `).all(userId, ...params) as Array<Record<string, unknown>>;
 
   // Attach assignees

@@ -259,6 +259,7 @@ class TaskDetailActivity : AppCompatActivity() {
     }
 
     private fun fastForwardTask() {
+        val currentTask = task ?: return
         binding.progressBar.visibility = android.view.View.VISIBLE
         lifecycleScope.launch {
             val token = tokenManager.token.first()
@@ -267,7 +268,7 @@ class TaskDetailActivity : AppCompatActivity() {
                 return@launch
             }
             try {
-                val response = ApiClient.apiService.fastForwardTask("Bearer $token", task!!.id)
+                val response = ApiClient.apiService.fastForwardTask("Bearer $token", currentTask.id)
                 if (response.isSuccessful) {
                     Toast.makeText(this@TaskDetailActivity, "Due date advanced to next recurrence", Toast.LENGTH_SHORT).show()
                     setResult(RESULT_OK)

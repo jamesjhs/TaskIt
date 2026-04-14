@@ -178,16 +178,20 @@ If this variable is not set (or is empty), the database runs without encryption 
 
 ### Migrating an Existing Unencrypted Database
 
-If you have an existing plaintext database and wish to enable encryption, you must migrate using the SQLite `sqlcipher_export` technique. The server uses the `x'hex'` raw-key format internally; to replicate this in the SQLite CLI, first convert your passphrase to hex (e.g. with `xxd -p`):
+If you have an existing plaintext database and wish to enable encryption, use the included migration script. It reads `DB_ENCRYPTION_KEY` from `server/.env` and produces an encrypted copy of the database using the same key format as the server:
 
-```sql
--- In the sqlcipher CLI, specifying the raw hex key:
-ATTACH DATABASE 'encrypted.db' AS encrypted KEY "x'<hex-of-your-passphrase>'";
-SELECT sqlcipher_export('encrypted');
-DETACH DATABASE encrypted;
+```bash
+# From the project root:
+node server/encrypt-db.js
 ```
 
-Replace your existing `jobber.db` with `encrypted.db`, then set `DB_ENCRYPTION_KEY` accordingly.
+This creates `server/jobber-encrypted.db`. Once you have verified it opens correctly, back up your original database, rename the encrypted file to `jobber.db`, and restart the server. The script prints the exact verification and rename commands to run after a successful migration.
+
+You may also supply explicit source and destination paths:
+
+```bash
+node server/encrypt-db.js /path/to/jobber.db /path/to/jobber-encrypted.db
+```
 
 ### Passwords
 

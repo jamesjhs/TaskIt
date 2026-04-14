@@ -459,6 +459,66 @@ router.patch('/:id/defer', (req: Request, res: Response): void => {
   res.json({ ...updated, archived: updated.archived === 1, assignees });
 });
 
+// PATCH /api/tasks/:id/fast-forward
+// Advances the due_date of a recurring task by one interval so the task stays
+// in the active list (without being marked complete). Reminders are reset so
+// they fire against the new date.
+router.patch('/:id/fast-forward', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const taskId = req.params.id;
+
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
+    | { id: string; created_by: string; group_id: string | null;
+        due_date: number | null; recur_interval: number | null; recur_unit: string | null }
+    | undefined;
+
+  if (!task) {
+    res.status(404).json({ error: 'Task not found' });
+    return;
+  }
+
+  if (!hasTaskAccess(task, userId)) {
+    res.status(403).json({ error: 'Not authorized' });
+    return;
+  }
+
+  if (!task.recur_interval || !task.recur_unit) {
+    res.status(400).json({ error: 'Task is not recurring' });
+    return;
+  }
+
+  if (!task.due_date) {
+    res.status(400).json({ error: 'Task has no due date to advance' });
+    return;
+  }
+
+  const nextDue = computeNextDue(task.due_date, task.recur_interval, task.recur_unit);
+
+  // Update the due date and bump updated_at
+  db.prepare('UPDATE tasks SET due_date = ?, updated_at = ? WHERE id = ?').run(
+    nextDue, Date.now(), taskId
+  );
+
+  // Clear sent-reminders so the scheduler will re-evaluate against the new date
+  db.prepare('DELETE FROM task_reminders_sent WHERE task_id = ?').run(taskId);
+
+  const updated = db.prepare(`
+    SELECT t.*, tt.name AS type_name
+    FROM tasks t
+    JOIN task_types tt ON tt.id = t.type_id
+    WHERE t.id = ?
+  `).get(taskId) as Record<string, unknown>;
+
+  const assignees = db.prepare(`
+    SELECT u.id, u.username, u.email
+    FROM task_assignees ta
+    JOIN users u ON u.id = ta.user_id
+    WHERE ta.task_id = ?
+  `).all(taskId);
+
+  res.json({ ...updated, archived: updated.archived === 1, assignees });
+});
+
 router.patch('/:id/archive', (req: Request, res: Response): void => {
   const userId = req.user!.id;
   const taskId = req.params.id;

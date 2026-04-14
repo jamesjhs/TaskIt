@@ -567,7 +567,11 @@ router.delete('/:id', (req: Request, res: Response): void => {
   const taskId = req.params.id;
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string; group_id: string | null }
+    | { id: string; created_by: string; group_id: string | null;
+        title: string; details: string | null; type_id: string;
+        due_date: number | null; recur_interval: number | null; recur_unit: string | null;
+        notify_email: number; notify_7day: number; notify_1day: number; notify_onday: number;
+        notify_popup_7day: number; notify_popup_1day: number; notify_popup_onday: number; }
     | undefined;
 
   if (!task) {
@@ -585,6 +589,40 @@ router.delete('/:id', (req: Request, res: Response): void => {
 
   if (!isCreator && !isGroupAdmin) {
     res.status(403).json({ error: 'Only the task creator or a group admin may delete a task' });
+    return;
+  }
+
+  // If the task is recurring, spawn the next occurrence before deleting so the
+  // schedule is preserved (same behaviour as marking the task complete).
+  if (task.recur_interval && task.recur_unit) {
+    const baseDue = task.due_date != null ? task.due_date : Date.now();
+    const nextDue = computeNextDue(baseDue, task.recur_interval, task.recur_unit);
+    const newId = uuidv4();
+    const now2 = Date.now();
+
+    const spawnAndDelete = db.transaction(() => {
+      db.prepare(`
+        INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday)
+        VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(newId, task.title, task.details, task.type_id, task.created_by,
+        task.group_id, now2, now2, nextDue, task.recur_interval, task.recur_unit,
+        task.notify_email, task.notify_7day, task.notify_1day, task.notify_onday,
+        task.notify_popup_7day, task.notify_popup_1day, task.notify_popup_onday);
+
+      const assignees = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(taskId) as Array<{ user_id: string }>;
+      const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
+      for (const a of assignees) {
+        insertAssignee.run(newId, a.user_id);
+      }
+
+      db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(taskId);
+      db.prepare('DELETE FROM task_notes WHERE task_id = ?').run(taskId);
+      db.prepare('DELETE FROM task_reminders_sent WHERE task_id = ?').run(taskId);
+      db.prepare('DELETE FROM tasks WHERE id = ?').run(taskId);
+    });
+
+    spawnAndDelete();
+    res.status(204).send();
     return;
   }
 

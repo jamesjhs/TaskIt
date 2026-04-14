@@ -142,8 +142,16 @@ class TasksFragment : Fragment() {
             filteredTasks = tasks.filter { it.typeId == selectedTypeId }
         }
 
+        // Sort: incomplete urgent first, then incomplete others, complete tasks always last
+        val sortedTasks = filteredTasks.sortedWith(
+            compareBy(
+                { if (it.status == "complete") 1 else 0 },
+                { if ("urgent".equals(it.typeName, ignoreCase = true)) 0 else 1 }
+            )
+        )
+
         binding.recyclerTasks.layoutManager = LinearLayoutManager(context)
-        binding.recyclerTasks.adapter = TaskAdapter(filteredTasks,
+        binding.recyclerTasks.adapter = TaskAdapter(sortedTasks,
             onTaskClick = { task ->
                 val intent = Intent(requireContext(), TaskDetailActivity::class.java)
                 intent.putExtra("TASK", task)

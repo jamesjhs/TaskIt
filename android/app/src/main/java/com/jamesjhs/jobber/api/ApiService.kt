@@ -35,6 +35,13 @@ interface ApiService {
         @Body request: CreateTaskRequest
     ): Response<Task>
 
+    @PATCH("api/tasks/{id}")
+    suspend fun stopRecurringTask(
+        @Header("Authorization") token: String,
+        @Path("id") id: String,
+        @Body request: StopRecurringRequest
+    ): Response<Task>
+
     @PATCH("api/tasks/{id}/status")
     suspend fun updateTaskStatus(
         @Header("Authorization") token: String,

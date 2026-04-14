@@ -17,7 +17,12 @@
         app:showAsAction="never" />
     <item
         android:id="@+id/action_fast_forward"
+        android:icon="@drawable/ic_fast_forward"
         android:title="Fast forward"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_stop_recurring"
+        android:title="Stop recurring"
         app:showAsAction="never" />
     <item
         android:id="@+id/action_defer"

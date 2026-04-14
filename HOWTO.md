@@ -1,6 +1,6 @@
 # Jobber – How-To Manual
 
-**Version 0.8.1**  
+**Version 1.0.2**  
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -38,7 +38,8 @@ Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 - Custom task types per user and per group
 - Progress notes on each task for tracking updates
 - In-app notification bell for overdue and due-soon tasks
-- Up to three automated email reminder notifications per task (7-day, 1-day, overdue)
+- Per-task notification preferences — a grid to independently enable email and/or browser popup reminders at 7-day, 1-day, and on-the-day intervals
+- Group member access control — any group member can edit all aspects of a task; only the task creator or a group admin can delete a task
 - Calendar integration — subscribe to your tasks as an ICS feed in any calendar app
 - Group creation with admin controls — rename, promote/demote members, email invites, QR invite links, shared join key
 - Magic-link and password login (with two-factor authentication via OTP), email verification, and account lockout protection
@@ -102,6 +103,7 @@ Create a `.env` file inside the `server/` directory. A template is provided at `
 | `PORT`             | `3000`                         | Port the server listens on                               |
 | `JWT_SECRET`       | *(insecure dev default)*       | **Required in production.** Secret key for JWT tokens   |
 | `DB_PATH`          | `server/jobber.db`             | Path to the SQLite database file                         |
+| `DB_ENCRYPTION_KEY` | *(none — plaintext)*          | Passphrase for full-file SQLite encryption (see below)   |
 | `ADMIN_EMAIL`      | *(none)*                       | Email address that is automatically granted admin role   |
 | `BASE_URL`         | *(derived from request host)*  | Public base URL used in invite links and magic links     |
 | `MAX_LOGIN_ATTEMPTS` | `5`                          | Failed logins before account lockout                     |
@@ -131,6 +133,54 @@ SMTP_FROM=Jobber <noreply@example.com>
 > **Security note:** Always set a strong, unique `JWT_SECRET` before deploying to production.
 
 > **BASE_URL note:** Set this to your public-facing URL (e.g. `https://jobber.example.com`) so that invite links, magic links, and QR codes contain the correct address rather than the internal request host.
+
+---
+
+## Encrypting the Database
+
+By default Jobber stores data in a plain SQLite file. Setting `DB_ENCRYPTION_KEY` in `server/.env` enables full-file encryption via [SQLite3MultipleCiphers](https://utelle.github.io/SQLite3MultipleCiphers/).
+
+### New installations
+
+Set `DB_ENCRYPTION_KEY` **before** the server creates the database for the first time. The server will create an encrypted database automatically — no migration needed.
+
+### Existing (plaintext) installations
+
+If you already have a database, you must migrate it before setting the key in `.env`. Running the server with `DB_ENCRYPTION_KEY` set against a plaintext database will fail immediately with:
+
+```
+SqliteError: file is not a database
+```
+
+**Steps to migrate:**
+
+1. **Stop the server.**
+
+2. **Run the migration script** from the `server/` directory:
+
+   ```bash
+   node server/encrypt-db.js /path/to/jobber.db /path/to/jobber-encrypted.db
+   ```
+
+   Both paths are optional; they default to `server/jobber.db` → `server/jobber-encrypted.db`. The script reads `DB_ENCRYPTION_KEY` from `server/.env` — set the key there first before running it.
+
+3. **Verify** the encrypted database can be opened (the script prints a ready-to-run verification command after a successful migration).
+
+4. **Back up** the original: `cp jobber.db jobber.db.bak`
+
+5. **Replace** the original with the encrypted file: `mv jobber-encrypted.db jobber.db`
+
+6. **Restart** the server. If `DB_ENCRYPTION_KEY` is correctly set in `server/.env`, the server will open the encrypted database transparently.
+
+### Removing encryption
+
+To convert an encrypted database back to plaintext, use the `sqlite3` CLI:
+
+```bash
+sqlite3 /path/to/encrypted.db ".dump" | sqlite3 /path/to/plain.db
+```
+
+Make sure the `sqlite3` binary on your system supports the same cipher (SQLite3MultipleCiphers / sqleet) that Jobber uses. If not, you can open the database in Node.js and export via `better-sqlite3-multiple-ciphers`'s `backup()` API after applying the key pragma.
 
 ---
 
@@ -179,7 +229,7 @@ The application will be available at `http://localhost:3000` (or whichever port 
    - **Group** – assign to a group (optional); this allows assigning to group members
    - **Assign To** – select group members to assign the task to (only visible when a group is selected)
    - **Notes** – free-text notes or description for the task
-   - **Due Date** – defaults to **tonight at midnight**; adjust as needed
+   - **Due Date** – defaults to **midnight on today's date** (00:00); adjust as needed
 3. To make the task repeat, tick **Repeat Task** and set the interval (see [Recurring Tasks](#recurring-tasks)).
 4. Click **Save Task**.
 
@@ -204,7 +254,7 @@ Click any task card to open the **Task Detail** panel, where you can:
 - **Edit** the task (title, type, group, assignees, notes, due date, recurrence)
 - **Defer** the task — click the *Defer* button to set a new due date without opening the full edit form
 - **Toggle Archive** – hide/unhide the task from the main view
-- **Delete** the task permanently
+- **Delete** the task permanently — for group tasks, only the task creator or a group admin can delete; other group members can edit all other details but cannot delete
 
 Use the **filter bar** at the top of the Tasks page to filter by:
 
@@ -231,12 +281,29 @@ Notes are visible to the task creator, assignees, and group members.
 
 ### Task Notifications
 
+#### In-app bell
+
 A **bell icon** in the top navigation bar shows a red badge when you have tasks that are:
 
 - **Overdue** – past their due date and not yet complete
 - **Due within 24 hours** – approaching deadline
 
 Click the bell to open the notification panel. Click any item to jump to that task.
+
+#### Browser popup notifications
+
+Jobber can send native browser popup notifications when tasks are approaching their deadline. When you first log in, your browser will prompt for **notification permission** — click *Allow* to enable them. Popups fire while the app is open in your browser, using the timing columns you configure in the task's Reminders grid.
+
+#### Reminders grid
+
+When creating or editing a task, the **Reminders** section shows a 2-row, 3-column grid:
+
+|          | 7 days | 1 day | On day |
+|----------|:------:|:-----:|:------:|
+| 📧 Email  | ✓      | ✓     | ✓      |
+| 🔔 Popup  |        |       |        |
+
+Each cell is an independent checkbox. Enable as many or as few as you like — the email and popup channels operate independently at each timing.
 
 ---
 
@@ -311,13 +378,13 @@ Read feedback messages and feature requests submitted by users. Update the statu
 
 ## Email Reminders
 
-When SMTP is configured and enabled, Jobber automatically sends up to **three reminder emails** for each incomplete task that has a due date:
+When SMTP is configured and enabled, Jobber automatically sends reminder emails for each incomplete task that has a due date, according to the **Reminders grid** you configure per task:
 
-| Reminder       | Timing                              |
-|----------------|-------------------------------------|
-| 7-day reminder | Sent when the deadline is 6–8 days away |
-| 1-day reminder | Sent when the deadline is within 2 days |
-| Overdue alert  | Sent when the deadline has passed    |
+| Reminder       | Timing                                   |
+|----------------|------------------------------------------|
+| 7-day reminder | Sent when the deadline is 6–8 days away  |
+| 1-day reminder | Sent when the deadline is 22–50 hours away |
+| On-day reminder | Sent on the day the task is due (0–25 hours before) |
 
 Each reminder is sent only **once** per task. Reminders are checked every hour.
 
@@ -349,4 +416,4 @@ Each reminder is sent only **once** per task. Reminders are checked every hour.
 
 ---
 
-*Jobber v0.8.1 – Copyright J Rowson 2026 | jahosi.co.uk*
+*Jobber v1.0.2 – Copyright J Rowson 2026 | jahosi.co.uk*

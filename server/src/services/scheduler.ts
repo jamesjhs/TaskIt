@@ -10,7 +10,7 @@ interface TaskRow {
   notify_email: number;
   notify_7day: number;
   notify_1day: number;
-  notify_overdue: number;
+  notify_onday: number;
 }
 
 interface UserRow {
@@ -18,11 +18,13 @@ interface UserRow {
   email: string;
 }
 
-// Reminder thresholds: type name → milliseconds before deadline
+// Reminder thresholds: type name → milliseconds before deadline.
+// Windows overlap slightly so that tasks are never missed due to the scheduler
+// running a few minutes late; task_reminders_sent deduplicates actual sends.
 const REMINDER_WINDOWS: Array<{ type: string; minMs: number; maxMs: number; label: string }> = [
-  { type: '7_day',   minMs: 6 * 24 * 60 * 60 * 1000, maxMs: 8 * 24 * 60 * 60 * 1000, label: '7 days' },
-  { type: '1_day',   minMs: 0,                        maxMs: 2 * 24 * 60 * 60 * 1000, label: '1 day'  },
-  { type: 'overdue', minMs: -Infinity,                 maxMs: 0,                        label: 'overdue' },
+  { type: '7_day',  minMs: 6 * 24 * 60 * 60 * 1000, maxMs: 8 * 24 * 60 * 60 * 1000, label: '7 days'  },
+  { type: '1_day',  minMs: 22 * 60 * 60 * 1000,      maxMs: 50 * 60 * 60 * 1000,     label: '1 day'   },
+  { type: 'on_day', minMs: 0,                         maxMs: 25 * 60 * 60 * 1000,     label: 'today'   },
 ];
 
 async function sendReminders(): Promise<void> {
@@ -34,7 +36,7 @@ async function sendReminders(): Promise<void> {
 
     const tasks = db.prepare(`
       SELECT t.id, t.title, t.due_date, t.created_by,
-             t.notify_email, t.notify_7day, t.notify_1day, t.notify_overdue
+             t.notify_email, t.notify_7day, t.notify_1day, t.notify_onday
       FROM tasks t
       WHERE t.due_date IS NOT NULL
         AND t.due_date > ?
@@ -50,9 +52,10 @@ async function sendReminders(): Promise<void> {
 
     for (const task of tasks) {
       // Respect per-reminder-type flags
-      if (window.type === '7_day' && !task.notify_7day) continue;
-      if (window.type === '1_day' && !task.notify_1day) continue;
-      if (window.type === 'overdue' && !task.notify_overdue) continue;
+      if (window.type === '7_day'  && !task.notify_7day)  continue;
+      if (window.type === '1_day'  && !task.notify_1day)  continue;
+      if (window.type === 'on_day' && !task.notify_onday) continue;
+
       const recipientIds = new Set<string>();
       recipientIds.add(task.created_by);
 

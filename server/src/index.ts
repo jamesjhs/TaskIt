@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import fs from 'fs';
 import path from 'path';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import db from './db'; // initialize database
 import { APP_VERSION, BASE_URL, CORS_ORIGIN, JWT_SECRET, PORT } from './config';
@@ -55,7 +55,7 @@ const authenticatedLimiter = rateLimit({
         // invalid/expired token – fall through to IP-based key
       }
     }
-    return req.ip ?? req.socket?.remoteAddress ?? 'no-ip';
+    return ipKeyGenerator(req.ip ?? req.socket?.remoteAddress ?? '0.0.0.0');
   },
 });
 

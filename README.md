@@ -20,7 +20,8 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - Assign tasks to group members
 - Progress notes on tasks
 - In-app alerts for overdue and due-soon tasks
-- **Per-task email notification preferences** — choose whether and when (7-day, 1-day, overdue) to receive email reminders for each task
+- **Per-task notification preferences** — choose whether to receive email reminders and/or browser popup notifications for each task, with a grid selecting 7-day, 1-day, and on-the-day timing
+- Group member access control — any group member can edit all task fields (title, due date, recurrence, notes, status, defer, archive); only the task creator or a group admin can delete a task
 - Calendar integration — private ICS feed for any calendar app
 - Date & time locale preference per user
 - User reporting and blocking

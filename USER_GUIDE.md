@@ -1,6 +1,6 @@
 # 👋 Jobber – User Guide
 
-**Version 0.8.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.0.2** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 Jobber is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -39,7 +39,7 @@ There are two ways to log in:
 4. To make the task repeat automatically, tick **Repeat Task** and choose the interval (e.g. every 2 weeks). When a recurring task is marked complete, a new copy is created for the next due date.
 5. Click **Save Task**.
 
-Due dates default to midnight tonight — handy for quick captures!
+Due dates default to **midnight on today's date** — handy for quick captures!
 
 ### Updating a task
 
@@ -49,7 +49,7 @@ Click any task card to open the detail panel. From here you can:
 - **Edit** any of the task's details
 - **Defer** the task — click *Defer* to set a new due date without opening the full edit form
 - **Archive** it to tidy your view (archived tasks can always be brought back)
-- **Delete** it permanently
+- **Delete** it permanently — note that for group tasks, only the task creator or a group admin can delete; other group members can edit all other details but not delete
 
 ### Filtering your task list
 
@@ -74,6 +74,8 @@ Notes are visible to everyone involved with that task.
 
 ## 🔔 Notifications
 
+### In-app bell
+
 The **bell icon** in the top navigation shows a red badge whenever you have tasks that are:
 
 - **Overdue** – the deadline has passed and the task isn't complete yet
@@ -81,9 +83,26 @@ The **bell icon** in the top navigation shows a red badge whenever you have task
 
 Click the bell to see what needs your attention, and click any item to jump straight to that task.
 
----
+### Browser popup notifications
 
-## 👥 Groups
+Jobber can send browser popup notifications when a task is approaching its deadline. The first time you log in, your browser will ask for **notification permission** — click *Allow* to enable them.
+
+Popups are fired by the app while it is open in your browser, using the same timing windows you select in the task's notification grid.
+
+### Email reminders
+
+When email is configured by your admin, Jobber sends reminder emails at the timings you choose per task (see the *Reminders* grid below).
+
+### Setting reminders per task
+
+When creating or editing a task, the **Reminders** section shows a grid:
+
+|          | 7 days | 1 day | On day |
+|----------|:------:|:-----:|:------:|
+| 📧 Email  | ✓      | ✓     | ✓      |
+| 🔔 Popup  |        |       |        |
+
+Tick each cell independently to choose which channel sends a reminder at each timing. Email and popup reminders can be enabled or disabled per timing independently.
 
 Groups let you collaborate with others — share tasks, assign work to teammates, and stay in sync.
 
@@ -122,13 +141,13 @@ From the **Manage / Invite** panel, admins can:
 
 ## 📧 Email Reminders
 
-When email is enabled by your admin, Jobber sends automatic reminders for tasks with due dates:
+When email is enabled by your admin, Jobber sends automatic reminders for tasks with due dates, based on the per-task settings you choose in the **Reminders** grid:
 
 | Reminder | When it's sent |
 |---|---|
 | 7-day reminder | About a week before the deadline |
 | 1-day reminder | The day before it's due |
-| Overdue alert | When the deadline has passed |
+| On-day reminder | On the day the task is due |
 
 Each reminder is sent once per task. Reminders stop once the task is marked complete.
 
@@ -205,4 +224,4 @@ Check your spam folder. If SMTP is not configured by the admin, the link will no
 
 ---
 
-*Jobber v0.8.1 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*Jobber v1.0.2 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*

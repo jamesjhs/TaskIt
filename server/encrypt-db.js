@@ -88,20 +88,58 @@ console.log(`Source:      ${sourcePath}`);
 console.log(`Destination: ${destPath}`);
 console.log('Migrating …');
 
-let db;
-try {
-  db = new Database(sourcePath);
+// Shell-quote a path for safe inclusion in printed commands.
+// Wraps the path in single quotes and escapes any embedded single quotes.
+const sq = (p) => `'${p.replace(/'/g, "'\\''")}'`;
 
-  // ATTACH the destination database and set its key via PRAGMA before export.
-  // hexKey contains only [0-9a-f] characters (validated above), so it cannot
-  // contain SQL metacharacters and is safe to interpolate into the KEY clause.
-  db.exec(`ATTACH DATABASE '${destPath.replace(/'/g, "''")}' AS encrypted KEY "x'${hexKey}'";`);
-  db.exec(`SELECT sqlcipher_export('encrypted');`);
-  db.exec(`DETACH DATABASE encrypted;`);
+// Use the SQLite online backup API to create an exact copy of the source, then
+// apply rekey() to encrypt the copy in-place.  This avoids sqlcipher_export,
+// which is a pure-SQLCipher C function not provided by SQLite3MultipleCiphers.
 
-  // Shell-quote a path for safe inclusion in printed commands.
-  // Wraps the path in single quotes and escapes any embedded single quotes.
-  const sq = (p) => `'${p.replace(/'/g, "'\\''")}'`;
+// Remove the (possibly partial) destination file on error, ignoring ENOENT.
+function removeDestOnError() {
+  try {
+    fs.unlinkSync(destPath);
+    console.error('Partial destination file removed.');
+  } catch (unlinkErr) {
+    if (unlinkErr.code !== 'ENOENT') {
+      console.error('Could not remove partial destination file:', unlinkErr.message);
+    }
+  }
+}
+
+(async () => {
+  let src;
+  try {
+    src = new Database(sourcePath);
+    await src.backup(destPath);
+  } catch (err) {
+    console.error('Migration failed:', err.message);
+    removeDestOnError();
+    process.exit(1);
+  } finally {
+    if (src) src.close();
+  }
+
+  // The backup is now a plaintext copy.  Encrypt it in-place with rekey().
+  // rekey() calls sqlite3_rekey() with the raw key bytes, which is equivalent
+  // to PRAGMA rekey = "x'hexKey'" — matching exactly how db.ts opens the
+  // database with PRAGMA key = "x'hexKey'".
+  let dest;
+  try {
+    dest = new Database(destPath);
+    // Use PRAGMA rekey with the x'...' raw-key format so the encrypted database
+    // can be opened by db.ts using PRAGMA key = "x'hexKey'" (same raw-key path,
+    // no KDF).  rekey(Buffer) would instead apply a KDF and produce an
+    // incompatible database.
+    dest.pragma(`rekey = "x'${hexKey}'"`);
+  } catch (err) {
+    console.error('Migration failed:', err.message);
+    removeDestOnError();
+    process.exit(1);
+  } finally {
+    if (dest) dest.close();
+  }
 
   console.log('Done.');
   console.log('');
@@ -112,20 +150,4 @@ try {
   console.log(`  2. Back up your original: cp ${sq(sourcePath)} ${sq(sourcePath + '.bak')}`);
   console.log(`  3. Replace the database:  mv ${sq(destPath)} ${sq(sourcePath)}`);
   console.log('  4. Ensure DB_ENCRYPTION_KEY is set in server/.env, then restart the server.');
-} catch (err) {
-  console.error('Migration failed:', err.message);
-  // Remove a partially written destination file to avoid leaving corrupt data.
-  if (fs.existsSync(destPath)) {
-    try {
-      fs.unlinkSync(destPath);
-      console.error('Partial destination file removed.');
-    } catch (unlinkErr) {
-      if (unlinkErr.code !== 'ENOENT') {
-        console.error('Could not remove partial destination file:', unlinkErr.message);
-      }
-    }
-  }
-  process.exit(1);
-} finally {
-  if (db) db.close();
-}
+})();

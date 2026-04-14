@@ -142,8 +142,13 @@ class TasksFragment : Fragment() {
             filteredTasks = tasks.filter { it.typeId == selectedTypeId }
         }
 
-        // Ensure urgent tasks always appear at the top
-        val sortedTasks = filteredTasks.sortedWith(compareBy { if ("urgent".equals(it.typeName, ignoreCase = true)) 0 else 1 })
+        // Sort: incomplete urgent first, then incomplete others, complete tasks always last
+        val sortedTasks = filteredTasks.sortedWith(
+            compareBy(
+                { if (it.status == "complete") 1 else 0 },
+                { if ("urgent".equals(it.typeName, ignoreCase = true)) 0 else 1 }
+            )
+        )
 
         binding.recyclerTasks.layoutManager = LinearLayoutManager(context)
         binding.recyclerTasks.adapter = TaskAdapter(sortedTasks,

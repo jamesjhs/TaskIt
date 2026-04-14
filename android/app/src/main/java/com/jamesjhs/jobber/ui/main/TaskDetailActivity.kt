@@ -122,9 +122,10 @@ class TaskDetailActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.menu_task_detail, menu)
-        // Only show Fast forward for recurring tasks
-        menu?.findItem(R.id.action_fast_forward)?.isVisible =
-            task?.recurInterval != null && task?.recurUnit != null
+        val isRecurring = task?.recurInterval != null && task?.recurUnit != null
+        // Only show Fast forward and Stop recurring for recurring tasks
+        menu?.findItem(R.id.action_fast_forward)?.isVisible = isRecurring
+        menu?.findItem(R.id.action_stop_recurring)?.isVisible = isRecurring
         return true
     }
 
@@ -152,6 +153,10 @@ class TaskDetailActivity : AppCompatActivity() {
             }
             R.id.action_fast_forward -> {
                 fastForwardTask()
+                return true
+            }
+            R.id.action_stop_recurring -> {
+                stopRecurring()
                 return true
             }
             R.id.action_defer -> {
@@ -275,6 +280,42 @@ class TaskDetailActivity : AppCompatActivity() {
                     finish()
                 } else {
                     Toast.makeText(this@TaskDetailActivity, "Failed to fast forward task", Toast.LENGTH_SHORT).show()
+                    binding.progressBar.visibility = android.view.View.GONE
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@TaskDetailActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                binding.progressBar.visibility = android.view.View.GONE
+            }
+        }
+    }
+
+    private fun stopRecurring() {
+        val t = task ?: return
+        binding.progressBar.visibility = android.view.View.VISIBLE
+        lifecycleScope.launch {
+            val token = tokenManager.token.first()
+            if (token == null) {
+                binding.progressBar.visibility = android.view.View.GONE
+                return@launch
+            }
+            try {
+                val request = com.jamesjhs.jobber.models.CreateTaskRequest(
+                    title = t.title,
+                    details = t.details,
+                    typeId = t.typeId,
+                    groupId = t.groupId,
+                    assigneeIds = t.assignees?.map { it.id },
+                    dueDate = t.dueDate,
+                    recurInterval = null,
+                    recurUnit = null
+                )
+                val response = ApiClient.apiService.updateTask("Bearer $token", t.id, request)
+                if (response.isSuccessful) {
+                    Toast.makeText(this@TaskDetailActivity, "Task will no longer recur", Toast.LENGTH_SHORT).show()
+                    setResult(RESULT_OK)
+                    finish()
+                } else {
+                    Toast.makeText(this@TaskDetailActivity, "Failed to stop recurrence", Toast.LENGTH_SHORT).show()
                     binding.progressBar.visibility = android.view.View.GONE
                 }
             } catch (e: Exception) {

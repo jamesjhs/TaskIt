@@ -373,7 +373,7 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
   db.prepare('UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?').run(status, Date.now(), taskId);
 
-  // If task is completed and has recurrence, spawn the next occurrence
+  // If task is completed and has recurrence, spawn the next occurrence and archive the parent
   if (status === 'complete') {
     const fullTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as {
       id: string; title: string; details: string | null; type_id: string; created_by: string;
@@ -382,23 +382,33 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
       notify_popup_7day: number; notify_popup_1day: number; notify_popup_onday: number;
     } | undefined;
 
-    if (fullTask && fullTask.recur_interval && fullTask.recur_unit && fullTask.due_date) {
-      const nextDue = computeNextDue(fullTask.due_date, fullTask.recur_interval, fullTask.recur_unit);
+    if (fullTask && fullTask.recur_interval && fullTask.recur_unit) {
+      // Use the existing due date as base, or fall back to now when no due date was set
+      const baseDue = fullTask.due_date != null ? fullTask.due_date : Date.now();
+      const nextDue = computeNextDue(baseDue, fullTask.recur_interval, fullTask.recur_unit);
       const newId = uuidv4();
       const now2 = Date.now();
-      db.prepare(`
-        INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday)
-        VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(newId, fullTask.title, fullTask.details, fullTask.type_id, fullTask.created_by,
-        fullTask.group_id, now2, now2, nextDue, fullTask.recur_interval, fullTask.recur_unit,
-        fullTask.notify_email, fullTask.notify_7day, fullTask.notify_1day, fullTask.notify_onday,
-        fullTask.notify_popup_7day, fullTask.notify_popup_1day, fullTask.notify_popup_onday);
 
-      const assignees = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(taskId) as Array<{ user_id: string }>;
-      const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
-      for (const a of assignees) {
-        insertAssignee.run(newId, a.user_id);
-      }
+      const spawnAndArchive = db.transaction(() => {
+        db.prepare(`
+          INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday)
+          VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(newId, fullTask.title, fullTask.details, fullTask.type_id, fullTask.created_by,
+          fullTask.group_id, now2, now2, nextDue, fullTask.recur_interval, fullTask.recur_unit,
+          fullTask.notify_email, fullTask.notify_7day, fullTask.notify_1day, fullTask.notify_onday,
+          fullTask.notify_popup_7day, fullTask.notify_popup_1day, fullTask.notify_popup_onday);
+
+        const assignees = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(taskId) as Array<{ user_id: string }>;
+        const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
+        for (const a of assignees) {
+          insertAssignee.run(newId, a.user_id);
+        }
+
+        // Archive the completed parent so only the fresh occurrence appears in the active list
+        db.prepare('UPDATE tasks SET archived = 1, updated_at = ? WHERE id = ?').run(now2, taskId);
+      });
+
+      spawnAndArchive();
     }
   }
 

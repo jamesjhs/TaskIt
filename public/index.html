@@ -772,6 +772,14 @@ let currentFilter = { status: '', groupId: '', typeId: '', archived: false, assi
 let currentDetailTask = null;
 let blockedUserIds = new Set();
 
+// ========== Reminder window constants (must match server/src/services/scheduler.ts) ==========
+const POPUP_WINDOW_7D_MIN_MS  = 6  * 24 * 3600000;
+const POPUP_WINDOW_7D_MAX_MS  = 8  * 24 * 3600000;
+const POPUP_WINDOW_1D_MIN_MS  = 22 * 3600000;
+const POPUP_WINDOW_1D_MAX_MS  = 50 * 3600000;
+const POPUP_WINDOW_0D_MIN_MS  = 0;
+const POPUP_WINDOW_0D_MAX_MS  = 25 * 3600000;
+
 // ========== Locale-aware date formatting ==========
 function userLocale() { return (currentUser && currentUser.locale) || 'en-GB'; }
 function fmtDate(ts) { return new Date(ts).toLocaleDateString(userLocale()); }
@@ -2051,12 +2059,14 @@ async function refreshNotifications() {
           const k = t.id + ':' + key;
           if (!fired[k]) {
             fired[k] = day;
-            new Notification('Jobber Reminder', { body: t.title, icon: '/icons/icon-192x192.png', tag: k });
+            try {
+              new Notification('Jobber Reminder', { body: t.title, icon: '/icons/icon-192x192.png', tag: k });
+            } catch { /* Notification API unavailable or permission revoked */ }
           }
         };
-        fire('7d',  t.notify_popup_7day  && msUntil > 6 * 24 * 3600000 && msUntil <= 8 * 24 * 3600000);
-        fire('1d',  t.notify_popup_1day  && msUntil > 22 * 3600000     && msUntil <= 50 * 3600000);
-        fire('0d',  t.notify_popup_onday && msUntil >= 0                && msUntil <= 25 * 3600000);
+        fire('7d',  t.notify_popup_7day  && msUntil > POPUP_WINDOW_7D_MIN_MS && msUntil <= POPUP_WINDOW_7D_MAX_MS);
+        fire('1d',  t.notify_popup_1day  && msUntil > POPUP_WINDOW_1D_MIN_MS && msUntil <= POPUP_WINDOW_1D_MAX_MS);
+        fire('0d',  t.notify_popup_onday && msUntil >= POPUP_WINDOW_0D_MIN_MS && msUntil <= POPUP_WINDOW_0D_MAX_MS);
       });
       // Prune stale entries (keep only today's)
       Object.keys(fired).forEach(k => { if (fired[k] !== day) delete fired[k]; });

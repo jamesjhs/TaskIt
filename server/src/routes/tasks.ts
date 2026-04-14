@@ -186,9 +186,9 @@ router.post('/', (req: Request, res: Response): void => {
     notify7day === false || notify7day === 0 ? 0 : 1,
     notify1day === false || notify1day === 0 ? 0 : 1,
     notifyOnday === false || notifyOnday === 0 ? 0 : 1,
-    notifyPopup7day ? 1 : 0,
-    notifyPopup1day ? 1 : 0,
-    notifyPopupOnday ? 1 : 0);
+    notifyPopup7day === false || notifyPopup7day === 0 ? 0 : 1,
+    notifyPopup1day === false || notifyPopup1day === 0 ? 0 : 1,
+    notifyPopupOnday === false || notifyPopupOnday === 0 ? 0 : 1);
 
   // Insert assignees — validate each ID refers to a real user before inserting
   // to avoid a FK constraint exception (and a 500 response) on bad input.
@@ -295,9 +295,9 @@ router.patch('/:id', (req: Request, res: Response): void => {
   if (notify7day !== undefined) { setClauses.push('notify_7day = ?'); vals.push(notify7day === false || notify7day === 0 ? 0 : 1); }
   if (notify1day !== undefined) { setClauses.push('notify_1day = ?'); vals.push(notify1day === false || notify1day === 0 ? 0 : 1); }
   if (notifyOnday !== undefined) { setClauses.push('notify_onday = ?'); vals.push(notifyOnday === false || notifyOnday === 0 ? 0 : 1); }
-  if (notifyPopup7day !== undefined) { setClauses.push('notify_popup_7day = ?'); vals.push(notifyPopup7day ? 1 : 0); }
-  if (notifyPopup1day !== undefined) { setClauses.push('notify_popup_1day = ?'); vals.push(notifyPopup1day ? 1 : 0); }
-  if (notifyPopupOnday !== undefined) { setClauses.push('notify_popup_onday = ?'); vals.push(notifyPopupOnday ? 1 : 0); }
+  if (notifyPopup7day !== undefined) { setClauses.push('notify_popup_7day = ?'); vals.push(notifyPopup7day === false || notifyPopup7day === 0 ? 0 : 1); }
+  if (notifyPopup1day !== undefined) { setClauses.push('notify_popup_1day = ?'); vals.push(notifyPopup1day === false || notifyPopup1day === 0 ? 0 : 1); }
+  if (notifyPopupOnday !== undefined) { setClauses.push('notify_popup_onday = ?'); vals.push(notifyPopupOnday === false || notifyPopupOnday === 0 ? 0 : 1); }
   setClauses.push('updated_at = ?');
   vals.push(now);
   vals.push(taskId);

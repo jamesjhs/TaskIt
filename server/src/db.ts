@@ -8,19 +8,42 @@ const DB_PATH = DB_PATH_OVERRIDE || path.join(__dirname, '..', 'jobber.db');
 
 const db = new Database(DB_PATH);
 
-// Enable SQLCipher encryption when a key is configured.
-// On an existing plaintext database the key must be '' (no passphrase) — if you
-// are enabling encryption for the first time on an existing installation you must
-// export and re-import the data after setting DB_ENCRYPTION_KEY.
+// Enable SQLite3MultipleCiphers encryption when a key is configured.
+// PRAGMA key must be the very first operation after opening the file.
+// Use the x'...' raw-key form so the key bytes are passed directly without a
+// KDF — hex digits [0-9a-f] cannot contain SQL metacharacters, so this is
+// injection-safe regardless of the key content.
 if (DB_ENCRYPTION_KEY) {
-  // Use the hex key form so no user-supplied characters are interpolated into SQL.
-  // x'...' is the SQLCipher raw-key syntax; hex digits [0-9a-f] cannot contain
-  // SQL metacharacters, so this is injection-safe regardless of the key content.
   const hexKey = Buffer.from(DB_ENCRYPTION_KEY, 'utf8').toString('hex');
   db.pragma(`key = "x'${hexKey}'"`);
 }
 
-db.pragma('journal_mode = WAL');
+try {
+  db.pragma('journal_mode = WAL');
+} catch (err: unknown) {
+  if ((err as { code?: string }).code === 'SQLITE_NOTADB') {
+    if (DB_ENCRYPTION_KEY) {
+      console.error(
+        `\nFATAL: DB_ENCRYPTION_KEY is set but the database at\n  ${DB_PATH}\n` +
+        'cannot be decrypted with that key.\n\n' +
+        'If this is an existing plaintext database that has not yet been\n' +
+        'encrypted, migrate it first:\n\n' +
+        '  node server/encrypt-db.js\n\n' +
+        'Then replace the original database file with the encrypted output\n' +
+        'and restart the server.\n',
+      );
+    } else {
+      console.error(
+        `\nFATAL: The database at\n  ${DB_PATH}\n` +
+        'cannot be read as a plain SQLite database.\n\n' +
+        'If the database has been encrypted, set DB_ENCRYPTION_KEY in\n' +
+        'server/.env to the passphrase used when it was encrypted, then\n' +
+        'restart the server.\n',
+      );
+    }
+  }
+  throw err;
+}
 db.pragma('foreign_keys = ON');
 
 db.exec(`

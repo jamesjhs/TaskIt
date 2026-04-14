@@ -102,6 +102,7 @@ Create a `.env` file inside the `server/` directory. A template is provided at `
 | `PORT`             | `3000`                         | Port the server listens on                               |
 | `JWT_SECRET`       | *(insecure dev default)*       | **Required in production.** Secret key for JWT tokens   |
 | `DB_PATH`          | `server/jobber.db`             | Path to the SQLite database file                         |
+| `DB_ENCRYPTION_KEY` | *(none — plaintext)*          | Passphrase for full-file SQLite encryption (see below)   |
 | `ADMIN_EMAIL`      | *(none)*                       | Email address that is automatically granted admin role   |
 | `BASE_URL`         | *(derived from request host)*  | Public base URL used in invite links and magic links     |
 | `MAX_LOGIN_ATTEMPTS` | `5`                          | Failed logins before account lockout                     |
@@ -131,6 +132,54 @@ SMTP_FROM=Jobber <noreply@example.com>
 > **Security note:** Always set a strong, unique `JWT_SECRET` before deploying to production.
 
 > **BASE_URL note:** Set this to your public-facing URL (e.g. `https://jobber.example.com`) so that invite links, magic links, and QR codes contain the correct address rather than the internal request host.
+
+---
+
+## Encrypting the Database
+
+By default Jobber stores data in a plain SQLite file. Setting `DB_ENCRYPTION_KEY` in `server/.env` enables full-file encryption via [SQLite3MultipleCiphers](https://utelle.github.io/SQLite3MultipleCiphers/).
+
+### New installations
+
+Set `DB_ENCRYPTION_KEY` **before** the server creates the database for the first time. The server will create an encrypted database automatically — no migration needed.
+
+### Existing (plaintext) installations
+
+If you already have a database, you must migrate it before setting the key in `.env`. Running the server with `DB_ENCRYPTION_KEY` set against a plaintext database will fail immediately with:
+
+```
+SqliteError: file is not a database
+```
+
+**Steps to migrate:**
+
+1. **Stop the server.**
+
+2. **Run the migration script** from the `server/` directory:
+
+   ```bash
+   node server/encrypt-db.js /path/to/jobber.db /path/to/jobber-encrypted.db
+   ```
+
+   Both paths are optional; they default to `server/jobber.db` → `server/jobber-encrypted.db`. The script reads `DB_ENCRYPTION_KEY` from `server/.env` — set the key there first before running it.
+
+3. **Verify** the encrypted database can be opened (the script prints a ready-to-run verification command after a successful migration).
+
+4. **Back up** the original: `cp jobber.db jobber.db.bak`
+
+5. **Replace** the original with the encrypted file: `mv jobber-encrypted.db jobber.db`
+
+6. **Restart** the server. If `DB_ENCRYPTION_KEY` is correctly set in `server/.env`, the server will open the encrypted database transparently.
+
+### Removing encryption
+
+To convert an encrypted database back to plaintext, use the `sqlite3` CLI:
+
+```bash
+sqlite3 /path/to/encrypted.db ".dump" | sqlite3 /path/to/plain.db
+```
+
+Make sure the `sqlite3` binary on your system supports the same cipher (SQLite3MultipleCiphers / sqleet) that Jobber uses. If not, you can open the database in Node.js and export via `better-sqlite3-multiple-ciphers`'s `backup()` API after applying the key pragma.
 
 ---
 

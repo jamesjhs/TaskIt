@@ -624,7 +624,27 @@
       <p id="detailNotes" style="font-size:.9rem;color:#6b7280;white-space:pre-wrap;margin-bottom:12px"></p>
       <div id="detailDueDate" class="hidden" style="font-size:.9rem;margin-bottom:12px"></div>
       <div id="detailAssignees" style="font-size:.85rem;color:#6b7280;margin-bottom:12px"></div>
-      <div id="detailRecurInfo" class="hidden" style="font-size:.85rem;color:#6b7280;margin-bottom:12px"></div>
+      <!-- Recurrence management section — shown only when task is recurring -->
+      <div id="detailRecurSection" class="hidden detail-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <p class="detail-section-title" style="margin:0">🔁 Repeating Task</p>
+          <button onclick="toggleRecurChangeForm()" class="btn btn-sm btn-outline">Change</button>
+        </div>
+        <p id="detailRecurDisplay" style="font-size:.85rem;color:#6b7280;margin-bottom:8px"></p>
+        <div id="recurChangeForm" class="hidden" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+          <span style="font-size:.9rem;color:#374151">Every</span>
+          <input id="detailRecurInterval" type="number" min="1" max="365" class="input" style="width:70px;flex-shrink:0" />
+          <select id="detailRecurUnit" class="select" style="flex:1;min-width:90px">
+            <option value="days">Days</option>
+            <option value="weeks">Weeks</option>
+            <option value="months">Months</option>
+            <option value="years">Years</option>
+          </select>
+          <button onclick="saveRecurChange()" class="btn btn-primary btn-sm">Save</button>
+          <button onclick="toggleRecurChangeForm()" class="btn btn-secondary btn-sm">✕</button>
+        </div>
+        <button onclick="stopRecurring()" class="btn btn-outline btn-sm" style="color:#dc2626;border-color:#dc2626">⊘ Cancel Future Recurrences</button>
+      </div>
       <div class="detail-section">
         <p class="detail-section-title">Change Status</p>
         <div class="status-btns">
@@ -662,7 +682,6 @@
       <button onclick="toggleDeferSection()" class="btn btn-outline btn-sm" style="flex:1">Defer</button>
       <button onclick="editCurrentTask()" class="btn btn-outline btn-sm" style="flex:1">Edit</button>
       <button onclick="archiveCurrentTask()" class="btn btn-secondary btn-sm" style="flex:1">Archive</button>
-      <button id="detailStopRecurBtn" onclick="stopRecurring()" class="btn btn-outline btn-sm hidden" style="flex:1">Stop 🔁</button>
       <button id="detailDeleteBtn" onclick="deleteCurrentTask()" class="btn btn-danger btn-sm" style="flex:1">Delete</button>
       <button onclick="closeDetailModal()" class="btn btn-secondary btn-sm">✕</button>
     </div>
@@ -1359,10 +1378,10 @@ function renderTasks(tasks) {
             <span class="badge badge-blue">${escHtml(t.type_name || '')}</span>
             <span class="badge ${statusInfo.cls}">${statusInfo.label}</span>
             ${t.archived ? '<span class="badge badge-warn">Archived</span>' : ''}
+            ${(t.recur_interval && t.recur_unit) ? `<span class="badge badge-recur">\ud83d\udd01 Every ${t.recur_interval} ${escHtml(t.recur_unit)}</span>` : ''}
           </div>
           ${t.assignees && t.assignees.length ? `<p class="task-card-meta">\ud83d\udc64 ${t.assignees.map(a => escHtml(a.username)).join(', ')}</p>` : ''}
           ${t.due_date ? `<p class="task-card-meta ${overdue ? 'due-overdue' : ''}">\ud83d\udcc5 ${fmtDate(t.due_date)}</p>` : ''}
-          ${(t.recur_interval && t.recur_unit) ? `<p class="task-card-meta">\ud83d\udd01 Repeats every ${t.recur_interval} ${escHtml(t.recur_unit)}</p>` : ''}
           ${t.details ? `<p class="task-card-meta" style="margin-top:6px">${escHtml(t.details.length > 80 ? t.details.substring(0, 80) + '\u2026' : t.details)}</p>` : ''}
         </div>
       `;
@@ -1562,17 +1581,20 @@ function openDetail(task) {
   if (task.assignees && task.assignees.length) {
     assigneesEl.textContent = 'Assigned to: ' + task.assignees.map(a => a.username).join(', ');
   } else { assigneesEl.textContent = ''; }
-  const recurInfoEl = document.getElementById('detailRecurInfo');
-  if (recurInfoEl) {
+  const recurSection = document.getElementById('detailRecurSection');
+  const recurDisplay = document.getElementById('detailRecurDisplay');
+  if (recurSection && recurDisplay) {
     if (task.recur_interval && task.recur_unit) {
-      recurInfoEl.textContent = '🔁 Repeats every ' + task.recur_interval + ' ' + task.recur_unit;
-      recurInfoEl.classList.remove('hidden');
+      recurDisplay.textContent = 'Repeats every ' + task.recur_interval + ' ' + task.recur_unit;
+      recurSection.classList.remove('hidden');
+      // Pre-populate the inline change form
+      document.getElementById('detailRecurInterval').value = task.recur_interval;
+      document.getElementById('detailRecurUnit').value = task.recur_unit;
+      document.getElementById('recurChangeForm').classList.add('hidden');
     } else {
-      recurInfoEl.classList.add('hidden');
+      recurSection.classList.add('hidden');
     }
   }
-  const stopRecurBtn = document.getElementById('detailStopRecurBtn');
-  if (stopRecurBtn) stopRecurBtn.classList.toggle('hidden', !(task.recur_interval && task.recur_unit));
   document.getElementById('addNoteForm').classList.add('hidden');
   document.getElementById('newNoteText').value = '';
   // Show the Delete button only to the task creator or a group admin
@@ -1685,10 +1707,16 @@ async function confirmDefer() {
 
 async function deleteCurrentTask() {
   if (!currentDetailTask) return;
-  if (!confirm('Delete this task permanently?')) return;
+  const isRecurring = !!(currentDetailTask.recur_interval && currentDetailTask.recur_unit);
+  const msg = isRecurring
+    ? 'Delete this occurrence? The next recurrence will be scheduled automatically.\n\nTo stop all future recurrences instead, close this dialog and use "⊘ Cancel Future Recurrences".'
+    : 'Delete this task permanently?';
+  if (!confirm(msg)) return;
   try {
     await api('DELETE', '/tasks/' + currentDetailTask.id);
-    closeDetailModal(); loadTasks(); toast('Task deleted');
+    closeDetailModal();
+    loadTasks();
+    toast(isRecurring ? 'Occurrence deleted — next recurrence scheduled' : 'Task deleted');
   } catch (err) { toast(err.message, 'error'); }
 }
 
@@ -2219,10 +2247,33 @@ async function rotateIcsToken() {
 // ========== Task Recurrence ==========
 async function stopRecurring() {
   if (!currentDetailTask) return;
+  if (!confirm('Cancel all future recurrences? This task will no longer repeat after it is completed or deleted.')) return;
   try {
     const updated = await api('PATCH', '/tasks/' + currentDetailTask.id, { recurInterval: null, recurUnit: null });
     currentDetailTask = updated; tasksMap.set(updated.id, updated);
-    openDetail(updated); loadTasks(); toast('Task will no longer recur');
+    openDetail(updated); loadTasks(); toast('Future recurrences cancelled');
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+function toggleRecurChangeForm() {
+  const form = document.getElementById('recurChangeForm');
+  if (!form) return;
+  form.classList.toggle('hidden');
+  if (!form.classList.contains('hidden') && currentDetailTask) {
+    document.getElementById('detailRecurInterval').value = currentDetailTask.recur_interval || 1;
+    document.getElementById('detailRecurUnit').value = currentDetailTask.recur_unit || 'weeks';
+  }
+}
+
+async function saveRecurChange() {
+  if (!currentDetailTask) return;
+  const interval = parseInt(document.getElementById('detailRecurInterval').value, 10);
+  const unit = document.getElementById('detailRecurUnit').value;
+  if (!interval || interval < 1 || interval > 365) { toast('Interval must be 1–365', 'error'); return; }
+  try {
+    const updated = await api('PATCH', '/tasks/' + currentDetailTask.id, { recurInterval: interval, recurUnit: unit });
+    currentDetailTask = updated; tasksMap.set(updated.id, updated);
+    openDetail(updated); loadTasks(); toast('Repeat interval updated');
   } catch (err) { toast(err.message, 'error'); }
 }
 

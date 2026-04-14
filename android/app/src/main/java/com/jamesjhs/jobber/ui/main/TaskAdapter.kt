@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.jamesjhs.jobber.R
@@ -25,6 +26,7 @@ class TaskAdapter(
         val group: TextView = view.findViewById(R.id.taskGroup)
         val dueDate: TextView = view.findViewById(R.id.taskDueDate)
         val btnStatus: ImageButton = view.findViewById(R.id.btnChangeStatus)
+        val iconRecurring: ImageView = view.findViewById(R.id.iconRecurring)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TaskViewHolder {
@@ -85,6 +87,13 @@ class TaskAdapter(
 
         holder.btnStatus.setOnClickListener { onStatusChange(task) }
         holder.itemView.setOnClickListener { onTaskClick(task) }
+
+        // Recurring icon
+        if (task.recurInterval != null && task.recurUnit != null) {
+            holder.iconRecurring.visibility = View.VISIBLE
+        } else {
+            holder.iconRecurring.visibility = View.GONE
+        }
     }
 
     override fun getItemCount() = tasks.size

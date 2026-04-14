@@ -1,6 +1,6 @@
 # Jobber – How-To Manual
 
-**Version 1.0.2**  
+**Version 1.0.3**  
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -416,4 +416,4 @@ Each reminder is sent only **once** per task. Reminders are checked every hour.
 
 ---
 
-*Jobber v1.0.2 – Copyright J Rowson 2026 | jahosi.co.uk*
+*Jobber v1.0.3 – Copyright J Rowson 2026 | jahosi.co.uk*

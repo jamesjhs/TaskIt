@@ -17,8 +17,9 @@
         app:showAsAction="never" />
     <item
         android:id="@+id/action_fast_forward"
+        android:icon="@drawable/ic_fast_forward"
         android:title="Fast forward"
-        app:showAsAction="never" />
+        app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_defer"
         android:title="Defer"

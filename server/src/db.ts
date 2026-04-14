@@ -239,11 +239,18 @@ addCol('feedback_messages', 'status', "TEXT NOT NULL DEFAULT 'not_started'");
 addCol('users', 'ics_token', 'TEXT');
 addCol('tasks', 'recur_interval', 'INTEGER');
 addCol('tasks', 'recur_unit', 'TEXT');
-// Per-task email notification preferences (all enabled by default)
+// Per-task notification preferences
+// Email: master switch + per-timing flags
 addCol('tasks', 'notify_email', 'INTEGER NOT NULL DEFAULT 1');
 addCol('tasks', 'notify_7day', 'INTEGER NOT NULL DEFAULT 1');
 addCol('tasks', 'notify_1day', 'INTEGER NOT NULL DEFAULT 1');
-addCol('tasks', 'notify_overdue', 'INTEGER NOT NULL DEFAULT 1');
+// notify_overdue is kept for schema compatibility but is no longer used by new tasks
+addCol('tasks', 'notify_overdue', 'INTEGER NOT NULL DEFAULT 0');
+addCol('tasks', 'notify_onday', 'INTEGER NOT NULL DEFAULT 1');
+// Browser popup notification flags (off by default)
+addCol('tasks', 'notify_popup_7day', 'INTEGER NOT NULL DEFAULT 0');
+addCol('tasks', 'notify_popup_1day', 'INTEGER NOT NULL DEFAULT 0');
+addCol('tasks', 'notify_popup_onday', 'INTEGER NOT NULL DEFAULT 0');
 // purpose column on magic_tokens distinguishes login / verify / reset flows
 addCol('magic_tokens', 'purpose', "TEXT NOT NULL DEFAULT 'login'");
 // Backfill existing groups: generate a proper unique invite word pair for any group that lacks one

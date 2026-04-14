@@ -536,24 +536,27 @@
           </select>
         </div>
         <div class="form-group" style="border-top:1px solid #e5e7eb;margin-top:8px;padding-top:12px">
-          <label>
-            <input type="checkbox" id="taskNotifyEmail" onchange="document.getElementById('taskNotifyOptions').style.display=this.checked?'flex':'none'" style="width:16px;height:16px;accent-color:#1a56db;vertical-align:middle;margin-right:6px" checked />
-            Email Reminders
-          </label>
-          <div id="taskNotifyOptions" style="margin-top:8px;margin-left:22px;display:flex;flex-direction:column;gap:4px">
-            <label style="font-size:.88rem;color:#374151">
-              <input type="checkbox" id="taskNotify7day" style="width:14px;height:14px;accent-color:#1a56db;vertical-align:middle;margin-right:6px" checked />
-              7 days before due
-            </label>
-            <label style="font-size:.88rem;color:#374151">
-              <input type="checkbox" id="taskNotify1day" style="width:14px;height:14px;accent-color:#1a56db;vertical-align:middle;margin-right:6px" checked />
-              1 day before due
-            </label>
-            <label style="font-size:.88rem;color:#374151">
-              <input type="checkbox" id="taskNotifyOverdue" style="width:14px;height:14px;accent-color:#1a56db;vertical-align:middle;margin-right:6px" checked />
-              When overdue
-            </label>
-          </div>
+          <label style="font-size:.9rem;font-weight:500;color:#374151;display:block;margin-bottom:8px">Reminders</label>
+          <table style="width:100%;font-size:.85rem;border-collapse:collapse">
+            <tr>
+              <th style="text-align:left;padding:4px 8px 4px 0;color:#6b7280;font-weight:400;width:56px"></th>
+              <th style="text-align:center;padding:4px;color:#6b7280;font-weight:400">7 days</th>
+              <th style="text-align:center;padding:4px;color:#6b7280;font-weight:400">1 day</th>
+              <th style="text-align:center;padding:4px;color:#6b7280;font-weight:400">On day</th>
+            </tr>
+            <tr>
+              <td style="padding:4px 8px 4px 0;color:#374151">&#x1F4E7; Email</td>
+              <td style="text-align:center"><input type="checkbox" id="notifyEmail7day" style="width:16px;height:16px;accent-color:#1a56db" checked /></td>
+              <td style="text-align:center"><input type="checkbox" id="notifyEmail1day" style="width:16px;height:16px;accent-color:#1a56db" checked /></td>
+              <td style="text-align:center"><input type="checkbox" id="notifyEmailOnday" style="width:16px;height:16px;accent-color:#1a56db" checked /></td>
+            </tr>
+            <tr>
+              <td style="padding:4px 8px 4px 0;color:#374151">&#x1F514; Popup</td>
+              <td style="text-align:center"><input type="checkbox" id="notifyPopup7day" style="width:16px;height:16px;accent-color:#1a56db" /></td>
+              <td style="text-align:center"><input type="checkbox" id="notifyPopup1day" style="width:16px;height:16px;accent-color:#1a56db" /></td>
+              <td style="text-align:center"><input type="checkbox" id="notifyPopupOnday" style="width:16px;height:16px;accent-color:#1a56db" /></td>
+            </tr>
+          </table>
         </div>
       </form>
     </div>
@@ -659,7 +662,7 @@
       <button onclick="toggleDeferSection()" class="btn btn-outline btn-sm" style="flex:1">Defer</button>
       <button onclick="editCurrentTask()" class="btn btn-outline btn-sm" style="flex:1">Edit</button>
       <button onclick="archiveCurrentTask()" class="btn btn-secondary btn-sm" style="flex:1">Archive</button>
-      <button onclick="deleteCurrentTask()" class="btn btn-danger btn-sm" style="flex:1">Delete</button>
+      <button id="detailDeleteBtn" onclick="deleteCurrentTask()" class="btn btn-danger btn-sm" style="flex:1">Delete</button>
       <button onclick="closeDetailModal()" class="btn btn-secondary btn-sm">✕</button>
     </div>
   </div>
@@ -1042,6 +1045,10 @@ function initApp() {
   showPage('tasks'); checkVersion();
   setInterval(checkVersion, 5 * 60 * 1000);
   setInterval(refreshNotifications, 5 * 60 * 1000);
+  // Request browser notification permission so popup reminders can fire
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
 }
 
 async function saveLocale() {
@@ -1418,12 +1425,13 @@ function openTaskModal(task = null) {
       document.getElementById('taskRecurInterval').value = task.recur_interval;
       document.getElementById('taskRecurUnit').value = task.recur_unit;
     }
-    // Populate notification preferences
-    document.getElementById('taskNotifyEmail').checked = task.notify_email !== 0;
-    document.getElementById('taskNotify7day').checked = task.notify_7day !== 0;
-    document.getElementById('taskNotify1day').checked = task.notify_1day !== 0;
-    document.getElementById('taskNotifyOverdue').checked = task.notify_overdue !== 0;
-    document.getElementById('taskNotifyOptions').style.display = task.notify_email !== 0 ? 'flex' : 'none';
+    // Populate notification grid
+    document.getElementById('notifyEmail7day').checked = task.notify_7day !== 0;
+    document.getElementById('notifyEmail1day').checked = task.notify_1day !== 0;
+    document.getElementById('notifyEmailOnday').checked = task.notify_onday !== 0;
+    document.getElementById('notifyPopup7day').checked = task.notify_popup_7day !== 0;
+    document.getElementById('notifyPopup1day').checked = task.notify_popup_1day !== 0;
+    document.getElementById('notifyPopupOnday').checked = task.notify_popup_onday !== 0;
     if (task.due_date) {
       const d = new Date(task.due_date);
       const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -1435,19 +1443,20 @@ function openTaskModal(task = null) {
     editId.value = '';
     document.getElementById('taskTitle').value = '';
     document.getElementById('taskDetails').value = '';
-    const tonight = new Date(); tonight.setHours(23, 59, 0, 0);
-    const iso = new Date(tonight.getTime() - tonight.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+    const iso = new Date(midnight.getTime() - midnight.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     document.getElementById('taskDueDate').value = iso;
     document.getElementById('taskStatusRow').classList.add('hidden');
     document.getElementById('taskRecurEnabled').checked = false;
     document.getElementById('taskRecurFields').classList.add('hidden');
     document.getElementById('taskRecurInterval').value = '1';
     document.getElementById('taskRecurUnit').value = 'weeks';
-    document.getElementById('taskNotifyEmail').checked = true;
-    document.getElementById('taskNotify7day').checked = true;
-    document.getElementById('taskNotify1day').checked = true;
-    document.getElementById('taskNotifyOverdue').checked = true;
-    document.getElementById('taskNotifyOptions').style.display = 'flex';
+    document.getElementById('notifyEmail7day').checked = true;
+    document.getElementById('notifyEmail1day').checked = true;
+    document.getElementById('notifyEmailOnday').checked = true;
+    document.getElementById('notifyPopup7day').checked = false;
+    document.getElementById('notifyPopup1day').checked = false;
+    document.getElementById('notifyPopupOnday').checked = false;
     document.getElementById('assigneeContainer').innerHTML = '<span style="font-size:.9rem;color:#9ca3af;font-style:italic">Select a group to see members</span>';
   }
   document.getElementById('taskModal').classList.remove('hidden');
@@ -1497,10 +1506,16 @@ async function handleTaskSubmit(e) {
     body.recurInterval = null;
     body.recurUnit = null;
   }
-  body.notifyEmail = document.getElementById('taskNotifyEmail').checked;
-  body.notify7day = document.getElementById('taskNotify7day').checked;
-  body.notify1day = document.getElementById('taskNotify1day').checked;
-  body.notifyOverdue = document.getElementById('taskNotifyOverdue').checked;
+  const email7day   = document.getElementById('notifyEmail7day').checked;
+  const email1day   = document.getElementById('notifyEmail1day').checked;
+  const emailOnday  = document.getElementById('notifyEmailOnday').checked;
+  body.notify7day       = email7day;
+  body.notify1day       = email1day;
+  body.notifyOnday      = emailOnday;
+  body.notifyEmail      = email7day || email1day || emailOnday;
+  body.notifyPopup7day  = document.getElementById('notifyPopup7day').checked;
+  body.notifyPopup1day  = document.getElementById('notifyPopup1day').checked;
+  body.notifyPopupOnday = document.getElementById('notifyPopupOnday').checked;
   try {
     if (editId) { await api('PATCH', '/tasks/' + editId, body); toast('Task updated!'); }
     else { await api('POST', '/tasks', body); toast('Task created!'); }
@@ -1545,6 +1560,9 @@ function openDetail(task) {
   }
   document.getElementById('addNoteForm').classList.add('hidden');
   document.getElementById('newNoteText').value = '';
+  // Show the Delete button only to the task creator or a group admin
+  const canDelete = (currentUser && task.created_by === currentUser.id) || task.group_role === 'admin';
+  document.getElementById('detailDeleteBtn').classList.toggle('hidden', !canDelete);
   document.getElementById('taskDetailModal').classList.remove('hidden');
   loadTaskNotes(task.id);
 }
@@ -2020,6 +2038,31 @@ async function refreshNotifications() {
       badge.textContent = totalBadge > 9 ? '9+' : String(totalBadge);
       badge.removeAttribute('hidden');
     } else { badge.setAttribute('hidden', ''); }
+
+    // ---- Browser popup notifications ----
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const fired = JSON.parse(localStorage.getItem('jbPopupFired') || '{}');
+      const day = new Date().toDateString();
+      tasks.forEach(t => {
+        if (!t.due_date || t.status === 'complete' || t.archived) return;
+        const msUntil = t.due_date - now;
+        const fire = (key, check) => {
+          if (!check) return;
+          const k = t.id + ':' + key;
+          if (!fired[k]) {
+            fired[k] = day;
+            new Notification('Jobber Reminder', { body: t.title, icon: '/icons/icon-192x192.png', tag: k });
+          }
+        };
+        fire('7d',  t.notify_popup_7day  && msUntil > 6 * 24 * 3600000 && msUntil <= 8 * 24 * 3600000);
+        fire('1d',  t.notify_popup_1day  && msUntil > 22 * 3600000     && msUntil <= 50 * 3600000);
+        fire('0d',  t.notify_popup_onday && msUntil >= 0                && msUntil <= 25 * 3600000);
+      });
+      // Prune stale entries (keep only today's)
+      Object.keys(fired).forEach(k => { if (fired[k] !== day) delete fired[k]; });
+      localStorage.setItem('jbPopupFired', JSON.stringify(fired));
+    }
+
     const listEl = document.getElementById('notificationList');
     if (!taskAlerts.length && !unreadAlerts.length) {
       listEl.innerHTML = '<div class="loading">No outstanding alerts</div>';

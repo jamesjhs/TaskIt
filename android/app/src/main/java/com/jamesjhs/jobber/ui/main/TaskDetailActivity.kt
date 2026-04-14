@@ -122,6 +122,9 @@ class TaskDetailActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.menu_task_detail, menu)
+        // Only show Fast forward for recurring tasks
+        menu?.findItem(R.id.action_fast_forward)?.isVisible =
+            task?.recurInterval != null && task?.recurUnit != null
         return true
     }
 
@@ -145,6 +148,10 @@ class TaskDetailActivity : AppCompatActivity() {
             }
             R.id.action_archive -> {
                 archiveTask()
+                return true
+            }
+            R.id.action_fast_forward -> {
+                fastForwardTask()
                 return true
             }
             R.id.action_defer -> {
@@ -242,6 +249,32 @@ class TaskDetailActivity : AppCompatActivity() {
                     finish()
                 } else {
                     Toast.makeText(this@TaskDetailActivity, "Failed to defer task", Toast.LENGTH_SHORT).show()
+                    binding.progressBar.visibility = android.view.View.GONE
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@TaskDetailActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                binding.progressBar.visibility = android.view.View.GONE
+            }
+        }
+    }
+
+    private fun fastForwardTask() {
+        val currentTask = task ?: return
+        binding.progressBar.visibility = android.view.View.VISIBLE
+        lifecycleScope.launch {
+            val token = tokenManager.token.first()
+            if (token == null) {
+                binding.progressBar.visibility = android.view.View.GONE
+                return@launch
+            }
+            try {
+                val response = ApiClient.apiService.fastForwardTask("Bearer $token", currentTask.id)
+                if (response.isSuccessful) {
+                    Toast.makeText(this@TaskDetailActivity, "Due date advanced to next recurrence", Toast.LENGTH_SHORT).show()
+                    setResult(RESULT_OK)
+                    finish()
+                } else {
+                    Toast.makeText(this@TaskDetailActivity, "Failed to fast forward task", Toast.LENGTH_SHORT).show()
                     binding.progressBar.visibility = android.view.View.GONE
                 }
             } catch (e: Exception) {

@@ -111,6 +111,12 @@ interface ApiService {
         @Body body: Map<String, String>
     ): Response<TaskType>
 
+    @PATCH("api/tasks/{id}/fast-forward")
+    suspend fun fastForwardTask(
+        @Header("Authorization") token: String,
+        @Path("id") taskId: String
+    ): Response<Task>
+
     @PATCH("api/tasks/{id}/defer")
     suspend fun deferTask(
         @Header("Authorization") token: String,

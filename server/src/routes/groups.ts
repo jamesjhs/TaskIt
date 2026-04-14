@@ -127,7 +127,7 @@ router.post('/join', (req: Request, res: Response): void => {
     return;
   }
 
-  const group = db.prepare('SELECT * FROM groups WHERE invite_name = ? AND shared_key = ?').get(
+  const group = db.prepare('SELECT * FROM groups WHERE LOWER(invite_name) = LOWER(?) AND shared_key = ?').get(
     invite_name.trim(),
     shared_key.trim()
   ) as { id: string; name: string; invite_name: string; shared_key: string; created_by: string } | undefined;
@@ -150,15 +150,20 @@ router.post('/join', (req: Request, res: Response): void => {
     'INSERT INTO group_members (group_id, user_id, role, joined_at) VALUES (?, ?, ?, ?)'
   ).run(group.id, userId, 'member', Date.now());
 
-  // Notify admins
-  const admins = db.prepare('SELECT user_id FROM group_members WHERE group_id = ? AND role = "admin"').all(group.id) as Array<{ user_id: string }>;
-  const user = db.prepare('SELECT username FROM users WHERE id = ?').get(userId) as { username: string };
-  const insertAlert = db.prepare('INSERT INTO user_alerts (id, user_id, message, created_at) VALUES (?, ?, ?, ?)');
-  for (const admin of admins) {
-    insertAlert.run(uuidv4(), admin.user_id, `${user.username} joined group: ${group.name}`, Date.now());
-  }
-
   res.json(group);
+
+  // Notify admins (non-critical — errors must not affect the response already sent)
+  try {
+    const admins = db.prepare('SELECT user_id FROM group_members WHERE group_id = ? AND role = "admin"').all(group.id) as Array<{ user_id: string }>;
+    const joiner = db.prepare('SELECT username FROM users WHERE id = ?').get(userId) as { username: string } | undefined;
+    const username = joiner?.username ?? 'Someone';
+    const insertAlert = db.prepare('INSERT INTO user_alerts (id, user_id, message, created_at) VALUES (?, ?, ?, ?)');
+    for (const admin of admins) {
+      insertAlert.run(uuidv4(), admin.user_id, `${username} joined group: ${group.name}`, Date.now());
+    }
+  } catch (err) {
+    console.error('[groups/join] Failed to send admin notifications:', err);
+  }
 });
 
 // POST /api/groups/invite/:token/accept  — accept a group invite (authenticated user)

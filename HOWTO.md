@@ -1,6 +1,6 @@
 # Jobber – How-To Manual
 
-**Version 1.0.3**  
+**Version 1.0.7**  
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -264,6 +264,8 @@ Use the **filter bar** at the top of the Tasks page to filter by:
 - **Assigned to Me** – show only tasks assigned to you
 - **Show Group Tasks** – toggle to hide or show group-owned tasks
 
+Tasks are always sorted by **due date** (soonest first), with **Urgent** tasks pinned to the very top.
+
 ---
 
 ### Progress Notes
@@ -416,4 +418,4 @@ Each reminder is sent only **once** per task. Reminders are checked every hour.
 
 ---
 
-*Jobber v1.0.3 – Copyright J Rowson 2026 | jahosi.co.uk*
+*Jobber v1.0.7 – Copyright J Rowson 2026 | jahosi.co.uk*

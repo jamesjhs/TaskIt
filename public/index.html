@@ -148,7 +148,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">Jobber v<span id="authFooterVersion">0.8.1</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a> &nbsp;·&nbsp; <a href="/howto.html">How To</a></p>
+      <p class="version-footer" style="margin-top:16px">Jobber v<span id="authFooterVersion">1.0.7</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a> &nbsp;·&nbsp; <a href="/howto.html">How To</a></p>
     </div>
   </div>
 </div>
@@ -1339,54 +1339,27 @@ function renderTasks(tasks) {
     return a.due_date - b.due_date;
   });
 
-  // Group by: group name first (alphabetical), then "Personal", then by type within each
-  const grouped = new Map();
-  for (const t of displayTasks) {
-    const groupLabel = t.group_id ? (t.group_name || t.group_id) : '__personal__';
-    const typeLabel = t.type_name || 'Other';
-    const key = groupLabel + '|||' + typeLabel;
-    if (!grouped.has(key)) grouped.set(key, { groupLabel, typeLabel, tasks: [] });
-    grouped.get(key).tasks.push(t);
-  }
-
-  // Sort sections: urgent sections always first, then non-personal groups alphabetically, personal last
-  const sections = Array.from(grouped.values()).sort((a, b) => {
-    const aUrgent = a.typeLabel.toLowerCase() === 'urgent';
-    const bUrgent = b.typeLabel.toLowerCase() === 'urgent';
-    if (aUrgent !== bUrgent) return aUrgent ? -1 : 1;
-    if (a.groupLabel === '__personal__' && b.groupLabel !== '__personal__') return 1;
-    if (b.groupLabel === '__personal__' && a.groupLabel !== '__personal__') return -1;
-    const gc = a.groupLabel.localeCompare(b.groupLabel);
-    if (gc !== 0) return gc;
-    return a.typeLabel.localeCompare(b.typeLabel);
-  });
-
-  let html = '';
-  for (const section of sections) {
-    const groupDisplay = section.groupLabel === '__personal__' ? 'Personal' : escHtml(section.groupLabel);
-    html += `<div style="margin-bottom:8px;padding:6px 0 2px;border-bottom:1px solid #e5e7eb;font-size:.8rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">${groupDisplay} · ${escHtml(section.typeLabel)}</div>`;
-    html += section.tasks.map(t => {
-      const statusInfo = statusMeta(t.status);
-      const overdue = t.due_date && t.due_date < now && t.status !== 'complete';
-      const dueSoon = t.due_date && t.status !== 'complete' && t.due_date > now && t.due_date <= now + 24 * 60 * 60 * 1000;
-      const isUrgent = (t.type_name || '').toLowerCase() === 'urgent';
-      const cardClass = dueSoon ? 'task-card task-card-due-soon' : (isUrgent ? 'task-card task-card-urgent' : 'task-card');
-      return `
-        <div onclick="openDetailById('${escHtml(t.id)}')" class="${cardClass}">
-          <div class="task-card-title${t.group_id ? ' task-card-title-group' : ''}">${escHtml(t.title)}</div>
-          <div class="task-card-badges">
-            <span class="badge badge-blue">${escHtml(t.type_name || '')}</span>
-            <span class="badge ${statusInfo.cls}">${statusInfo.label}</span>
-            ${t.archived ? '<span class="badge badge-warn">Archived</span>' : ''}
-            ${(t.recur_interval && t.recur_unit) ? `<span class="badge badge-recur">\ud83d\udd01 Every ${t.recur_interval} ${escHtml(t.recur_unit)}</span>` : ''}
-          </div>
-          ${t.assignees && t.assignees.length ? `<p class="task-card-meta">\ud83d\udc64 ${t.assignees.map(a => escHtml(a.username)).join(', ')}</p>` : ''}
-          ${t.due_date ? `<p class="task-card-meta ${overdue ? 'due-overdue' : ''}">\ud83d\udcc5 ${fmtDate(t.due_date)}</p>` : ''}
-          ${t.details ? `<p class="task-card-meta" style="margin-top:6px">${escHtml(t.details.length > 80 ? t.details.substring(0, 80) + '\u2026' : t.details)}</p>` : ''}
+  const html = displayTasks.map(t => {
+    const statusInfo = statusMeta(t.status);
+    const overdue = t.due_date && t.due_date < now && t.status !== 'complete';
+    const dueSoon = t.due_date && t.status !== 'complete' && t.due_date > now && t.due_date <= now + 24 * 60 * 60 * 1000;
+    const isUrgent = (t.type_name || '').toLowerCase() === 'urgent';
+    const cardClass = dueSoon ? 'task-card task-card-due-soon' : (isUrgent ? 'task-card task-card-urgent' : 'task-card');
+    return `
+      <div onclick="openDetailById('${escHtml(t.id)}')" class="${cardClass}">
+        <div class="task-card-title${t.group_id ? ' task-card-title-group' : ''}">${escHtml(t.title)}</div>
+        <div class="task-card-badges">
+          <span class="badge badge-blue">${escHtml(t.type_name || '')}</span>
+          <span class="badge ${statusInfo.cls}">${statusInfo.label}</span>
+          ${t.archived ? '<span class="badge badge-warn">Archived</span>' : ''}
+          ${(t.recur_interval && t.recur_unit) ? `<span class="badge badge-recur">\ud83d\udd01 Every ${t.recur_interval} ${escHtml(t.recur_unit)}</span>` : ''}
         </div>
-      `;
-    }).join('');
-  }
+        ${t.assignees && t.assignees.length ? `<p class="task-card-meta">\ud83d\udc64 ${t.assignees.map(a => escHtml(a.username)).join(', ')}</p>` : ''}
+        ${t.due_date ? `<p class="task-card-meta ${overdue ? 'due-overdue' : ''}">\ud83d\udcc5 ${fmtDate(t.due_date)}</p>` : ''}
+        ${t.details ? `<p class="task-card-meta" style="margin-top:6px">${escHtml(t.details.length > 80 ? t.details.substring(0, 80) + '\u2026' : t.details)}</p>` : ''}
+      </div>
+    `;
+  }).join('');
   grid.innerHTML = html;
 }
 

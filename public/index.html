@@ -24,8 +24,535 @@
   <button onclick="performAppUpdate()">Refresh</button>
 </div>
 
+<!-- ===== LANDING PAGE ===== -->
+<div id="landingPage">
+
+  <!-- Navigation -->
+  <nav class="lp-nav">
+    <a class="lp-nav-brand" href="#" onclick="return false;">
+      <div class="lp-nav-logo">
+        <svg width="20" height="20" fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+      </div>
+      <span class="lp-nav-title">Jobber</span>
+    </a>
+    <div class="lp-nav-actions">
+      <button onclick="goToAuth('login')" class="lp-btn-nav-signin">Sign In</button>
+      <button onclick="goToAuth('register')" class="lp-btn-nav-started">Get Started</button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="lp-hero">
+    <div style="position:relative;z-index:1">
+      <div class="lp-hero-eyebrow"><span class="lp-hero-eyebrow-dot"></span>Free &amp; Open Source Task Manager</div>
+      <h1>Manage Every Job,<br><span>Big or Small</span></h1>
+      <p class="lp-hero-sub">From household chores to industrial projects — Jobber keeps you, your family, and your team organised, on time, and in sync. On any device, anywhere.</p>
+      <div class="lp-hero-ctas">
+        <button onclick="goToAuth('register')" class="lp-btn-hero-primary">🚀 Get Started Free</button>
+        <button onclick="goToAuth('login')" class="lp-btn-hero-outline">Sign In</button>
+      </div>
+      <p class="lp-hero-note">No credit card required &nbsp;·&nbsp; Install as an app on any device</p>
+    </div>
+  </section>
+
+  <!-- Stats strip -->
+  <div class="lp-stats">
+    <div class="lp-stat-item">
+      <div class="lp-stat-num">∞</div>
+      <div class="lp-stat-label">Tasks, no limits</div>
+    </div>
+    <div class="lp-stat-item">
+      <div class="lp-stat-num">PWA</div>
+      <div class="lp-stat-label">Install on any device</div>
+    </div>
+    <div class="lp-stat-item">
+      <div class="lp-stat-num">100%</div>
+      <div class="lp-stat-label">Private &amp; self-hosted</div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="lp-features-bg">
+    <div class="lp-section lp-section-center">
+      <p class="lp-section-label">Everything you need</p>
+      <h2 class="lp-section-heading">Powerful features, beautifully simple</h2>
+      <p class="lp-section-sub">Jobber packs enterprise-grade task management into a lightweight, mobile-first app that feels at home on your phone or your desk.</p>
+      <div class="lp-features-grid">
+        <div class="lp-feature-card">
+          <div class="lp-feature-icon lp-feature-icon-blue">📋</div>
+          <h3>Personal &amp; Group Tasks</h3>
+          <p>Create tasks for yourself or assign them to a group. Filter by status, type, or assignee in a single tap.</p>
+        </div>
+        <div class="lp-feature-card">
+          <div class="lp-feature-icon lp-feature-icon-purple">👥</div>
+          <h3>Team Collaboration</h3>
+          <p>Share groups with colleagues, family, or contractors. Invite via QR code, link, or email — no accounts needed to join.</p>
+        </div>
+        <div class="lp-feature-card">
+          <div class="lp-feature-icon lp-feature-icon-amber">🔔</div>
+          <h3>Smart Reminders</h3>
+          <p>Get email and in-app alerts 7 days, 1 day, and on the day a task is due. Never miss a deadline again.</p>
+        </div>
+        <div class="lp-feature-card">
+          <div class="lp-feature-icon lp-feature-icon-green">🔄</div>
+          <h3>Recurring Tasks</h3>
+          <p>Set tasks to repeat daily, weekly, monthly, or yearly. Perfect for maintenance schedules, meetings, and routines.</p>
+        </div>
+        <div class="lp-feature-card">
+          <div class="lp-feature-icon lp-feature-icon-cyan">📅</div>
+          <h3>Calendar Integration</h3>
+          <p>Subscribe to your tasks in Google Calendar, Apple Calendar, or Outlook via a private ICS feed link.</p>
+        </div>
+        <div class="lp-feature-card">
+          <div class="lp-feature-icon lp-feature-icon-rose">📝</div>
+          <h3>Progress Notes</h3>
+          <p>Add timestamped progress notes to any task. Keep a full audit trail of what was done, when, and by whom.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screenshots -->
+  <div class="lp-screens-bg">
+    <div class="lp-section lp-section-center">
+      <p class="lp-section-label">See it in action</p>
+      <h2 class="lp-section-heading">Every screen, at a glance</h2>
+      <p class="lp-section-sub">Jobber is mobile-first but works beautifully on any screen. Here's a preview of what's waiting inside.</p>
+      <div class="lp-phones-row">
+
+        <!-- Phone 1 — My Tasks (Household) -->
+        <div class="lp-phone-wrap">
+          <div class="lp-phone">
+            <div class="lp-phone-inner">
+              <div class="lp-demo-banner">⚠️ Demo data — for illustration only</div>
+              <div class="lp-phone-statusbar"><span>9:41</span><span>▐▐ ▇▇▇</span></div>
+              <div class="lp-phone-content">
+                <div class="lp-mini-header">
+                  <span class="lp-mini-header-title">My Tasks</span>
+                  <span class="lp-mini-header-btn">+ New Task</span>
+                </div>
+                <div class="lp-mini-chips">
+                  <span class="lp-mini-chip active">All</span>
+                  <span class="lp-mini-chip">Not Started</span>
+                  <span class="lp-mini-chip">Started</span>
+                  <span class="lp-mini-chip">Done</span>
+                </div>
+                <!-- Task cards -->
+                <div class="lp-mini-card">
+                  <div class="lp-mini-card-title">🌿 Mow the Lawn</div>
+                  <div class="lp-mini-card-row">
+                    <span class="lp-mini-badge lp-mini-badge-blue">Chore</span>
+                    <span class="lp-mini-badge lp-mini-badge-gray">Not Started</span>
+                  </div>
+                  <div class="lp-mini-card-meta">📅 Due: Tomorrow</div>
+                </div>
+                <div class="lp-mini-card">
+                  <div class="lp-mini-card-title">🧹 Deep Clean Kitchen</div>
+                  <div class="lp-mini-card-row">
+                    <span class="lp-mini-badge lp-mini-badge-blue">Chore</span>
+                    <span class="lp-mini-badge lp-mini-badge-yellow">Started</span>
+                  </div>
+                  <div class="lp-mini-card-meta">📅 Due: Today</div>
+                </div>
+                <div class="lp-mini-card">
+                  <div class="lp-mini-card-title">🔧 Fix Leaky Tap</div>
+                  <div class="lp-mini-card-row">
+                    <span class="lp-mini-badge lp-mini-badge-purple">Maintenance</span>
+                    <span class="lp-mini-badge lp-mini-badge-gray">Not Started</span>
+                  </div>
+                  <div class="lp-mini-card-meta">📅 Due: 20 Apr</div>
+                </div>
+                <div class="lp-mini-card">
+                  <div class="lp-mini-card-title">🌀 HVAC Filter Change</div>
+                  <div class="lp-mini-card-row">
+                    <span class="lp-mini-badge lp-mini-badge-purple">Maintenance</span>
+                    <span class="lp-mini-badge lp-mini-badge-green">Complete</span>
+                  </div>
+                  <div class="lp-mini-card-meta">🔁 Every 3 months</div>
+                </div>
+                <div class="lp-mini-card">
+                  <div class="lp-mini-card-title">🎨 Repaint Front Door</div>
+                  <div class="lp-mini-card-row">
+                    <span class="lp-mini-badge lp-mini-badge-blue">DIY</span>
+                    <span class="lp-mini-badge lp-mini-badge-gray">Not Started</span>
+                  </div>
+                  <div class="lp-mini-card-meta">📅 Due: 30 Apr</div>
+                </div>
+              </div>
+              <div class="lp-phone-navbar">
+                <div class="lp-phone-navbtn active"><span class="lp-phone-navbtn-icon">📋</span>Tasks</div>
+                <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">👥</span>Groups</div>
+                <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">🔔</span>Alerts</div>
+                <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">👤</span>Profile</div>
+              </div>
+            </div>
+          </div>
+          <span class="lp-phone-label">📋 Tasks</span>
+        </div>
+
+        <!-- Phone 2 — Groups -->
+        <div class="lp-phone-wrap">
+          <div class="lp-phone">
+            <div class="lp-phone-inner">
+              <div class="lp-demo-banner">⚠️ Demo data — for illustration only</div>
+              <div class="lp-phone-statusbar"><span>9:41</span><span>▐▐ ▇▇▇</span></div>
+              <div class="lp-phone-content">
+                <div class="lp-mini-header">
+                  <span class="lp-mini-header-title">Groups</span>
+                  <span class="lp-mini-header-btn">+ New</span>
+                </div>
+                <!-- Group cards -->
+                <div class="lp-mini-group-card">
+                  <div class="lp-mini-group-title">🏗️ Henderson Building Ltd</div>
+                  <div class="lp-mini-group-meta">12 members &nbsp;·&nbsp; 23 active tasks</div>
+                  <div class="lp-mini-group-meta" style="margin-top:2px;color:#1a56db">Role: Admin</div>
+                  <div class="lp-mini-group-footer">
+                    <span class="lp-mini-group-btn">View Tasks</span>
+                    <span class="lp-mini-group-btn">Members</span>
+                  </div>
+                </div>
+                <div class="lp-mini-group-card">
+                  <div class="lp-mini-group-title">🏠 The Henderson Household</div>
+                  <div class="lp-mini-group-meta">4 members &nbsp;·&nbsp; 8 active tasks</div>
+                  <div class="lp-mini-group-meta" style="margin-top:2px;color:#1a56db">Role: Admin</div>
+                  <div class="lp-mini-group-footer">
+                    <span class="lp-mini-group-btn">View Tasks</span>
+                    <span class="lp-mini-group-btn">Members</span>
+                  </div>
+                </div>
+                <div class="lp-mini-group-card">
+                  <div class="lp-mini-group-title">💼 Marketing Team</div>
+                  <div class="lp-mini-group-meta">7 members &nbsp;·&nbsp; 14 active tasks</div>
+                  <div class="lp-mini-group-meta" style="margin-top:2px;color:#6b7280">Role: Member</div>
+                  <div class="lp-mini-group-footer">
+                    <span class="lp-mini-group-btn">View Tasks</span>
+                    <span class="lp-mini-group-btn">Members</span>
+                  </div>
+                </div>
+                <div class="lp-mini-group-card">
+                  <div class="lp-mini-group-title">🏋️ Running Club</div>
+                  <div class="lp-mini-group-meta">9 members &nbsp;·&nbsp; 5 active tasks</div>
+                  <div class="lp-mini-group-meta" style="margin-top:2px;color:#6b7280">Role: Member</div>
+                  <div class="lp-mini-group-footer">
+                    <span class="lp-mini-group-btn">View Tasks</span>
+                    <span class="lp-mini-group-btn">Members</span>
+                  </div>
+                </div>
+              </div>
+              <div class="lp-phone-navbar">
+                <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">📋</span>Tasks</div>
+                <div class="lp-phone-navbtn active"><span class="lp-phone-navbtn-icon">👥</span>Groups</div>
+                <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">🔔</span>Alerts</div>
+                <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">👤</span>Profile</div>
+              </div>
+            </div>
+          </div>
+          <span class="lp-phone-label">👥 Groups</span>
+        </div>
+
+        <!-- Phone 3 — Task Detail (Industrial) -->
+        <div class="lp-phone-wrap">
+          <div class="lp-phone">
+            <div class="lp-phone-inner">
+              <div class="lp-demo-banner">⚠️ Demo data — for illustration only</div>
+              <div class="lp-phone-statusbar"><span>9:41</span><span>▐▐ ▇▇▇</span></div>
+              <div class="lp-phone-content">
+                <div class="lp-mini-detail-title">Install Steel Framework</div>
+                <div class="lp-mini-card-row" style="margin-bottom:5px">
+                  <span class="lp-mini-badge lp-mini-badge-blue">Civil Engineering</span>
+                  <span class="lp-mini-badge lp-mini-badge-yellow">Started</span>
+                </div>
+                <div style="font-size:7px;color:#374151;margin-bottom:2px">📅 Due: 22 May 2026</div>
+                <div style="font-size:7px;color:#6b7280;margin-bottom:5px">👥 James R., Sarah T., Kofi A.</div>
+                <div style="font-size:7px;color:#374151;margin-bottom:4px;font-style:italic">Site prep complete, materials on site. Crane booked for 19 May.</div>
+                <div class="lp-mini-section-title">Progress Notes</div>
+                <div class="lp-mini-note">
+                  Site assessment complete. Ground condition: stable.
+                  <div class="lp-mini-note-meta">James R. · 16 Apr 2026</div>
+                </div>
+                <div class="lp-mini-note">
+                  H&amp;S inspection passed. PPE on site.
+                  <div class="lp-mini-note-meta">Sarah T. · 14 Apr 2026</div>
+                </div>
+                <div class="lp-mini-note">
+                  Steel delivery confirmed for 18 Apr.
+                  <div class="lp-mini-note-meta">Kofi A. · 13 Apr 2026</div>
+                </div>
+                <div class="lp-mini-section-title">Change Status</div>
+                <div class="lp-mini-status-row">
+                  <div class="lp-mini-status-btn ns">Not Started</div>
+                  <div class="lp-mini-status-btn started">Started</div>
+                  <div class="lp-mini-status-btn done">Complete</div>
+                </div>
+              </div>
+              <div class="lp-phone-navbar">
+                <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">📋</span>Tasks</div>
+                <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">👥</span>Groups</div>
+                <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">🔔</span>Alerts</div>
+                <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">👤</span>Profile</div>
+              </div>
+            </div>
+          </div>
+          <span class="lp-phone-label">📝 Task Detail</span>
+        </div>
+
+      </div><!-- end lp-phones-row -->
+    </div><!-- end lp-section -->
+  </div><!-- end lp-screens-bg -->
+
+  <!-- Use Cases -->
+  <div style="background:#fff">
+    <div class="lp-section lp-section-center">
+      <p class="lp-section-label">Works for everyone</p>
+      <h2 class="lp-section-heading">From chores to construction sites</h2>
+      <p class="lp-section-sub">Jobber scales from a simple to-do list for one, up to complex multi-team project coordination for hundreds. Here's just a taste.</p>
+      <div class="lp-usecases-grid">
+
+        <!-- Household -->
+        <div class="lp-usecase-card">
+          <div class="lp-usecase-header">
+            <div class="lp-usecase-emoji lp-usecase-emoji-green">🏠</div>
+            <div>
+              <h3>Home &amp; Household</h3>
+              <p>Chores, maintenance, and family to-dos</p>
+            </div>
+          </div>
+          <ul class="lp-usecase-tasks">
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">🌿 Mow the Lawn</span>
+              <span class="lp-usecase-task-badge lp-uc-overdue">Overdue</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">🔧 Fix Leaky Tap</span>
+              <span class="lp-usecase-task-badge lp-uc-started">Started</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">🧹 Weekly Hoover</span>
+              <span class="lp-usecase-task-badge lp-uc-done">Complete</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">📦 Clear Out Garage</span>
+              <span class="lp-usecase-task-badge lp-uc-ns">Not Started</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">🌀 Boiler Service</span>
+              <span class="lp-usecase-task-badge lp-uc-ns">Due 1 Jun</span>
+            </li>
+          </ul>
+          <p class="lp-usecase-disclaimer">⚠️ Example data — for illustration only</p>
+        </div>
+
+        <!-- Office / Teams -->
+        <div class="lp-usecase-card">
+          <div class="lp-usecase-header">
+            <div class="lp-usecase-emoji lp-usecase-emoji-blue">💼</div>
+            <div>
+              <h3>Office &amp; Teams</h3>
+              <p>Projects, deadlines, and collaboration</p>
+            </div>
+          </div>
+          <ul class="lp-usecase-tasks">
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">📊 Q2 Budget Review</span>
+              <span class="lp-usecase-task-badge lp-uc-started">Started</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">📝 Client Proposal</span>
+              <span class="lp-usecase-task-badge lp-uc-overdue">Overdue</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">👥 Weekly Team 1:1s</span>
+              <span class="lp-usecase-task-badge lp-uc-done">Complete</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">🚀 Product Launch Prep</span>
+              <span class="lp-usecase-task-badge lp-uc-started">Started</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">📣 Social Media Plan</span>
+              <span class="lp-usecase-task-badge lp-uc-ns">Not Started</span>
+            </li>
+          </ul>
+          <p class="lp-usecase-disclaimer">⚠️ Example data — for illustration only</p>
+        </div>
+
+        <!-- Industrial / Construction -->
+        <div class="lp-usecase-card">
+          <div class="lp-usecase-header">
+            <div class="lp-usecase-emoji lp-usecase-emoji-amber">🏗️</div>
+            <div>
+              <h3>Industrial &amp; Construction</h3>
+              <p>Multi-phase projects and site coordination</p>
+            </div>
+          </div>
+          <ul class="lp-usecase-tasks">
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">📋 H&amp;S Assessment</span>
+              <span class="lp-usecase-task-badge lp-uc-done">Complete</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">🏗️ Scaffold Erection</span>
+              <span class="lp-usecase-task-badge lp-uc-started">Started</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">🔩 Steel Frame Install</span>
+              <span class="lp-usecase-task-badge lp-uc-ns">Due 22 May</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">🏢 Concrete Pour</span>
+              <span class="lp-usecase-task-badge lp-uc-ns">Due 10 Jun</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">⚡ M&amp;E Installation</span>
+              <span class="lp-usecase-task-badge lp-uc-ns">Due 1 Jul</span>
+            </li>
+          </ul>
+          <p class="lp-usecase-disclaimer">⚠️ Example data — for illustration only</p>
+        </div>
+
+        <!-- Personal Goals -->
+        <div class="lp-usecase-card">
+          <div class="lp-usecase-header">
+            <div class="lp-usecase-emoji lp-usecase-emoji-purple">🌱</div>
+            <div>
+              <h3>Personal Goals</h3>
+              <p>Self-improvement, habits, and routines</p>
+            </div>
+          </div>
+          <ul class="lp-usecase-tasks">
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">🏃 Morning Run</span>
+              <span class="lp-usecase-task-badge lp-uc-done">Complete</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">📚 Read 30 mins</span>
+              <span class="lp-usecase-task-badge lp-uc-started">Started</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">🍎 Meal Prep Sunday</span>
+              <span class="lp-usecase-task-badge lp-uc-ns">Not Started</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">💻 Online Course</span>
+              <span class="lp-usecase-task-badge lp-uc-started">Started</span>
+            </li>
+            <li class="lp-usecase-task">
+              <span class="lp-usecase-task-name">🧘 Meditation</span>
+              <span class="lp-usecase-task-badge lp-uc-done">Complete</span>
+            </li>
+          </ul>
+          <p class="lp-usecase-disclaimer">⚠️ Example data — for illustration only</p>
+        </div>
+
+      </div><!-- end grid -->
+    </div>
+  </div>
+
+  <!-- How It Works -->
+  <div class="lp-how-bg">
+    <div class="lp-section lp-section-center">
+      <p class="lp-section-label">Up and running in minutes</p>
+      <h2 class="lp-section-heading">How Jobber works</h2>
+      <p class="lp-section-sub">Getting started is quick and easy. No complicated setup, no lengthy onboarding — just create, assign, and get things done.</p>
+      <div class="lp-steps-grid">
+        <div class="lp-step">
+          <div class="lp-step-num">1</div>
+          <h3>Create your account</h3>
+          <p>Sign up in seconds with just your email and a password. Verify your email and you're ready to go.</p>
+        </div>
+        <div class="lp-step">
+          <div class="lp-step-num">2</div>
+          <h3>Add your first task</h3>
+          <p>Give it a title, pick a type, set a due date, and add notes. Keep it as simple or as detailed as you need.</p>
+        </div>
+        <div class="lp-step">
+          <div class="lp-step-num">3</div>
+          <h3>Invite your team</h3>
+          <p>Create a group and share the invite link or QR code. Collaborators join instantly and can see tasks straight away.</p>
+        </div>
+        <div class="lp-step">
+          <div class="lp-step-num">4</div>
+          <h3>Stay on top of deadlines</h3>
+          <p>Receive email and popup reminders before tasks are due. Integrate with your calendar app so nothing slips through.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Testimonials -->
+  <div style="background:#fff">
+    <div class="lp-section lp-section-center">
+      <p class="lp-section-label">What users say</p>
+      <h2 class="lp-section-heading">Loved by individuals &amp; teams</h2>
+      <p class="lp-section-sub">Whether you're tackling weekly chores or coordinating a construction site, Jobber keeps everyone on the same page.</p>
+      <div class="lp-testimonials-grid">
+        <div class="lp-testimonial">
+          <div class="lp-testimonial-stars">★★★★★</div>
+          <p class="lp-testimonial-text">"We run a family of five and Jobber has completely transformed how we manage household tasks. The kids can see what's assigned to them, and the recurring reminders mean the bins never go out late!"</p>
+          <div class="lp-testimonial-author">
+            <div class="lp-testimonial-avatar" style="background:#1a56db">S</div>
+            <div>
+              <p class="lp-testimonial-name">Sarah M.</p>
+              <p class="lp-testimonial-role">Parent &amp; household manager</p>
+            </div>
+          </div>
+        </div>
+        <div class="lp-testimonial">
+          <div class="lp-testimonial-stars">★★★★★</div>
+          <p class="lp-testimonial-text">"I manage a team of 14 on a busy construction site. Jobber gives us a clear view of every task, who's responsible, and what's done. The progress notes are brilliant for handovers."</p>
+          <div class="lp-testimonial-author">
+            <div class="lp-testimonial-avatar" style="background:#059669">D</div>
+            <div>
+              <p class="lp-testimonial-name">Dave K.</p>
+              <p class="lp-testimonial-role">Site manager, construction</p>
+            </div>
+          </div>
+        </div>
+        <div class="lp-testimonial">
+          <div class="lp-testimonial-stars">★★★★★</div>
+          <p class="lp-testimonial-text">"I use it for my personal goals — runs, reading, study. The recurring tasks keep me accountable every week without me having to think about it. It's the only to-do app that's actually stuck."</p>
+          <div class="lp-testimonial-author">
+            <div class="lp-testimonial-avatar" style="background:#7c3aed">A</div>
+            <div>
+              <p class="lp-testimonial-name">Aisha R.</p>
+              <p class="lp-testimonial-role">Student &amp; fitness enthusiast</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="lp-testimonial-disclaimer">⚠️ Testimonials shown are illustrative examples only and do not represent real users.</p>
+    </div>
+  </div>
+
+  <!-- Bottom CTA -->
+  <div class="lp-cta-bg">
+    <div class="lp-cta-section">
+      <h2>Ready to get organised?</h2>
+      <p>Join Jobber today and bring order to your home, your team, and your life. Free, fast, and works on any device.</p>
+      <div class="lp-cta-buttons">
+        <button onclick="goToAuth('register')" class="lp-btn-cta-white">🚀 Create Free Account</button>
+        <button onclick="goToAuth('login')" class="lp-btn-cta-outline">Sign In</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="lp-footer">
+    <div class="lp-footer-links">
+      <a href="/privacy-policy.html">Privacy Policy</a>
+      <a href="/user-guide.html">User Guide</a>
+      <a href="/howto.html">How To</a>
+      <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a>
+    </div>
+    <p>Jobber &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; Collaborative task management for everyone</p>
+  </footer>
+
+</div><!-- end #landingPage -->
+
 <!-- ===== AUTH PAGE ===== -->
-<div id="authPage" class="auth-page">
+<div id="authPage" class="auth-page hidden">
   <div class="auth-card">
     <div class="auth-logo">
       <div class="auth-logo-icon">
@@ -958,6 +1485,13 @@ function logout() {
   localStorage.removeItem('jbToken'); localStorage.removeItem('jbUser');
   document.getElementById('appPage').classList.add('hidden');
   document.getElementById('authPage').classList.remove('hidden');
+  document.getElementById('landingPage').classList.add('hidden');
+}
+
+function goToAuth(tab) {
+  document.getElementById('landingPage').classList.add('hidden');
+  document.getElementById('authPage').classList.remove('hidden');
+  if (tab) showTab(tab);
 }
 
 // ========== Forgot / Reset Password ==========
@@ -1036,6 +1570,7 @@ async function handleChangePassword() {
 
 // ========== App init ==========
 function initApp() {
+  document.getElementById('landingPage').classList.add('hidden');
   document.getElementById('authPage').classList.add('hidden');
   document.getElementById('appPage').classList.remove('hidden');
   if (currentUser) {
@@ -2155,6 +2690,8 @@ document.addEventListener('click', function(e) {
   if (resetToken) {
     history.replaceState(null, '', window.location.pathname);
     _resetToken = resetToken;
+    document.getElementById('landingPage').classList.add('hidden');
+    document.getElementById('authPage').classList.remove('hidden');
     document.getElementById('resetPasswordModal').classList.remove('hidden');
     return;
   }
@@ -2169,6 +2706,8 @@ document.addEventListener('click', function(e) {
       storeAuth(data);
     } catch (err) {
       history.replaceState(null, '', window.location.pathname);
+      document.getElementById('landingPage').classList.add('hidden');
+      document.getElementById('authPage').classList.remove('hidden');
       toast('Magic link is invalid or expired.', 'error');
     }
     return;
@@ -2179,7 +2718,9 @@ document.addEventListener('click', function(e) {
     sessionStorage.setItem('pendingInvite', inviteToken);
     history.replaceState(null, '', window.location.pathname);
     if (!token || !currentUser) {
-      // Not logged in — prompt them to sign in / register
+      // Not logged in — go straight to auth with invite message
+      document.getElementById('landingPage').classList.add('hidden');
+      document.getElementById('authPage').classList.remove('hidden');
       try {
         const info = await api('GET', '/groups/invite/' + encodeURIComponent(inviteToken));
         toast('You\u2019ve been invited to join "' + info.group.name + '". Sign in or create an account to accept.', 'info');

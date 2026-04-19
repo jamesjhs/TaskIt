@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import db from '../db';
 import { sendTaskReminder } from './mail';
+import { resetOverdueStreaks } from './gamification';
 
 interface TaskRow {
   id: string;
@@ -92,6 +93,11 @@ export function startScheduler(): void {
   // Run every hour
   cron.schedule('0 * * * *', () => {
     sendReminders().catch(err => console.error('[scheduler] Error in reminder job:', err));
+    try {
+      resetOverdueStreaks();
+    } catch (err) {
+      console.error('[scheduler] Error resetting overdue streaks:', err);
+    }
   });
   console.log('[scheduler] Task reminder scheduler started (up to 3 reminders per task)');
 }

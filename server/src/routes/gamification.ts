@@ -1,7 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
-import { getGamificationProfile, checkAndGrantAchievements } from '../services/gamification';
+import {
+  getGamificationProfile,
+  checkAndGrantAchievements,
+  getStreaksForUser,
+  applyStreakFreeze,
+} from '../services/gamification';
 
 const router = Router();
 
@@ -10,7 +15,7 @@ router.use(authMiddleware);
 /**
  * GET /api/gamification/profile
  * Returns the current user's full gamification profile:
- * opt-in status, skill tree, achievements, and dynamic title.
+ * opt-in status, skill tree, achievements, dynamic title, and freeze credit balance.
  */
 router.get('/profile', (req: Request, res: Response): void => {
   const userId = req.user!.id;
@@ -62,6 +67,39 @@ router.get('/achievements', (req: Request, res: Response): void => {
   }>;
 
   res.json(rows);
+});
+
+/**
+ * GET /api/gamification/streaks
+ * Returns streak data for all active recurring tasks accessible to the user.
+ */
+router.get('/streaks', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const streaks = getStreaksForUser(userId);
+  res.json(streaks);
+});
+
+/**
+ * POST /api/gamification/streaks/:taskId/freeze
+ * Spends 1 freeze credit to protect the streak on a recurring task.
+ * The Freeze absorbs the next missed deadline without resetting the streak.
+ */
+router.post('/streaks/:taskId/freeze', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const { taskId } = req.params;
+
+  const err = applyStreakFreeze(userId, taskId);
+  if (err) {
+    const status =
+      err === 'User not found' || err === 'Task not found' ? 404 :
+      err === 'Not authorized' ? 403 : 400;
+    res.status(status).json({ error: err });
+    return;
+  }
+
+  const streaks = getStreaksForUser(userId);
+  const profile = getGamificationProfile(userId);
+  res.json({ message: 'Freeze applied', streaks, freezeCredits: profile.freezeCredits });
 });
 
 export default router;

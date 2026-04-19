@@ -284,6 +284,17 @@ addCol('tasks', 'notify_popup_onday', 'INTEGER NOT NULL DEFAULT 0');
 addCol('magic_tokens', 'purpose', "TEXT NOT NULL DEFAULT 'login'");
 // Gamification opt-in flag on user profiles (off by default)
 addCol('users', 'gamification_enabled', 'INTEGER NOT NULL DEFAULT 0');
+// Gamification Step 1 bugfix: reliable completion timestamp and actor
+// completed_at / completed_by are set when status → 'complete', cleared on revert
+addCol('tasks', 'completed_at', 'INTEGER');
+addCol('tasks', 'completed_by', 'TEXT');
+// Gamification Step 2: streak counters carried forward through recurring spawns
+addCol('tasks', 'streak_current', 'INTEGER NOT NULL DEFAULT 0');
+addCol('tasks', 'streak_longest', 'INTEGER NOT NULL DEFAULT 0');
+// streak_frozen = 1 means a Freeze has been pre-applied to protect this occurrence
+addCol('tasks', 'streak_frozen', 'INTEGER NOT NULL DEFAULT 0');
+// Gamification Step 2: secondary currency for purchasing Freezes
+addCol('users', 'freeze_credits', 'INTEGER NOT NULL DEFAULT 0');
 // Backfill existing groups: generate a proper unique invite word pair for any group that lacks one
 {
   const ungrouped = db.prepare("SELECT id FROM groups WHERE invite_name = ''").all() as Array<{ id: string }>;
@@ -333,26 +344,35 @@ if (countRow.cnt === 0) {
   }
 }
 
-// Seed default achievements catalogue if not present
-const achievementCountRow = db.prepare('SELECT COUNT(*) as cnt FROM achievements').get() as { cnt: number };
-if (achievementCountRow.cnt === 0) {
+// Seed achievements catalogue using INSERT OR IGNORE so the block is idempotent:
+// adding new achievements to the array will seed them on the next server start
+// even when existing rows are already present.
+{
   const insertAchievement = db.prepare(
-    'INSERT INTO achievements (id, key, name, description, created_at) VALUES (?, ?, ?, ?, ?)'
+    'INSERT OR IGNORE INTO achievements (id, key, name, description, created_at) VALUES (?, ?, ?, ?, ?)'
   );
   const now = Date.now();
   const defaultAchievements: Array<{ key: string; name: string; description: string }> = [
-    { key: 'first_task',        name: 'First Steps',      description: 'Complete your first task.' },
-    { key: 'task_10',           name: 'Getting Started',  description: 'Complete 10 tasks.' },
-    { key: 'task_50',           name: 'On a Roll',        description: 'Complete 50 tasks.' },
-    { key: 'task_100',          name: 'Centurion',        description: 'Complete 100 tasks.' },
-    { key: 'task_500',          name: 'Task Master',      description: 'Complete 500 tasks.' },
-    { key: 'detail_oriented',   name: 'Detail Oriented',  description: 'Add 50 progress notes across all tasks.' },
-    { key: 'early_bird',        name: 'Early Bird',       description: 'Complete 10 tasks before their due date.' },
-    { key: 'type_explorer',     name: 'Type Explorer',    description: 'Complete tasks across 5 different task types.' },
-    { key: 'skill_level_5',     name: 'Specialist',       description: 'Reach level 5 in any skill.' },
+    // Task completion milestones
+    { key: 'first_task',        name: 'First Steps',         description: 'Complete your first task.' },
+    { key: 'task_10',           name: 'Getting Started',     description: 'Complete 10 tasks.' },
+    { key: 'task_50',           name: 'On a Roll',           description: 'Complete 50 tasks.' },
+    { key: 'task_100',          name: 'Centurion',           description: 'Complete 100 tasks.' },
+    { key: 'task_500',          name: 'Task Master',         description: 'Complete 500 tasks.' },
+    // Quality / detail
+    { key: 'detail_oriented',   name: 'Detail Oriented',     description: 'Add 50 progress notes across all tasks.' },
+    { key: 'early_bird',        name: 'Early Bird',          description: 'Complete 10 tasks before their due date.' },
+    { key: 'type_explorer',     name: 'Type Explorer',       description: 'Complete tasks across 5 different task types.' },
+    // Skill tree
+    { key: 'skill_level_5',     name: 'Specialist',          description: 'Reach level 5 in any skill.' },
     { key: 'skill_level_10',    name: 'Master of the Craft', description: 'Reach level 10 in any skill.' },
+    // Streak system (Step 2)
+    { key: 'streak_3',          name: 'Hat Trick',           description: 'Complete a recurring task on time 3 times in a row.' },
+    { key: 'streak_7',          name: 'Lucky Streak',        description: 'Maintain a recurring task streak of 7.' },
+    { key: 'streak_30',         name: 'Unstoppable',         description: 'Maintain a recurring task streak of 30.' },
   ];
   for (const a of defaultAchievements) {
+    // Use the key as the basis for a deterministic UUID so re-runs produce the same IDs
     insertAchievement.run(uuidv4(), a.key, a.name, a.description, now);
   }
 }

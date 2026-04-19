@@ -2,7 +2,13 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
-import { awardTaskXp, checkAndGrantAchievements } from '../services/gamification';
+import {
+  awardTaskXp,
+  checkAndGrantAchievements,
+  awardFreezeCredit,
+  consumeFreezeCredit,
+  computeNewStreakValues,
+} from '../services/gamification';
 
 const router = Router();
 
@@ -291,7 +297,18 @@ router.patch('/:id', (req: Request, res: Response): void => {
   if (title !== undefined) { setClauses.push('title = ?'); vals.push(title); }
   if (details !== undefined) { setClauses.push('details = ?'); vals.push(details); }
   if (typeId !== undefined) { setClauses.push('type_id = ?'); vals.push(typeId); }
-  if (status !== undefined) { setClauses.push('status = ?'); vals.push(status); }
+  if (status !== undefined) {
+    setClauses.push('status = ?');
+    vals.push(status);
+    // Keep completed_at/completed_by in sync when status is changed via the general PATCH
+    if (status === 'complete') {
+      setClauses.push('completed_at = ?'); vals.push(now);
+      setClauses.push('completed_by = ?'); vals.push(userId);
+    } else {
+      setClauses.push('completed_at = ?'); vals.push(null);
+      setClauses.push('completed_by = ?'); vals.push(null);
+    }
+  }
   if (dueDate !== undefined) { setClauses.push('due_date = ?'); vals.push(dueDate || null); }
   if (recurInterval !== undefined) { setClauses.push('recur_interval = ?'); vals.push(recurInterval ? parseInt(String(recurInterval), 10) : null); }
   if (recurUnit !== undefined) { setClauses.push('recur_unit = ?'); vals.push(recurUnit || null); }
@@ -372,7 +389,23 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
     return;
   }
 
-  db.prepare('UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?').run(status, Date.now(), taskId);
+  const now = Date.now();
+
+  // Update status, always stamp updated_at.
+  // When completing: record who completed it and when (for accurate achievement logic).
+  // When reverting from complete: clear those fields.
+  if (status === 'complete') {
+    db.prepare(
+      'UPDATE tasks SET status = ?, updated_at = ?, completed_at = ?, completed_by = ? WHERE id = ?'
+    ).run(status, now, now, userId, taskId);
+  } else {
+    db.prepare(
+      'UPDATE tasks SET status = ?, updated_at = ?, completed_at = NULL, completed_by = NULL WHERE id = ?'
+    ).run(status, now, taskId);
+  }
+
+  // Track whether a freeze was consumed (needed for the gamification block below)
+  let freezeConsumed = false;
 
   // If task is completed and has recurrence, spawn the next occurrence and archive the parent
   if (status === 'complete') {
@@ -381,23 +414,34 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
       group_id: string | null; due_date: number | null; recur_interval: number | null; recur_unit: string | null;
       notify_email: number; notify_7day: number; notify_1day: number; notify_onday: number;
       notify_popup_7day: number; notify_popup_1day: number; notify_popup_onday: number;
+      streak_current: number; streak_longest: number; streak_frozen: number;
     } | undefined;
 
     if (fullTask && fullTask.recur_interval && fullTask.recur_unit) {
+      // Compute streak values for the new occurrence (pure, no DB calls)
+      const streakResult = computeNewStreakValues(
+        fullTask.streak_current ?? 0,
+        fullTask.streak_longest ?? 0,
+        !!(fullTask.streak_frozen),
+        now,
+        fullTask.due_date,
+      );
+      freezeConsumed = streakResult.freezeConsumed;
+
       // Use the existing due date as base, or fall back to now when no due date was set
-      const baseDue = fullTask.due_date != null ? fullTask.due_date : Date.now();
+      const baseDue = fullTask.due_date != null ? fullTask.due_date : now;
       const nextDue = computeNextDue(baseDue, fullTask.recur_interval, fullTask.recur_unit);
       const newId = uuidv4();
-      const now2 = Date.now();
 
       const spawnAndArchive = db.transaction(() => {
         db.prepare(`
-          INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday)
-          VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday, streak_current, streak_longest, streak_frozen)
+          VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
         `).run(newId, fullTask.title, fullTask.details, fullTask.type_id, fullTask.created_by,
-          fullTask.group_id, now2, now2, nextDue, fullTask.recur_interval, fullTask.recur_unit,
+          fullTask.group_id, now, now, nextDue, fullTask.recur_interval, fullTask.recur_unit,
           fullTask.notify_email, fullTask.notify_7day, fullTask.notify_1day, fullTask.notify_onday,
-          fullTask.notify_popup_7day, fullTask.notify_popup_1day, fullTask.notify_popup_onday);
+          fullTask.notify_popup_7day, fullTask.notify_popup_1day, fullTask.notify_popup_onday,
+          streakResult.newStreak, streakResult.newLongest);
 
         const assignees = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(taskId) as Array<{ user_id: string }>;
         const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
@@ -406,25 +450,26 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
         }
 
         // Archive the completed parent so only the fresh occurrence appears in the active list
-        db.prepare('UPDATE tasks SET archived = 1, updated_at = ? WHERE id = ?').run(now2, taskId);
+        db.prepare('UPDATE tasks SET archived = 1, updated_at = ? WHERE id = ?').run(now, taskId);
       });
 
       spawnAndArchive();
     }
 
-    // Award XP and check achievements for the completing user.
+    // Award XP, freeze credits, check achievements for the completing user.
     // Errors here must never break the status update response.
     try {
       const completedTask = db.prepare(
-        'SELECT type_id, due_date FROM tasks WHERE id = ?'
-      ).get(taskId) as { type_id: string; due_date: number | null } | undefined;
+        'SELECT type_id FROM tasks WHERE id = ?'
+      ).get(taskId) as { type_id: string } | undefined;
 
       if (completedTask) {
         awardTaskXp(userId, completedTask.type_id);
-        checkAndGrantAchievements(userId, {
-          taskId,
-          dueDateMs: completedTask.due_date,
-        });
+        awardFreezeCredit(userId);
+        if (freezeConsumed) {
+          consumeFreezeCredit(userId);
+        }
+        checkAndGrantAchievements(userId);
       }
     } catch (gamErr) {
       console.error('[gamification] Error processing task completion:', gamErr);

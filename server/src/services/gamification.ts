@@ -1,14 +1,14 @@
 /**
- * Gamification Engine — Step 1
+ * Gamification Engine — Steps 1 & 2
  *
- * Covers Priority 1 (Skill Trees & Dynamic Titles) and
- * Priority 2 (Personal Achievements).
+ * Step 1: Skill Trees & Dynamic Titles (Priority 1)
+ *         Personal Achievements (Priority 2)
+ * Step 2: Streak System with Freeze mechanic (Priority 3)
  *
  * All public functions are no-ops when gamification_enabled = 0 on the user.
  */
 
 import db from '../db';
-import { v4 as uuidv4 } from 'uuid';
 
 // ---------------------------------------------------------------------------
 // XP / Level maths
@@ -16,11 +16,11 @@ import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Returns the *cumulative* XP required to reach the given level.
- * Uses a triangular escalation: each level-up costs 100 * level XP.
+ * Uses a triangular escalation: each level-up costs 100 × level XP.
  *   Level 1→2:  100 XP  (total  100)
  *   Level 2→3:  200 XP  (total  300)
  *   Level 3→4:  300 XP  (total  600)
- *   Level n→n+1: 100*n XP
+ *   Level n→n+1: 100×n XP
  */
 export function xpThresholdForLevel(level: number): number {
   // Sum of 100*1 + 100*2 + … + 100*(level-1) = 100 * (level-1)*level/2
@@ -29,9 +29,7 @@ export function xpThresholdForLevel(level: number): number {
 
 /** Derive the current level from total accumulated XP. */
 export function computeLevel(totalXp: number): number {
-  // level n is reached when totalXp >= xpThresholdForLevel(n)
-  // xpThresholdForLevel(n) = 50 * n * (n-1)
-  // Solve 50*n*(n-1) <= totalXp → n^2 - n - totalXp/50 <= 0
+  // Solve 50*n*(n-1) <= totalXp
   // n = floor( (1 + sqrt(1 + 4*totalXp/50)) / 2 )
   return Math.max(1, Math.floor((1 + Math.sqrt(1 + 4 * totalXp / 50)) / 2));
 }
@@ -93,7 +91,6 @@ export function awardTaskXp(
 
   const skillName = taskType.name;
 
-  // Upsert the skill row
   const existing = db.prepare(
     'SELECT xp, level FROM user_skills WHERE user_id = ? AND skill_name = ?'
   ).get(userId, skillName) as { xp: number; level: number } | undefined;
@@ -134,10 +131,7 @@ interface AchievementRow {
  *
  * Returns an array of achievement keys that were newly unlocked.
  */
-export function checkAndGrantAchievements(
-  userId: string,
-  context: { taskId?: string; dueDateMs?: number | null } = {},
-): string[] {
+export function checkAndGrantAchievements(userId: string): string[] {
   const user = db.prepare(
     'SELECT gamification_enabled FROM users WHERE id = ?'
   ).get(userId) as { gamification_enabled: number } | undefined;
@@ -159,39 +153,57 @@ export function checkAndGrantAchievements(
     allAchievements.map(a => [a.key, a.id])
   );
 
-  // --- Gather metrics needed for checks (lazy, only what we need) ---
+  // --- Gather metrics --------------------------------------------------
 
-  // Total completed tasks
-  const completedCountRow = db.prepare(
-    "SELECT COUNT(*) AS cnt FROM tasks WHERE created_by = ? AND status = 'complete'"
-  ).get(userId) as { cnt: number };
+  // Tasks this user personally completed (completed_by = userId)
+  // Falls back to created_by for tasks completed before the column was added.
+  const completedCountRow = db.prepare(`
+    SELECT COUNT(*) AS cnt FROM tasks
+    WHERE status = 'complete'
+      AND (completed_by = ? OR (completed_by IS NULL AND created_by = ?))
+  `).get(userId, userId) as { cnt: number };
   const completedCount = completedCountRow.cnt;
 
-  // Total notes
+  // Total progress notes authored by this user
   const noteCountRow = db.prepare(
     'SELECT COUNT(*) AS cnt FROM task_notes WHERE user_id = ?'
   ).get(userId) as { cnt: number };
   const noteCount = noteCountRow.cnt;
 
-  // Tasks completed before due date
-  const earlyCountRow = db.prepare(
-    "SELECT COUNT(*) AS cnt FROM tasks WHERE created_by = ? AND status = 'complete' AND due_date IS NOT NULL AND updated_at <= due_date"
-  ).get(userId) as { cnt: number };
+  // Tasks this user completed BEFORE their due date.
+  // Uses completed_at (reliable) with fallback to updated_at for old rows.
+  const earlyCountRow = db.prepare(`
+    SELECT COUNT(*) AS cnt FROM tasks
+    WHERE status = 'complete'
+      AND due_date IS NOT NULL
+      AND (completed_by = ? OR (completed_by IS NULL AND created_by = ?))
+      AND COALESCE(completed_at, updated_at) <= due_date
+  `).get(userId, userId) as { cnt: number };
   const earlyCount = earlyCountRow.cnt;
 
-  // Distinct task types used in completed tasks
-  const typeCountRow = db.prepare(
-    "SELECT COUNT(DISTINCT type_id) AS cnt FROM tasks WHERE created_by = ? AND status = 'complete'"
-  ).get(userId) as { cnt: number };
+  // Distinct task types across tasks this user completed
+  const typeCountRow = db.prepare(`
+    SELECT COUNT(DISTINCT type_id) AS cnt FROM tasks
+    WHERE status = 'complete'
+      AND (completed_by = ? OR (completed_by IS NULL AND created_by = ?))
+  `).get(userId, userId) as { cnt: number };
   const typeCount = typeCountRow.cnt;
 
-  // Highest skill level
+  // Highest skill level the user has ever reached
   const topLevelRow = db.prepare(
     'SELECT MAX(level) AS maxLevel FROM user_skills WHERE user_id = ?'
   ).get(userId) as { maxLevel: number | null };
   const topLevel = topLevelRow.maxLevel ?? 0;
 
-  // --- Define threshold rules ---
+  // Longest streak across all of the user's recurring tasks
+  const topStreakRow = db.prepare(`
+    SELECT MAX(streak_longest) AS maxStreak FROM tasks
+    WHERE recur_interval IS NOT NULL
+      AND created_by = ?
+  `).get(userId) as { maxStreak: number | null };
+  const topStreak = topStreakRow.maxStreak ?? 0;
+
+  // --- Threshold rules -------------------------------------------------
   const rules: Array<{ key: string; earned: boolean }> = [
     { key: 'first_task',      earned: completedCount >= 1 },
     { key: 'task_10',         earned: completedCount >= 10 },
@@ -203,6 +215,9 @@ export function checkAndGrantAchievements(
     { key: 'type_explorer',   earned: typeCount >= 5 },
     { key: 'skill_level_5',   earned: topLevel >= 5 },
     { key: 'skill_level_10',  earned: topLevel >= 10 },
+    { key: 'streak_3',        earned: topStreak >= 3 },
+    { key: 'streak_7',        earned: topStreak >= 7 },
+    { key: 'streak_30',       earned: topStreak >= 30 },
   ];
 
   const newlyUnlocked: string[] = [];
@@ -225,13 +240,14 @@ export function checkAndGrantAchievements(
 }
 
 // ---------------------------------------------------------------------------
-// Profile summary — used by the GET /profile endpoint
+// Profile summary
 // ---------------------------------------------------------------------------
 
 export interface GamificationProfile {
   enabled: boolean;
   title: string | null;
   totalXp: number;
+  freezeCredits: number;
   skills: Array<{ skill_name: string; xp: number; level: number; xpForNextLevel: number }>;
   achievements: Array<{
     id: string;
@@ -244,10 +260,11 @@ export interface GamificationProfile {
 
 export function getGamificationProfile(userId: string): GamificationProfile {
   const user = db.prepare(
-    'SELECT gamification_enabled FROM users WHERE id = ?'
-  ).get(userId) as { gamification_enabled: number } | undefined;
+    'SELECT gamification_enabled, freeze_credits FROM users WHERE id = ?'
+  ).get(userId) as { gamification_enabled: number; freeze_credits: number } | undefined;
 
   const enabled = !!(user?.gamification_enabled);
+  const freezeCredits = user?.freeze_credits ?? 0;
 
   const skills = (db.prepare(
     'SELECT skill_name, xp, level FROM user_skills WHERE user_id = ? ORDER BY level DESC, xp DESC'
@@ -259,8 +276,7 @@ export function getGamificationProfile(userId: string): GamificationProfile {
   const totalXp = skills.reduce((sum, s) => sum + s.xp, 0);
 
   // All achievements with unlock status for this user.
-  // Unlocked achievements first (ordered by unlock time), then locked alphabetically.
-  // SQLite orders NULLs last by default when using DESC — no NULLS LAST syntax needed.
+  // SQLite orders NULLs last in a DESC sort, so unlocked achievements appear first.
   const achievementRows = db.prepare(`
     SELECT a.id, a.key, a.name, a.description,
            ua.unlocked_at AS unlockedAt
@@ -275,7 +291,178 @@ export function getGamificationProfile(userId: string): GamificationProfile {
     enabled,
     title: enabled ? computeDynamicTitle(userId) : null,
     totalXp,
+    freezeCredits,
     skills,
     achievements: achievementRows,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Step 2 — Streak System
+// ---------------------------------------------------------------------------
+
+/**
+ * Pure (no DB calls) calculation of the streak values for a newly-spawned
+ * recurring task occurrence after its parent was completed.
+ *
+ * @param currentStreak  Parent task's streak_current
+ * @param longestStreak  Parent task's streak_longest
+ * @param streakFrozen   Whether a Freeze was applied to the parent task
+ * @param completedAt    Millisecond timestamp when the parent was completed
+ * @param dueDate        Parent task's due_date (null = no deadline, always on-time)
+ */
+export function computeNewStreakValues(
+  currentStreak: number,
+  longestStreak: number,
+  streakFrozen: boolean,
+  completedAt: number,
+  dueDate: number | null,
+): { newStreak: number; newLongest: number; freezeConsumed: boolean } {
+  const wasOnTime = dueDate == null || completedAt <= dueDate;
+  const freezeConsumed = !wasOnTime && streakFrozen;
+  const newStreak = (wasOnTime || streakFrozen) ? currentStreak + 1 : 0;
+  const newLongest = Math.max(longestStreak, newStreak);
+  return { newStreak, newLongest, freezeConsumed };
+}
+
+/**
+ * Awards 1 freeze credit to the user for completing a task.
+ * Only called when gamification is enabled.
+ * Currently awards 1 credit per completion; the rate can be tuned here.
+ */
+export function awardFreezeCredit(userId: string): void {
+  const user = db.prepare(
+    'SELECT gamification_enabled FROM users WHERE id = ?'
+  ).get(userId) as { gamification_enabled: number } | undefined;
+
+  if (!user || !user.gamification_enabled) return;
+
+  db.prepare(
+    'UPDATE users SET freeze_credits = freeze_credits + 1 WHERE id = ?'
+  ).run(userId);
+}
+
+/**
+ * Decrements a user's freeze_credits by 1 (floor at 0).
+ * Called when a freeze is consumed on task completion.
+ */
+export function consumeFreezeCredit(userId: string): void {
+  db.prepare(
+    'UPDATE users SET freeze_credits = MAX(0, freeze_credits - 1) WHERE id = ?'
+  ).run(userId);
+}
+
+/**
+ * Applies a Freeze to a recurring task, spending 1 freeze credit.
+ * Returns an error string on failure, or null on success.
+ */
+export function applyStreakFreeze(
+  userId: string,
+  taskId: string,
+): string | null {
+  const user = db.prepare(
+    'SELECT gamification_enabled, freeze_credits FROM users WHERE id = ?'
+  ).get(userId) as { gamification_enabled: number; freeze_credits: number } | undefined;
+
+  if (!user) return 'User not found';
+  if (!user.gamification_enabled) return 'Gamification is not enabled';
+  if (user.freeze_credits < 1) return 'No freeze credits available';
+
+  const task = db.prepare(
+    'SELECT id, recur_interval, streak_frozen, created_by FROM tasks WHERE id = ?'
+  ).get(taskId) as {
+    id: string; recur_interval: number | null; streak_frozen: number; created_by: string;
+  } | undefined;
+
+  if (!task) return 'Task not found';
+  if (!task.recur_interval) return 'Freezes can only be applied to recurring tasks';
+  if (task.streak_frozen) return 'A freeze is already active on this task';
+
+  // Verify the user has access to this task
+  const hasAccess = task.created_by === userId || !!db.prepare(
+    `SELECT 1 FROM task_assignees WHERE task_id = ? AND user_id = ?
+     UNION ALL
+     SELECT 1 FROM group_members gm
+       JOIN tasks t ON t.group_id = gm.group_id
+       WHERE t.id = ? AND gm.user_id = ?
+     LIMIT 1`
+  ).get(taskId, userId, taskId, userId);
+
+  if (!hasAccess) return 'Not authorized';
+
+  // Atomic deduct + apply
+  db.prepare('UPDATE users SET freeze_credits = freeze_credits - 1 WHERE id = ? AND freeze_credits > 0').run(userId);
+  db.prepare('UPDATE tasks SET streak_frozen = 1 WHERE id = ?').run(taskId);
+
+  return null;
+}
+
+/**
+ * Returns streak info for all active recurring tasks accessible to a user.
+ */
+export function getStreaksForUser(userId: string): Array<{
+  taskId: string;
+  title: string;
+  currentStreak: number;
+  longestStreak: number;
+  frozen: boolean;
+  dueDate: number | null;
+}> {
+  const rows = db.prepare(`
+    SELECT t.id AS taskId, t.title, t.streak_current AS currentStreak,
+           t.streak_longest AS longestStreak, t.streak_frozen AS frozen,
+           t.due_date AS dueDate
+    FROM tasks t
+    WHERE t.recur_interval IS NOT NULL
+      AND t.archived = 0
+      AND (
+        t.created_by = ?
+        OR EXISTS (SELECT 1 FROM task_assignees ta WHERE ta.task_id = t.id AND ta.user_id = ?)
+        OR (t.group_id IS NOT NULL AND EXISTS (
+          SELECT 1 FROM group_members gm WHERE gm.group_id = t.group_id AND gm.user_id = ?
+        ))
+      )
+    ORDER BY t.streak_current DESC, t.title ASC
+  `).all(userId, userId, userId) as Array<{
+    taskId: string; title: string; currentStreak: number;
+    longestStreak: number; frozen: number; dueDate: number | null;
+  }>;
+
+  return rows.map(r => ({ ...r, frozen: r.frozen === 1 }));
+}
+
+/**
+ * Detects overdue recurring tasks and resets their streaks.
+ * Should be called by the scheduler on each hourly tick.
+ *
+ * - Frozen tasks: the Freeze absorbs the miss — clear the flag, keep streak.
+ * - Unfrozen tasks: reset streak_current to 0.
+ */
+export function resetOverdueStreaks(): void {
+  const now = Date.now();
+
+  // Frozen overdue tasks: freeze absorbs this miss
+  db.prepare(`
+    UPDATE tasks
+    SET streak_frozen = 0
+    WHERE recur_interval IS NOT NULL
+      AND due_date IS NOT NULL
+      AND due_date < ?
+      AND status != 'complete'
+      AND archived = 0
+      AND streak_frozen = 1
+  `).run(now);
+
+  // Unfrozen overdue tasks: streak resets
+  db.prepare(`
+    UPDATE tasks
+    SET streak_current = 0
+    WHERE recur_interval IS NOT NULL
+      AND due_date IS NOT NULL
+      AND due_date < ?
+      AND status != 'complete'
+      AND archived = 0
+      AND streak_frozen = 0
+      AND streak_current > 0
+  `).run(now);
 }

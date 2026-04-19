@@ -996,6 +996,48 @@
       <button onclick="rotateIcsToken()" class="btn btn-outline btn-sm" style="font-size:.8rem">🔄 Regenerate Link</button>
     </div>
 
+    <!-- Gamification -->
+    <div class="card" style="margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <p class="card-title" style="margin:0">🎮 Gamification</p>
+        <label class="toggle-switch">
+          <input type="checkbox" id="gamifToggle" onchange="handleGamifToggle(this.checked)" />
+          <span class="toggle-switch-track"></span>
+        </label>
+      </div>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:0">Earn XP, grow skill trees, unlock achievements, and protect streaks as you complete tasks. Fully optional — enable to get started.</p>
+      <!-- Expanded content — rendered when gamification is enabled -->
+      <div id="gamifContent" class="hidden" style="margin-top:14px">
+        <div id="gamifLoading" style="text-align:center;padding:16px 0;color:#9ca3af;font-size:.85rem">Loading profile…</div>
+        <div id="gamifLoaded" class="hidden">
+          <!-- Title / stats banner -->
+          <div class="gamif-banner">
+            <div class="gamif-banner-title" id="gamifBannerTitle">🌱 Just Getting Started</div>
+            <div class="gamif-banner-sub">Complete tasks to earn XP and unlock achievements</div>
+            <div class="gamif-banner-stats">
+              <div class="gamif-banner-stat">
+                <div class="gamif-banner-stat-num" id="gamifTotalXp">0</div>
+                <div class="gamif-banner-stat-label">Total XP</div>
+              </div>
+              <div class="gamif-banner-stat">
+                <div class="gamif-banner-stat-num credits" id="gamifFreezeCredits">0</div>
+                <div class="gamif-banner-stat-label">❄️ Freeze Credits</div>
+              </div>
+            </div>
+          </div>
+          <!-- Skills -->
+          <p class="detail-section-title">⭐ Skills</p>
+          <div id="gamifSkillsList"><p style="font-size:.85rem;color:#9ca3af;font-style:italic">Complete tasks to earn XP and grow your skills.</p></div>
+          <!-- Achievements -->
+          <p class="detail-section-title" style="margin-top:16px">🏆 Achievements</p>
+          <div id="gamifAchievementsList" class="gamif-ach-grid"></div>
+          <!-- Streaks -->
+          <p class="detail-section-title" style="margin-top:16px">🔥 Streaks</p>
+          <div id="gamifStreaksList"><p style="font-size:.85rem;color:#9ca3af;font-style:italic">Create recurring tasks and complete them on time to build streaks.</p></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Send Feedback -->
     <div class="card" style="margin-top:16px">
       <p class="card-title">💬 Feedback &amp; Feature Requests</p>
@@ -1323,6 +1365,10 @@
         </div>
         <button onclick="stopRecurring()" class="btn btn-outline btn-sm" style="color:#dc2626;border-color:#dc2626">⊘ Cancel Future Recurrences</button>
       </div>
+      <!-- Gamification Streak Panel — shown for recurring tasks when gamification is enabled -->
+      <div id="detailStreakSection" class="detail-section hidden">
+        <!-- populated by renderStreakInDetail() -->
+      </div>
       <div class="detail-section">
         <p class="detail-section-title">Change Status</p>
         <div class="status-btns">
@@ -1469,6 +1515,7 @@ let tasksMap = new Map();
 let currentFilter = { status: '', groupId: '', typeId: '', archived: false, assignedToMe: false, showGroupTasks: true };
 let currentDetailTask = null;
 let blockedUserIds = new Set();
+let gamificationEnabled = false;
 
 // ========== Reminder window constants (must match server/src/services/scheduler.ts) ==========
 const POPUP_WINDOW_7D_MIN_MS  = 6  * 24 * 3600000;
@@ -1759,6 +1806,8 @@ function initApp() {
   showPage('tasks'); checkVersion();
   setInterval(checkVersion, 5 * 60 * 1000);
   setInterval(refreshNotifications, 5 * 60 * 1000);
+  // Background-load gamification state so the streak panel works immediately
+  loadGamificationProfile();
   // Request browser notification permission so popup reminders can fire
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
@@ -1820,6 +1869,7 @@ function showPage(page) {
   if (page === 'admin') loadAdminPage();
   if (page === 'profile') {
     loadIcsLink();
+    loadGamificationProfile();
   }
 }
 
@@ -2261,6 +2311,7 @@ function openDetail(task) {
   document.getElementById('detailDeleteBtn').classList.toggle('hidden', !canDelete);
   document.getElementById('taskDetailModal').classList.remove('hidden');
   loadTaskNotes(task.id);
+  renderStreakInDetail(task);
 }
 
 async function loadTaskNotes(taskId) {
@@ -2314,8 +2365,10 @@ async function quickStatus(status) {
       closeDetailModal();
       loadTasks();
       toast('Task complete! Next occurrence created.');
+      if (gamificationEnabled) loadGamificationProfile();
     } else {
       openDetail(updated); loadTasks(); toast('Status updated!');
+      if (status === 'complete' && gamificationEnabled) loadGamificationProfile();
     }
   } catch (err) { toast(err.message, 'error'); }
 }
@@ -2383,6 +2436,171 @@ async function deleteCurrentTask() {
 function escHtml(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ========== Gamification ==========
+const ACHIEVEMENT_ICONS = {
+  first_task: '🥇', task_10: '🚀', task_50: '🔥', task_100: '⚔️', task_500: '👑',
+  detail_oriented: '📝', early_bird: '🐦', type_explorer: '🗺️',
+  skill_level_5: '🎯', skill_level_10: '🎓',
+  streak_3: '🎩', streak_7: '🍀', streak_30: '🚂',
+};
+
+async function loadGamificationProfile() {
+  const toggleEl = document.getElementById('gamifToggle');
+  if (!toggleEl) return;
+  try {
+    const [profile, streaks] = await Promise.all([
+      api('GET', '/gamification/profile'),
+      api('GET', '/gamification/streaks').catch(() => []),
+    ]);
+    if (!profile) return;
+    gamificationEnabled = !!profile.enabled;
+    toggleEl.checked = gamificationEnabled;
+    const content = document.getElementById('gamifContent');
+    const loading = document.getElementById('gamifLoading');
+    const loaded  = document.getElementById('gamifLoaded');
+    if (gamificationEnabled) {
+      content.classList.remove('hidden');
+      renderGamificationProfile(profile, streaks || []);
+      loading.classList.add('hidden');
+      loaded.classList.remove('hidden');
+    } else {
+      content.classList.add('hidden');
+      loading.classList.remove('hidden');
+      loaded.classList.add('hidden');
+    }
+  } catch { /* silently ignore — gamification card stays in its current state */ }
+}
+
+function renderGamificationProfile(profile, streaks) {
+  // Banner
+  document.getElementById('gamifBannerTitle').textContent = profile.title || '\uD83C\uDF31 Just Getting Started';
+  document.getElementById('gamifTotalXp').textContent = (profile.totalXp || 0).toLocaleString();
+  document.getElementById('gamifFreezeCredits').textContent = profile.freezeCredits ?? 0;
+
+  // Skills
+  const skillsEl = document.getElementById('gamifSkillsList');
+  if (profile.skills && profile.skills.length) {
+    skillsEl.innerHTML = profile.skills.map(s => {
+      const span = 100 * s.level;
+      const earned = Math.max(0, span - (s.xpForNextLevel || 0));
+      const pct = span > 0 ? Math.min(100, Math.round((earned / span) * 100)) : 0;
+      return `
+        <div class="gamif-skill-row">
+          <div class="gamif-skill-header">
+            <span class="gamif-skill-name">${escHtml(s.skill_name)}</span>
+            <span class="gamif-skill-lvl-badge">Lv ${s.level}</span>
+          </div>
+          <div class="gamif-skill-bar-track">
+            <div class="gamif-skill-bar-fill" style="width:${pct}%"></div>
+          </div>
+          <div class="gamif-skill-xp-sub">${s.xpForNextLevel} XP to level ${s.level + 1}</div>
+        </div>`;
+    }).join('');
+  } else {
+    skillsEl.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">Complete tasks to earn XP and grow your skills.</p>';
+  }
+
+  // Achievements
+  const achEl = document.getElementById('gamifAchievementsList');
+  if (profile.achievements && profile.achievements.length) {
+    achEl.innerHTML = profile.achievements.map(a => {
+      const icon = ACHIEVEMENT_ICONS[a.key] || '\uD83C\uDFC5';
+      const unlocked = !!a.unlockedAt;
+      const dateStr = unlocked ? new Date(a.unlockedAt).toLocaleDateString(userLocale()) : '';
+      return `
+        <div class="gamif-ach ${unlocked ? 'gamif-ach-unlocked' : 'gamif-ach-locked'}" title="${escHtml(a.description)}">
+          <span class="gamif-ach-icon">${icon}</span>
+          <div class="gamif-ach-name">${escHtml(a.name)}</div>
+          <div class="gamif-ach-desc">${escHtml(a.description)}</div>
+          <div class="gamif-ach-date">${unlocked ? escHtml(dateStr) : '\uD83D\uDD12 Locked'}</div>
+        </div>`;
+    }).join('');
+  } else {
+    achEl.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic;grid-column:1/-1">No achievements yet.</p>';
+  }
+
+  // Streaks
+  const streaksEl = document.getElementById('gamifStreaksList');
+  if (streaks && streaks.length) {
+    streaksEl.innerHTML = streaks.map(s => `
+      <div class="gamif-streak-row">
+        <div class="gamif-streak-info">
+          <div class="gamif-streak-title">${escHtml(s.title)}</div>
+          <div class="gamif-streak-sub">${s.frozen ? '\u2744\uFE0F Freeze Active' : 'Keep it going!'}</div>
+        </div>
+        <div class="gamif-streak-right">
+          <div class="gamif-streak-num">\uD83D\uDD25 ${s.currentStreak}</div>
+          <div class="gamif-streak-best">Best: ${s.longestStreak}</div>
+        </div>
+      </div>`).join('');
+  } else {
+    streaksEl.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">Create recurring tasks and complete them on time to build streaks.</p>';
+  }
+}
+
+async function handleGamifToggle(checked) {
+  const toggleEl = document.getElementById('gamifToggle');
+  toggleEl.disabled = true;
+  try {
+    await api('PATCH', '/gamification/opt-in', { enabled: checked });
+    gamificationEnabled = checked;
+    if (checked) {
+      document.getElementById('gamifContent').classList.remove('hidden');
+      document.getElementById('gamifLoading').classList.remove('hidden');
+      document.getElementById('gamifLoaded').classList.add('hidden');
+      await loadGamificationProfile();
+      toast('\uD83C\uDFAE Gamification enabled! Achievements from your task history have been awarded.');
+    } else {
+      document.getElementById('gamifContent').classList.add('hidden');
+      toast('Gamification disabled. Your progress is preserved.');
+    }
+  } catch (err) {
+    toggleEl.checked = !checked;
+    gamificationEnabled = !checked;
+    toast(err.message, 'error');
+  } finally {
+    toggleEl.disabled = false;
+  }
+}
+
+function renderStreakInDetail(task) {
+  const section = document.getElementById('detailStreakSection');
+  if (!section) return;
+  if (!task || !task.recur_interval || !gamificationEnabled) {
+    section.classList.add('hidden');
+    return;
+  }
+  const cur    = task.streak_current  || 0;
+  const best   = task.streak_longest  || 0;
+  const frozen = !!(task.streak_frozen);
+  section.innerHTML = `
+    <div class="detail-streak-left">
+      <div class="detail-streak-label">\uD83D\uDD25 Current Streak</div>
+      <div class="detail-streak-count">${cur}</div>
+      <div class="detail-streak-best">Best: ${best}</div>
+    </div>
+    <div class="detail-streak-right">
+      ${frozen
+        ? '<div class="detail-freeze-badge">\u2744\uFE0F Freeze<br>Active</div>'
+        : '<button onclick="handleApplyFreeze()" class="btn btn-outline btn-sm" style="font-size:.8rem;white-space:nowrap">\u2744\uFE0F Apply<br>Freeze</button>'}
+    </div>`;
+  section.classList.remove('hidden');
+}
+
+async function handleApplyFreeze() {
+  if (!currentDetailTask) return;
+  try {
+    const data = await api('POST', '/gamification/streaks/' + currentDetailTask.id + '/freeze');
+    toast('\u2744\uFE0F Freeze applied \u2014 your streak is protected against the next missed deadline.');
+    const creditsEl = document.getElementById('gamifFreezeCredits');
+    if (creditsEl) creditsEl.textContent = data.freezeCredits;
+    const updated = { ...currentDetailTask, streak_frozen: 1 };
+    currentDetailTask = updated;
+    tasksMap.set(updated.id, updated);
+    renderStreakInDetail(updated);
+  } catch (err) { toast(err.message, 'error'); }
 }
 
 // ========== Version Check ==========

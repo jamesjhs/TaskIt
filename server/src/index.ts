@@ -82,7 +82,7 @@ app.use(express.json());
 
 // ─── Health-check endpoint (exempt from auth and rate limiting) ──────────────
 app.get('/readyz', (_req, res) => {
-  res.json({ ok: true, service: 'Jobber', version: APP_VERSION, timestamp: new Date().toISOString() });
+  res.json({ ok: true, service: 'leccy', version: APP_VERSION, timestamp: new Date().toISOString() });
 });
 
 // Version endpoint

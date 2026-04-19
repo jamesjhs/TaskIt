@@ -1,5 +1,7 @@
 # Jobber – Task Management App
 
+**Version 1.2.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
 ## Features
@@ -29,6 +31,64 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - Self-service account deletion (GDPR right to erasure)
 - Admin panel: stats dashboard, SMTP configuration, locked accounts, user reports, feedback management
 - **Database encryption** — full SQLite file encryption at rest via SQLCipher (set `DB_ENCRYPTION_KEY` env var)
+- **Gamification Engine** — opt-in XP system, skill trees, dynamic titles, personal achievements, streak tracking, and freeze mechanic (see below)
+
+## Gamification Engine
+
+Jobber includes a fully opt-in gamification system that rewards consistent productivity. It activates per-user and never affects the core task management experience for those who prefer it off.
+
+### Skill Trees & XP
+
+Every time you complete a task, you earn **50 XP** in the skill matching the task type (e.g. completing a *Household* task earns Household XP). XP accumulates to increase your skill level using a triangular progression curve:
+
+| Level | Cumulative XP required |
+|-------|------------------------|
+| 1     | 0 XP                   |
+| 2     | 100 XP                 |
+| 3     | 300 XP                 |
+| 4     | 600 XP                 |
+| 5     | 1,000 XP               |
+| n     | 50 × n × (n−1) XP      |
+
+### Dynamic Titles
+
+Your highest-level skill earns you a title that appears on your profile:
+
+| Skill Level | Title prefix  | Example               |
+|-------------|---------------|-----------------------|
+| 10+         | Guru of       | Guru of Household     |
+| 7–9         | Master        | Master of Routine     |
+| 5–6         | Expert        | Expert at Hobby       |
+| 3–4         | Skilled       | Skilled in Finance    |
+| 1–2         | Apprentice    | Apprentice of Urgent  |
+
+### Achievements
+
+| Key              | Name                 | How to earn                                    |
+|------------------|----------------------|------------------------------------------------|
+| `first_task`     | First Steps          | Complete your first task                       |
+| `task_10`        | Getting Started      | Complete 10 tasks                              |
+| `task_50`        | On a Roll            | Complete 50 tasks                              |
+| `task_100`       | Centurion            | Complete 100 tasks                             |
+| `task_500`       | Task Master          | Complete 500 tasks                             |
+| `detail_oriented`| Detail Oriented      | Add 50 progress notes                          |
+| `early_bird`     | Early Bird           | Complete 10 tasks before their due date        |
+| `type_explorer`  | Type Explorer        | Complete tasks across 5 different task types   |
+| `skill_level_5`  | Specialist           | Reach level 5 in any skill                     |
+| `skill_level_10` | Master of the Craft  | Reach level 10 in any skill                    |
+| `streak_3`       | Hat Trick            | Keep a recurring task streak of 3              |
+| `streak_7`       | Lucky Streak         | Keep a recurring task streak of 7              |
+| `streak_30`      | Unstoppable          | Keep a recurring task streak of 30             |
+
+### Streaks & Freeze Credits
+
+Recurring tasks track a **streak** — how many consecutive times you have completed them on or before the due date. Streaks survive as a running count on each task series.
+
+- **Streak current** — consecutive on-time completions so far
+- **Streak longest** — all-time best for that task series
+- **Freeze Credits** — earned by completing any task (1 credit per completion), spendable to protect a streak from a single missed deadline (`POST /api/gamification/streaks/:taskId/freeze`)
+
+When a frozen task is missed, the freeze absorbs the miss and the streak is preserved. The hourly scheduler resets unfrozen overdue streaks and clears consumed freezes.
 
 ## Stack
 
@@ -37,8 +97,29 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 | Server   | Node.js, TypeScript, Express                             |
 | Database | SQLite via `better-sqlite3-multiple-ciphers` (SQLCipher) |
 | Auth     | JWT + bcryptjs + SQLCipher encryption at rest            |
-| Frontend | Vanilla JS/TS, Tailwind CSS (CDN)                        |
+| Frontend | Vanilla JS, Tailwind CSS (build-time), `qrcode-generator` (client-side QR) |
 | Android  | Kotlin, Retrofit, DataStore                              |
+
+## Changelog
+
+### v1.2.1
+
+- **Dependency reduction** — removed `uuid`, `cors`, `qrcode`, `@types/qrcode`, `@types/uuid`, `@types/cors`, `@types/express-rate-limit`, and `@types/helmet` from `package.json`. Total package count reduced from 279 to 243 (−36 packages, −13%).
+  - UUIDs are now generated with Node's built-in `crypto.randomUUID()` — no external package needed.
+  - CORS headers are handled by a small inline middleware in `index.ts` — identical behaviour to the `cors` package.
+  - QR code generation moved entirely to the browser using the bundled `qrcode-generator` library (`public/js/qrcode.js`). The `/api/groups/:id/qr` endpoint now returns `{ invite_url, expires_at }` only; the client generates the QR image locally. This eliminates the `qrcode`, `yargs`, `dijkstrajs`, `pngjs`, and related packages from the server.
+  - `helmet` v8 and `express-rate-limit` v8 ship their own TypeScript declarations — the separate `@types/` stubs are no longer needed.
+- **Service worker** — `qrcode.js` added to `STATIC_ASSETS` for precaching alongside other static scripts.
+
+### v1.1.0
+
+- Gamification engine — opt-in XP system, skill trees, dynamic titles, achievements, streak tracking, and freeze mechanic.
+- Per-task notification preferences grid (email + popup × 7-day / 1-day / on-day).
+- ICS calendar feed (private token-based URL).
+- Task fast-forward, defer, recurrence.
+- Database encryption via SQLCipher.
+- Admin panel: stats, SMTP, locked accounts, user reports, feedback management.
+- Group QR invite links, email invites, invite word-pair join flow.
 
 ## Setup
 
@@ -87,6 +168,7 @@ Open `http://localhost:3000` after starting the server. No separate build step n
 | PATCH  | /api/tasks/:id/status     | Update status only                    |
 | PATCH  | /api/tasks/:id/archive    | Toggle archive                        |
 | PATCH  | /api/tasks/:id/defer      | Update due date (defer)               |
+| PATCH  | /api/tasks/:id/fast-forward | Advance due date by one interval     |
 | DELETE | /api/tasks/:id            | Delete task                           |
 | GET    | /api/tasks/:id/notes      | List progress notes for a task        |
 | POST   | /api/tasks/:id/notes      | Add a progress note                   |
@@ -130,6 +212,15 @@ Open `http://localhost:3000` after starting the server. No separate build step n
 | POST   | /api/users/:id/block          | Block a user                         |
 | DELETE | /api/users/:id/block          | Unblock a user                       |
 | GET    | /api/users/blocks             | List blocked users                   |
+
+### Gamification
+| Method | Path                                       | Description                                              |
+|--------|--------------------------------------------|----------------------------------------------------------|
+| GET    | /api/gamification/profile                  | Full gamification profile (skills, achievements, title)  |
+| PATCH  | /api/gamification/opt-in                   | Enable or disable gamification `{ enabled: boolean }`   |
+| GET    | /api/gamification/achievements             | Full achievement catalogue with unlock status            |
+| GET    | /api/gamification/streaks                  | Streak data for all accessible recurring tasks           |
+| POST   | /api/gamification/streaks/:taskId/freeze   | Spend 1 freeze credit to protect a streak               |
 
 ### Admin
 | Method | Path                          | Description                          |
@@ -197,3 +288,4 @@ node server/encrypt-db.js /path/to/jobber.db /path/to/jobber-encrypted.db
 ### Passwords
 
 User passwords are **never stored in plaintext**. They are hashed using **bcrypt** (cost factor 10) before being stored. The database encryption provides an additional layer of protection for all other personal data.
+

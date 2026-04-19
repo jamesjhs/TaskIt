@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import db from '../db';
 import { BASE_URL, JWT_SECRET, MAX_LOGIN_ATTEMPTS, LOCKOUT_MINUTES, ADMIN_EMAIL } from '../config';
@@ -82,7 +81,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
   }
 
   const passwordHash = bcrypt.hashSync(password, 10);
-  const id = uuidv4();
+  const id = crypto.randomUUID();
   const now = Date.now();
 
   // Determine role: admin if ADMIN_EMAIL matches or if first user ever
@@ -165,7 +164,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
   // Store only the SHA-256 hash so that a database leak does not expose pending codes.
   const code = String(Math.floor(100000 + Math.random() * 900000));
   const codeHash = crypto.createHash('sha256').update(code).digest('hex');
-  const sessionId = uuidv4();
+  const sessionId = crypto.randomUUID();
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
   db.prepare(

@@ -1,6 +1,6 @@
 # 👋 Jobber – User Guide
 
-**Version 1.1.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.2.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 Jobber is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -204,6 +204,81 @@ System administrators see an extra **Admin** menu item. From here you can:
 - **Locked Accounts** – view and unlock accounts blocked after too many failed login attempts
 - **User Reports** – review reports submitted by users and mark them as resolved
 - **Feedback** – read feedback messages submitted by users, update their status (Not Started / In Progress / Completed / Archived), and send an in-app reply
+
+---
+
+## 🎮 Gamification *(optional — opt in from your Profile)*
+
+Jobber includes a **fully optional** gamification system that rewards consistent task completion. It is disabled by default — enable it from your Profile page whenever you're ready.
+
+### Enabling / Disabling
+
+1. Go to **Profile**.
+2. Find the **Gamification** card.
+3. Toggle it on (or off). Your progress is preserved if you turn it off and back on.
+
+### ⭐ XP & Skill Levels
+
+Every time you complete a task, you earn **50 XP** in the *skill* that matches the task type. For example, completing a Household task earns Household XP; completing a Financial task earns Financial XP.
+
+XP accumulates to raise your skill level using a triangular curve — each level costs more XP than the last:
+
+| Level | Total XP needed |
+|-------|-----------------|
+| 1     | 0               |
+| 2     | 100             |
+| 3     | 300             |
+| 4     | 600             |
+| 5     | 1,000           |
+| 6     | 1,500           |
+| 10    | 4,500           |
+
+Your top skill level also earns you a **dynamic title** shown on your profile:
+
+| Skill level | Title example          |
+|-------------|------------------------|
+| 10+         | Guru of Household      |
+| 7–9         | Master Routine         |
+| 5–6         | Expert Hobby           |
+| 3–4         | Skilled Financial      |
+| 1–2         | Apprentice of Urgent   |
+
+### 🏆 Achievements
+
+Achievements are one-time awards that unlock when you hit milestones:
+
+| Achievement        | How to earn                                       |
+|--------------------|---------------------------------------------------|
+| 🥇 First Steps      | Complete your first task                          |
+| 🚀 Getting Started  | Complete 10 tasks                                 |
+| 🔥 On a Roll        | Complete 50 tasks                                 |
+| ⚔️ Centurion        | Complete 100 tasks                                |
+| 👑 Task Master      | Complete 500 tasks                                |
+| 📝 Detail Oriented  | Add 50 progress notes across all tasks            |
+| 🐦 Early Bird       | Complete 10 tasks before their due date           |
+| 🗺️ Type Explorer    | Complete tasks in 5 different task types          |
+| 🎯 Specialist       | Reach level 5 in any skill                        |
+| 🎓 Master of Craft  | Reach level 10 in any skill                       |
+| 🎩 Hat Trick        | Maintain a recurring task streak of 3             |
+| 🍀 Lucky Streak     | Maintain a recurring task streak of 7             |
+| 🚂 Unstoppable      | Maintain a recurring task streak of 30            |
+
+### 🔥 Streaks
+
+Recurring tasks track a **streak** — how many times in a row you have completed them on time. Each time you mark a recurring task complete before or on its due date, the streak counter increases. Miss a deadline and the streak resets to zero.
+
+Your streak data is visible in the **Gamification** card on your Profile page.
+
+### ❄️ Freeze Credits
+
+Miss a deadline but don't want to lose your streak? Use a **Freeze**!
+
+- You earn **1 Freeze Credit** for every task you complete (recurring or not).
+- Apply a Freeze to a recurring task from its detail panel — this costs 1 credit.
+- If the task is then overdue, the Freeze absorbs the miss and your streak is preserved.
+- Each task can hold one active Freeze at a time.
+
+> 💡 Tip: Build up a reserve of Freeze Credits by staying on top of your other tasks — then use them to protect your most important streaks.
 
 ---
 

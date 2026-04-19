@@ -11,6 +11,7 @@ const STATIC_ASSETS = [
   '/tailwind.css',
   '/manifest.json',
   '/js/version.js',
+  '/js/qrcode.js',
   '/privacy-policy.html',
   '/user-guide.html',
   '/howto.html',

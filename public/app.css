@@ -1442,3 +1442,169 @@ a:hover { text-decoration: underline; }
 @media (max-width: 440px) {
   .lp-phones-row .lp-phone-wrap:nth-child(3) { display: none; }
 }
+
+/* =====================================================================
+   GAMIFICATION UI
+   ===================================================================== */
+
+/* Toggle switch (iOS-style) */
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.toggle-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.toggle-switch-track {
+  width: 46px;
+  height: 26px;
+  background: #d1d5db;
+  border-radius: 999px;
+  position: relative;
+  flex-shrink: 0;
+  transition: background .2s;
+}
+.toggle-switch-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,.22);
+  transition: transform .2s;
+}
+.toggle-switch input:checked + .toggle-switch-track { background: #1a56db; }
+.toggle-switch input:checked + .toggle-switch-track::after { transform: translateX(20px); }
+.toggle-switch input:disabled + .toggle-switch-track { opacity: .55; cursor: not-allowed; }
+
+/* Title / stats banner */
+.gamif-banner {
+  background: linear-gradient(135deg, #312e81 0%, #1a56db 100%);
+  border-radius: 12px;
+  padding: 16px 14px 14px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.gamif-banner-title { font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.gamif-banner-sub   { font-size: .75rem; color: #c4b5fd; margin-bottom: 12px; }
+.gamif-banner-stats { display: flex; justify-content: center; gap: 28px; }
+.gamif-banner-stat  { text-align: center; }
+.gamif-banner-stat-num           { font-size: 1.4rem; font-weight: 800; color: #fde68a; }
+.gamif-banner-stat-num.credits   { color: #93c5fd; }
+.gamif-banner-stat-label         { font-size: .68rem; color: #c4b5fd; margin-top: 1px; }
+
+/* Skill bars */
+.gamif-skill-row { margin-bottom: 12px; }
+.gamif-skill-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.gamif-skill-name { font-size: .875rem; font-weight: 600; color: #374151; }
+.gamif-skill-lvl-badge {
+  font-size: .72rem;
+  font-weight: 700;
+  color: #1a56db;
+  background: #dbeafe;
+  border-radius: 20px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.gamif-skill-bar-track {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.gamif-skill-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1a56db, #60a5fa);
+  border-radius: 999px;
+  transition: width .45s ease;
+}
+.gamif-skill-xp-sub { font-size: .7rem; color: #9ca3af; margin-top: 2px; }
+
+/* Achievement grid */
+.gamif-ach-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 8px;
+  margin-top: 4px;
+}
+.gamif-ach {
+  border-radius: 10px;
+  padding: 10px 6px 8px;
+  text-align: center;
+  border: 1px solid;
+}
+.gamif-ach-unlocked { background: #f0fdf4; border-color: #86efac; }
+.gamif-ach-locked   { background: #f9fafb; border-color: #e5e7eb; opacity: .5; }
+.gamif-ach-icon     { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+.gamif-ach-name     { font-size: .72rem; font-weight: 700; color: #374151; line-height: 1.3; }
+.gamif-ach-desc     { font-size: .65rem; color: #6b7280; margin-top: 2px; line-height: 1.35; }
+.gamif-ach-date     { font-size: .62rem; color: #9ca3af; margin-top: 3px; }
+
+/* Streak rows in profile */
+.gamif-streak-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafafa;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border: 1px solid #f3f4f6;
+}
+.gamif-streak-info { flex: 1; min-width: 0; }
+.gamif-streak-title {
+  font-size: .875rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gamif-streak-sub   { font-size: .72rem; color: #9ca3af; }
+.gamif-streak-right { text-align: right; flex-shrink: 0; margin-left: 10px; }
+.gamif-streak-num   { font-size: 1.25rem; font-weight: 800; color: #f97316; }
+.gamif-streak-best  { font-size: .65rem; color: #9ca3af; }
+
+/* Streak panel inside task-detail modal */
+#detailStreakSection {
+  background: linear-gradient(135deg, #fff7ed, #fef3c7);
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.detail-streak-left  { flex: 1; }
+.detail-streak-label {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+.detail-streak-count { font-size: 2rem; font-weight: 900; color: #f97316; line-height: 1; }
+.detail-streak-best  { font-size: .75rem; color: #6b7280; margin-top: 2px; }
+.detail-streak-right { flex-shrink: 0; }
+.detail-freeze-badge {
+  font-size: .8rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: #dbeafe;
+  border-radius: 8px;
+  padding: 7px 10px;
+  text-align: center;
+  white-space: nowrap;
+}

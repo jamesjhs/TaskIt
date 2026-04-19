@@ -1,5 +1,4 @@
-import express from 'express';
-import cors from 'cors';
+import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import fs from 'fs';
 import path from 'path';
@@ -15,6 +14,7 @@ import taskRoutes from './routes/tasks';
 import taskTypeRoutes from './routes/taskTypes';
 import adminRoutes from './routes/admin';
 import userRoutes from './routes/users';
+import gamificationRoutes from './routes/gamification';
 
 const app = express();
 
@@ -59,7 +59,52 @@ const authenticatedLimiter = rateLimit({
   },
 });
 
-app.use(cors({ origin: CORS_ORIGIN }));
+// Inline CORS middleware — equivalent to the cors package but with no extra dependency.
+// CORS_ORIGIN is configured in config.ts from the CORS_ORIGIN / BASE_URL env vars.
+// When false (the default) no cross-origin access is granted.
+app.use((req: Request, res: Response, next: NextFunction): void => {
+  const requestOrigin = req.headers.origin;
+
+  // Resolve the permitted origin header value from the configuration (not from the request).
+  // Reflecting the request origin directly would allow any origin through if validation is
+  // accidentally bypassed; using the configured value is strictly safer.
+  let allowedOriginHeader: string | null = null;
+  let withCredentials = false;
+
+  if (CORS_ORIGIN !== false && CORS_ORIGIN !== '*') {
+    // Specific origin(s): look up the request origin in the allowlist and, if found, use the
+    // *configured* value (not the raw request header) in the response.
+    const match = Array.isArray(CORS_ORIGIN)
+      ? CORS_ORIGIN.find(o => o === requestOrigin)
+      : CORS_ORIGIN === requestOrigin ? CORS_ORIGIN : undefined;
+
+    if (match) {
+      allowedOriginHeader = match;
+      withCredentials = true;
+    }
+  } else if (CORS_ORIGIN === '*') {
+    // Wildcard: allow any origin, but credentials are not permitted with a wildcard.
+    allowedOriginHeader = '*';
+  }
+
+  if (allowedOriginHeader !== null) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOriginHeader);
+    res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    if (withCredentials) {
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Vary', 'Origin');
+    }
+  }
+
+  // Handle preflight — always respond 204 (headers already set above if allowed)
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(204);
+    return;
+  }
+
+  next();
+});
 // Security headers (helmet must come before static/route middleware)
 app.use(helmet({
   // Allow the service worker to load and scripts to run from the same origin.
@@ -206,6 +251,7 @@ app.use('/api/tasks', authenticatedLimiter, taskRoutes);
 app.use('/api/task-types', authenticatedLimiter, taskTypeRoutes);
 app.use('/api/admin', authenticatedLimiter, adminRoutes);
 app.use('/api/users', authenticatedLimiter, userRoutes);
+app.use('/api/gamification', authenticatedLimiter, gamificationRoutes);
 
 // Serve sw.js dynamically so its CACHE_NAME always reflects the current app
 // version. The SW's activate handler deletes every cache whose name doesn't

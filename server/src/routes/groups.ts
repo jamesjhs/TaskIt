@@ -1,7 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
-import QRCode from 'qrcode';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
 import { BASE_URL } from '../config';
@@ -85,7 +83,7 @@ router.post('/', (req: Request, res: Response): void => {
   const { name } = req.body;
   const userId = req.user!.id;
 
-  const id = uuidv4();
+  const id = crypto.randomUUID();
   const now = Date.now();
 
   // Always auto-generate a unique invite word pair
@@ -159,7 +157,7 @@ router.post('/join', (req: Request, res: Response): void => {
     const username = joiner?.username ?? 'Someone';
     const insertAlert = db.prepare('INSERT INTO user_alerts (id, user_id, message, created_at) VALUES (?, ?, ?, ?)');
     for (const admin of admins) {
-      insertAlert.run(uuidv4(), admin.user_id, `${username} joined group: ${group.name}`, Date.now());
+      insertAlert.run(crypto.randomUUID(), admin.user_id, `${username} joined group: ${group.name}`, Date.now());
     }
   } catch (err) {
     console.error('[groups/join] Failed to send admin notifications:', err);
@@ -314,8 +312,8 @@ router.post('/:id/invite', async (req: Request, res: Response): Promise<void> =>
   res.status(201).json({ token, invite_url: inviteUrl, expires_at: expiresAt });
 });
 
-// GET /api/groups/:id/qr  — generate a QR code for a multi-use invite link
-router.get('/:id/qr', async (req: Request, res: Response): Promise<void> => {
+// GET /api/groups/:id/qr  — generate a multi-use invite link (QR rendered client-side)
+router.get('/:id/qr', (req: Request, res: Response): void => {
   const userId = req.user!.id;
   const groupId = req.params.id;
 
@@ -357,13 +355,7 @@ router.get('/:id/qr', async (req: Request, res: Response): Promise<void> => {
   const baseUrl = getBaseUrl(req);
   const inviteUrl = `${baseUrl}?invite=${token}`;
 
-  try {
-    const qrDataUrl = await QRCode.toDataURL(inviteUrl, { width: 256, margin: 2 });
-    res.json({ qr: qrDataUrl, invite_url: inviteUrl, expires_at: expiresAt });
-  } catch (err) {
-    console.error('[groups] Failed to generate QR code:', err);
-    res.status(500).json({ error: 'Failed to generate QR code' });
-  }
+  res.json({ invite_url: inviteUrl, expires_at: expiresAt });
 });
 
 // PATCH /api/groups/:id/name

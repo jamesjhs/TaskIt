@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3-multiple-ciphers';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { DB_PATH as DB_PATH_OVERRIDE, DB_ENCRYPTION_KEY } from './config';
 import { generateGroupName } from './wordlists';
 
@@ -206,6 +206,35 @@ db.exec(`
     created_at INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+
+  -- Gamification: per-user skill progress mapped from task_types
+  CREATE TABLE IF NOT EXISTS user_skills (
+    user_id TEXT NOT NULL,
+    skill_name TEXT NOT NULL,
+    xp INTEGER NOT NULL DEFAULT 0,
+    level INTEGER NOT NULL DEFAULT 1,
+    PRIMARY KEY (user_id, skill_name),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  -- Gamification: master catalogue of available achievements
+  CREATE TABLE IF NOT EXISTS achievements (
+    id TEXT PRIMARY KEY,
+    key TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+
+  -- Gamification: junction table of achievements unlocked by each user
+  CREATE TABLE IF NOT EXISTS user_achievements (
+    user_id TEXT NOT NULL,
+    achievement_id TEXT NOT NULL,
+    unlocked_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, achievement_id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (achievement_id) REFERENCES achievements(id)
+  );
 `);
 
 // Runtime migrations — add columns if they don't exist yet
@@ -253,6 +282,19 @@ addCol('tasks', 'notify_popup_1day', 'INTEGER NOT NULL DEFAULT 0');
 addCol('tasks', 'notify_popup_onday', 'INTEGER NOT NULL DEFAULT 0');
 // purpose column on magic_tokens distinguishes login / verify / reset flows
 addCol('magic_tokens', 'purpose', "TEXT NOT NULL DEFAULT 'login'");
+// Gamification opt-in flag on user profiles (off by default)
+addCol('users', 'gamification_enabled', 'INTEGER NOT NULL DEFAULT 0');
+// Gamification Step 1 bugfix: reliable completion timestamp and actor
+// completed_at / completed_by are set when status → 'complete', cleared on revert
+addCol('tasks', 'completed_at', 'INTEGER');
+addCol('tasks', 'completed_by', 'TEXT');
+// Gamification Step 2: streak counters carried forward through recurring spawns
+addCol('tasks', 'streak_current', 'INTEGER NOT NULL DEFAULT 0');
+addCol('tasks', 'streak_longest', 'INTEGER NOT NULL DEFAULT 0');
+// streak_frozen = 1 means a Freeze has been pre-applied to protect this occurrence
+addCol('tasks', 'streak_frozen', 'INTEGER NOT NULL DEFAULT 0');
+// Gamification Step 2: secondary currency for purchasing Freezes
+addCol('users', 'freeze_credits', 'INTEGER NOT NULL DEFAULT 0');
 // Backfill existing groups: generate a proper unique invite word pair for any group that lacks one
 {
   const ungrouped = db.prepare("SELECT id FROM groups WHERE invite_name = ''").all() as Array<{ id: string }>;
@@ -298,7 +340,46 @@ if (countRow.cnt === 0) {
   );
   const now = Date.now();
   for (const name of defaultTypes) {
-    insert.run(uuidv4(), name, now);
+    insert.run(randomUUID(), name, now);
+  }
+}
+
+// Seed achievements catalogue using INSERT OR IGNORE so the block is idempotent:
+// adding new achievements to the array will seed them on the next server start
+// even when existing rows are already present. Idempotency relies on the UNIQUE
+// constraint on `key` — the random UUID is only stored on the first INSERT;
+// subsequent restarts will generate different UUIDs but the INSERT is silently
+// ignored because the key already exists.
+{
+  const insertAchievement = db.prepare(
+    'INSERT OR IGNORE INTO achievements (id, key, name, description, created_at) VALUES (?, ?, ?, ?, ?)'
+  );
+  const now = Date.now();
+  const defaultAchievements: Array<{ key: string; name: string; description: string }> = [
+    // Task completion milestones
+    { key: 'first_task',        name: 'First Steps',         description: 'Complete your first task.' },
+    { key: 'task_10',           name: 'Getting Started',     description: 'Complete 10 tasks.' },
+    { key: 'task_50',           name: 'On a Roll',           description: 'Complete 50 tasks.' },
+    { key: 'task_100',          name: 'Centurion',           description: 'Complete 100 tasks.' },
+    { key: 'task_500',          name: 'Task Master',         description: 'Complete 500 tasks.' },
+    // Quality / detail
+    { key: 'detail_oriented',   name: 'Detail Oriented',     description: 'Add 50 progress notes across all tasks.' },
+    { key: 'early_bird',        name: 'Early Bird',          description: 'Complete 10 tasks before their due date.' },
+    { key: 'type_explorer',     name: 'Type Explorer',       description: 'Complete tasks across 5 different task types.' },
+    // Skill tree
+    { key: 'skill_level_5',     name: 'Specialist',          description: 'Reach level 5 in any skill.' },
+    { key: 'skill_level_10',    name: 'Master of the Craft', description: 'Reach level 10 in any skill.' },
+    // Streak system (Step 2)
+    { key: 'streak_3',          name: 'Hat Trick',           description: 'Complete a recurring task on time 3 times in a row.' },
+    { key: 'streak_7',          name: 'Lucky Streak',        description: 'Maintain a recurring task streak of 7.' },
+    { key: 'streak_30',         name: 'Unstoppable',         description: 'Maintain a recurring task streak of 30.' },
+  ];
+  for (const a of defaultAchievements) {
+    // Use the achievement key directly as the ID — it is already globally unique
+    // (enforced by the UNIQUE constraint on the key column), human-readable in
+    // foreign key lookups, and deterministic across server restarts so the same
+    // row is never duplicated or double-inserted.
+    insertAchievement.run(a.key, a.key, a.name, a.description, now);
   }
 }
 

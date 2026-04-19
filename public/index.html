@@ -246,6 +246,7 @@
                 <div class="lp-phone-navbtn active"><span class="lp-phone-navbtn-icon">📋</span>Tasks</div>
                 <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">👥</span>Groups</div>
                 <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">🔔</span>Alerts</div>
+                <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">⭐</span>Progress</div>
                 <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">👤</span>Profile</div>
               </div>
             </div>
@@ -306,6 +307,7 @@
                 <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">📋</span>Tasks</div>
                 <div class="lp-phone-navbtn active"><span class="lp-phone-navbtn-icon">👥</span>Groups</div>
                 <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">🔔</span>Alerts</div>
+                <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">⭐</span>Progress</div>
                 <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">👤</span>Profile</div>
               </div>
             </div>
@@ -352,6 +354,7 @@
                 <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">📋</span>Tasks</div>
                 <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">👥</span>Groups</div>
                 <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">🔔</span>Alerts</div>
+                <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">⭐</span>Progress</div>
                 <div class="lp-phone-navbtn"><span class="lp-phone-navbtn-icon">👤</span>Profile</div>
               </div>
             </div>
@@ -838,37 +841,62 @@
   <div id="tasksPage" class="view">
     <div class="view-header">
       <h1>My Tasks</h1>
-      <div style="display:flex;gap:8px;align-items:center">
-        <a href="/howto.html" target="_blank" class="btn btn-outline btn-sm" title="How To Guide">❓ How To</a>
-        <button onclick="openTaskModal()" class="btn btn-primary btn-sm">+ New Task</button>
+      <a href="/howto.html" target="_blank" class="btn btn-outline btn-sm" title="How To Guide" style="font-size:.75rem;padding:6px 10px">❓ Guide</a>
+    </div>
+
+    <!-- Gamification strip — shown only when gamification is enabled -->
+    <div id="tasksGamifStrip" class="gamif-strip hidden" onclick="showPage('progress')" role="button" tabindex="0" aria-label="View progress">
+      <div class="gamif-strip-left">
+        <div class="gamif-strip-skill-header">
+          <span id="stripSkillName" class="gamif-strip-skill-name">—</span>
+          <span id="stripSkillBadge" class="gamif-strip-lvl-badge">Lv 1</span>
+        </div>
+        <div class="gamif-strip-bar-track"><div id="stripBarFill" class="gamif-strip-bar-fill" style="width:0%"></div></div>
+        <div id="stripXpSub" class="gamif-strip-xp-sub">Complete tasks to earn XP</div>
+      </div>
+      <div class="gamif-strip-right">
+        <div id="stripStreak" class="gamif-strip-streak">🔥 —</div>
+        <div id="stripAchBadge" class="gamif-strip-ach-badge hidden" title="New achievement unlocked!">🏆</div>
       </div>
     </div>
-    <div class="filter-chips">
-      <button onclick="setFilter('status','')" id="filterAll" class="chip active">All</button>
-      <button onclick="setFilter('status','not_started')" id="filterNotStarted" class="chip">Not Started</button>
-      <button onclick="setFilter('status','started')" id="filterStarted" class="chip">Started</button>
-      <button onclick="setFilter('status','complete')" id="filterComplete" class="chip">Complete</button>
+
+    <!-- Filter toggle chip -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <button id="filterToggleBtn" onclick="toggleFilterPanel()" class="chip" style="display:flex;align-items:center;gap:4px">
+        ⚙️ Filters<span id="filterActiveBadge" class="filter-active-badge hidden">0</span>
+      </button>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
-      <select id="filterGroup" onchange="applyFilters()" class="filter-select">
-        <option value="">All Groups</option>
-      </select>
-      <select id="filterType" onchange="applyFilters()" class="filter-select">
-        <option value="">All Types</option>
-      </select>
-      <label class="toggle-label">
-        <input type="checkbox" id="filterArchived" onchange="applyFilters()" />
-        Show Archived
-      </label>
-      <label class="toggle-label">
-        <input type="checkbox" id="filterAssignedToMe" onchange="applyFilters()" />
-        Assigned to Me
-      </label>
-      <label class="toggle-label">
-        <input type="checkbox" id="filterShowGroupTasks" onchange="applyFilters()" checked />
-        Show Group Tasks
-      </label>
+
+    <!-- Collapsible filter panel -->
+    <div id="filterPanel" class="hidden" style="margin-bottom:16px">
+      <div class="filter-chips" style="margin-bottom:10px">
+        <button onclick="setFilter('status','')" id="filterAll" class="chip active">All</button>
+        <button onclick="setFilter('status','not_started')" id="filterNotStarted" class="chip">Not Started</button>
+        <button onclick="setFilter('status','started')" id="filterStarted" class="chip">Started</button>
+        <button onclick="setFilter('status','complete')" id="filterComplete" class="chip">Complete</button>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <select id="filterGroup" onchange="applyFilters()" class="filter-select">
+          <option value="">All Groups</option>
+        </select>
+        <select id="filterType" onchange="applyFilters()" class="filter-select">
+          <option value="">All Types</option>
+        </select>
+        <label class="toggle-label">
+          <input type="checkbox" id="filterArchived" onchange="applyFilters()" />
+          Show Archived
+        </label>
+        <label class="toggle-label">
+          <input type="checkbox" id="filterAssignedToMe" onchange="applyFilters()" />
+          Assigned to Me
+        </label>
+        <label class="toggle-label">
+          <input type="checkbox" id="filterShowGroupTasks" onchange="applyFilters()" checked />
+          Show Group Tasks
+        </label>
+      </div>
     </div>
+
     <div id="taskGrid"><div class="loading">Loading tasks…</div></div>
   </div>
 
@@ -1005,37 +1033,8 @@
           <span class="toggle-switch-track"></span>
         </label>
       </div>
-      <p style="font-size:.85rem;color:#6b7280;margin-bottom:0">Earn XP, grow skill trees, unlock achievements, and protect streaks as you complete tasks. Fully optional — enable to get started.</p>
-      <!-- Expanded content — rendered when gamification is enabled -->
-      <div id="gamifContent" class="hidden" style="margin-top:14px">
-        <div id="gamifLoading" style="text-align:center;padding:16px 0;color:#9ca3af;font-size:.85rem">Loading profile…</div>
-        <div id="gamifLoaded" class="hidden">
-          <!-- Title / stats banner -->
-          <div class="gamif-banner">
-            <div class="gamif-banner-title" id="gamifBannerTitle">🌱 Just Getting Started</div>
-            <div class="gamif-banner-sub">Complete tasks to earn XP and unlock achievements</div>
-            <div class="gamif-banner-stats">
-              <div class="gamif-banner-stat">
-                <div class="gamif-banner-stat-num" id="gamifTotalXp">0</div>
-                <div class="gamif-banner-stat-label">Total XP</div>
-              </div>
-              <div class="gamif-banner-stat">
-                <div class="gamif-banner-stat-num credits" id="gamifFreezeCredits">0</div>
-                <div class="gamif-banner-stat-label">❄️ Freeze Credits</div>
-              </div>
-            </div>
-          </div>
-          <!-- Skills -->
-          <p class="detail-section-title">⭐ Skills</p>
-          <div id="gamifSkillsList"><p style="font-size:.85rem;color:#9ca3af;font-style:italic">Complete tasks to earn XP and grow your skills.</p></div>
-          <!-- Achievements -->
-          <p class="detail-section-title" style="margin-top:16px">🏆 Achievements</p>
-          <div id="gamifAchievementsList" class="gamif-ach-grid"></div>
-          <!-- Streaks -->
-          <p class="detail-section-title" style="margin-top:16px">🔥 Streaks</p>
-          <div id="gamifStreaksList"><p style="font-size:.85rem;color:#9ca3af;font-style:italic">Create recurring tasks and complete them on time to build streaks.</p></div>
-        </div>
-      </div>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Earn XP, grow skill trees, unlock achievements, and protect streaks as you complete tasks. Fully optional.</p>
+      <button onclick="showPage('progress')" class="btn btn-secondary btn-full btn-sm">⭐ View Progress &amp; Achievements →</button>
     </div>
 
     <!-- Send Feedback -->
@@ -1158,6 +1157,53 @@
     </div>
   </div>
 
+  <!-- ===== PROGRESS PAGE ===== -->
+  <div id="progressPage" class="view hidden">
+    <div class="view-header"><h1>⭐ Progress</h1></div>
+
+    <!-- Shown when gamification is disabled -->
+    <div id="progressDisabledCard" class="card" style="text-align:center;padding:28px 16px">
+      <div style="font-size:2.8rem;margin-bottom:10px">🎮</div>
+      <p style="font-weight:700;font-size:1rem;color:#1a1a2e;margin-bottom:8px">Gamification is off</p>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:16px">Enable gamification to earn XP, grow skill trees, unlock achievements, and track streaks as you complete tasks.</p>
+      <button onclick="showPage('profile')" class="btn btn-primary btn-full">Enable in Profile →</button>
+    </div>
+
+    <!-- Shown when gamification is enabled -->
+    <div id="progressEnabledCard" class="hidden">
+      <div id="progressLoading" style="text-align:center;padding:24px 0;color:#9ca3af;font-size:.85rem">Loading…</div>
+      <div id="progressLoaded" class="hidden">
+        <!-- Title / stats banner -->
+        <div class="gamif-banner">
+          <div class="gamif-banner-title" id="gamifBannerTitle">🌱 Just Getting Started</div>
+          <div class="gamif-banner-sub">Complete tasks to earn XP and unlock achievements</div>
+          <div class="gamif-banner-stats">
+            <div class="gamif-banner-stat">
+              <div class="gamif-banner-stat-num" id="gamifTotalXp">0</div>
+              <div class="gamif-banner-stat-label">Total XP</div>
+            </div>
+            <div class="gamif-banner-stat">
+              <div class="gamif-banner-stat-num credits" id="gamifFreezeCredits">0</div>
+              <div class="gamif-banner-stat-label">❄️ Freeze Credits</div>
+            </div>
+          </div>
+        </div>
+        <!-- Skills -->
+        <p class="detail-section-title">⭐ Skills</p>
+        <div id="gamifSkillsList"><p style="font-size:.85rem;color:#9ca3af;font-style:italic">Complete tasks to earn XP and grow your skills.</p></div>
+        <!-- Achievements -->
+        <p class="detail-section-title" style="margin-top:16px">🏆 Achievements</p>
+        <div id="gamifAchievementsList" class="gamif-ach-grid"></div>
+        <!-- Streaks -->
+        <p class="detail-section-title" style="margin-top:16px">🔥 Streaks</p>
+        <div id="gamifStreaksList"><p style="font-size:.85rem;color:#9ca3af;font-style:italic">Create recurring tasks and complete them on time to build streaks.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Action Button — New Task (Tasks page only) -->
+  <button id="fabNewTask" onclick="openTaskModal()" class="fab-btn" aria-label="New Task" title="New Task">+</button>
+
   <!-- Bottom Navigation -->
   <nav class="nav-bottom">
     <button class="nav-btn active" id="navTasks" onclick="showPage('tasks')">
@@ -1171,6 +1217,9 @@
       <span id="notifBadge" class="nav-notif-badge" hidden></span>
       Alerts
     </button>
+    <button class="nav-btn" id="navProgress" onclick="showPage('progress')">
+      <span class="nav-icon">⭐</span>Progress
+    </button>
     <button class="nav-btn" id="navProfile" onclick="showPage('profile')">
       <span class="nav-icon">👤</span>Profile
     </button>
@@ -1178,6 +1227,22 @@
       <span class="nav-icon">⚙️</span>Admin
     </button>
   </nav>
+</div>
+
+<!-- ===== GAMIFICATION OPT-IN MODAL ===== -->
+<div id="gamifOptInModal" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-body" style="text-align:center">
+      <div style="font-size:3rem;margin-bottom:12px">🎮</div>
+      <h2 class="modal-title">Level Up Your Tasks?</h2>
+      <p style="font-size:.9rem;color:#6b7280;line-height:1.6;margin-bottom:20px">
+        Jobber has a built-in gamification engine. Earn <strong>XP</strong> as you complete tasks, grow <strong>skill trees</strong>, unlock <strong>achievements</strong>, and protect <strong>streaks</strong> with Freeze Credits.<br/>
+        <span style="font-size:.82rem">Totally optional — you can turn it off any time from Profile.</span>
+      </p>
+      <button onclick="handleGamifOptInYes()" class="btn btn-primary btn-full" style="margin-bottom:10px">🚀 Enable Gamification</button>
+      <button onclick="handleGamifOptInNo()" class="btn btn-secondary btn-full">Maybe Later</button>
+    </div>
+  </div>
 </div>
 
 <!-- ===== NOTIFICATION MODAL ===== -->
@@ -1676,6 +1741,9 @@ function storeAuth(data) {
   token = data.token; currentUser = data.user;
   localStorage.setItem('jbToken', token);
   localStorage.setItem('jbUser', JSON.stringify(currentUser));
+  // Hide cookie notice when user enters the app
+  const notice = document.getElementById('cookieNotice');
+  if (notice) notice.classList.add('hidden');
   initApp();
 }
 
@@ -1807,8 +1875,9 @@ function initApp() {
   showPage('tasks'); checkVersion();
   setInterval(checkVersion, 5 * 60 * 1000);
   setInterval(refreshNotifications, 5 * 60 * 1000);
-  // Background-load gamification state so the streak panel works immediately
-  loadGamificationProfile();
+  // Background-load gamification state so the strip and streak panel work immediately;
+  // then check if the user should see the gamification opt-in prompt
+  loadGamificationProfile().then(() => maybeShowGamifOptIn());
   // Request browser notification permission so popup reminders can fire
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
@@ -1855,7 +1924,7 @@ async function confirmDeleteAccount() {
 
 // ========== Navigation ==========
 function showPage(page) {
-  ['tasks', 'groups', 'profile', 'admin'].forEach(p => {
+  ['tasks', 'groups', 'profile', 'admin', 'progress'].forEach(p => {
     document.getElementById(p + 'Page').classList.toggle('hidden', p !== page);
     const btn = document.getElementById('nav' + p.charAt(0).toUpperCase() + p.slice(1));
     if (btn) {
@@ -1865,6 +1934,9 @@ function showPage(page) {
       }
     }
   });
+  // FAB is only shown on the tasks page
+  const fab = document.getElementById('fabNewTask');
+  if (fab) fab.classList.toggle('hidden', page !== 'tasks');
   if (page === 'tasks') loadTasks();
   if (page === 'groups') renderGroups();
   if (page === 'admin') loadAdminPage();
@@ -1872,6 +1944,7 @@ function showPage(page) {
     loadIcsLink();
     loadGamificationProfile();
   }
+  if (page === 'progress') loadGamificationProfile();
 }
 
 // ========== Task Types ==========
@@ -2110,6 +2183,39 @@ function statusMeta(status) {
 }
 
 // ========== Filters ==========
+function toggleFilterPanel() {
+  const panel = document.getElementById('filterPanel');
+  const btn   = document.getElementById('filterToggleBtn');
+  const isHidden = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !isHidden);
+  if (btn) btn.classList.toggle('active', isHidden);
+}
+
+function updateFilterBadge() {
+  const count = [
+    currentFilter.status !== '',
+    currentFilter.groupId !== '',
+    currentFilter.typeId !== '',
+    currentFilter.archived,
+    currentFilter.assignedToMe,
+    !currentFilter.showGroupTasks,
+  ].filter(Boolean).length;
+  const badge = document.getElementById('filterActiveBadge');
+  const btn   = document.getElementById('filterToggleBtn');
+  if (!badge || !btn) return;
+  if (count > 0) {
+    badge.textContent = count;
+    badge.classList.remove('hidden');
+    btn.classList.add('active');
+  } else {
+    badge.classList.add('hidden');
+    // Only remove active if panel is also closed
+    if (document.getElementById('filterPanel').classList.contains('hidden')) {
+      btn.classList.remove('active');
+    }
+  }
+}
+
 function setFilter(key, value) {
   currentFilter[key] = value;
   const btnMap = { '': 'filterAll', 'not_started': 'filterNotStarted', 'started': 'filterStarted', 'complete': 'filterComplete' };
@@ -2118,6 +2224,7 @@ function setFilter(key, value) {
     if (!btn) return;
     btn.classList.toggle('active', v === value);
   });
+  updateFilterBadge();
   loadTasks();
 }
 
@@ -2127,6 +2234,7 @@ function applyFilters() {
   currentFilter.archived = document.getElementById('filterArchived').checked;
   currentFilter.assignedToMe = document.getElementById('filterAssignedToMe').checked;
   currentFilter.showGroupTasks = document.getElementById('filterShowGroupTasks').checked;
+  updateFilterBadge();
   loadTasks();
 }
 
@@ -2458,20 +2566,66 @@ async function loadGamificationProfile() {
     if (!profile) return;
     gamificationEnabled = !!profile.enabled;
     toggleEl.checked = gamificationEnabled;
-    const content = document.getElementById('gamifContent');
-    const loading = document.getElementById('gamifLoading');
-    const loaded  = document.getElementById('gamifLoaded');
+
+    // Progress page — show correct state
+    const progressDisabled = document.getElementById('progressDisabledCard');
+    const progressEnabled  = document.getElementById('progressEnabledCard');
+    const progressLoading  = document.getElementById('progressLoading');
+    const progressLoaded   = document.getElementById('progressLoaded');
+    if (progressDisabled) progressDisabled.classList.toggle('hidden', gamificationEnabled);
+    if (progressEnabled)  progressEnabled.classList.toggle('hidden', !gamificationEnabled);
     if (gamificationEnabled) {
-      content.classList.remove('hidden');
-      renderGamificationProfile(profile, streaks || []);
-      loading.classList.add('hidden');
-      loaded.classList.remove('hidden');
-    } else {
-      content.classList.add('hidden');
-      loading.classList.remove('hidden');
-      loaded.classList.add('hidden');
+      if (progressLoaded) {
+        renderGamificationProfile(profile, streaks || []);
+        if (progressLoading) progressLoading.classList.add('hidden');
+        progressLoaded.classList.remove('hidden');
+      }
     }
+
+    // My Tasks strip
+    renderGamifStrip(profile, streaks || []);
   } catch { /* silently ignore — gamification card stays in its current state */ }
+}
+
+function renderGamifStrip(profile, streaks) {
+  const strip = document.getElementById('tasksGamifStrip');
+  if (!strip) return;
+  if (!profile || !profile.enabled) {
+    strip.classList.add('hidden');
+    return;
+  }
+  strip.classList.remove('hidden');
+
+  // Top skill (first in list — sorted by level desc server-side)
+  const topSkill = profile.skills && profile.skills.length ? profile.skills[0] : null;
+  if (topSkill) {
+    document.getElementById('stripSkillName').textContent = topSkill.skill_name;
+    document.getElementById('stripSkillBadge').textContent = 'Lv ' + topSkill.level;
+    const span          = 100 * topSkill.level;
+    const earnedInLevel = Math.max(0, span - Math.max(0, topSkill.xpForNextLevel || 0));
+    const pct           = span > 0 ? Math.min(100, Math.round((earnedInLevel / span) * 100)) : 0;
+    document.getElementById('stripBarFill').style.width = pct + '%';
+    const xpLeft = Math.max(0, topSkill.xpForNextLevel || 0);
+    document.getElementById('stripXpSub').textContent   = xpLeft > 0
+      ? xpLeft + ' XP to Level ' + (topSkill.level + 1)
+      : 'Max level reached';
+  } else {
+    document.getElementById('stripSkillName').textContent = 'No skills yet';
+    document.getElementById('stripSkillBadge').textContent = 'Lv 0';
+    document.getElementById('stripBarFill').style.width = '0%';
+    document.getElementById('stripXpSub').textContent   = 'Complete tasks to earn XP';
+  }
+
+  // Best active streak
+  const bestStreak = streaks && streaks.length ? Math.max(...streaks.map(s => s.currentStreak)) : 0;
+  document.getElementById('stripStreak').textContent = '🔥 ' + bestStreak;
+
+  // Recent achievement badge (unlocked in last 7 days)
+  const recentAch = profile.achievements && profile.achievements.some(
+    a => a.unlockedAt && Date.now() - a.unlockedAt < 7 * 24 * 3600000
+  );
+  const achBadge = document.getElementById('stripAchBadge');
+  if (achBadge) achBadge.classList.toggle('hidden', !recentAch);
 }
 
 function renderGamificationProfile(profile, streaks) {
@@ -2547,14 +2701,10 @@ async function handleGamifToggle(checked) {
   try {
     await api('PATCH', '/gamification/opt-in', { enabled: checked });
     gamificationEnabled = checked;
+    await loadGamificationProfile();
     if (checked) {
-      document.getElementById('gamifContent').classList.remove('hidden');
-      document.getElementById('gamifLoading').classList.remove('hidden');
-      document.getElementById('gamifLoaded').classList.add('hidden');
-      await loadGamificationProfile();
       toast('\uD83C\uDFAE Gamification enabled! Achievements from your task history have been awarded.');
     } else {
-      document.getElementById('gamifContent').classList.add('hidden');
       toast('Gamification disabled. Your progress is preserved.');
     }
   } catch (err) {
@@ -2564,6 +2714,64 @@ async function handleGamifToggle(checked) {
   } finally {
     toggleEl.disabled = false;
   }
+}
+
+// ========== Gamification Opt-In Prompt ==========
+const GAMIF_ASKED_KEY = 'jbGamifAsked';
+
+function maybeShowGamifOptIn() {
+  if (localStorage.getItem(GAMIF_ASKED_KEY)) return;
+  if (gamificationEnabled) {
+    localStorage.setItem(GAMIF_ASKED_KEY, '1');
+    return;
+  }
+  // Delay so the app finishes rendering first
+  setTimeout(() => {
+    const modal = document.getElementById('gamifOptInModal');
+    if (modal) modal.classList.remove('hidden');
+  }, 1200);
+}
+
+async function handleGamifOptInYes() {
+  localStorage.setItem(GAMIF_ASKED_KEY, '1');
+  const modal = document.getElementById('gamifOptInModal');
+  if (modal) modal.classList.add('hidden');
+  const toggleEl = document.getElementById('gamifToggle');
+  if (toggleEl) toggleEl.disabled = true;
+  try {
+    await api('PATCH', '/gamification/opt-in', { enabled: true });
+    gamificationEnabled = true;
+    if (toggleEl) toggleEl.checked = true;
+    await loadGamificationProfile();
+    toast('\uD83C\uDFAE Gamification enabled! Your journey begins.');
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    if (toggleEl) toggleEl.disabled = false;
+  }
+}
+
+function handleGamifOptInNo() {
+  localStorage.setItem(GAMIF_ASKED_KEY, '1');
+  const modal = document.getElementById('gamifOptInModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+// ========== Cookie / Storage Notice ==========
+const COOKIE_NOTICE_KEY = 'jbCookieNotice';
+
+function initCookieNotice() {
+  // Don't show if user is already authenticated (they're already in the app)
+  if (token && currentUser) return;
+  if (localStorage.getItem(COOKIE_NOTICE_KEY)) return;
+  const notice = document.getElementById('cookieNotice');
+  if (notice) notice.classList.remove('hidden');
+}
+
+function dismissCookieNotice() {
+  localStorage.setItem(COOKIE_NOTICE_KEY, '1');
+  const notice = document.getElementById('cookieNotice');
+  if (notice) notice.classList.add('hidden');
 }
 
 function renderStreakInDetail(task) {
@@ -3053,6 +3261,8 @@ document.addEventListener('click', function(e) {
 
   // Check version on every page open so stale caches are caught before login
   checkVersion();
+  // Show the cookie/storage notice for first-time visitors (on landing/auth pages)
+  initCookieNotice();
   fetch('/api/version', { cache: 'no-store' }).then(r => r.json()).then(d => {
     if (d.version) {
       const authEl = document.getElementById('authFooterVersion');
@@ -3177,5 +3387,12 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<!-- ===== COOKIE / STORAGE NOTICE ===== -->
+<!-- Shown once on landing/auth pages; dismissed state stored in localStorage -->
+<div id="cookieNotice" class="cookie-notice hidden">
+  <p>Jobber uses essential browser storage (localStorage) to keep you signed in and save your preferences. No tracking cookies. <a href="/privacy-policy.html" target="_blank" rel="noopener">Privacy Policy</a></p>
+  <button class="cookie-notice-close" onclick="dismissCookieNotice()">Got it</button>
+</div>
 </body>
 </html>

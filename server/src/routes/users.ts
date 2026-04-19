@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { authMiddleware } from '../middleware/auth';
@@ -50,7 +49,7 @@ router.post('/:id/report', (req: Request, res: Response): void => {
     return;
   }
 
-  const id = uuidv4();
+  const id = crypto.randomUUID();
   const now = Date.now();
   db.prepare(
     'INSERT INTO user_reports (id, reporter_id, reported_id, reason, created_at, resolved) VALUES (?, ?, ?, ?, ?, 0)'
@@ -125,7 +124,7 @@ router.post('/me/feedback', (req: Request, res: Response): void => {
     res.status(400).json({ error: 'message must be ≤4000 chars' });
     return;
   }
-  const id = uuidv4();
+  const id = crypto.randomUUID();
   const now = Date.now();
   db.prepare(
     'INSERT INTO feedback_messages (id, user_id, subject, message, contact_ok, created_at) VALUES (?, ?, ?, ?, ?, ?)'

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
 import {
@@ -183,7 +183,7 @@ router.post('/', (req: Request, res: Response): void => {
     }
   }
 
-  const id = uuidv4();
+  const id = randomUUID();
   const now = Date.now();
 
   db.prepare(`
@@ -222,7 +222,7 @@ router.post('/', (req: Request, res: Response): void => {
     insertAssignee.run(id, aId);
     // Don't notify the creator
     if (aId !== userId) {
-      insertAlert.run(uuidv4(), aId, `You were assigned to task: ${title}`, now);
+      insertAlert.run(randomUUID(), aId, `You were assigned to task: ${title}`, now);
     }
   }
 
@@ -431,7 +431,7 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
       // Use the existing due date as base, or fall back to now when no due date was set
       const baseDue = fullTask.due_date != null ? fullTask.due_date : now;
       const nextDue = computeNextDue(baseDue, fullTask.recur_interval, fullTask.recur_unit);
-      const newId = uuidv4();
+      const newId = randomUUID();
 
       const spawnAndArchive = db.transaction(() => {
         db.prepare(`
@@ -661,7 +661,7 @@ router.delete('/:id', (req: Request, res: Response): void => {
   if (task.recur_interval && task.recur_unit) {
     const baseDue = task.due_date != null ? task.due_date : Date.now();
     const nextDue = computeNextDue(baseDue, task.recur_interval, task.recur_unit);
-    const newId = uuidv4();
+    const newId = randomUUID();
     const now2 = Date.now();
 
     const spawnAndDelete = db.transaction(() => {
@@ -770,7 +770,7 @@ router.post('/:id/notes', (req: Request, res: Response): void => {
     return;
   }
 
-  const id = uuidv4();
+  const id = randomUUID();
   const now = Date.now();
 
   db.prepare(

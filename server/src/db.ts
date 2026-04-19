@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3-multiple-ciphers';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { DB_PATH as DB_PATH_OVERRIDE, DB_ENCRYPTION_KEY } from './config';
 import { generateGroupName } from './wordlists';
 
@@ -340,7 +340,7 @@ if (countRow.cnt === 0) {
   );
   const now = Date.now();
   for (const name of defaultTypes) {
-    insert.run(uuidv4(), name, now);
+    insert.run(randomUUID(), name, now);
   }
 }
 

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import { adminMiddleware } from '../middleware/admin';
 import db from '../db';
@@ -191,7 +191,7 @@ router.post('/feedback/:id/reply', (req: Request, res: Response): void => {
 
   if (!fb) { res.status(404).json({ error: 'Feedback not found' }); return; }
 
-  const id = uuidv4();
+  const id = randomUUID();
   const now = Date.now();
   db.prepare(
     'INSERT INTO user_alerts (id, user_id, message, created_at) VALUES (?, ?, ?, ?)'

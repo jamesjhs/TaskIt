@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
 
@@ -46,7 +46,7 @@ router.post('/', (req: Request, res: Response): void => {
     }
   }
 
-  const id = uuidv4();
+  const id = randomUUID();
   const now = Date.now();
 
   db.prepare(

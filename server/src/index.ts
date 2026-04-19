@@ -1,5 +1,4 @@
-import express from 'express';
-import cors from 'cors';
+import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import fs from 'fs';
 import path from 'path';
@@ -60,7 +59,38 @@ const authenticatedLimiter = rateLimit({
   },
 });
 
-app.use(cors({ origin: CORS_ORIGIN }));
+// Inline CORS middleware — equivalent to the cors package but with no extra dependency.
+// CORS_ORIGIN is configured in config.ts from the CORS_ORIGIN / BASE_URL env vars.
+// When false (the default) no cross-origin access is granted.
+app.use((req: Request, res: Response, next: NextFunction): void => {
+  const origin = req.headers.origin;
+  let allowed = false;
+
+  if (CORS_ORIGIN === false) {
+    // No CORS — pass straight through (same-origin SPA requests have no Origin header anyway)
+  } else if (Array.isArray(CORS_ORIGIN)) {
+    allowed = origin !== undefined && CORS_ORIGIN.includes(origin);
+  } else {
+    // single string — '*' or a specific origin
+    allowed = CORS_ORIGIN === '*' || origin === CORS_ORIGIN;
+  }
+
+  if (allowed && origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Vary', 'Origin');
+  }
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(allowed ? 204 : 204); // always 204 for preflight; headers only set when allowed
+    return;
+  }
+
+  next();
+});
 // Security headers (helmet must come before static/route middleware)
 app.use(helmet({
   // Allow the service worker to load and scripts to run from the same origin.

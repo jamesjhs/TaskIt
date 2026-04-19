@@ -375,8 +375,11 @@ if (countRow.cnt === 0) {
     { key: 'streak_30',         name: 'Unstoppable',         description: 'Maintain a recurring task streak of 30.' },
   ];
   for (const a of defaultAchievements) {
-    // Use the key as the basis for a deterministic UUID so re-runs produce the same IDs
-    insertAchievement.run(uuidv4(), a.key, a.name, a.description, now);
+    // Use the achievement key directly as the ID — it is already globally unique
+    // (enforced by the UNIQUE constraint on the key column), human-readable in
+    // foreign key lookups, and deterministic across server restarts so the same
+    // row is never duplicated or double-inserted.
+    insertAchievement.run(a.key, a.key, a.name, a.description, now);
   }
 }
 

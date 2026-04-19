@@ -366,6 +366,9 @@ export function applyStreakFreeze(
 
   if (!user) return 'User not found';
   if (!user.gamification_enabled) return 'Gamification is not enabled';
+  // Fast-fail before acquiring the transaction: avoids a round-trip to SQLite
+  // when the balance is clearly zero. The transaction itself also guards via
+  // WHERE freeze_credits > 0, so this is purely a performance optimisation.
   if (user.freeze_credits < 1) return 'No freeze credits available';
 
   const task = db.prepare(

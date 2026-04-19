@@ -201,6 +201,8 @@ router.delete('/me', (req: Request, res: Response): void => {
     db.prepare('DELETE FROM group_members WHERE user_id = ?').run(userId);
     db.prepare('DELETE FROM user_blocks WHERE blocker_id = ? OR blocked_id = ?').run(userId, userId);
     db.prepare('DELETE FROM user_reports WHERE reporter_id = ? OR reported_id = ?').run(userId, userId);
+    db.prepare('DELETE FROM user_friends WHERE user_id = ? OR friend_id = ?').run(userId, userId);
+    db.prepare('DELETE FROM friend_invites WHERE user_id = ?').run(userId);
     db.prepare('DELETE FROM otp_tokens WHERE user_id = ?').run(userId);
     db.prepare('DELETE FROM magic_tokens WHERE user_id = ?').run(userId);
     db.prepare('DELETE FROM feedback_messages WHERE user_id = ?').run(userId);

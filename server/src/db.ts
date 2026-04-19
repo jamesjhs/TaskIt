@@ -235,6 +235,26 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (achievement_id) REFERENCES achievements(id)
   );
+
+  -- Friends: invite tokens used to connect users outside groups
+  CREATE TABLE IF NOT EXISTS friend_invites (
+    token TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    used INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  -- Friends: bidirectional friendship pairs (both (A,B) and (B,A) rows stored)
+  CREATE TABLE IF NOT EXISTS user_friends (
+    user_id TEXT NOT NULL,
+    friend_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, friend_id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (friend_id) REFERENCES users(id)
+  );
 `);
 
 // Runtime migrations — add columns if they don't exist yet

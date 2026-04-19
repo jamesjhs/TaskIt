@@ -1197,6 +1197,25 @@
         <!-- Streaks -->
         <p class="detail-section-title" style="margin-top:16px">🔥 Streaks</p>
         <div id="gamifStreaksList"><p style="font-size:.85rem;color:#9ca3af;font-style:italic">Create recurring tasks and complete them on time to build streaks.</p></div>
+        <!-- Group Leaderboards -->
+        <p class="detail-section-title" style="margin-top:16px">👥 Group Leaderboards</p>
+        <div id="gamifGroupLeaderboards"><p style="font-size:.85rem;color:#9ca3af;font-style:italic">Join a group to see how you rank against members.</p></div>
+        <!-- Friends -->
+        <p class="detail-section-title" style="margin-top:16px">🤝 Friends</p>
+        <div id="gamifFriendsSection">
+          <p style="font-size:.85rem;color:#6b7280;margin-bottom:10px">Compete with friends outside your groups. Share your invite link to connect.</p>
+          <button onclick="generateFriendInvite()" class="btn btn-outline btn-sm btn-full" style="margin-bottom:10px">📤 Generate Friend Invite Link</button>
+          <div id="friendInviteArea" class="hidden" style="background:#f9fafb;border-radius:8px;padding:12px;margin-bottom:10px;text-align:center">
+            <img id="friendQRImage" src="" alt="QR Code" style="width:160px;height:160px;display:block;margin:0 auto 8px" />
+            <p style="font-size:.75rem;color:#6b7280;margin-bottom:6px">Scan or share the link below:</p>
+            <div style="display:flex;gap:6px;align-items:center;justify-content:center">
+              <input id="friendInviteLink" type="text" readonly class="input" style="font-size:.75rem;flex:1" />
+              <button onclick="copyToClipboard(document.getElementById('friendInviteLink').value)" class="btn btn-sm btn-secondary">Copy</button>
+            </div>
+            <p id="friendInviteExpiry" style="font-size:.7rem;color:#9ca3af;margin-top:6px"></p>
+          </div>
+          <div id="gamifFriendsLeaderboard"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1564,6 +1583,11 @@
         <button onclick="deleteGroup()" class="btn btn-danger btn-sm btn-full">Delete Group</button>
       </div>
       <div id="groupMembersList"><div class="loading">Loading…</div></div>
+      <!-- Group leaderboard (lazy-loaded) -->
+      <div id="groupLeaderboardArea" style="margin-top:12px">
+        <button id="groupLeaderboardToggle" onclick="toggleGroupLeaderboard()" class="btn btn-outline btn-sm btn-full">🏆 Show Leaderboard</button>
+        <div id="groupLeaderboardContent" class="hidden" style="margin-top:8px"></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button onclick="document.getElementById('groupMembersModal').classList.add('hidden')" class="btn btn-secondary btn-full">Close</button>
@@ -1855,7 +1879,7 @@ function initApp() {
   fetch('/api/version').then(r => r.json()).then(d => {
     if (d.version) document.getElementById('footerVersion').textContent = d.version;
   }).catch(() => {});
-  // Accept any pending invite (handles both fresh login and already-logged-in invite links)
+  // Accept any pending group invite (handles both fresh login and already-logged-in invite links)
   const pendingInvite = sessionStorage.getItem('pendingInvite');
   if (pendingInvite) {
     sessionStorage.removeItem('pendingInvite');
@@ -1870,6 +1894,20 @@ function initApp() {
         loadGroups(); renderGroups();
       })
       .catch(err => toast('Invite error: ' + err.message, 'error'));
+  }
+  // Accept any pending friend invite
+  const pendingFriendInvite = sessionStorage.getItem('pendingFriendInvite');
+  if (pendingFriendInvite) {
+    sessionStorage.removeItem('pendingFriendInvite');
+    api('POST', '/friends/invite/' + encodeURIComponent(pendingFriendInvite) + '/accept')
+      .then(data => {
+        if (data.alreadyFriends) {
+          toast('You\u2019re already friends with ' + data.sender.username + '!');
+        } else {
+          toast('You and ' + data.sender.username + ' are now friends! 🤝');
+        }
+      })
+      .catch(err => toast('Friend invite error: ' + err.message, 'error'));
   }
   loadTypes(); loadGroups(); loadBlockedUsers();
   showPage('tasks'); checkVersion();
@@ -2580,6 +2618,9 @@ async function loadGamificationProfile() {
         if (progressLoading) progressLoading.classList.add('hidden');
         progressLoaded.classList.remove('hidden');
       }
+      // Load leaderboards (group and friends) whenever gamification profile is refreshed
+      loadGroupLeaderboards();
+      loadFriendsLeaderboard();
     }
 
     // My Tasks strip
@@ -2713,6 +2754,137 @@ async function handleGamifToggle(checked) {
     toast(err.message, 'error');
   } finally {
     toggleEl.disabled = false;
+  }
+}
+
+// ========== Group Leaderboard ==========
+let groupLeaderboardVisible = false;
+
+async function toggleGroupLeaderboard() {
+  const content = document.getElementById('groupLeaderboardContent');
+  const btn = document.getElementById('groupLeaderboardToggle');
+  if (!currentGroupId) return;
+  if (groupLeaderboardVisible) {
+    content.classList.add('hidden');
+    btn.textContent = '\uD83C\uDFC6 Show Leaderboard';
+    groupLeaderboardVisible = false;
+    return;
+  }
+  btn.textContent = 'Loading\u2026';
+  try {
+    const rows = await api('GET', '/gamification/leaderboard/group/' + currentGroupId);
+    groupLeaderboardVisible = true;
+    btn.textContent = '\uD83C\uDFC6 Hide Leaderboard';
+    if (!rows.length) {
+      content.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">No members have gamification enabled yet.</p>';
+    } else {
+      content.innerHTML = renderLeaderboardTable(rows, currentUser && currentUser.id);
+    }
+    content.classList.remove('hidden');
+  } catch (err) {
+    btn.textContent = '\uD83C\uDFC6 Show Leaderboard';
+    toast(err.message, 'error');
+  }
+}
+
+function renderLeaderboardTable(rows, myId) {
+  const medals = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49'];
+  return '<table style="width:100%;border-collapse:collapse;font-size:.85rem">' +
+    '<thead><tr style="color:#6b7280;border-bottom:1px solid #e5e7eb">' +
+    '<th style="text-align:left;padding:4px 6px">Rank</th>' +
+    '<th style="text-align:left;padding:4px 6px">Name</th>' +
+    '<th style="text-align:right;padding:4px 6px">Total XP</th>' +
+    '</tr></thead><tbody>' +
+    rows.map(r => {
+      const isMe = r.id === myId;
+      const medal = medals[r.rank - 1] || ('#' + r.rank);
+      return '<tr style="border-bottom:1px solid #f3f4f6' + (isMe ? ';background:#eff6ff' : '') + '">' +
+        '<td style="padding:5px 6px">' + escHtml(String(medal)) + '</td>' +
+        '<td style="padding:5px 6px;font-weight:' + (isMe ? '700' : '400') + '">' +
+          escHtml(r.username) + (isMe ? ' <span style="color:#1a56db;font-size:.75rem">(you)</span>' : '') +
+        '</td>' +
+        '<td style="padding:5px 6px;text-align:right;font-weight:600;color:#1a56db">' +
+          (r.totalXp || 0).toLocaleString() + ' XP' +
+        '</td>' +
+        '</tr>';
+    }).join('') +
+    '</tbody></table>';
+}
+
+// ========== Friends / Friends Leaderboard ==========
+
+async function generateFriendInvite() {
+  const area = document.getElementById('friendInviteArea');
+  try {
+    const data = await api('POST', '/friends/invite');
+    // Generate QR code client-side
+    const qr = qrcode(0, 'M');
+    qr.addData(data.invite_url);
+    qr.make();
+    document.getElementById('friendQRImage').src = qr.createDataURL(4, 4);
+    document.getElementById('friendInviteLink').value = data.invite_url;
+    document.getElementById('friendInviteExpiry').textContent =
+      data.expires_at ? 'Expires: ' + fmtDate(data.expires_at) : '';
+    area.classList.remove('hidden');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function loadFriendsLeaderboard() {
+  const el = document.getElementById('gamifFriendsLeaderboard');
+  if (!el) return;
+  try {
+    const rows = await api('GET', '/gamification/leaderboard/friends');
+    if (!rows || rows.length <= 1) {
+      // Only the current user — no friends yet
+      el.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">No friends added yet. Share your invite link to start competing!</p>';
+      return;
+    }
+    el.innerHTML = '<p class="detail-section-title" style="margin-top:0;margin-bottom:8px">Friends Leaderboard</p>' +
+      renderLeaderboardTable(rows, currentUser && currentUser.id) +
+      '<div style="margin-top:8px">' +
+      rows.filter(r => !r.isMe).map(r =>
+        '<button onclick="removeFriend(' + escHtml(JSON.stringify(r.id)) + ',' + escHtml(JSON.stringify(r.username)) + ')" ' +
+        'class="btn btn-sm btn-danger" style="margin-right:4px;margin-bottom:4px">Remove ' + escHtml(r.username) + '</button>'
+      ).join('') +
+      '</div>';
+  } catch { /* silently ignore */ }
+}
+
+async function removeFriend(friendId, username) {
+  if (!confirm('Remove ' + username + ' as a friend?')) return;
+  try {
+    await api('DELETE', '/friends/' + encodeURIComponent(friendId));
+    toast(username + ' removed from friends.');
+    loadFriendsLeaderboard();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function loadGroupLeaderboards() {
+  const el = document.getElementById('gamifGroupLeaderboards');
+  if (!el || !gamificationEnabled) return;
+  if (!groups || !groups.length) {
+    el.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">Join a group to see how you rank against members.</p>';
+    return;
+  }
+  try {
+    const leaderboardCards = await Promise.all(groups.map(async g => {
+      try {
+        const rows = await api('GET', '/gamification/leaderboard/group/' + g.id);
+        if (!rows || !rows.length) return '';
+        return '<div style="margin-bottom:12px">' +
+          '<p style="font-weight:600;font-size:.85rem;color:#374151;margin-bottom:4px">' + escHtml(g.name) + '</p>' +
+          renderLeaderboardTable(rows, currentUser && currentUser.id) +
+          '</div>';
+      } catch { return ''; }
+    }));
+    const html = leaderboardCards.filter(Boolean).join('');
+    el.innerHTML = html || '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">No group members have gamification enabled yet.</p>';
+  } catch {
+    el.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">Could not load group leaderboards.</p>';
   }
 }
 
@@ -2890,6 +3062,12 @@ async function openGroupMembers(groupId) {
     const myMembership = members.find(m => currentUser && m.id === currentUser.id);
     const isAdmin = myMembership && myMembership.role === 'admin';
     document.getElementById('groupAdminControls').classList.toggle('hidden', !isAdmin);
+    // Reset leaderboard toggle state for the new group
+    groupLeaderboardVisible = false;
+    const lb = document.getElementById('groupLeaderboardContent');
+    const lbBtn = document.getElementById('groupLeaderboardToggle');
+    if (lb) lb.classList.add('hidden');
+    if (lbBtn) lbBtn.textContent = '\uD83C\uDFC6 Show Leaderboard';
     if (!members.length) { listEl.innerHTML = '<div class="loading">No members found.</div>'; return; }
     listEl.innerHTML = members.map(m => {
       const isMe = currentUser && m.id === currentUser.id;
@@ -3257,6 +3435,7 @@ document.addEventListener('click', function(e) {
   const params = new URLSearchParams(window.location.search);
   const magicToken = params.get('token');
   const inviteToken = params.get('invite');
+  const friendToken = params.get('friend');
   const resetToken = params.get('resetToken');
 
   // Check version on every page open so stale caches are caught before login
@@ -3284,9 +3463,11 @@ document.addEventListener('click', function(e) {
     try {
       const data = await api('GET', '/auth/magic-link/verify?token=' + encodeURIComponent(magicToken));
       history.replaceState(null, '', window.location.pathname);
-      // Preserve any pending invite token through the auth flow
+      // Preserve any pending invite/friend token through the auth flow
       const pendingInvite = sessionStorage.getItem('pendingInvite') || inviteToken;
       if (pendingInvite) sessionStorage.setItem('pendingInvite', pendingInvite);
+      const pendingFriend = sessionStorage.getItem('pendingFriendInvite') || friendToken;
+      if (pendingFriend) sessionStorage.setItem('pendingFriendInvite', pendingFriend);
       storeAuth(data);
     } catch (err) {
       history.replaceState(null, '', window.location.pathname);
@@ -3309,6 +3490,20 @@ document.addEventListener('click', function(e) {
         const info = await api('GET', '/groups/invite/' + encodeURIComponent(inviteToken));
         toast('You\u2019ve been invited to join "' + info.group.name + '". Sign in or create an account to accept.', 'info');
       } catch (err) { /* invite may be invalid, just show auth page */ }
+    }
+  }
+
+  if (friendToken) {
+    // Store the friend token so it can be accepted after authentication
+    sessionStorage.setItem('pendingFriendInvite', friendToken);
+    history.replaceState(null, '', window.location.pathname);
+    if (!token || !currentUser) {
+      document.getElementById('landingPage').classList.add('hidden');
+      document.getElementById('authPage').classList.remove('hidden');
+      try {
+        const info = await api('GET', '/friends/invite/' + encodeURIComponent(friendToken));
+        toast(info.sender.username + ' wants to be your friend on Jobber! Sign in or create an account to accept.', 'info');
+      } catch (err) { /* invalid invite, just show auth page */ }
     }
   }
 

@@ -56,7 +56,7 @@ router.get('/achievements', (req: Request, res: Response): void => {
            ua.unlocked_at AS unlockedAt
     FROM achievements a
     LEFT JOIN user_achievements ua ON ua.achievement_id = a.id AND ua.user_id = ?
-    ORDER BY ua.unlocked_at DESC NULLS LAST, a.key ASC
+    ORDER BY ua.unlocked_at DESC, a.key ASC
   `).all(userId) as Array<{
     id: string; key: string; name: string; description: string; unlockedAt: number | null;
   }>;

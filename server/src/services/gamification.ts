@@ -92,7 +92,6 @@ export function awardTaskXp(
   if (!taskType) return null;
 
   const skillName = taskType.name;
-  const now = Date.now();
 
   // Upsert the skill row
   const existing = db.prepare(
@@ -114,7 +113,6 @@ export function awardTaskXp(
     db.prepare(
       'INSERT INTO user_skills (user_id, skill_name, xp, level) VALUES (?, ?, ?, ?)'
     ).run(userId, skillName, newXp, newLevel);
-    void now; // suppress unused-var warning; `now` kept for future audit columns
   }
 
   return { skill_name: skillName, xp: newXp, level: newLevel };
@@ -260,13 +258,15 @@ export function getGamificationProfile(userId: string): GamificationProfile {
 
   const totalXp = skills.reduce((sum, s) => sum + s.xp, 0);
 
-  // All achievements with unlock status for this user
+  // All achievements with unlock status for this user.
+  // Unlocked achievements first (ordered by unlock time), then locked alphabetically.
+  // SQLite orders NULLs last by default when using DESC — no NULLS LAST syntax needed.
   const achievementRows = db.prepare(`
     SELECT a.id, a.key, a.name, a.description,
            ua.unlocked_at AS unlockedAt
     FROM achievements a
     LEFT JOIN user_achievements ua ON ua.achievement_id = a.id AND ua.user_id = ?
-    ORDER BY ua.unlocked_at DESC NULLS LAST, a.key ASC
+    ORDER BY ua.unlocked_at DESC, a.key ASC
   `).all(userId) as Array<{
     id: string; key: string; name: string; description: string; unlockedAt: number | null;
   }>;

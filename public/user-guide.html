@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>User Guide – Jobber</title>
+  <title>User Guide – Jobber Task Manager</title>
+  <meta name="description" content="Complete user guide for Jobber — the free, self-hosted collaborative task manager with gamification, skill trees, achievements, streaks, and freeze credits." />
+  <meta name="robots" content="index, follow" />
+  <meta property="og:title" content="User Guide – Jobber Task Manager" />
+  <meta property="og:description" content="Everything you need to get started with Jobber: tasks, groups, notifications, calendar integration, and the optional gamification system." />
+  <meta property="og:type" content="article" />
   <link rel="stylesheet" href="/tailwind.css" />
   <link rel="icon" type="image/png" href="/favicon.png" />
 </head>
@@ -205,6 +210,77 @@
 
     <h3>⚠️ Delete My Account</h3>
     <p>You can permanently delete your account and all your data at any time — no administrator action required. Scroll to the bottom of your Profile page and click <strong>Delete My Account</strong>, then confirm twice. All your tasks, notes, group memberships, and account details are removed immediately.</p>
+
+    <hr />
+
+    <h2>🎮 Gamification <em>(optional)</em></h2>
+    <p>Jobber includes a fully opt-in gamification system that rewards consistent productivity with XP, skill levels, achievements, streaks, and a Freeze mechanic. It is <strong>disabled by default</strong> and can be toggled any time from your Profile page.</p>
+
+    <h3>Enabling gamification</h3>
+    <ol>
+      <li>Click <strong>Profile</strong> in the navigation.</li>
+      <li>Find the <strong>Gamification</strong> card and click <strong>Enable Gamification</strong>.</li>
+      <li>Your progress is preserved if you toggle it off and back on.</li>
+    </ol>
+
+    <h3>⭐ XP &amp; Skill Levels</h3>
+    <p>Every completed task earns you <strong>50 XP</strong> in the skill matching its task type (e.g. completing a <em>Household</em> task earns Household XP). XP builds your skill level following a triangular curve — each level costs more than the last:</p>
+    <table style="border-collapse:collapse;font-size:.9rem;margin:8px 0 16px">
+      <tr>
+        <th style="padding:6px 16px 6px 0;text-align:left;border-bottom:2px solid #e5e7eb">Level</th>
+        <th style="padding:6px 16px 6px 0;text-align:left;border-bottom:2px solid #e5e7eb">Total XP required</th>
+        <th style="padding:6px 0;text-align:left;border-bottom:2px solid #e5e7eb">Title earned</th>
+      </tr>
+      <tr><td style="padding:5px 16px 5px 0">1</td><td style="padding:5px 16px 5px 0">0 XP</td><td style="padding:5px 0">Apprentice of …</td></tr>
+      <tr><td style="padding:5px 16px 5px 0">2</td><td style="padding:5px 16px 5px 0">100 XP</td><td style="padding:5px 0">Apprentice of …</td></tr>
+      <tr><td style="padding:5px 16px 5px 0">3</td><td style="padding:5px 16px 5px 0">300 XP</td><td style="padding:5px 0">Skilled …</td></tr>
+      <tr><td style="padding:5px 16px 5px 0">5</td><td style="padding:5px 16px 5px 0">1,000 XP</td><td style="padding:5px 0">Expert …</td></tr>
+      <tr><td style="padding:5px 16px 5px 0">7</td><td style="padding:5px 16px 5px 0">2,100 XP</td><td style="padding:5px 0">Master …</td></tr>
+      <tr><td style="padding:5px 16px 5px 0">10</td><td style="padding:5px 16px 5px 0">4,500 XP</td><td style="padding:5px 0">Guru of …</td></tr>
+    </table>
+    <p>Your highest skill level determines your <strong>dynamic title</strong> — for example <em>Expert Household</em> or <em>Guru of Routine</em> — displayed on your Profile.</p>
+
+    <h3>🏆 Achievements</h3>
+    <p>Achievements are one-time awards that unlock automatically when you hit milestones. They are shown on your Profile with the date they were unlocked:</p>
+    <table style="border-collapse:collapse;font-size:.875rem;margin:8px 0 16px;width:100%">
+      <tr>
+        <th style="padding:6px 12px 6px 0;text-align:left;border-bottom:2px solid #e5e7eb">Achievement</th>
+        <th style="padding:6px 0;text-align:left;border-bottom:2px solid #e5e7eb">How to earn</th>
+      </tr>
+      <tr><td style="padding:5px 12px 5px 0">🥇 First Steps</td><td style="padding:5px 0">Complete your first task</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">🚀 Getting Started</td><td style="padding:5px 0">Complete 10 tasks</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">🔥 On a Roll</td><td style="padding:5px 0">Complete 50 tasks</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">⚔️ Centurion</td><td style="padding:5px 0">Complete 100 tasks</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">👑 Task Master</td><td style="padding:5px 0">Complete 500 tasks</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">📝 Detail Oriented</td><td style="padding:5px 0">Add 50 progress notes</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">🐦 Early Bird</td><td style="padding:5px 0">Complete 10 tasks before their due date</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">🗺️ Type Explorer</td><td style="padding:5px 0">Complete tasks in 5 different task types</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">🎯 Specialist</td><td style="padding:5px 0">Reach level 5 in any skill</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">🎓 Master of the Craft</td><td style="padding:5px 0">Reach level 10 in any skill</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">🎩 Hat Trick</td><td style="padding:5px 0">Maintain a recurring task streak of 3</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">🍀 Lucky Streak</td><td style="padding:5px 0">Maintain a recurring task streak of 7</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">🚂 Unstoppable</td><td style="padding:5px 0">Maintain a recurring task streak of 30</td></tr>
+    </table>
+
+    <h3>🔥 Streaks</h3>
+    <p>Recurring tasks track a <strong>streak</strong> — the number of consecutive times you have completed them on or before the due date:</p>
+    <ul>
+      <li><strong>Streak increases</strong> every time you complete the task on time.</li>
+      <li><strong>Streak resets to 0</strong> if the task becomes overdue without being completed.</li>
+      <li>Your <strong>all-time best</strong> (longest streak) is always preserved and drives the streak achievements.</li>
+    </ul>
+    <p>Streak data appears in the task detail panel and in the <strong>Gamification</strong> section of your Profile.</p>
+
+    <h3>❄️ Freeze Credits</h3>
+    <p>Freeze Credits let you protect a streak against one missed deadline without resetting it.</p>
+    <p><strong>Earning credits:</strong> You earn 1 Freeze Credit each time you complete any task.</p>
+    <p><strong>Using a Freeze:</strong></p>
+    <ol>
+      <li>Open the detail panel for a recurring task.</li>
+      <li>Click <strong>Apply Freeze</strong> — this costs 1 credit. A ❄️ icon confirms it is active.</li>
+      <li>If the task is then missed, the Freeze is consumed, the streak is preserved, and the ❄️ is cleared automatically.</li>
+    </ol>
+    <blockquote><p>💡 Tip: Build up a reserve of credits by staying on top of non-recurring tasks, then spend them to protect your most important streaks.</p></blockquote>
 
     <hr />
 

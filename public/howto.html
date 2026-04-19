@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>How To Use Jobber – Pictorial Guide</title>
+  <meta name="description" content="Step-by-step pictorial guide to Jobber: registering, creating tasks, recurring tasks, groups, gamification (XP, achievements, streaks, freeze credits), and more." />
+  <meta name="robots" content="index, follow" />
+  <meta property="og:title" content="How To Use Jobber – Pictorial Guide" />
+  <meta property="og:description" content="Step-by-step pictorial guides to help you get the most out of Jobber — from your very first login to gamification, streaks, and freeze credits." />
+  <meta property="og:type" content="article" />
   <link rel="stylesheet" href="/tailwind.css" />
   <link rel="icon" type="image/png" href="/favicon.png" />
   <style>
@@ -308,6 +313,120 @@
 
     <div class="tip-box">ℹ️ If you were the sole admin of a group, that group and all its tasks are also deleted. If there are other group admins, the group continues without you.</div>
     <div class="warn-box">⚠️ User reports you submitted or that were made against you may be retained for up to 7 years under safeguarding obligations. See the <a href="/privacy-policy.html" style="color:#92400e;text-decoration:underline">Privacy Policy</a> for details.</div>
+
+    <hr/>
+
+    <!-- ===== SECTION 9: Gamification ===== -->
+    <h2>9. 🎮 Gamification — XP, Achievements, Streaks &amp; Freeze Credits</h2>
+    <p>Jobber's optional gamification system rewards consistent task completion. Enable it from your Profile at any time — your progress is preserved if you toggle it off and back on.</p>
+
+    <div class="tip-box">ℹ️ Gamification is <strong>fully opt-in</strong> and never affects the core task management experience for users who prefer it off.</div>
+
+    <!-- 9.1 Enable -->
+    <h3>9.1 Enabling Gamification</h3>
+    <div class="guide-step"><div class="step-num">1</div><div>Go to <strong>👤 Profile</strong> → find the <strong>Gamification</strong> card.</div></div>
+    <div class="guide-step"><div class="step-num">2</div><div>Click <strong>Enable Gamification</strong>. The card expands to show your XP, skills, achievements, and streaks.</div></div>
+
+    <!-- 9.2 XP -->
+    <h3>9.2 ⭐ XP &amp; Skill Levels</h3>
+    <p>Every completed task earns <strong>50 XP</strong> in the skill matching the task's type:</p>
+
+    <div class="mockup-card">
+      <div style="margin-bottom:10px;font-size:.85rem;font-weight:600;color:#374151">🧹 Household — Completed</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <span style="font-size:.8rem;color:#6b7280;white-space:nowrap">Household XP</span>
+        <div style="flex:1;background:#e5e7eb;border-radius:99px;height:10px;overflow:hidden">
+          <div style="width:63%;background:#1a56db;height:100%;border-radius:99px"></div>
+        </div>
+        <span style="font-size:.8rem;font-weight:600;color:#1a56db;white-space:nowrap">Level 3</span>
+      </div>
+      <div style="font-size:.78rem;color:#9ca3af">+50 XP earned · 630 / 1,000 XP to Level 5</div>
+    </div>
+
+    <p>Skill levels follow a triangular curve — every level costs more XP than the last:</p>
+    <table style="border-collapse:collapse;font-size:.88rem;width:100%;margin:8px 0 16px">
+      <tr style="background:#f8fafc">
+        <th style="padding:8px 12px;text-align:left;border:1px solid #e2e8f0">Level</th>
+        <th style="padding:8px 12px;text-align:left;border:1px solid #e2e8f0">Total XP needed</th>
+        <th style="padding:8px 12px;text-align:left;border:1px solid #e2e8f0">Title awarded</th>
+      </tr>
+      <tr><td style="padding:7px 12px;border:1px solid #e2e8f0">1</td><td style="padding:7px 12px;border:1px solid #e2e8f0">0</td><td style="padding:7px 12px;border:1px solid #e2e8f0">Apprentice of …</td></tr>
+      <tr><td style="padding:7px 12px;border:1px solid #e2e8f0">2</td><td style="padding:7px 12px;border:1px solid #e2e8f0">100</td><td style="padding:7px 12px;border:1px solid #e2e8f0">Apprentice of …</td></tr>
+      <tr><td style="padding:7px 12px;border:1px solid #e2e8f0">3</td><td style="padding:7px 12px;border:1px solid #e2e8f0">300</td><td style="padding:7px 12px;border:1px solid #e2e8f0">Skilled …</td></tr>
+      <tr><td style="padding:7px 12px;border:1px solid #e2e8f0">5</td><td style="padding:7px 12px;border:1px solid #e2e8f0">1,000</td><td style="padding:7px 12px;border:1px solid #e2e8f0">Expert …</td></tr>
+      <tr><td style="padding:7px 12px;border:1px solid #e2e8f0">7</td><td style="padding:7px 12px;border:1px solid #e2e8f0">2,100</td><td style="padding:7px 12px;border:1px solid #e2e8f0">Master …</td></tr>
+      <tr><td style="padding:7px 12px;border:1px solid #e2e8f0">10</td><td style="padding:7px 12px;border:1px solid #e2e8f0">4,500</td><td style="padding:7px 12px;border:1px solid #e2e8f0">Guru of …</td></tr>
+    </table>
+
+    <!-- 9.3 Achievements -->
+    <h3>9.3 🏆 Achievements</h3>
+    <p>Achievements unlock automatically when you hit milestones. Unlocked achievements show on your Profile with the date earned:</p>
+
+    <div class="mockup-card">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 12px;text-align:center">
+          <div style="font-size:1.5rem;margin-bottom:4px">🥇</div>
+          <div style="font-size:.82rem;font-weight:600;color:#1e40af">First Steps</div>
+          <div style="font-size:.72rem;color:#6b7280;margin-top:2px">Complete first task</div>
+        </div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 12px;text-align:center">
+          <div style="font-size:1.5rem;margin-bottom:4px">🔥</div>
+          <div style="font-size:.82rem;font-weight:600;color:#166534">On a Roll</div>
+          <div style="font-size:.72rem;color:#6b7280;margin-top:2px">Complete 50 tasks</div>
+        </div>
+        <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:10px 12px;text-align:center">
+          <div style="font-size:1.5rem;margin-bottom:4px">🎯</div>
+          <div style="font-size:.82rem;font-weight:600;color:#6b21a8">Specialist</div>
+          <div style="font-size:.72rem;color:#6b7280;margin-top:2px">Level 5 any skill</div>
+        </div>
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px 12px;text-align:center;opacity:.5">
+          <div style="font-size:1.5rem;margin-bottom:4px">🚂</div>
+          <div style="font-size:.82rem;font-weight:600;color:#9a3412">Unstoppable</div>
+          <div style="font-size:.72rem;color:#6b7280;margin-top:2px">🔒 Streak 30 — locked</div>
+        </div>
+      </div>
+      <p style="font-size:.75rem;color:#9ca3af;margin-top:10px;margin-bottom:0">⚠️ Example data — for illustration only</p>
+    </div>
+
+    <!-- 9.4 Streaks -->
+    <h3>9.4 🔥 Streaks</h3>
+    <p>Recurring tasks track a <strong>streak</strong> — the number of consecutive on-time completions. View streaks in the task detail panel or on your Profile.</p>
+
+    <div class="mockup-card">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px">
+          <div>
+            <div style="font-size:.85rem;font-weight:600;color:#111827">🏃 Morning Run</div>
+            <div style="font-size:.75rem;color:#6b7280">🔁 Daily · Due tomorrow</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:1.4rem;font-weight:700;color:#f97316">🔥 14</div>
+            <div style="font-size:.7rem;color:#6b7280">Best: 21</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px">
+          <div>
+            <div style="font-size:.85rem;font-weight:600;color:#111827">💊 Take Vitamins</div>
+            <div style="font-size:.75rem;color:#6b7280">🔁 Daily · Due today</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:1.4rem;font-weight:700;color:#f97316">🔥❄️ 7</div>
+            <div style="font-size:.7rem;color:#6b7280">Frozen · Best: 7</div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:.75rem;color:#9ca3af;margin-top:10px;margin-bottom:0">⚠️ Example data — for illustration only</p>
+    </div>
+
+    <!-- 9.5 Freeze Credits -->
+    <h3>9.5 ❄️ Freeze Credits</h3>
+    <p>Earn <strong>1 Freeze Credit</strong> for every task you complete. Spend 1 credit to apply a Freeze to any recurring task — this protects the streak against one missed deadline.</p>
+
+    <div class="guide-step"><div class="step-num">1</div><div>Open the task detail panel for a recurring task.</div></div>
+    <div class="guide-step"><div class="step-num">2</div><div>Click <strong>Apply Freeze</strong>. Your freeze credit balance decreases by 1 and a ❄️ icon appears on the task.</div></div>
+    <div class="guide-step"><div class="step-num">3</div><div>If the task becomes overdue, the Freeze absorbs the miss — the streak is preserved and the ❄️ is cleared automatically by the hourly scheduler.</div></div>
+
+    <div class="tip-box">💡 Tip: Each task can hold one active Freeze at a time. Apply a Freeze before you know you'll be busy — you can't retroactively protect a streak that's already been reset.</div>
 
     <hr/>
 

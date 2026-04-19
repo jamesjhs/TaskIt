@@ -24,7 +24,8 @@ Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
    - [Your Profile](#your-profile)
    - [Admin Panel](#admin-panel)
 7. [Email Reminders](#email-reminders)
-8. [Troubleshooting](#troubleshooting)
+8. [Gamification](#gamification)
+9. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -389,6 +390,98 @@ When SMTP is configured and enabled, Jobber automatically sends reminder emails 
 | On-day reminder | Sent on the day the task is due (0–25 hours before) |
 
 Each reminder is sent only **once** per task. Reminders are checked every hour.
+
+---
+
+## Gamification
+
+Jobber includes an opt-in gamification layer — XP, skill levels, achievements, streaks, and a Freeze mechanic — designed to make staying on top of tasks more rewarding without getting in the way of the core experience.
+
+### Enabling Gamification
+
+1. Click **Profile** in the navigation.
+2. Locate the **Gamification** card.
+3. Click **Enable Gamification** to opt in.
+
+Your progress is preserved if you toggle it off and back on.
+
+---
+
+### XP & Skill Levels
+
+Completing a task earns you **50 XP** in the skill matching its type. XP accumulates to increase the skill level using a triangular progression:
+
+```
+XP to reach level n = 50 × n × (n − 1)
+
+Level 2  →   100 XP total
+Level 3  →   300 XP total
+Level 5  →  1,000 XP total
+Level 10 →  4,500 XP total
+```
+
+Your highest-level skill earns you a **dynamic title** shown on your profile:
+
+| Skill level | Title             |
+|-------------|-------------------|
+| 10+         | Guru of …         |
+| 7–9         | Master …          |
+| 5–6         | Expert …          |
+| 3–4         | Skilled …         |
+| 1–2         | Apprentice of …   |
+
+---
+
+### Achievements
+
+Achievements unlock automatically when you hit specific milestones. They are visible in the **Gamification** section of your Profile.
+
+| Achievement          | Milestone                                        |
+|----------------------|--------------------------------------------------|
+| 🥇 First Steps        | Complete your first task                         |
+| 🚀 Getting Started    | Complete 10 tasks                                |
+| 🔥 On a Roll          | Complete 50 tasks                                |
+| ⚔️ Centurion          | Complete 100 tasks                               |
+| 👑 Task Master        | Complete 500 tasks                               |
+| 📝 Detail Oriented    | Add 50 progress notes                            |
+| 🐦 Early Bird         | Complete 10 tasks before their due date          |
+| 🗺️ Type Explorer      | Use 5 different task types                       |
+| 🎯 Specialist         | Reach skill level 5                              |
+| 🎓 Master of the Craft| Reach skill level 10                             |
+| 🎩 Hat Trick          | Recurring task streak of 3                       |
+| 🍀 Lucky Streak       | Recurring task streak of 7                       |
+| 🚂 Unstoppable        | Recurring task streak of 30                      |
+
+---
+
+### Streaks
+
+Recurring tasks track a **streak counter**: the number of consecutive times you have completed the task on or before its due date.
+
+- **streak increases** each time you mark a recurring task complete on time
+- **streak resets to 0** if the task becomes overdue without being completed
+- The **all-time best** (longest streak) is also recorded and drives the streak achievements
+
+Streaks are visible per-task in the detail panel and in the **Gamification → Streaks** view on your Profile.
+
+---
+
+### Freeze Credits
+
+**Freeze Credits** let you protect a streak against a single missed deadline.
+
+**Earning credits:**  
+You earn 1 Freeze Credit every time you complete any task.
+
+**Spending credits:**  
+1. Open the detail panel for a recurring task.
+2. Click **Apply Freeze** (costs 1 credit).
+3. A ❄️ icon confirms the Freeze is active.
+
+**When a frozen task becomes overdue:**  
+The Freeze is consumed automatically, the streak is preserved, and the ❄️ is cleared. One Freeze protects one miss.
+
+> **Tip:** Keep a credit reserve by staying on top of non-recurring tasks, then spend credits on streaks you care about most.
 
 ---
 

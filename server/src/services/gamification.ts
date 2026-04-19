@@ -390,9 +390,29 @@ export function applyStreakFreeze(
 
   if (!hasAccess) return 'Not authorized';
 
-  // Atomic deduct + apply
-  db.prepare('UPDATE users SET freeze_credits = freeze_credits - 1 WHERE id = ? AND freeze_credits > 0').run(userId);
-  db.prepare('UPDATE tasks SET streak_frozen = 1 WHERE id = ?').run(taskId);
+  // Atomic deduct + apply — wrapped in a transaction so both succeed or both
+  // roll back. We also check that the credit row was actually modified; a
+  // concurrent request may have spent the last credit between our guard above
+  // and this UPDATE, which would leave changes = 0.
+  const applyFreeze = db.transaction(() => {
+    const info = db.prepare(
+      'UPDATE users SET freeze_credits = freeze_credits - 1 WHERE id = ? AND freeze_credits > 0'
+    ).run(userId);
+    if (info.changes === 0) {
+      // Credits were exhausted by a concurrent request — abort the transaction
+      throw new Error('INSUFFICIENT_CREDITS');
+    }
+    db.prepare('UPDATE tasks SET streak_frozen = 1 WHERE id = ?').run(taskId);
+  });
+
+  try {
+    applyFreeze();
+  } catch (err) {
+    if ((err as Error).message === 'INSUFFICIENT_CREDITS') {
+      return 'No freeze credits available';
+    }
+    throw err;
+  }
 
   return null;
 }

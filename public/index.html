@@ -2598,11 +2598,14 @@ function renderGamifStrip(profile, streaks) {
   if (topSkill) {
     document.getElementById('stripSkillName').textContent = topSkill.skill_name;
     document.getElementById('stripSkillBadge').textContent = 'Lv ' + topSkill.level;
-    const span   = 100 * topSkill.level;
-    const earned = Math.max(0, span - (topSkill.xpForNextLevel || 0));
-    const pct    = span > 0 ? Math.min(100, Math.round((earned / span) * 100)) : 0;
+    const span          = 100 * topSkill.level;
+    const earnedInLevel = Math.max(0, span - Math.max(0, topSkill.xpForNextLevel || 0));
+    const pct           = span > 0 ? Math.min(100, Math.round((earnedInLevel / span) * 100)) : 0;
     document.getElementById('stripBarFill').style.width = pct + '%';
-    document.getElementById('stripXpSub').textContent   = topSkill.xpForNextLevel + ' XP to Level ' + (topSkill.level + 1);
+    const xpLeft = Math.max(0, topSkill.xpForNextLevel || 0);
+    document.getElementById('stripXpSub').textContent   = xpLeft > 0
+      ? xpLeft + ' XP to Level ' + (topSkill.level + 1)
+      : 'Max level reached';
   } else {
     document.getElementById('stripSkillName').textContent = 'No skills yet';
     document.getElementById('stripSkillBadge').textContent = 'Lv 0';
@@ -2755,6 +2758,8 @@ function handleGamifOptInNo() {
 const COOKIE_NOTICE_KEY = 'jbCookieNotice';
 
 function initCookieNotice() {
+  // Don't show if user is already authenticated (they're already in the app)
+  if (token && currentUser) return;
   if (localStorage.getItem(COOKIE_NOTICE_KEY)) return;
   const notice = document.getElementById('cookieNotice');
   if (notice) notice.classList.remove('hidden');

@@ -1,6 +1,6 @@
 # 👋 Jobber – User Guide
 
-**Version 1.2.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.3.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 Jobber is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -33,7 +33,7 @@ There are two ways to log in:
 
 ### Creating a task
 
-1. Go to the **Tasks** page and click **New Task**.
+1. Go to the **Tasks** page and tap the large **`+`** floating button at the bottom-right of the screen.
 2. Give your task a **title** and choose a **type** (e.g. Urgent, Routine, Hobby). You can also add a custom type by selecting *+ Add new type…* from the dropdown.
 3. Optionally set a **group**, **assignees**, any **notes**, and a **due date**.
 4. To make the task repeat automatically, tick **Repeat Task** and choose the interval (e.g. every 2 weeks). When a recurring task is marked complete, a new copy is created for the next due date.
@@ -53,13 +53,15 @@ Click any task card to open the detail panel. From here you can:
 
 ### Filtering your task list
 
-Use the filter bar at the top of the Tasks page to narrow down what you see:
+Tap the **⚙️ Filters** chip at the top of the Tasks page to expand the filter panel:
 
-- Filter by **status** (Not Started, Started, Complete)
+- Filter by **status** (All, Not Started, Started, Complete)
 - Filter by **group** or **type**
 - **Show Archived** – include archived tasks in the list
 - **Assigned to Me** – show only tasks you have been assigned to
 - **Show Group Tasks** – toggle group tasks on/off to focus on your personal tasks
+
+When any filter is active, the ⚙️ chip shows a blue badge with the count of active filters.
 
 Tasks are always sorted by **due date** (soonest first), with **Urgent** tasks pinned to the very top.
 
@@ -207,9 +209,22 @@ System administrators see an extra **Admin** menu item. From here you can:
 
 ---
 
-## 🎮 Gamification *(optional — opt in from your Profile)*
+## 🎮 Gamification *(optional)*
 
-Jobber includes a **fully optional** gamification system that rewards consistent task completion. It is disabled by default — enable it from your Profile page whenever you're ready.
+Jobber includes a **fully optional** gamification system that rewards consistent task completion. It is disabled by default.
+
+### Getting started
+
+The first time you log in, Jobber may ask if you'd like to enable gamification via a short prompt. You can also enable or disable it at any time from **Profile → Gamification toggle**.
+
+### ⭐ Progress tab
+
+All gamification content lives in the **⭐ Progress** tab in the bottom navigation. Here you can see:
+- Your full skill tree with XP progress bars
+- Your unlocked achievements
+- Your active streaks
+
+When gamification is enabled, a slim **XP/streak strip** also appears at the top of the My Tasks page. It shows your top skill, current level, XP progress, and best active streak at a glance. Tap the strip to go straight to the Progress tab.
 
 ### Enabling / Disabling
 
@@ -282,13 +297,30 @@ Miss a deadline but don't want to lose your streak? Use a **Freeze**!
 
 ---
 
+## 🔐 Privacy & Browser Storage
+
+Jobber stores a small amount of data in your browser's `localStorage` to make the app work. This is **not** tracking — it's purely functional:
+
+| Key | What it stores |
+|-----|----------------|
+| `jbToken` | Your login session token |
+| `jbUser` | Your username, email, and locale preference |
+| `jobber_app_version` | The app version (for update detection) |
+| `jbPopupFired` | Which browser popup notifications have been sent today |
+| `jbGamifAsked` | Whether you've seen the gamification opt-in prompt |
+| `jbCookieNotice` | Whether you've dismissed the storage notice |
+
+No cookies are used. Your data is never sold or shared with advertisers. See the full [Privacy Policy](/privacy-policy.html) for details.
+
+---
+
 ## ❓ Common Questions
 
 **I can't log in**  
 Your account may be locked after too many failed attempts. Ask your system admin to unlock it via *Admin → Locked Accounts*. You can also try the magic link option if email is configured.
 
 **My tasks aren't showing**  
-Check the filter bar — filters like *Show Archived*, *Assigned to Me*, or *Show Group Tasks* can hide tasks. Also make sure you're a member of the group a task belongs to.
+Check the filter panel (tap ⚙️ Filters) — filters like *Show Archived*, *Assigned to Me*, or *Show Group Tasks* can hide tasks. Also make sure you're a member of the group a task belongs to.
 
 **I'm not receiving emails**  
 Email sending requires SMTP to be configured and enabled by your admin. Check with them to confirm it's set up correctly.
@@ -299,6 +331,9 @@ Any group admin can find the invite word pair and secret key by clicking **Manag
 **I didn't receive my email verification link**  
 Check your spam folder. If SMTP is not configured by the admin, the link will not be delivered — ask the admin to either configure SMTP or manually verify your account.
 
+**Where is the gamification content?**  
+Tap the **⭐ Progress** tab in the bottom navigation. You can also enable or disable gamification from the **Profile** page.
+
 ---
 
-*Jobber v1.1.0 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*Jobber v1.3.1 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*

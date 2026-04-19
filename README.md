@@ -1,6 +1,6 @@
 # Jobber – Task Management App
 
-**Version 1.2.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.3.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -101,6 +101,17 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.3.1
+
+- **⭐ Progress tab** — dedicated bottom-navigation tab housing the full gamification dashboard (Skills, Achievements, Streaks). Gamification content moved from the Profile page to Progress for better discoverability.
+- **Persistent XP/streak strip** — a slim interactive banner at the top of My Tasks shows the user's top skill name, level badge, XP progress bar, and best active streak count. Tapping it navigates to the Progress tab. Only visible when gamification is enabled.
+- **Floating Action Button (FAB)** — a large `+` button fixed at the bottom-right of the Tasks page replaces the in-header "New Task" button, positioning the primary action where thumbs naturally rest.
+- **Collapsible filter panel** — all task filters are now hidden behind a single `⚙️ Filters` chip. An active-filter count badge highlights the chip when filters are applied. Recovers vertical space on the Tasks page.
+- **Gamification opt-in prompt** — first-time users who haven't been asked are shown a bottom-sheet modal offering to enable gamification. Shown once per device; remembered in `localStorage`.
+- **Informational storage notice** — a dismissable banner appears on the landing/auth pages for first-time visitors, explaining that Jobber uses only essential `localStorage` (no tracking cookies). Dismissed state persisted in `localStorage`.
+- **Privacy policy v1.1.0** — Section 3 extended with rows for Preferences, Calendar Integration, Feedback, and Gamification data. Section 6 (Retention) extended with Feedback, Gamification data, and ICS token retention periods. Section 10 (Browser Storage) fully rewritten: enumerates all six `localStorage` keys with purpose and legal basis, and confirms no HTTP cookies are used.
+- **Landing page** — phone mockups updated to show the new five-item navigation bar (Tasks, Groups, Alerts, ⭐ Progress, Profile).
 
 ### v1.2.1
 

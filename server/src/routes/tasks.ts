@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
+import { awardTaskXp, checkAndGrantAchievements } from '../services/gamification';
 
 const router = Router();
 
@@ -410,6 +411,24 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
       spawnAndArchive();
     }
+
+    // Award XP and check achievements for the completing user.
+    // Errors here must never break the status update response.
+    try {
+      const completedTask = db.prepare(
+        'SELECT type_id, due_date FROM tasks WHERE id = ?'
+      ).get(taskId) as { type_id: string; due_date: number | null } | undefined;
+
+      if (completedTask) {
+        awardTaskXp(userId, completedTask.type_id);
+        checkAndGrantAchievements(userId, {
+          taskId,
+          dueDateMs: completedTask.due_date,
+        });
+      }
+    } catch (gamErr) {
+      console.error('[gamification] Error processing task completion:', gamErr);
+    }
   }
 
   const updated = db.prepare(`
@@ -712,6 +731,13 @@ router.post('/:id/notes', (req: Request, res: Response): void => {
   db.prepare(
     'INSERT INTO task_notes (id, task_id, user_id, note, created_at) VALUES (?, ?, ?, ?, ?)'
   ).run(id, taskId, userId, note.trim(), now);
+
+  // Check note-related achievements (e.g. 'detail_oriented')
+  try {
+    checkAndGrantAchievements(userId);
+  } catch (gamErr) {
+    console.error('[gamification] Error processing note creation:', gamErr);
+  }
 
   const created = db.prepare(`
     SELECT tn.id, tn.note, tn.created_at, u.username

@@ -206,6 +206,35 @@ db.exec(`
     created_at INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+
+  -- Gamification: per-user skill progress mapped from task_types
+  CREATE TABLE IF NOT EXISTS user_skills (
+    user_id TEXT NOT NULL,
+    skill_name TEXT NOT NULL,
+    xp INTEGER NOT NULL DEFAULT 0,
+    level INTEGER NOT NULL DEFAULT 1,
+    PRIMARY KEY (user_id, skill_name),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  -- Gamification: master catalogue of available achievements
+  CREATE TABLE IF NOT EXISTS achievements (
+    id TEXT PRIMARY KEY,
+    key TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+
+  -- Gamification: junction table of achievements unlocked by each user
+  CREATE TABLE IF NOT EXISTS user_achievements (
+    user_id TEXT NOT NULL,
+    achievement_id TEXT NOT NULL,
+    unlocked_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, achievement_id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (achievement_id) REFERENCES achievements(id)
+  );
 `);
 
 // Runtime migrations — add columns if they don't exist yet
@@ -253,6 +282,8 @@ addCol('tasks', 'notify_popup_1day', 'INTEGER NOT NULL DEFAULT 0');
 addCol('tasks', 'notify_popup_onday', 'INTEGER NOT NULL DEFAULT 0');
 // purpose column on magic_tokens distinguishes login / verify / reset flows
 addCol('magic_tokens', 'purpose', "TEXT NOT NULL DEFAULT 'login'");
+// Gamification opt-in flag on user profiles (off by default)
+addCol('users', 'gamification_enabled', 'INTEGER NOT NULL DEFAULT 0');
 // Backfill existing groups: generate a proper unique invite word pair for any group that lacks one
 {
   const ungrouped = db.prepare("SELECT id FROM groups WHERE invite_name = ''").all() as Array<{ id: string }>;
@@ -299,6 +330,30 @@ if (countRow.cnt === 0) {
   const now = Date.now();
   for (const name of defaultTypes) {
     insert.run(uuidv4(), name, now);
+  }
+}
+
+// Seed default achievements catalogue if not present
+const achievementCountRow = db.prepare('SELECT COUNT(*) as cnt FROM achievements').get() as { cnt: number };
+if (achievementCountRow.cnt === 0) {
+  const insertAchievement = db.prepare(
+    'INSERT INTO achievements (id, key, name, description, created_at) VALUES (?, ?, ?, ?, ?)'
+  );
+  const now = Date.now();
+  const defaultAchievements: Array<{ key: string; name: string; description: string }> = [
+    { key: 'first_task',        name: 'First Steps',      description: 'Complete your first task.' },
+    { key: 'task_10',           name: 'Getting Started',  description: 'Complete 10 tasks.' },
+    { key: 'task_50',           name: 'On a Roll',        description: 'Complete 50 tasks.' },
+    { key: 'task_100',          name: 'Centurion',        description: 'Complete 100 tasks.' },
+    { key: 'task_500',          name: 'Task Master',      description: 'Complete 500 tasks.' },
+    { key: 'detail_oriented',   name: 'Detail Oriented',  description: 'Add 50 progress notes across all tasks.' },
+    { key: 'early_bird',        name: 'Early Bird',       description: 'Complete 10 tasks before their due date.' },
+    { key: 'type_explorer',     name: 'Type Explorer',    description: 'Complete tasks across 5 different task types.' },
+    { key: 'skill_level_5',     name: 'Specialist',       description: 'Reach level 5 in any skill.' },
+    { key: 'skill_level_10',    name: 'Master of the Craft', description: 'Reach level 10 in any skill.' },
+  ];
+  for (const a of defaultAchievements) {
+    insertAchievement.run(uuidv4(), a.key, a.name, a.description, now);
   }
 }
 

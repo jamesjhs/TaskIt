@@ -65,27 +65,38 @@ const authenticatedLimiter = rateLimit({
 app.use((req: Request, res: Response, next: NextFunction): void => {
   const origin = req.headers.origin;
   let allowed = false;
+  let useWildcard = false;
 
   if (CORS_ORIGIN === false) {
     // No CORS — pass straight through (same-origin SPA requests have no Origin header anyway)
+  } else if (CORS_ORIGIN === '*') {
+    // Wildcard: allow any origin. Credentials are NOT allowed with a wildcard origin.
+    allowed = true;
+    useWildcard = true;
   } else if (Array.isArray(CORS_ORIGIN)) {
     allowed = origin !== undefined && CORS_ORIGIN.includes(origin);
   } else {
-    // single string — '*' or a specific origin
-    allowed = CORS_ORIGIN === '*' || origin === CORS_ORIGIN;
+    // single specific origin
+    allowed = origin === CORS_ORIGIN;
   }
 
-  if (allowed && origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
+  if (allowed) {
+    if (useWildcard) {
+      // Wildcard: must not reflect origin or set Allow-Credentials
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    } else if (origin) {
+      // Specific allowed origin: reflect it and permit credentials
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Vary', 'Origin');
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Vary', 'Origin');
   }
 
-  // Handle preflight
+  // Handle preflight — always respond 204 (headers already set above if allowed)
   if (req.method === 'OPTIONS') {
-    res.sendStatus(allowed ? 204 : 204); // always 204 for preflight; headers only set when allowed
+    res.sendStatus(204);
     return;
   }
 

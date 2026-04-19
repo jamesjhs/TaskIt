@@ -346,7 +346,10 @@ if (countRow.cnt === 0) {
 
 // Seed achievements catalogue using INSERT OR IGNORE so the block is idempotent:
 // adding new achievements to the array will seed them on the next server start
-// even when existing rows are already present.
+// even when existing rows are already present. Idempotency relies on the UNIQUE
+// constraint on `key` — the random UUID is only stored on the first INSERT;
+// subsequent restarts will generate different UUIDs but the INSERT is silently
+// ignored because the key already exists.
 {
   const insertAchievement = db.prepare(
     'INSERT OR IGNORE INTO achievements (id, key, name, description, created_at) VALUES (?, ?, ?, ?, ?)'

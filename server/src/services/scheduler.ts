@@ -93,6 +93,8 @@ export function startScheduler(): void {
   // Run every hour
   cron.schedule('0 * * * *', () => {
     sendReminders().catch(err => console.error('[scheduler] Error in reminder job:', err));
+    // resetOverdueStreaks uses synchronous better-sqlite3 calls — no async needed.
+    // The try/catch guards against unexpected runtime errors (e.g. schema migration lag).
     try {
       resetOverdueStreaks();
     } catch (err) {

@@ -9,7 +9,7 @@
  * Boots when the arcade overlay dispatches 'arcade:open' with
  * gameId === 'hangman', and tears itself down cleanly on 'arcade:close'.
  *
- * Theme: Productivity — players guess productivity-related words.
+ * Theme: General knowledge — players guess words from a wide range of topics.
  * Up to 6 incorrect guesses progressively draw a stick-figure using
  * an inline SVG; a 7th wrong guess never occurs.
  *
@@ -36,14 +36,39 @@
 
   // ── Word bank ──────────────────────────────────────────────────────────────
   /**
-   * Productivity-themed words. All stored upper-case; comparison throughout
-   * is case-insensitive by design. Add or remove entries freely.
+   * 100 words across a variety of topics. All stored upper-case; comparison
+   * throughout is case-insensitive by design. Add or remove entries freely.
    */
   const WORDS = [
+    // productivity
     'DEADLINE', 'SCHEDULE', 'ORGANIZE', 'MOMENTUM', 'MILESTONE',
     'EFFICIENCY', 'PRIORITY', 'WORKFLOW', 'COMPLETE', 'ACHIEVE',
     'DELEGATE', 'PRODUCTIVE', 'FOCUS', 'PROGRESS', 'PLANNING',
     'REVIEW', 'BACKLOG', 'SPRINT', 'ITERATE', 'LAUNCH',
+    // nature
+    'VOLCANO', 'RAINBOW', 'WATERFALL', 'AVALANCHE', 'GLACIER',
+    'HURRICANE', 'LIGHTNING', 'QUICKSAND', 'ECOSYSTEM', 'CANOPY',
+    // animals
+    'ELEPHANT', 'BUTTERFLY', 'CROCODILE', 'FLAMINGO', 'KANGAROO',
+    'PORCUPINE', 'RACCOON', 'JELLYFISH', 'DINOSAUR', 'CHEETAH',
+    // food
+    'CHOCOLATE', 'CINNAMON', 'STRAWBERRY', 'MUSHROOM', 'PINEAPPLE',
+    'AVOCADO', 'BLUEBERRY', 'CORIANDER', 'LASAGNA', 'RASPBERRY',
+    // sports
+    'MARATHON', 'BADMINTON', 'BASKETBALL', 'VOLLEYBALL', 'SWIMMING',
+    'CYCLING', 'ARCHERY', 'WRESTLING', 'GYMNASTICS', 'FENCING',
+    // science & technology
+    'ALGORITHM', 'CHEMISTRY', 'TELESCOPE', 'SATELLITE', 'MOLECULE',
+    'EVOLUTION', 'INVENTION', 'GRAVITY', 'RADIATION', 'SPECTRUM',
+    // places & geography
+    'MOUNTAIN', 'PARADISE', 'LABYRINTH', 'CATHEDRAL', 'PENINSULA',
+    'RESTAURANT', 'GEOGRAPHY', 'OBSERVATORY', 'STADIUM', 'CONTINENT',
+    // arts & culture
+    'SYMPHONY', 'PAINTING', 'ORCHESTRA', 'FESTIVAL', 'CARNIVAL',
+    'SCULPTURE', 'MYTHOLOGY', 'FOLKLORE', 'LITERATURE', 'DRAMA',
+    // general
+    'ADVENTURE', 'TREASURE', 'CHAMPION', 'UNIVERSE', 'MYSTERY',
+    'KNOWLEDGE', 'LANGUAGE', 'EDUCATION', 'IMAGINATION', 'DISCOVERY',
   ];
 
   /**

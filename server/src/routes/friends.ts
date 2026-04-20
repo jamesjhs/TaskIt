@@ -46,6 +46,111 @@ router.get('/invite/:token', (req: Request, res: Response): void => {
 // ─── All routes below require authentication ──────────────────────────────────
 router.use(authMiddleware);
 
+// GET /api/friends/my-key — return the current user's friend key and username
+// for display in the Friends section (so they can share it with others).
+router.get('/my-key', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+
+  const user = db.prepare('SELECT username, friend_key FROM users WHERE id = ?').get(userId) as
+    | { username: string; friend_key: string | null }
+    | undefined;
+
+  if (!user) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  // Generate a key if one is missing (should not happen after migration, but defensive)
+  let key = user.friend_key;
+  if (!key) {
+    key = crypto.randomBytes(4).toString('hex');
+    db.prepare('UPDATE users SET friend_key = ? WHERE id = ?').run(key, userId);
+  }
+
+  res.json({ username: user.username, friend_key: key });
+});
+
+// POST /api/friends/add-by-key — add a friend by username + friend_key
+// Creates a bidirectional friendship without consuming a one-time invite token.
+router.post('/add-by-key', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const { username, friend_key } = req.body;
+
+  if (!username || !friend_key) {
+    res.status(400).json({ error: 'username and friend_key are required' });
+    return;
+  }
+
+  const target = db.prepare(
+    'SELECT id, username, friend_key FROM users WHERE username = ?'
+  ).get(String(username).trim()) as
+    | { id: string; username: string; friend_key: string | null }
+    | undefined;
+
+  if (!target || !target.friend_key) {
+    res.status(404).json({ error: 'No user found with that username and key combination' });
+    return;
+  }
+
+  // Constant-time key comparison to prevent timing attacks
+  const submittedKey = Buffer.from(String(friend_key).trim().toLowerCase(), 'utf8');
+  const storedKey = Buffer.from(target.friend_key.toLowerCase(), 'utf8');
+  const match = submittedKey.length === storedKey.length &&
+    crypto.timingSafeEqual(submittedKey, storedKey);
+
+  if (!match) {
+    res.status(404).json({ error: 'No user found with that username and key combination' });
+    return;
+  }
+
+  if (target.id === userId) {
+    res.status(400).json({ error: 'Cannot add yourself as a friend' });
+    return;
+  }
+
+  // Idempotent — already friends?
+  const existing = db.prepare(
+    'SELECT 1 FROM user_friends WHERE user_id = ? AND friend_id = ?'
+  ).get(userId, target.id);
+
+  if (existing) {
+    res.json({ message: 'Already friends', alreadyFriends: true, target: { id: target.id, username: target.username } });
+    return;
+  }
+
+  const now = Date.now();
+
+  const addFriend = db.transaction(() => {
+    db.prepare(
+      'INSERT OR IGNORE INTO user_friends (user_id, friend_id, created_at) VALUES (?, ?, ?)'
+    ).run(userId, target.id, now);
+    db.prepare(
+      'INSERT OR IGNORE INTO user_friends (user_id, friend_id, created_at) VALUES (?, ?, ?)'
+    ).run(target.id, userId, now);
+  });
+
+  addFriend();
+
+  // Notify the other user (non-critical)
+  try {
+    const requester = db.prepare('SELECT username FROM users WHERE id = ?').get(userId) as
+      | { username: string }
+      | undefined;
+    db.prepare(
+      'INSERT INTO user_alerts (id, user_id, message, created_at) VALUES (?, ?, ?, ?)'
+    ).run(
+      crypto.randomUUID(),
+      target.id,
+      `${requester?.username ?? 'Someone'} added you as a friend!`,
+      now,
+    );
+  } catch (err) {
+    console.error('[friends/add-by-key] Failed to create alert:', err);
+  }
+
+  res.status(201).json({ message: 'Friend added!', target: { id: target.id, username: target.username } });
+});
+
 // POST /api/friends/invite — generate (or refresh) a friend invite link for the
 // current user.  Invalidates any existing unused invite first so there is only
 // ever one live link at a time.

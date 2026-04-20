@@ -315,6 +315,18 @@ addCol('tasks', 'streak_longest', 'INTEGER NOT NULL DEFAULT 0');
 addCol('tasks', 'streak_frozen', 'INTEGER NOT NULL DEFAULT 0');
 // Gamification Step 2: secondary currency for purchasing Freezes
 addCol('users', 'freeze_credits', 'INTEGER NOT NULL DEFAULT 0');
+// Friends: each user has a short friend key they can share to be added without a QR/link
+addCol('users', 'friend_key', 'TEXT');
+// Backfill: generate a friend_key for any user that doesn't have one yet
+{
+  const missingKey = db.prepare("SELECT id FROM users WHERE friend_key IS NULL OR friend_key = ''").all() as Array<{ id: string }>;
+  const updateKey = db.prepare('UPDATE users SET friend_key = ? WHERE id = ?');
+  const crypto = require('crypto') as typeof import('crypto');
+  for (const row of missingKey) {
+    const key = crypto.randomBytes(4).toString('hex');
+    updateKey.run(key, row.id);
+  }
+}
 // Backfill existing groups: generate a proper unique invite word pair for any group that lacks one
 {
   const ungrouped = db.prepare("SELECT id FROM groups WHERE invite_name = ''").all() as Array<{ id: string }>;

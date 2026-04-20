@@ -697,7 +697,6 @@
     <div class="lp-footer-links">
       <a href="/privacy-policy.html">Privacy Policy</a>
       <a href="/user-guide.html">User Guide</a>
-      <a href="/howto.html">How To</a>
       <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a>
     </div>
     <p>Jobber &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; Collaborative task management for everyone</p>
@@ -730,6 +729,10 @@
         <input id="loginEmail" type="email" required placeholder="you@example.com" autocomplete="email" class="input" />
       </div>
       <div id="magicLinkMode">
+        <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <input type="checkbox" id="rememberMeMagic" style="width:16px;height:16px;accent-color:#1a56db" />
+          <label for="rememberMeMagic" style="font-size:.88rem;color:#374151;margin:0;cursor:pointer">Keep me signed in for 30 days</label>
+        </div>
         <button type="submit" class="btn btn-primary btn-full">Send Magic Link</button>
         <p style="text-align:center;margin-top:12px">
           <button type="button" onclick="toggleLoginMode()" class="link-btn">Use password instead</button>
@@ -739,6 +742,10 @@
         <div class="form-group">
           <label>Password</label>
           <input id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password" class="input" />
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <input type="checkbox" id="rememberMePassword" style="width:16px;height:16px;accent-color:#1a56db" />
+          <label for="rememberMePassword" style="font-size:.88rem;color:#374151;margin:0;cursor:pointer">Keep me signed in for 30 days</label>
         </div>
         <button type="button" onclick="handlePasswordLogin()" class="btn btn-primary btn-full">Sign In</button>
         <p style="text-align:center;margin-top:12px">
@@ -829,7 +836,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">Jobber v<span id="authFooterVersion">1.1.0</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a> &nbsp;·&nbsp; <a href="/howto.html">How To</a></p>
+      <p class="version-footer" style="margin-top:16px">Jobber v<span id="authFooterVersion">1.3.2</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>
@@ -841,7 +848,7 @@
   <div id="tasksPage" class="view">
     <div class="view-header">
       <h1>My Tasks</h1>
-      <a href="/howto.html" target="_blank" class="btn btn-outline btn-sm" title="How To Guide" style="font-size:.75rem;padding:6px 10px">❓ Guide</a>
+      <a href="/user-guide.html" target="_blank" class="btn btn-outline btn-sm" title="User Guide" style="font-size:.75rem;padding:6px 10px">❓ Guide</a>
     </div>
 
     <!-- Gamification strip — shown only when gamification is enabled -->
@@ -1060,7 +1067,7 @@
       <button onclick="confirmDeleteAccount()" class="btn btn-danger btn-full">Delete My Account</button>
     </div>
 
-    <p class="version-footer">Jobber v<span id="footerVersion">—</span> &middot; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &middot; &copy; J Rowson 2026 &middot; <a href="/privacy-policy.html">Privacy Policy</a> &middot; <a href="/user-guide.html">User Guide</a> &middot; <a href="/howto.html">How To</a></p>
+    <p class="version-footer">Jobber v<span id="footerVersion">—</span> &middot; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &middot; &copy; J Rowson 2026 &middot; <a href="/privacy-policy.html">Privacy Policy</a> &middot; <a href="/user-guide.html">User Guide</a></p>
   </div>
 
   <!-- ===== ADMIN PAGE ===== -->
@@ -1203,11 +1210,46 @@
         <!-- Friends -->
         <p class="detail-section-title" style="margin-top:16px">🤝 Friends</p>
         <div id="gamifFriendsSection">
-          <p style="font-size:.85rem;color:#6b7280;margin-bottom:10px">Compete with friends outside your groups. Share your invite link to connect.</p>
-          <button onclick="generateFriendInvite()" class="btn btn-outline btn-sm btn-full" style="margin-bottom:10px">📤 Generate Friend Invite Link</button>
+          <!-- Intro for new users -->
+          <div style="background:#eff6ff;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:.85rem;color:#1e40af;line-height:1.5">
+            <strong>What are Jobber Friends?</strong><br/>
+            Friends let you compete on XP leaderboards with people <em>outside</em> your groups — colleagues, housemates, anyone you know. You're never added to each other's groups; you just see each other's total XP rank. There are three ways to connect:
+            <ul style="margin:6px 0 0 16px;padding:0;color:#1e40af">
+              <li><strong>Share your invite link or QR code</strong> — valid for 7 days, single-use.</li>
+              <li><strong>Share your username + friend key</strong> — your friend enters them directly in the app.</li>
+              <li><strong>Both of you must be registered</strong> — if the other person is new to Jobber, send them the invite link to register first, then connect.</li>
+            </ul>
+          </div>
+          <!-- Your friend key (always visible) -->
+          <div id="friendMyKeyArea" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:10px">
+            <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:6px">📋 Your details (share these with friends):</p>
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+              <span style="font-size:.8rem;color:#6b7280;width:80px">Username:</span>
+              <code id="friendMyUsername" style="font-size:.9rem;color:#111827;font-weight:600;flex:1">—</code>
+              <button onclick="copyToClipboard(document.getElementById('friendMyUsername').textContent)" class="btn btn-sm btn-secondary">Copy</button>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <span style="font-size:.8rem;color:#6b7280;width:80px">Friend key:</span>
+              <code id="friendMyKey" style="font-size:.9rem;font-family:monospace;color:#1a56db;font-weight:700;letter-spacing:.1em;flex:1">—</code>
+              <button onclick="copyToClipboard(document.getElementById('friendMyKey').textContent)" class="btn btn-sm btn-secondary">Copy</button>
+            </div>
+          </div>
+          <!-- Add friend by username+key -->
+          <details style="margin-bottom:10px">
+            <summary style="font-size:.875rem;font-weight:600;color:#374151;cursor:pointer;padding:6px 0">➕ Add friend by username &amp; key</summary>
+            <div style="padding:10px 0 2px">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <input id="addFriendUsername" type="text" placeholder="Their username" class="input" style="font-size:.875rem" />
+                <input id="addFriendKey" type="text" placeholder="Their friend key (e.g. a1b2c3d4)" class="input" style="font-size:.875rem;font-family:monospace" maxlength="8" />
+                <button onclick="addFriendByKey()" class="btn btn-primary btn-sm">Add Friend</button>
+              </div>
+            </div>
+          </details>
+          <!-- Invite link / QR -->
+          <button onclick="generateFriendInvite()" class="btn btn-outline btn-sm btn-full" style="margin-bottom:10px">📤 Generate Invite Link &amp; QR Code</button>
           <div id="friendInviteArea" class="hidden" style="background:#f9fafb;border-radius:8px;padding:12px;margin-bottom:10px;text-align:center">
             <img id="friendQRImage" src="" alt="QR Code" style="width:160px;height:160px;display:block;margin:0 auto 8px" />
-            <p style="font-size:.75rem;color:#6b7280;margin-bottom:6px">Scan or share the link below:</p>
+            <p style="font-size:.75rem;color:#6b7280;margin-bottom:6px">Scan the QR code, or share the link below:</p>
             <div style="display:flex;gap:6px;align-items:center;justify-content:center">
               <input id="friendInviteLink" type="text" readonly class="input" style="font-size:.75rem;flex:1" />
               <button onclick="copyToClipboard(document.getElementById('friendInviteLink').value)" class="btn btn-sm btn-secondary">Copy</button>
@@ -1597,8 +1639,8 @@
 <script src="/js/qrcode.js"></script>
 <script>
 // ========== State ==========
-let token = localStorage.getItem('jbToken') || '';
-let currentUser = JSON.parse(localStorage.getItem('jbUser') || 'null');
+let token = localStorage.getItem('jbToken') || sessionStorage.getItem('jbToken') || '';
+let currentUser = JSON.parse(localStorage.getItem('jbUser') || sessionStorage.getItem('jbUser') || 'null');
 let taskTypes = [];
 let groups = [];
 let tasksMap = new Map();
@@ -1672,6 +1714,9 @@ function toggleLoginMode() {
 async function handleMagicLinkSend(e) {
   e.preventDefault();
   if (loginMode === 'password') { await handlePasswordLogin(); return; }
+  // Stash rememberMe so it can be picked up after the email link redirect
+  const rememberMe = document.getElementById('rememberMeMagic').checked;
+  sessionStorage.setItem('jbRememberMe', rememberMe ? 'true' : 'false');
   try {
     const data = await api('POST', '/auth/magic-link', { email: document.getElementById('loginEmail').value });
     toast(data.message || 'Check your email for a login link.', 'info');
@@ -1704,11 +1749,12 @@ async function handleOTPVerify() {
     toast('Please enter the 6-digit code from your email.', 'error');
     return;
   }
+  const rememberMe = document.getElementById('rememberMePassword').checked;
   try {
-    const data = await api('POST', '/auth/verify-otp', { sessionId: _otpSessionId, code });
+    const data = await api('POST', '/auth/verify-otp', { sessionId: _otpSessionId, code, rememberMe });
     document.getElementById('otpModal').classList.add('hidden');
     _otpSessionId = null;
-    storeAuth(data);
+    storeAuth(data, rememberMe);
   } catch (err) { toast(err.message, 'error'); }
 }
 
@@ -1761,10 +1807,21 @@ async function handleRegister(e) {
   }
 }
 
-function storeAuth(data) {
+function storeAuth(data, rememberMe) {
   token = data.token; currentUser = data.user;
-  localStorage.setItem('jbToken', token);
-  localStorage.setItem('jbUser', JSON.stringify(currentUser));
+  // Use the rememberMe flag from the response (server echoes it back) or the parameter
+  const persist = rememberMe !== undefined ? rememberMe : (data.rememberMe === true);
+  if (persist) {
+    localStorage.setItem('jbToken', token);
+    localStorage.setItem('jbUser', JSON.stringify(currentUser));
+    sessionStorage.removeItem('jbToken');
+    sessionStorage.removeItem('jbUser');
+  } else {
+    sessionStorage.setItem('jbToken', token);
+    sessionStorage.setItem('jbUser', JSON.stringify(currentUser));
+    localStorage.removeItem('jbToken');
+    localStorage.removeItem('jbUser');
+  }
   // Hide cookie notice when user enters the app
   const notice = document.getElementById('cookieNotice');
   if (notice) notice.classList.add('hidden');
@@ -1774,6 +1831,7 @@ function storeAuth(data) {
 function logout() {
   token = ''; currentUser = null;
   localStorage.removeItem('jbToken'); localStorage.removeItem('jbUser');
+  sessionStorage.removeItem('jbToken'); sessionStorage.removeItem('jbUser');
   document.getElementById('appPage').classList.add('hidden');
   document.getElementById('authPage').classList.remove('hidden');
   document.getElementById('landingPage').classList.add('hidden');
@@ -2621,6 +2679,7 @@ async function loadGamificationProfile() {
       // Load leaderboards (group and friends) whenever gamification profile is refreshed
       loadGroupLeaderboards();
       loadFriendsLeaderboard();
+      loadFriendMyKey();
     }
 
     // My Tasks strip
@@ -2812,6 +2871,33 @@ function renderLeaderboardTable(rows, myId) {
 }
 
 // ========== Friends / Friends Leaderboard ==========
+
+async function loadFriendMyKey() {
+  try {
+    const data = await api('GET', '/friends/my-key');
+    const usernameEl = document.getElementById('friendMyUsername');
+    const keyEl = document.getElementById('friendMyKey');
+    if (usernameEl) usernameEl.textContent = data.username || '—';
+    if (keyEl) keyEl.textContent = data.friend_key || '—';
+  } catch { /* silently ignore */ }
+}
+
+async function addFriendByKey() {
+  const username = (document.getElementById('addFriendUsername').value || '').trim();
+  const key = (document.getElementById('addFriendKey').value || '').trim();
+  if (!username || !key) { toast('Please enter both a username and friend key.', 'error'); return; }
+  try {
+    const data = await api('POST', '/friends/add-by-key', { username, friend_key: key });
+    if (data.alreadyFriends) {
+      toast('You are already friends with ' + data.target.username + '!', 'info');
+    } else {
+      toast('🎉 ' + data.target.username + ' added as a friend!');
+    }
+    document.getElementById('addFriendUsername').value = '';
+    document.getElementById('addFriendKey').value = '';
+    loadFriendsLeaderboard();
+  } catch (err) { toast(err.message, 'error'); }
+}
 
 async function generateFriendInvite() {
   const area = document.getElementById('friendInviteArea');
@@ -3460,15 +3546,19 @@ document.addEventListener('click', function(e) {
   }
 
   if (magicToken) {
+    // Carry the rememberMe preference from sessionStorage if the user set it before being redirected
+    const rememberedChoice = sessionStorage.getItem('jbRememberMe') === 'true';
+    const rememberMeQS = rememberedChoice ? '&rememberMe=true' : '';
     try {
-      const data = await api('GET', '/auth/magic-link/verify?token=' + encodeURIComponent(magicToken));
+      const data = await api('GET', '/auth/magic-link/verify?token=' + encodeURIComponent(magicToken) + rememberMeQS);
+      sessionStorage.removeItem('jbRememberMe');
       history.replaceState(null, '', window.location.pathname);
       // Preserve any pending invite/friend token through the auth flow
       const pendingInvite = sessionStorage.getItem('pendingInvite') || inviteToken;
       if (pendingInvite) sessionStorage.setItem('pendingInvite', pendingInvite);
       const pendingFriend = sessionStorage.getItem('pendingFriendInvite') || friendToken;
       if (pendingFriend) sessionStorage.setItem('pendingFriendInvite', pendingFriend);
-      storeAuth(data);
+      storeAuth(data, rememberedChoice);
     } catch (err) {
       history.replaceState(null, '', window.location.pathname);
       document.getElementById('landingPage').classList.add('hidden');

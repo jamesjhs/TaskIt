@@ -1,6 +1,6 @@
 # Jobber – How-To Manual
 
-**Version 1.2.1**  
+**Version 1.3.2**  
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---

@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.jamesjhs.jobber'
+    namespace 'com.jamesjhs.crystallise'
     compileSdk 36
 
     defaultConfig {
-        applicationId "com.jamesjhs.jobber"
+        applicationId "com.jamesjhs.crystallise"
         minSdk 26
         targetSdk 36
         versionCode 1

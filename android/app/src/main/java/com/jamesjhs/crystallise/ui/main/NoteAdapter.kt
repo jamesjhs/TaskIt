@@ -1,12 +1,12 @@
-package com.jamesjhs.jobber.ui.main
+package com.jamesjhs.crystallise.ui.main
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.jamesjhs.jobber.R
-import com.jamesjhs.jobber.api.TaskNote
+import com.jamesjhs.crystallise.R
+import com.jamesjhs.crystallise.api.TaskNote
 import java.text.SimpleDateFormat
 import java.util.*
 

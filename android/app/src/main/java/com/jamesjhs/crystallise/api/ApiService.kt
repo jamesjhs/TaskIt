@@ -1,6 +1,6 @@
-package com.jamesjhs.jobber.api
+package com.jamesjhs.crystallise.api
 
-import com.jamesjhs.jobber.models.*
+import com.jamesjhs.crystallise.models.*
 import retrofit2.Response
 import retrofit2.http.*
 

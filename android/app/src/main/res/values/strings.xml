@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Jobber</string>
+    <string name="app_name">Crystallise</string>
     <string name="invite_name_format">@%1$s</string>
     <string name="login">Login</string>
     <string name="register">Register</string>

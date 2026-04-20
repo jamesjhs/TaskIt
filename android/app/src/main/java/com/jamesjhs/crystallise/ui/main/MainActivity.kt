@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.ui.main
+package com.jamesjhs.crystallise.ui.main
 
 import android.content.Intent
 import android.os.Bundle
@@ -9,11 +9,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.jamesjhs.jobber.R
-import com.jamesjhs.jobber.api.ApiClient
-import com.jamesjhs.jobber.data.TokenManager
-import com.jamesjhs.jobber.models.Task
-import com.jamesjhs.jobber.ui.auth.AuthActivity
+import com.jamesjhs.crystallise.R
+import com.jamesjhs.crystallise.api.ApiClient
+import com.jamesjhs.crystallise.data.TokenManager
+import com.jamesjhs.crystallise.models.Task
+import com.jamesjhs.crystallise.ui.auth.AuthActivity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -23,8 +23,8 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.jamesjhs.jobber.databinding.ActivityMainBinding
-import com.jamesjhs.jobber.worker.AlertWorker
+import com.jamesjhs.crystallise.databinding.ActivityMainBinding
+import com.jamesjhs.crystallise.worker.AlertWorker
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {

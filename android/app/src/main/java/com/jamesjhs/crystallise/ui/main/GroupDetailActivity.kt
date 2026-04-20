@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.ui.main
+package com.jamesjhs.crystallise.ui.main
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -14,12 +14,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.jamesjhs.jobber.R
-import com.jamesjhs.jobber.api.ApiClient
-import com.jamesjhs.jobber.data.TokenManager
-import com.jamesjhs.jobber.databinding.ActivityGroupDetailBinding
-import com.jamesjhs.jobber.models.Group
-import com.jamesjhs.jobber.models.User
+import com.jamesjhs.crystallise.R
+import com.jamesjhs.crystallise.api.ApiClient
+import com.jamesjhs.crystallise.data.TokenManager
+import com.jamesjhs.crystallise.databinding.ActivityGroupDetailBinding
+import com.jamesjhs.crystallise.models.Group
+import com.jamesjhs.crystallise.models.User
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -84,14 +84,14 @@ class GroupDetailActivity : AppCompatActivity() {
 
     private fun showUserActions(user: User) {
         val actions = arrayOf(
-            getString(com.jamesjhs.jobber.R.string.promote),
-            getString(com.jamesjhs.jobber.R.string.demote),
-            getString(com.jamesjhs.jobber.R.string.report),
-            getString(com.jamesjhs.jobber.R.string.block)
+            getString(com.jamesjhs.crystallise.R.string.promote),
+            getString(com.jamesjhs.crystallise.R.string.demote),
+            getString(com.jamesjhs.crystallise.R.string.report),
+            getString(com.jamesjhs.crystallise.R.string.block)
         )
 
         androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle(getString(com.jamesjhs.jobber.R.string.user_actions))
+            .setTitle(getString(com.jamesjhs.crystallise.R.string.user_actions))
             .setItems(actions) { _, which ->
                 when (which) {
                     0 -> promoteMember(user)
@@ -115,7 +115,7 @@ class GroupDetailActivity : AppCompatActivity() {
             try {
                 val response = ApiClient.apiService.promoteMember("Bearer $token", groupId, user.id)
                 if (response.isSuccessful) {
-                    Toast.makeText(this@GroupDetailActivity, getString(com.jamesjhs.jobber.R.string.member_promoted), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@GroupDetailActivity, getString(com.jamesjhs.crystallise.R.string.member_promoted), Toast.LENGTH_SHORT).show()
                     loadMembers()
                 }
             } catch (e: Exception) {
@@ -138,7 +138,7 @@ class GroupDetailActivity : AppCompatActivity() {
             try {
                 val response = ApiClient.apiService.demoteMember("Bearer $token", groupId, user.id)
                 if (response.isSuccessful) {
-                    Toast.makeText(this@GroupDetailActivity, getString(com.jamesjhs.jobber.R.string.member_demoted), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@GroupDetailActivity, getString(com.jamesjhs.crystallise.R.string.member_demoted), Toast.LENGTH_SHORT).show()
                     loadMembers()
                 }
             } catch (e: Exception) {
@@ -158,19 +158,19 @@ class GroupDetailActivity : AppCompatActivity() {
         params.marginEnd = padding
         params.topMargin = padding / 2
         input.layoutParams = params
-        input.hint = getString(com.jamesjhs.jobber.R.string.report_reason_hint)
+        input.hint = getString(com.jamesjhs.crystallise.R.string.report_reason_hint)
         container.addView(input)
 
         androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle(getString(com.jamesjhs.jobber.R.string.report_user_title))
+            .setTitle(getString(com.jamesjhs.crystallise.R.string.report_user_title))
             .setView(container)
-            .setPositiveButton(getString(com.jamesjhs.jobber.R.string.report)) { _, _ ->
+            .setPositiveButton(getString(com.jamesjhs.crystallise.R.string.report)) { _, _ ->
                 val reason = input.text.toString().trim()
                 if (reason.isNotEmpty()) {
                     reportUser(user, reason)
                 }
             }
-            .setNegativeButton(getString(com.jamesjhs.jobber.R.string.cancel), null)
+            .setNegativeButton(getString(com.jamesjhs.crystallise.R.string.cancel), null)
             .show()
     }
 
@@ -180,7 +180,7 @@ class GroupDetailActivity : AppCompatActivity() {
             try {
                 val response = ApiClient.apiService.reportUser("Bearer $token", user.id, mapOf("reason" to reason))
                 if (response.isSuccessful) {
-                    Toast.makeText(this@GroupDetailActivity, getString(com.jamesjhs.jobber.R.string.user_reported), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@GroupDetailActivity, getString(com.jamesjhs.crystallise.R.string.user_reported), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@GroupDetailActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -194,7 +194,7 @@ class GroupDetailActivity : AppCompatActivity() {
             try {
                 val response = ApiClient.apiService.blockUser("Bearer $token", user.id)
                 if (response.isSuccessful) {
-                    Toast.makeText(this@GroupDetailActivity, getString(com.jamesjhs.jobber.R.string.user_blocked), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@GroupDetailActivity, getString(com.jamesjhs.crystallise.R.string.user_blocked), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@GroupDetailActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()

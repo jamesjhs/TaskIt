@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.ui.main
+package com.jamesjhs.crystallise.ui.main
 
 import android.graphics.Color
 import android.view.LayoutInflater
@@ -8,8 +8,8 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.jamesjhs.jobber.R
-import com.jamesjhs.jobber.models.Task
+import com.jamesjhs.crystallise.R
+import com.jamesjhs.crystallise.models.Task
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -80,7 +80,7 @@ class TaskAdapter(
         
         val iconTint = when (task.status) {
             "complete" -> Color.parseColor("#10B981") // Green-500
-            "started" -> Color.parseColor("#1A56DB") // Jobber Blue
+            "started" -> Color.parseColor("#1A56DB") // Crystallise Blue
             else -> Color.parseColor("#9CA3AF") // Gray-400
         }
         holder.btnStatus.setColorFilter(iconTint)

@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.ui.main
+package com.jamesjhs.crystallise.ui.main
 
 import android.content.Intent
 import android.os.Bundle
@@ -9,13 +9,13 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.jamesjhs.jobber.api.ApiClient
-import com.jamesjhs.jobber.data.TokenManager
-import com.jamesjhs.jobber.databinding.FragmentTasksBinding
-import com.jamesjhs.jobber.models.Group
-import com.jamesjhs.jobber.models.Task
-import com.jamesjhs.jobber.models.TaskType
-import com.jamesjhs.jobber.models.UpdateStatusRequest
+import com.jamesjhs.crystallise.api.ApiClient
+import com.jamesjhs.crystallise.data.TokenManager
+import com.jamesjhs.crystallise.databinding.FragmentTasksBinding
+import com.jamesjhs.crystallise.models.Group
+import com.jamesjhs.crystallise.models.Task
+import com.jamesjhs.crystallise.models.TaskType
+import com.jamesjhs.crystallise.models.UpdateStatusRequest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 

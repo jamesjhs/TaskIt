@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.ui.main
+package com.jamesjhs.crystallise.ui.main
 
 import android.app.AlertDialog
 import android.app.DatePickerDialog
@@ -11,12 +11,12 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.jamesjhs.jobber.R
-import com.jamesjhs.jobber.api.ApiClient
-import com.jamesjhs.jobber.api.TaskNote
-import com.jamesjhs.jobber.data.TokenManager
-import com.jamesjhs.jobber.databinding.ActivityTaskDetailBinding
-import com.jamesjhs.jobber.models.Task
+import com.jamesjhs.crystallise.R
+import com.jamesjhs.crystallise.api.ApiClient
+import com.jamesjhs.crystallise.api.TaskNote
+import com.jamesjhs.crystallise.data.TokenManager
+import com.jamesjhs.crystallise.databinding.ActivityTaskDetailBinding
+import com.jamesjhs.crystallise.models.Task
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -300,7 +300,7 @@ class TaskDetailActivity : AppCompatActivity() {
             }
             try {
                 val response = ApiClient.apiService.stopRecurringTask(
-                    "Bearer $token", t.id, com.jamesjhs.jobber.models.StopRecurringRequest()
+                    "Bearer $token", t.id, com.jamesjhs.crystallise.models.StopRecurringRequest()
                 )
                 if (response.isSuccessful) {
                     Toast.makeText(this@TaskDetailActivity, "Task will no longer recur", Toast.LENGTH_SHORT).show()

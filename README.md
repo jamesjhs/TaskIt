@@ -1,4 +1,4 @@
-# Jobber – Task Management App
+# Crystallise – Task Management App
 
 **Version 1.3.2** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
@@ -37,7 +37,7 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 
 ## Gamification Engine
 
-Jobber includes a fully opt-in gamification system that rewards consistent productivity. It activates per-user and never affects the core task management experience for those who prefer it off.
+Crystallise includes a fully opt-in gamification system that rewards consistent productivity. It activates per-user and never affects the core task management experience for those who prefer it off.
 
 ### Skill Trees & XP
 
@@ -106,7 +106,7 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 
 ### v1.3.2
 
-- **🤝 Friends system** — users can connect with each other outside of groups for cross-group XP competition. Three ways to add a friend: share your personal **invite link / QR code** (valid 7 days), use a direct **username + friend key** lookup, or send the link to someone new to Jobber. Friends are shown on the Progress tab in a dedicated leaderboard.
+- **🤝 Friends system** — users can connect with each other outside of groups for cross-group XP competition. Three ways to add a friend: share your personal **invite link / QR code** (valid 7 days), use a direct **username + friend key** lookup, or send the link to someone new to Crystallise. Friends are shown on the Progress tab in a dedicated leaderboard.
 - **🏆 Leaderboards** — group members ranked by total XP are shown directly in the Group Members modal (lazy-loaded). The Progress tab also shows per-group leaderboards and a friends leaderboard.
 - **🔑 Persistent login ("Remember me")** — a *Remember me* checkbox on the login screen keeps the session alive in `localStorage` for 30 days. Without it the session is stored in `sessionStorage` only and clears when the browser tab closes (7-day JWT).
 - **Version bump** — server, README, user guides updated to 1.3.2.
@@ -118,7 +118,7 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 - **Floating Action Button (FAB)** — a large `+` button fixed at the bottom-right of the Tasks page replaces the in-header "New Task" button, positioning the primary action where thumbs naturally rest.
 - **Collapsible filter panel** — all task filters are now hidden behind a single `⚙️ Filters` chip. An active-filter count badge highlights the chip when filters are applied. Recovers vertical space on the Tasks page.
 - **Gamification opt-in prompt** — first-time users who haven't been asked are shown a bottom-sheet modal offering to enable gamification. Shown once per device; remembered in `localStorage`.
-- **Informational storage notice** — a dismissable banner appears on the landing/auth pages for first-time visitors, explaining that Jobber uses only essential `localStorage` (no tracking cookies). Dismissed state persisted in `localStorage`.
+- **Informational storage notice** — a dismissable banner appears on the landing/auth pages for first-time visitors, explaining that Crystallise uses only essential `localStorage` (no tracking cookies). Dismissed state persisted in `localStorage`.
 - **Privacy policy v1.1.0** — Section 3 extended with rows for Preferences, Calendar Integration, Feedback, and Gamification data. Section 6 (Retention) extended with Feedback, Gamification data, and ICS token retention periods. Section 10 (Browser Storage) fully rewritten: enumerates all six `localStorage` keys with purpose and legal basis, and confirms no HTTP cookies are used.
 - **Landing page** — phone mockups updated to show the new five-item navigation bar (Tasks, Groups, Alerts, ⭐ Progress, Profile).
 
@@ -276,7 +276,7 @@ Urgent · Routine · Hobby · Household · Kids · Financial · Vehicle · Leisu
 
 ## Database Encryption
 
-Jobber uses **SQLCipher** (via `better-sqlite3-multiple-ciphers`) to encrypt the entire SQLite database file at rest, protecting all stored data including usernames, email addresses, task content, and all other records.
+Crystallise uses **SQLCipher** (via `better-sqlite3-multiple-ciphers`) to encrypt the entire SQLite database file at rest, protecting all stored data including usernames, email addresses, task content, and all other records.
 
 ### Enabling Encryption
 
@@ -297,12 +297,12 @@ If you have an existing plaintext database and wish to enable encryption, use th
 node server/encrypt-db.js
 ```
 
-This creates `server/jobber-encrypted.db`. Once you have verified it opens correctly, back up your original database, rename the encrypted file to `jobber.db`, and restart the server. The script prints the exact verification and rename commands to run after a successful migration.
+This creates `server/crystallise-encrypted.db`. Once you have verified it opens correctly, back up your original database, rename the encrypted file to `crystallise.db`, and restart the server. The script prints the exact verification and rename commands to run after a successful migration.
 
 You may also supply explicit source and destination paths:
 
 ```bash
-node server/encrypt-db.js /path/to/jobber.db /path/to/jobber-encrypted.db
+node server/encrypt-db.js /path/to/crystallise.db /path/to/crystallise-encrypted.db
 ```
 
 ### Passwords

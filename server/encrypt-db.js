@@ -2,7 +2,7 @@
 /**
  * encrypt-db.js
  *
- * Migrates an existing plaintext Jobber SQLite database to an encrypted one
+ * Migrates an existing plaintext Crystallise SQLite database to an encrypted one
  * using SQLCipher (via better-sqlite3-multiple-ciphers).
  *
  * Usage (run from the project root or the server/ directory):
@@ -11,15 +11,15 @@
  *
  * Arguments (both optional):
  *   source       – path to the existing plaintext database
- *                  (default: server/jobber.db)
+ *                  (default: server/crystallise.db)
  *   destination  – path for the new encrypted database
- *                  (default: server/jobber-encrypted.db)
+ *                  (default: server/crystallise-encrypted.db)
  *
  * The DB_ENCRYPTION_KEY value is read from server/.env (or the environment).
  *
  * After a successful run:
  *   1. Verify the encrypted database starts correctly.
- *   2. Replace server/jobber.db with server/jobber-encrypted.db.
+ *   2. Replace server/crystallise.db with server/crystallise-encrypted.db.
  *   3. Ensure DB_ENCRYPTION_KEY is set in server/.env.
  *   4. Restart the server.
  */
@@ -45,8 +45,8 @@ const Database = require('better-sqlite3-multiple-ciphers');
 
 // ── Resolve source and destination paths ────────────────────────────────────
 
-const defaultSource = path.join(serverDir, 'jobber.db');
-const defaultDest   = path.join(serverDir, 'jobber-encrypted.db');
+const defaultSource = path.join(serverDir, 'crystallise.db');
+const defaultDest   = path.join(serverDir, 'crystallise-encrypted.db');
 
 const sourcePath = path.resolve(process.argv[2] || defaultSource);
 const destPath   = path.resolve(process.argv[3] || defaultDest);

@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.data
+package com.jamesjhs.crystallise.data
 
 import android.content.Context
 import android.content.SharedPreferences

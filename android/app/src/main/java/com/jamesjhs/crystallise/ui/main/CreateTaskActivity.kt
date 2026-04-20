@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.ui.main
+package com.jamesjhs.crystallise.ui.main
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -10,20 +10,20 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.jamesjhs.jobber.api.ApiClient
-import com.jamesjhs.jobber.data.TokenManager
-import com.jamesjhs.jobber.databinding.ActivityCreateTaskBinding
-import com.jamesjhs.jobber.models.CreateTaskRequest
+import com.jamesjhs.crystallise.api.ApiClient
+import com.jamesjhs.crystallise.data.TokenManager
+import com.jamesjhs.crystallise.databinding.ActivityCreateTaskBinding
+import com.jamesjhs.crystallise.models.CreateTaskRequest
 import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.FrameLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.jamesjhs.jobber.models.Group
-import com.jamesjhs.jobber.models.Task
-import com.jamesjhs.jobber.models.TaskType
-import com.jamesjhs.jobber.models.User
+import com.jamesjhs.crystallise.models.Group
+import com.jamesjhs.crystallise.models.Task
+import com.jamesjhs.crystallise.models.TaskType
+import com.jamesjhs.crystallise.models.User
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -51,10 +51,10 @@ class CreateTaskActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         if (editingTask != null) {
-            supportActionBar?.title = getString(com.jamesjhs.jobber.R.string.edit_task)
-            binding.btnSave.text = getString(com.jamesjhs.jobber.R.string.update_task)
+            supportActionBar?.title = getString(com.jamesjhs.crystallise.R.string.edit_task)
+            binding.btnSave.text = getString(com.jamesjhs.crystallise.R.string.update_task)
         } else {
-            supportActionBar?.title = getString(com.jamesjhs.jobber.R.string.create_task)
+            supportActionBar?.title = getString(com.jamesjhs.crystallise.R.string.create_task)
         }
 
         tokenManager = TokenManager.getInstance(this)
@@ -91,7 +91,7 @@ class CreateTaskActivity : AppCompatActivity() {
     }
 
     private fun setupSpinners() {
-        val recurUnits = resources.getStringArray(com.jamesjhs.jobber.R.array.recur_units)
+        val recurUnits = resources.getStringArray(com.jamesjhs.crystallise.R.array.recur_units)
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, recurUnits)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerRecurUnit.adapter = adapter
@@ -166,7 +166,7 @@ class CreateTaskActivity : AppCompatActivity() {
         binding.recyclerAssignees.layoutManager = LinearLayoutManager(this)
         binding.recyclerAssignees.adapter = object : RecyclerView.Adapter<AssigneeViewHolder>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AssigneeViewHolder {
-                val view = LayoutInflater.from(parent.context).inflate(com.jamesjhs.jobber.R.layout.item_assignee_checkbox, parent, false)
+                val view = LayoutInflater.from(parent.context).inflate(com.jamesjhs.crystallise.R.layout.item_assignee_checkbox, parent, false)
                 return AssigneeViewHolder(view)
             }
 
@@ -185,7 +185,7 @@ class CreateTaskActivity : AppCompatActivity() {
     }
 
     class AssigneeViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val checkbox: CheckBox = view.findViewById(com.jamesjhs.jobber.R.id.checkAssignee)
+        val checkbox: CheckBox = view.findViewById(com.jamesjhs.crystallise.R.id.checkAssignee)
     }
 
     private fun populateTaskData() {
@@ -207,7 +207,7 @@ class CreateTaskActivity : AppCompatActivity() {
 
             if (task.recurInterval != null) {
                 binding.editRecurInterval.setText(task.recurInterval.toString())
-                val unitArray = resources.getStringArray(com.jamesjhs.jobber.R.array.recur_units)
+                val unitArray = resources.getStringArray(com.jamesjhs.crystallise.R.array.recur_units)
                 val unitIndex = unitArray.indexOf(task.recurUnit)
                 if (unitIndex != -1) {
                     binding.spinnerRecurUnit.setSelection(unitIndex)
@@ -335,20 +335,20 @@ class CreateTaskActivity : AppCompatActivity() {
         params.marginEnd = padding
         params.topMargin = padding / 2
         input.layoutParams = params
-        input.hint = getString(com.jamesjhs.jobber.R.string.task_type_hint)
+        input.hint = getString(com.jamesjhs.crystallise.R.string.task_type_hint)
         container.addView(input)
 
         androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle(getString(com.jamesjhs.jobber.R.string.new_task_type))
-            .setMessage(getString(com.jamesjhs.jobber.R.string.create_task_type_message))
+            .setTitle(getString(com.jamesjhs.crystallise.R.string.new_task_type))
+            .setMessage(getString(com.jamesjhs.crystallise.R.string.create_task_type_message))
             .setView(container)
-            .setPositiveButton(getString(com.jamesjhs.jobber.R.string.create)) { _, _ ->
+            .setPositiveButton(getString(com.jamesjhs.crystallise.R.string.create)) { _, _ ->
                 val name = input.text.toString().trim()
                 if (name.isNotEmpty()) {
                     createNewTaskType(name)
                 }
             }
-            .setNegativeButton(getString(com.jamesjhs.jobber.R.string.cancel), null)
+            .setNegativeButton(getString(com.jamesjhs.crystallise.R.string.cancel), null)
             .show()
     }
 
@@ -367,11 +367,11 @@ class CreateTaskActivity : AppCompatActivity() {
                 if (response.isSuccessful) {
                     val newType = response.body()
                     if (newType != null) {
-                        Toast.makeText(this@CreateTaskActivity, getString(com.jamesjhs.jobber.R.string.task_type_created), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@CreateTaskActivity, getString(com.jamesjhs.crystallise.R.string.task_type_created), Toast.LENGTH_SHORT).show()
                         fetchTaskTypes()
                     }
                 } else {
-                    Toast.makeText(this@CreateTaskActivity, getString(com.jamesjhs.jobber.R.string.failed_create_task_type), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@CreateTaskActivity, getString(com.jamesjhs.crystallise.R.string.failed_create_task_type), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@CreateTaskActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()

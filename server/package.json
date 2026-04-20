@@ -1,7 +1,7 @@
 {
-  "name": "jobber-server",
+  "name": "crystallise-server",
   "version": "1.5.2",
-  "description": "Jobber task management server",
+  "description": "Crystallise task management server",
   "main": "dist/index.js",
   "scripts": {
     "build:css": "tailwindcss -i src/css/input.css -o ../public/tailwind.css --minify",

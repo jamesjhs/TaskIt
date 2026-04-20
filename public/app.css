@@ -316,7 +316,7 @@ a:hover { text-decoration: underline; }
 }
 #update-banner button:hover { background: #e0e7ff; }
 
-/* ── Jobber-specific additions ──────────────────────────────────── */
+/* ── Crystallise-specific additions ──────────────────────────────────── */
 
 /* Auth page */
 .auth-page {
@@ -1762,7 +1762,7 @@ a:hover { text-decoration: underline; }
 .cookie-notice-close:hover { background: #374151; }
 
 /* =========================================================
-   JOBBER ARCADE — full-screen overlay (Stage 1)
+   CRYSTALLISE ARCADE — full-screen overlay (Stage 1)
    ========================================================= */
 
 /* Body lock — prevents background scroll while arcade is open */
@@ -1955,7 +1955,7 @@ body.arcade-open { overflow: hidden; }
 }
 
 /* =========================================================
-   JOBBER ARCADE — Stage 2: Shared game theme + Hangman + Word Search
+   CRYSTALLISE ARCADE — Stage 2: Shared game theme + Hangman + Word Search
    =========================================================
    All colours are declared as CSS custom properties on each game's
    root element so they can be overridden from a parent stylesheet

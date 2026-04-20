@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.models
+package com.jamesjhs.crystallise.models
 
 import com.google.gson.annotations.SerializedName
 import java.io.Serializable

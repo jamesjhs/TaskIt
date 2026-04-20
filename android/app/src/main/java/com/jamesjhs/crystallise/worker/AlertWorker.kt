@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.worker
+package com.jamesjhs.crystallise.worker
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -8,10 +8,10 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.jamesjhs.jobber.R
-import com.jamesjhs.jobber.api.ApiClient
-import com.jamesjhs.jobber.data.TokenManager
-import com.jamesjhs.jobber.ui.main.MainActivity
+import com.jamesjhs.crystallise.R
+import com.jamesjhs.crystallise.api.ApiClient
+import com.jamesjhs.crystallise.data.TokenManager
+import com.jamesjhs.crystallise.ui.main.MainActivity
 import kotlinx.coroutines.flow.first
 
 class AlertWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
@@ -54,9 +54,9 @@ class AlertWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
 
     private fun showNotification(message: String) {
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channelId = "jobber_alerts"
+        val channelId = "crystallise_alerts"
 
-        val channel = NotificationChannel(channelId, "Jobber Alerts", NotificationManager.IMPORTANCE_DEFAULT)
+        val channel = NotificationChannel(channelId, "Crystallise Alerts", NotificationManager.IMPORTANCE_DEFAULT)
         notificationManager.createNotificationChannel(channel)
 
         val intent = Intent(applicationContext, MainActivity::class.java).apply {
@@ -66,7 +66,7 @@ class AlertWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
 
         val notification = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(R.drawable.ic_nav_alerts)
-            .setContentTitle("New Jobber Alert")
+            .setContentTitle("New Crystallise Alert")
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)

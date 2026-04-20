@@ -34,13 +34,13 @@ export async function sendMagicLink(to: string, token: string, baseUrl: string, 
     return;
   }
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
-  const from = settings?.from_addr || 'noreply@jobber.app';
+  const from = settings?.from_addr || 'noreply@crystallise.app';
 
   const isVerify = purpose === 'verify';
-  const subject = isVerify ? 'Verify your Jobber account' : 'Your Jobber login link';
+  const subject = isVerify ? 'Verify your Crystallise account' : 'Your Crystallise login link';
   const intro = isVerify
-    ? 'Click the link below to verify your email address and activate your Jobber account (expires in 15 minutes):'
-    : 'Click the link below to sign in to Jobber (expires in 15 minutes):';
+    ? 'Click the link below to verify your email address and activate your Crystallise account (expires in 15 minutes):'
+    : 'Click the link below to sign in to Crystallise (expires in 15 minutes):';
 
   await transporter.sendMail({
     from,
@@ -60,14 +60,14 @@ export async function sendOTP(to: string, code: string): Promise<void> {
     return;
   }
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
-  const from = settings?.from_addr || 'noreply@jobber.app';
+  const from = settings?.from_addr || 'noreply@crystallise.app';
 
   await transporter.sendMail({
     from,
     to,
-    subject: 'Your Jobber verification code',
-    text: `Your Jobber two-factor authentication code is: ${code}\n\nThis code expires in 10 minutes. Do not share it with anyone.`,
-    html: `<p>Your Jobber two-factor authentication code is:</p><h2 style="letter-spacing:0.2em;">${code}</h2><p>This code expires in 10 minutes. Do not share it with anyone.</p>`,
+    subject: 'Your Crystallise verification code',
+    text: `Your Crystallise two-factor authentication code is: ${code}\n\nThis code expires in 10 minutes. Do not share it with anyone.`,
+    html: `<p>Your Crystallise two-factor authentication code is:</p><h2 style="letter-spacing:0.2em;">${code}</h2><p>This code expires in 10 minutes. Do not share it with anyone.</p>`,
   });
 }
 
@@ -80,18 +80,18 @@ export async function sendGroupInvite(to: string, groupName: string, inviteUrl: 
     return;
   }
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
-  const from = settings?.from_addr || 'noreply@jobber.app';
+  const from = settings?.from_addr || 'noreply@crystallise.app';
 
   const inviterLabel = inviterName ? `${inviterName} has` : 'You have been';
-  const subject = `${inviterLabel} invited you to join "${groupName}" on Jobber`;
-  const intro = `${inviterLabel} invited you to join the group <strong>${groupName}</strong> on Jobber.`;
+  const subject = `${inviterLabel} invited you to join "${groupName}" on Crystallise`;
+  const intro = `${inviterLabel} invited you to join the group <strong>${groupName}</strong> on Crystallise.`;
   const body = `Click the link below to accept the invitation and join the group (link expires in 7 days):`;
 
   await transporter.sendMail({
     from,
     to,
     subject,
-    text: `${inviterLabel} invited you to join "${groupName}" on Jobber.\n\n${body}\n\n${inviteUrl}\n\nIf you did not expect this invitation, you can safely ignore this email.`,
+    text: `${inviterLabel} invited you to join "${groupName}" on Crystallise.\n\n${body}\n\n${inviteUrl}\n\nIf you did not expect this invitation, you can safely ignore this email.`,
     html: `<p>${intro}</p><p>${body}</p><p><a href="${inviteUrl}">${inviteUrl}</a></p><p>If you did not expect this invitation, you can safely ignore this email.</p>`,
   });
 }
@@ -106,14 +106,14 @@ export async function sendPasswordReset(to: string, token: string, baseUrl: stri
     return;
   }
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
-  const from = settings?.from_addr || 'noreply@jobber.app';
+  const from = settings?.from_addr || 'noreply@crystallise.app';
 
   await transporter.sendMail({
     from,
     to,
-    subject: 'Reset your Jobber password',
-    text: `Click the link below to reset your Jobber password (expires in 15 minutes):\n\n${link}\n\nIf you did not request a password reset, you can safely ignore this email.`,
-    html: `<p>Click the link below to reset your Jobber password (expires in 15 minutes):</p><p><a href="${link}">${link}</a></p><p>If you did not request a password reset, you can safely ignore this email.</p>`,
+    subject: 'Reset your Crystallise password',
+    text: `Click the link below to reset your Crystallise password (expires in 15 minutes):\n\n${link}\n\nIf you did not request a password reset, you can safely ignore this email.`,
+    html: `<p>Click the link below to reset your Crystallise password (expires in 15 minutes):</p><p><a href="${link}">${link}</a></p><p>If you did not request a password reset, you can safely ignore this email.</p>`,
   });
 }
 
@@ -124,7 +124,7 @@ export async function sendTaskReminder(to: string, task: { title: string; due_da
     return;
   }
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
-  const from = settings?.from_addr || 'noreply@jobber.app';
+  const from = settings?.from_addr || 'noreply@crystallise.app';
   const dueStr = new Date(task.due_date).toLocaleString();
   const isOverdue = task.due_date < Date.now();
   const subject = isOverdue

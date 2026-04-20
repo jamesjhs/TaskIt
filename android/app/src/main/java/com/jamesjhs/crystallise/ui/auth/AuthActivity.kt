@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.ui.auth
+package com.jamesjhs.crystallise.ui.auth
 
 import android.content.Intent
 import android.os.Bundle
@@ -6,16 +6,16 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.jamesjhs.jobber.R
-import com.jamesjhs.jobber.api.ApiClient
-import com.jamesjhs.jobber.data.TokenManager
-import com.jamesjhs.jobber.models.LoginRequest
-import com.jamesjhs.jobber.models.RegisterRequest
-import com.jamesjhs.jobber.ui.main.MainActivity
+import com.jamesjhs.crystallise.R
+import com.jamesjhs.crystallise.api.ApiClient
+import com.jamesjhs.crystallise.data.TokenManager
+import com.jamesjhs.crystallise.models.LoginRequest
+import com.jamesjhs.crystallise.models.RegisterRequest
+import com.jamesjhs.crystallise.ui.main.MainActivity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-import com.jamesjhs.jobber.models.VerifyOtpRequest
+import com.jamesjhs.crystallise.models.VerifyOtpRequest
 
 class AuthActivity : AppCompatActivity() {
     private lateinit var tokenManager: TokenManager

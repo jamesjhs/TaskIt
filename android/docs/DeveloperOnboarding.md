@@ -1,6 +1,6 @@
-# Jobber: Developer Onboarding & Workflow Guide
+# Crystallise: Developer Onboarding & Workflow Guide
 
-Welcome to the **Jobber** team! This document will get you up to speed on our codebase and how we build and roll out new features.
+Welcome to the **Crystallise** team! This document will get you up to speed on our codebase and how we build and roll out new features.
 
 ## 1. Core Architecture
 We use a modern Android stack with a focus on simplicity and readability:

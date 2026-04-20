@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.ui.main
+package com.jamesjhs.crystallise.ui.main
 
 import android.content.Intent
 import android.os.Bundle
@@ -7,9 +7,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.jamesjhs.jobber.data.TokenManager
-import com.jamesjhs.jobber.databinding.FragmentProfileBinding
-import com.jamesjhs.jobber.ui.auth.AuthActivity
+import com.jamesjhs.crystallise.data.TokenManager
+import com.jamesjhs.crystallise.databinding.FragmentProfileBinding
+import com.jamesjhs.crystallise.ui.auth.AuthActivity
 import kotlinx.coroutines.launch
 
 class ProfileFragment : Fragment() {

@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { DB_PATH as DB_PATH_OVERRIDE, DB_ENCRYPTION_KEY } from './config';
 import { generateGroupName, generateFriendKey } from './wordlists';
 
-const DB_PATH = DB_PATH_OVERRIDE || path.join(__dirname, '..', 'jobber.db');
+const DB_PATH = DB_PATH_OVERRIDE || path.join(__dirname, '..', 'crystallise.db');
 
 const db = new Database(DB_PATH);
 

@@ -1,6 +1,6 @@
-# Jobber: A Teacher's Guide to the Project
+# Crystallise: A Teacher's Guide to the Project
 
-Hello! Welcome to the **Jobber** project. Think of this app like a digital "To-Do" list for groups. It helps people stay organized by sharing tasks and working together. 
+Hello! Welcome to the **Crystallise** project. Think of this app like a digital "To-Do" list for groups. It helps people stay organized by sharing tasks and working together. 
 
 Here is how the project is organized, explained in a way that shows how all the pieces of the puzzle fit together.
 

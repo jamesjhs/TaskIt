@@ -1,8 +1,8 @@
-# 👋 Jobber – User Guide
+# 👋 Crystallise – User Guide
 
 **Version 1.3.2** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
-Jobber is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
+Crystallise is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
 ---
 
@@ -10,7 +10,7 @@ Jobber is a friendly, no-fuss task manager built for individuals and small teams
 
 ### Creating your account
 
-1. Open Jobber in your browser and click **Register**.
+1. Open Crystallise in your browser and click **Register**.
 2. Enter a username, your email address, and a password.
 3. Choose your preferred **Date & Time Format** (locale).
 4. Click **Create Account**.
@@ -89,13 +89,13 @@ Click the bell to see what needs your attention, and click any item to jump stra
 
 ### Browser popup notifications
 
-Jobber can send browser popup notifications when a task is approaching its deadline. The first time you log in, your browser will ask for **notification permission** — click *Allow* to enable them.
+Crystallise can send browser popup notifications when a task is approaching its deadline. The first time you log in, your browser will ask for **notification permission** — click *Allow* to enable them.
 
 Popups are fired by the app while it is open in your browser, using the same timing windows you select in the task's notification grid.
 
 ### Email reminders
 
-When email is configured by your admin, Jobber sends reminder emails at the timings you choose per task (see the *Reminders* grid below).
+When email is configured by your admin, Crystallise sends reminder emails at the timings you choose per task (see the *Reminders* grid below).
 
 ### Setting reminders per task
 
@@ -145,7 +145,7 @@ From the **Manage / Invite** panel, admins can:
 
 ## 📧 Email Reminders
 
-When email is enabled by your admin, Jobber sends automatic reminders for tasks with due dates, based on the per-task settings you choose in the **Reminders** grid:
+When email is enabled by your admin, Crystallise sends automatic reminders for tasks with due dates, based on the per-task settings you choose in the **Reminders** grid:
 
 | Reminder | When it's sent |
 |---|---|
@@ -167,16 +167,16 @@ Choose the locale used to display dates and times throughout the app (e.g. DD/MM
 
 ### 📅 Calendar Integration
 
-Subscribe to your Jobber tasks in any calendar app (Google Calendar, Apple Calendar, Outlook, etc.) using the private **ICS feed link** shown in the *Calendar Integration* card.
+Subscribe to your Crystallise tasks in any calendar app (Google Calendar, Apple Calendar, Outlook, etc.) using the private **ICS feed link** shown in the *Calendar Integration* card.
 
 - Copy the link and paste it into your calendar app as a new calendar subscription.
 - Click **🔄 Regenerate Link** to invalidate the old link and get a new one (e.g. if you believe the link has been shared unintentionally).
 
 > Keep this link private — anyone who has it can view your tasks.
 
-### Invite to Jobber
+### Invite to Crystallise
 
-Share Jobber with others — click **Copy Invite Link** to copy a link to your Jobber instance that you can send to colleagues or friends.
+Share Crystallise with others — click **Copy Invite Link** to copy a link to your Crystallise instance that you can send to colleagues or friends.
 
 ### 💬 Feedback & Feature Requests
 
@@ -211,11 +211,11 @@ System administrators see an extra **Admin** menu item. From here you can:
 
 ## 🎮 Gamification *(optional)*
 
-Jobber includes a **fully optional** gamification system that rewards consistent task completion. It is disabled by default.
+Crystallise includes a **fully optional** gamification system that rewards consistent task completion. It is disabled by default.
 
 ### Getting started
 
-The first time you log in, Jobber may ask if you'd like to enable gamification via a short prompt. You can also enable or disable it at any time from **Profile → Gamification toggle**.
+The first time you log in, Crystallise may ask if you'd like to enable gamification via a short prompt. You can also enable or disable it at any time from **Profile → Gamification toggle**.
 
 ### ⭐ Progress tab
 
@@ -299,13 +299,13 @@ Miss a deadline but don't want to lose your streak? Use a **Freeze**!
 
 ## 🔐 Privacy & Browser Storage
 
-Jobber stores a small amount of data in your browser's `localStorage` to make the app work. This is **not** tracking — it's purely functional:
+Crystallise stores a small amount of data in your browser's `localStorage` to make the app work. This is **not** tracking — it's purely functional:
 
 | Key | What it stores |
 |-----|----------------|
 | `jbToken` | Your login session token |
 | `jbUser` | Your username, email, and locale preference |
-| `jobber_app_version` | The app version (for update detection) |
+| `crystallise_app_version` | The app version (for update detection) |
 | `jbPopupFired` | Which browser popup notifications have been sent today |
 | `jbGamifAsked` | Whether you've seen the gamification opt-in prompt |
 | `jbCookieNotice` | Whether you've dismissed the storage notice |
@@ -336,4 +336,4 @@ Tap the **⭐ Progress** tab in the bottom navigation. You can also enable or di
 
 ---
 
-*Jobber v1.3.2 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*Crystallise v1.3.2 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*

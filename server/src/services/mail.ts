@@ -1,6 +1,8 @@
 import nodemailer from 'nodemailer';
 import db from '../db';
 
+const DEFAULT_FROM = process.env.SMTP_DEFAULT_FROM || 'noreply@taskit.jahosi.co.uk';
+
 interface SmtpSettings {
   host: string;
   port: number;
@@ -34,7 +36,7 @@ export async function sendMagicLink(to: string, token: string, baseUrl: string, 
     return;
   }
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
-  const from = settings?.from_addr || 'noreply@taskit.jahosi.co.uk';
+  const from = settings?.from_addr || DEFAULT_FROM;
 
   const isVerify = purpose === 'verify';
   const subject = isVerify ? 'Verify your TaskIt! account' : 'Your TaskIt! login link';
@@ -60,7 +62,7 @@ export async function sendOTP(to: string, code: string): Promise<void> {
     return;
   }
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
-  const from = settings?.from_addr || 'noreply@taskit.jahosi.co.uk';
+  const from = settings?.from_addr || DEFAULT_FROM;
 
   await transporter.sendMail({
     from,
@@ -80,7 +82,7 @@ export async function sendGroupInvite(to: string, groupName: string, inviteUrl: 
     return;
   }
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
-  const from = settings?.from_addr || 'noreply@taskit.jahosi.co.uk';
+  const from = settings?.from_addr || DEFAULT_FROM;
 
   const inviterLabel = inviterName ? `${inviterName} has` : 'You have been';
   const subject = `${inviterLabel} invited you to join "${groupName}" on TaskIt!`;
@@ -106,7 +108,7 @@ export async function sendPasswordReset(to: string, token: string, baseUrl: stri
     return;
   }
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
-  const from = settings?.from_addr || 'noreply@taskit.jahosi.co.uk';
+  const from = settings?.from_addr || DEFAULT_FROM;
 
   await transporter.sendMail({
     from,
@@ -124,7 +126,7 @@ export async function sendTaskReminder(to: string, task: { title: string; due_da
     return;
   }
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
-  const from = settings?.from_addr || 'noreply@taskit.jahosi.co.uk';
+  const from = settings?.from_addr || DEFAULT_FROM;
   const dueStr = new Date(task.due_date).toLocaleString();
   const isOverdue = task.due_date < Date.now();
   const subject = isOverdue

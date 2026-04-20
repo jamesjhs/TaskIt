@@ -2156,7 +2156,8 @@ function cancelAddNewType() {
 }
 
 function copyInviteLink() {
-  const msg = "I'd like to introduce you to TaskIt!, a fast, lightweight collaborative task manager - create tasks, set due dates, organise by category, and keep your team in sync, all from your phone or browser. No ads or clutter! https://taskit.jahosi.co.uk/";
+  const url = window.location.origin + '/';
+  const msg = `I'd like to introduce you to TaskIt!, a gamified task manager — earn XP, build streaks, and level up while staying on top of tasks. Free and works on any device! ${url}`;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(msg).then(() => toast('Invite message copied!')).catch(() => fallbackCopy(msg));
   } else { fallbackCopy(msg); }

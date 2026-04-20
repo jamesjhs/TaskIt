@@ -1,12 +1,12 @@
 {
-  "name": "Jobber – Task Management",
-  "short_name": "Jobber",
-  "description": "Collaborative task management for individuals and teams.",
+  "name": "TaskIt! – Task Management",
+  "short_name": "TaskIt!",
+  "description": "Collaborative task management with gamification for individuals and teams.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#f0f4ff",
-  "theme_color": "#1a56db",
+  "background_color": "#f5f3ff",
+  "theme_color": "#7c3aed",
   "lang": "en-GB",
   "icons": [
     { "src": "/icons/icon-72x72.png",   "sizes": "72x72",   "type": "image/png", "purpose": "maskable any" },

@@ -8,7 +8,7 @@ if (!secret) {
   }
   console.warn('WARNING: JWT_SECRET not set — using insecure default. Set JWT_SECRET before deploying.');
 }
-export const JWT_SECRET = secret ?? 'jobber-dev-secret-change-before-deploy';
+export const JWT_SECRET = secret ?? 'taskit-dev-secret-change-before-deploy';
 
 export const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 export const DB_PATH: string | undefined = process.env.DB_PATH;

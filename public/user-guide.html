@@ -3,31 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>User Guide – Jobber Task Manager</title>
-  <meta name="description" content="Complete guide to Jobber: tasks, groups, notifications, gamification (XP, achievements, streaks, freeze credits), friends &amp; leaderboards, and more." />
+  <title>User Guide – TaskIt! Task Manager</title>
+  <meta name="description" content="Complete guide to TaskIt!: tasks, groups, notifications, gamification (XP, achievements, streaks, freeze credits), friends &amp; leaderboards, and more." />
   <meta name="robots" content="index, follow" />
-  <meta property="og:title" content="User Guide – Jobber Task Manager" />
-  <meta property="og:description" content="Everything you need to get started with Jobber: tasks, groups, gamification, friends leaderboards, and persistent login." />
+  <meta property="og:title" content="User Guide – TaskIt! Task Manager" />
+  <meta property="og:description" content="Everything you need to get started with TaskIt!: tasks, groups, gamification, friends leaderboards, and persistent login." />
   <meta property="og:type" content="article" />
   <link rel="stylesheet" href="/tailwind.css" />
   <link rel="icon" type="image/png" href="/favicon.png" />
   <style>
     .guide-step { display:flex; gap:14px; align-items:flex-start; margin-bottom:12px; }
-    .step-num { flex-shrink:0; width:30px; height:30px; border-radius:50%; background:#1a56db; color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.9rem; }
+    .step-num { flex-shrink:0; width:30px; height:30px; border-radius:50%; background:#7c3aed; color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.9rem; }
     .mockup-card { background:#f8fafc; border:2px solid #e2e8f0; border-radius:12px; padding:16px; margin:14px 0; }
     .mockup-field { background:white; border:1px solid #cbd5e1; border-radius:6px; padding:8px 12px; margin-bottom:8px; font-size:.85rem; color:#94a3b8; }
-    .mockup-btn { background:#1a56db; color:white; border-radius:6px; padding:8px 16px; font-size:.85rem; font-weight:600; display:inline-block; margin-top:4px; }
-    .mockup-btn-sm { background:#1a56db; color:white; border-radius:6px; padding:4px 10px; font-size:.82rem; font-weight:600; display:inline-block; }
-    .mockup-btn-outline { background:white; color:#1a56db; border:1px solid #1a56db; border-radius:6px; padding:8px 16px; font-size:.85rem; font-weight:600; display:inline-block; margin-top:4px; }
+    .mockup-btn { background:#7c3aed; color:white; border-radius:6px; padding:8px 16px; font-size:.85rem; font-weight:600; display:inline-block; margin-top:4px; }
+    .mockup-btn-sm { background:#7c3aed; color:white; border-radius:6px; padding:4px 10px; font-size:.82rem; font-weight:600; display:inline-block; }
+    .mockup-btn-outline { background:white; color:#7c3aed; border:1px solid #7c3aed; border-radius:6px; padding:8px 16px; font-size:.85rem; font-weight:600; display:inline-block; margin-top:4px; }
     .status-flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:14px 0; }
     .status-box { background:#f1f5f9; border:2px solid #cbd5e1; border-radius:8px; padding:8px 14px; font-weight:600; font-size:.88rem; text-align:center; }
-    .tip-box { background:#eff6ff; border-left:4px solid #1a56db; border-radius:0 8px 8px 0; padding:11px 15px; margin:12px 0; font-size:.88rem; color:#1e40af; }
+    .tip-box { background:#f5f3ff; border-left:4px solid #7c3aed; border-radius:0 8px 8px 0; padding:11px 15px; margin:12px 0; font-size:.88rem; color:#5b21b6; }
     .warn-box { background:#fef3c7; border-left:4px solid #f59e0b; border-radius:0 8px 8px 0; padding:11px 15px; margin:12px 0; font-size:.88rem; color:#92400e; }
     .info-box { background:#f0fdf4; border-left:4px solid #16a34a; border-radius:0 8px 8px 0; padding:11px 15px; margin:12px 0; font-size:.88rem; color:#15803d; }
     .toc { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px 20px; margin:16px 0 24px; }
     .toc ol { margin:8px 0 0 16px; padding:0; }
     .toc li { margin-bottom:4px; font-size:.9rem; }
-    .toc a { color:#1a56db; text-decoration:none; }
+    .toc a { color:#7c3aed; text-decoration:none; }
     .toc a:hover { text-decoration:underline; }
     h2[id], h3[id] { scroll-margin-top: 80px; }
   </style>
@@ -44,7 +44,7 @@
                M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
         </svg>
       </div>
-      Jobber
+      TaskIt!
     </a>
     <span class="ml-auto text-white/70 text-sm hidden sm:block">User Guide</span>
   </div>
@@ -53,9 +53,9 @@
 <main class="flex-1 max-w-4xl mx-auto w-full px-4 py-10">
   <article class="prose prose-slate dark:prose-invert max-w-none bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 sm:p-8">
 
-    <h1>👋 Jobber — Complete User Guide</h1>
+    <h1>👋 TaskIt! — Complete User Guide</h1>
     <p class="lead" style="color:#6b7280;font-size:.95rem;margin-top:-4px">v<span class="page-version">1.5.2</span> &nbsp;·&nbsp; Copyright J Rowson 2026</p>
-    <p>Jobber is a friendly, self-hosted task manager for individuals and small teams. This guide covers every feature — from your very first login to competing with friends on the XP leaderboard.</p>
+    <p>TaskIt! is a friendly, self-hosted task manager for individuals and small teams. This guide covers every feature — from your very first login to competing with friends on the XP leaderboard.</p>
 
     <div class="toc">
       <strong>Contents</strong>
@@ -67,7 +67,7 @@
         <li><a href="#profile">Your Profile &amp; Account Settings</a></li>
         <li><a href="#gamification">Gamification — XP, Skills, Achievements &amp; Streaks</a>
           <ul style="margin:4px 0 0 16px">
-            <li><a href="#arcade">Jobber Arcade</a></li>
+            <li><a href="#arcade">TaskIt! Arcade</a></li>
           </ul>
         </li>
         <li><a href="#friends">Friends &amp; Leaderboards</a></li>
@@ -81,12 +81,12 @@
     <h2 id="getting-started">1. Getting Started — Register &amp; Log In</h2>
 
     <h3>&#x270A; Creating your account</h3>
-    <p>Open Jobber in your browser. Click the <strong>Register</strong> tab on the login screen:</p>
+    <p>Open TaskIt! in your browser. Click the <strong>Register</strong> tab on the login screen:</p>
 
     <div class="mockup-card">
       <div style="display:flex;gap:0;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:14px">
         <div style="flex:1;padding:8px;text-align:center;background:white;color:#6b7280;font-size:.9rem">Login</div>
-        <div style="flex:1;padding:8px;text-align:center;background:#1a56db;color:white;font-weight:600;font-size:.9rem">Register</div>
+        <div style="flex:1;padding:8px;text-align:center;background:#7c3aed;color:white;font-weight:600;font-size:.9rem">Register</div>
       </div>
       <div class="mockup-field">&#x1F464; Username (e.g. johndoe)</div>
       <div class="mockup-field">&#x1F4E7; Email address</div>
@@ -104,16 +104,16 @@
 
     <div class="mockup-card">
       <div style="display:flex;gap:0;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:14px">
-        <div style="flex:1;padding:8px;text-align:center;background:#1a56db;color:white;font-weight:600;font-size:.9rem">Login</div>
+        <div style="flex:1;padding:8px;text-align:center;background:#7c3aed;color:white;font-weight:600;font-size:.9rem">Login</div>
         <div style="flex:1;padding:8px;text-align:center;background:white;color:#6b7280;font-size:.9rem">Register</div>
       </div>
       <div class="mockup-field">&#x1F4E7; you@example.com</div>
       <div style="display:flex;align-items:center;gap:8px;margin:8px 0 10px;padding:6px 2px">
-        <div style="width:16px;height:16px;border:2px solid #1a56db;border-radius:3px;flex-shrink:0;background:#eff6ff"></div>
+        <div style="width:16px;height:16px;border:2px solid #7c3aed;border-radius:3px;flex-shrink:0;background:#f5f3ff"></div>
         <span style="font-size:.85rem;color:#374151">Keep me signed in for 30 days</span>
       </div>
       <div class="mockup-btn" style="width:100%;text-align:center">Send Magic Link</div>
-      <div style="text-align:center;margin-top:8px;font-size:.82rem;color:#6b7280">or <span style="color:#1a56db;text-decoration:underline">Use password instead</span></div>
+      <div style="text-align:center;margin-top:8px;font-size:.82rem;color:#6b7280">or <span style="color:#7c3aed;text-decoration:underline">Use password instead</span></div>
     </div>
 
     <p>There are <strong>two ways</strong> to log in:</p>
@@ -172,7 +172,7 @@
     <div class="status-flow">
       <div class="status-box">&#x1F4CB; Not Started</div>
       <span style="color:#94a3b8;font-size:1.1rem;font-weight:700">&#x2192;</span>
-      <div class="status-box" style="background:#dbeafe;border-color:#1a56db">&#x1F504; Started</div>
+      <div class="status-box" style="background:#dbeafe;border-color:#7c3aed">&#x1F504; Started</div>
       <span style="color:#94a3b8;font-size:1.1rem;font-weight:700">&#x2192;</span>
       <div class="status-box" style="background:#dcfce7;border-color:#16a34a;color:#15803d">&#x2705; Complete</div>
     </div>
@@ -200,10 +200,10 @@
     <p>The <strong>Alerts</strong> button in the bottom navigation shows a red badge for tasks that are <strong>overdue</strong> or <strong>due within 24 hours</strong>. Tap it to see the list; tap any item to jump to that task.</p>
 
     <h3>&#x1F5A5;&#xFE0F; Browser popup notifications</h3>
-    <p>Jobber can fire native browser popups when tasks approach their deadline. When you first log in, your browser will ask for notification permission &#x2014; click <em>Allow</em>. Popups fire while the app is open, using the timing columns in the task's Reminders grid.</p>
+    <p>TaskIt! can fire native browser popups when tasks approach their deadline. When you first log in, your browser will ask for notification permission &#x2014; click <em>Allow</em>. Popups fire while the app is open, using the timing columns in the task's Reminders grid.</p>
 
     <h3>&#x1F4E7; Email reminders &amp; Notification grid</h3>
-    <p>When email is configured on the server, Jobber sends reminders at the timings you choose per task. The <strong>Reminders</strong> grid in the task form:</p>
+    <p>When email is configured on the server, TaskIt! sends reminders at the timings you choose per task. The <strong>Reminders</strong> grid in the task form:</p>
     <table style="border-collapse:collapse;font-size:.88rem;margin:8px 0 14px">
       <tr>
         <th style="padding:5px 14px 5px 0;text-align:left;color:#6b7280;font-weight:400"></th>
@@ -269,7 +269,7 @@
       <div class="mockup-field" style="color:#374151">Title: Deep clean kitchen</div>
       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;margin-bottom:8px;background:white">
         <span style="font-size:.85rem;color:#374151">&#x2B50; XP Multiplier:</span>
-        <code style="font-size:.9rem;font-weight:700;color:#1a56db">2.0</code>
+        <code style="font-size:.9rem;font-weight:700;color:#7c3aed">2.0</code>
         <span style="font-size:.78rem;color:#9ca3af">× base XP (0.1–10)</span>
       </div>
     </div>
@@ -296,11 +296,11 @@
     <p>Click <strong>Change Password</strong> to expand a form. Enter your current password, then your new password (minimum 8 characters) twice, and click <strong>Update Password</strong>.</p>
 
     <h3>&#x1F4C5; Calendar Integration</h3>
-    <p>Subscribe to your Jobber tasks in any calendar app (Google Calendar, Apple Calendar, Outlook, etc.) using the private <strong>ICS feed link</strong> in the <em>Calendar Integration</em> card. Copy the link and add it as a new calendar subscription.</p>
+    <p>Subscribe to your TaskIt! tasks in any calendar app (Google Calendar, Apple Calendar, Outlook, etc.) using the private <strong>ICS feed link</strong> in the <em>Calendar Integration</em> card. Copy the link and add it as a new calendar subscription.</p>
     <div class="warn-box">&#x26A0;&#xFE0F; Keep this link private &#x2014; anyone with it can view your tasks. Click <strong>&#x1F504; Regenerate Link</strong> to invalidate the old one.</div>
 
-    <h3>&#x1F4E4; Invite to Jobber</h3>
-    <p>Click <strong>Copy Invite Link</strong> on your Profile page to copy a link to your Jobber instance to share with others.</p>
+    <h3>&#x1F4E4; Invite to TaskIt!</h3>
+    <p>Click <strong>Copy Invite Link</strong> on your Profile page to copy a link to your TaskIt! instance to share with others.</p>
 
     <h3>&#x1F4AC; Feedback &amp; Feature Requests</h3>
     <p>Found a bug or have an idea? Scroll to the <strong>Feedback &amp; Feature Requests</strong> card on your Profile page. Enter a subject and message (up to 4,000 characters), tick the box if you're happy to be contacted, and click <strong>Send Feedback</strong>.</p>
@@ -316,7 +316,7 @@
 
     <!-- ===== 6. GAMIFICATION ===== -->
     <h2 id="gamification">6. &#x1F3AE; Gamification &#x2014; XP, Skills, Achievements &amp; Streaks</h2>
-    <p>Jobber includes a fully opt-in gamification system. It is <strong>disabled by default</strong> and can be toggled any time from your Profile page. Your progress is always preserved when toggling.</p>
+    <p>TaskIt! includes a fully opt-in gamification system. It is <strong>disabled by default</strong> and can be toggled any time from your Profile page. Your progress is always preserved when toggling.</p>
 
     <div class="info-box">&#x2139;&#xFE0F; Gamification is <strong>fully opt-in</strong> and never affects the core task experience for users who keep it off.</div>
 
@@ -351,9 +351,9 @@
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
         <span style="font-size:.8rem;color:#6b7280;white-space:nowrap">Household XP</span>
         <div style="flex:1;background:#e5e7eb;border-radius:99px;height:10px;overflow:hidden">
-          <div style="width:63%;background:#1a56db;height:100%;border-radius:99px"></div>
+          <div style="width:63%;background:#7c3aed;height:100%;border-radius:99px"></div>
         </div>
-        <span style="font-size:.8rem;font-weight:600;color:#1a56db;white-space:nowrap">Level 3</span>
+        <span style="font-size:.8rem;font-weight:600;color:#7c3aed;white-space:nowrap">Level 3</span>
       </div>
       <div style="font-size:.78rem;color:#9ca3af">+100 XP earned &#x00B7; 630 / 1,000 XP to Level 5</div>
     </div>
@@ -378,9 +378,9 @@
 
     <div class="mockup-card">
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px">
-        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px;text-align:center">
+        <div style="background:#f5f3ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px;text-align:center">
           <div style="font-size:1.4rem;margin-bottom:3px">&#x1F947;</div>
-          <div style="font-size:.8rem;font-weight:600;color:#1e40af">First Steps</div>
+          <div style="font-size:.8rem;font-weight:600;color:#5b21b6">First Steps</div>
           <div style="font-size:.7rem;color:#6b7280;margin-top:2px">Complete first task</div>
         </div>
         <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px;text-align:center">
@@ -433,13 +433,13 @@
     <div class="guide-step"><div class="step-num">2</div><div>If the task is then missed, the Freeze is consumed, the streak is preserved, and the &#x2744;&#xFE0F; clears automatically.</div></div>
     <div class="tip-box">&#x1F4A1; Each task can hold one active Freeze at a time. Apply it before you know you'll be busy &#x2014; you can't retroactively protect a streak that has already reset.</div>
 
-    <h3 id="arcade">&#x1F579;&#xFE0F; Jobber Arcade</h3>
-    <p>Each of the 13 achievement badges has a corresponding <strong>mini-game</strong> in the Jobber Arcade. Once you unlock a badge, click on it in the <strong>&#x2B50; Progress</strong> tab to open the Arcade and play its game.</p>
+    <h3 id="arcade">&#x1F579;&#xFE0F; TaskIt! Arcade</h3>
+    <p>Each of the 13 achievement badges has a corresponding <strong>mini-game</strong> in the TaskIt! Arcade. Once you unlock a badge, click on it in the <strong>&#x2B50; Progress</strong> tab to open the Arcade and play its game.</p>
     <div class="mockup-card">
       <div style="display:flex;align-items:center;gap:14px">
         <div style="font-size:2.2rem">&#x1F3AE;</div>
         <div>
-          <p style="font-size:.9rem;font-weight:700;color:#1a1a2e;margin:0 0 2px">Jobber Arcade</p>
+          <p style="font-size:.9rem;font-weight:700;color:#1a1a2e;margin:0 0 2px">TaskIt! Arcade</p>
           <p style="font-size:.82rem;color:#6b7280;margin:0">Full-screen overlay with a dedicated game for every achievement. Press <strong>Esc</strong> or tap <strong>&#x1F519; Back to Tasks</strong> to return to the app at any time.</p>
         </div>
       </div>
@@ -447,7 +447,7 @@
     <table style="border-collapse:collapse;font-size:.875rem;margin:8px 0 14px;width:100%">
       <tr><th style="padding:6px 12px 6px 0;text-align:left;border-bottom:2px solid #e5e7eb">Badge earned</th><th style="padding:6px 0;text-align:left;border-bottom:2px solid #e5e7eb">Arcade game</th></tr>
       <tr><td style="padding:5px 12px 5px 0">&#x1F947; First Steps</td><td>Productivity Hangman &#x2014; guess the productivity word before the figure is drawn!</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">&#x1F680; Getting Started</td><td>Job Search &#x2014; find all six Jobber tools hidden in the letter grid!</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F680; Getting Started</td><td>Job Search &#x2014; find all six TaskIt! tools hidden in the letter grid!</td></tr>
       <tr><td style="padding:5px 12px 5px 0">&#x1F525; On a Roll</td><td>On a Roll &#x2014; keep the combo alive!</td></tr>
       <tr><td style="padding:5px 12px 5px 0">&#x2694;&#xFE0F; Centurion</td><td>Century Clash &#x2014; defeat 100 enemies to claim glory!</td></tr>
       <tr><td style="padding:5px 12px 5px 0">&#x1F451; Task Master</td><td>Legendary Quest &#x2014; conquer the leaderboard!</td></tr>
@@ -455,7 +455,7 @@
       <tr><td style="padding:5px 12px 5px 0">&#x1F426; Early Bird</td><td>Early Bird Dash &#x2014; flap your way past the deadlines!</td></tr>
       <tr><td style="padding:5px 12px 5px 0">&#x1F5FA;&#xFE0F; Type Explorer</td><td>Explorer&rsquo;s Maze &#x2014; navigate through the task maze!</td></tr>
       <tr><td style="padding:5px 12px 5px 0">&#x1F3AF; Specialist</td><td>Bullseye! &#x2014; hit every target with precision!</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">&#x1F393; Master of the Craft</td><td>Quiz Master &#x2014; test your Jobber knowledge!</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F393; Master of the Craft</td><td>Quiz Master &#x2014; test your TaskIt! knowledge!</td></tr>
       <tr><td style="padding:5px 12px 5px 0">&#x1F3A9; Hat Trick</td><td>Hat Trick &#x2014; pull off three tricks in a row!</td></tr>
       <tr><td style="padding:5px 12px 5px 0">&#x1F340; Lucky Streak</td><td>Lucky Seven &#x2014; spin your luck and win big!</td></tr>
       <tr><td style="padding:5px 12px 5px 0">&#x1F682; Unstoppable</td><td>Unstoppable Train &#x2014; keep the train running &mdash; no stops!</td></tr>
@@ -466,7 +466,7 @@
 
     <!-- ===== 7. FRIENDS & LEADERBOARDS ===== -->
     <h2 id="friends">7. &#x1F91D; Friends &amp; Leaderboards</h2>
-    <p>Friends let you compete on XP leaderboards with people <em>outside</em> your groups. You're never added to each other's task groups &#x2014; you just see each other's total XP rank. Both users must be registered on the same Jobber instance.</p>
+    <p>Friends let you compete on XP leaderboards with people <em>outside</em> your groups. You're never added to each other's task groups &#x2014; you just see each other's total XP rank. Both users must be registered on the same TaskIt! instance.</p>
 
     <p>Go to the <strong>&#x2B50; Progress</strong> tab and scroll to the <strong>&#x1F91D; Friends</strong> section.</p>
 
@@ -482,7 +482,7 @@
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:.8rem;color:#6b7280;width:84px">Friend key:</span>
-        <code style="font-size:.9rem;font-family:monospace;color:#1a56db;font-weight:700;letter-spacing:.12em;flex:1">a1b2c3d4</code>
+        <code style="font-size:.9rem;font-family:monospace;color:#7c3aed;font-weight:700;letter-spacing:.12em;flex:1">a1b2c3d4</code>
         <div class="mockup-btn-sm">Copy</div>
       </div>
     </div>
@@ -499,17 +499,17 @@
     </div>
 
     <h4>Option 2 &#x2014; Invite link or QR code</h4>
-    <p>Click <strong>&#x1F4E4; Generate Invite Link &amp; QR Code</strong>. Jobber creates a one-time link (valid 7 days) and displays a scannable QR code. Share the link or QR &#x2014; when the other person opens it and logs in, they're automatically connected as your friend.</p>
+    <p>Click <strong>&#x1F4E4; Generate Invite Link &amp; QR Code</strong>. TaskIt! creates a one-time link (valid 7 days) and displays a scannable QR code. Share the link or QR &#x2014; when the other person opens it and logs in, they're automatically connected as your friend.</p>
 
     <div class="mockup-card" style="text-align:center">
       <div style="width:96px;height:96px;background:#f1f5f9;border:2px dashed #cbd5e1;border-radius:8px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:2.2rem">&#x25AA;&#xFE0F;</div>
       <div style="font-size:.75rem;color:#6b7280;margin-bottom:8px">Scan the QR code, or share the link below:</div>
-      <div class="mockup-field" style="text-align:left;font-size:.75rem">https://jobber.example.com/?friend=abc123&#x2026;</div>
+      <div class="mockup-field" style="text-align:left;font-size:.75rem">https://taskit.example.com/?friend=abc123&#x2026;</div>
       <div style="font-size:.7rem;color:#9ca3af;margin-top:6px">Expires in 7 days &#x00B7; single-use</div>
     </div>
 
-    <h4>Option 3 &#x2014; New to Jobber? Send them the invite link</h4>
-    <p>If the person you want to add isn't on Jobber yet, share your invite link. When they open it they'll be prompted to register. Once they log in, the friend connection completes automatically. After that you can use Option 1 for any future connections.</p>
+    <h4>Option 3 &#x2014; New to TaskIt!? Send them the invite link</h4>
+    <p>If the person you want to add isn't on TaskIt! yet, share your invite link. When they open it they'll be prompted to register. Once they log in, the friend connection completes automatically. After that you can use Option 1 for any future connections.</p>
 
     <div class="tip-box">&#x1F4A1; Invite links are single-use and expire after 7 days. Click <em>Generate</em> again to get a fresh link &#x2014; this automatically cancels the previous one.</div>
 
@@ -525,19 +525,19 @@
     <h2 id="faq">8. &#x2753; Common Questions</h2>
 
     <h3>I can't log in</h3>
-    <p>Your account may be locked after too many failed attempts. Try the magic link option if email is configured, or contact the person who manages your Jobber instance to have it unlocked.</p>
+    <p>Your account may be locked after too many failed attempts. Try the magic link option if email is configured, or contact the person who manages your TaskIt! instance to have it unlocked.</p>
 
     <h3>My tasks aren't showing</h3>
     <p>Check the filter panel &#x2014; filters like <em>Show Archived</em>, <em>Assigned to Me</em>, or <em>Show Group Tasks</em> can hide tasks. Also confirm you're a member of the group the task belongs to.</p>
 
     <h3>I'm not receiving emails</h3>
-    <p>Email requires SMTP to be configured and enabled on the server. Check with the person who manages your Jobber instance to confirm it's set up correctly.</p>
+    <p>Email requires SMTP to be configured and enabled on the server. Check with the person who manages your TaskIt! instance to confirm it's set up correctly.</p>
 
     <h3>I lost my group's join details</h3>
     <p>Any group admin can find the invite word pair and secret key by clicking <strong>Manage / Invite</strong> on the group card.</p>
 
     <h3>I didn't receive my email verification link</h3>
-    <p>Check your spam folder. If SMTP is not configured, the link won't be delivered &#x2014; ask the person who manages your Jobber instance to configure email or manually verify your account.</p>
+    <p>Check your spam folder. If SMTP is not configured, the link won't be delivered &#x2014; ask the person who manages your TaskIt! instance to configure email or manually verify your account.</p>
 
     <h3>Where is the gamification content?</h3>
     <p>Tap the <strong>&#x2B50; Progress</strong> tab in the bottom navigation. Enable or disable gamification from the <strong>&#x1F464; Profile</strong> page.</p>
@@ -548,7 +548,7 @@
     <h3>The "Keep me signed in" option didn't persist my session</h3>
     <p>Tick the checkbox <em>before</em> clicking Send Magic Link or Sign In. If your browser is set to clear all site data on close, session storage is also cleared regardless of this setting.</p>
 
-    <h3>What data does Jobber store in my browser?</h3>
+    <h3>What data does TaskIt! store in my browser?</h3>
     <table style="border-collapse:collapse;font-size:.875rem;margin:8px 0">
       <tr style="background:#f8fafc">
         <th style="padding:7px 14px 7px 0;text-align:left;border-bottom:2px solid #e5e7eb">Key</th>
@@ -556,7 +556,7 @@
       </tr>
       <tr><td style="padding:5px 14px 5px 0"><code>jbToken</code></td><td style="padding:5px 0">Your login session token</td></tr>
       <tr><td style="padding:5px 14px 5px 0"><code>jbUser</code></td><td style="padding:5px 0">Your username, email, and locale preference</td></tr>
-      <tr><td style="padding:5px 14px 5px 0"><code>jobber_app_version</code></td><td style="padding:5px 0">App version (for update detection)</td></tr>
+      <tr><td style="padding:5px 14px 5px 0"><code>taskit_app_version</code></td><td style="padding:5px 0">App version (for update detection)</td></tr>
       <tr><td style="padding:5px 14px 5px 0"><code>jbPopupFired</code></td><td style="padding:5px 0">Which browser popup notifications have fired today</td></tr>
       <tr><td style="padding:5px 14px 5px 0"><code>jbGamifAsked</code></td><td style="padding:5px 0">Whether you've seen the gamification opt-in prompt</td></tr>
       <tr><td style="padding:5px 14px 5px 0"><code>jbCookieNotice</code></td><td style="padding:5px 0">Whether you've dismissed the storage notice</td></tr>
@@ -565,7 +565,7 @@
 
     <hr/>
 
-    <p style="font-size:.88rem;color:#6b7280;margin-top:0">Jobber v<span class="page-version">1.5.2</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson 2026 &nbsp;&#x00B7;&nbsp;
+    <p style="font-size:.88rem;color:#6b7280;margin-top:0">TaskIt! v<span class="page-version">1.5.2</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson 2026 &nbsp;&#x00B7;&nbsp;
       <a href="https://jahosi.co.uk" class="text-indigo-500 hover:underline" target="_blank" rel="noopener noreferrer">jahosi.co.uk</a> &nbsp;&#x00B7;&nbsp;
       <a href="/privacy-policy.html" class="text-indigo-500 hover:underline">Privacy Policy</a>
     </p>
@@ -574,12 +574,12 @@
 </main>
 
 <footer class="border-t border-slate-200 dark:border-slate-700 py-4 mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-  <span>Jobber v<span class="page-version">1.5.2</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson 2026 &nbsp;&#x00B7;&nbsp;
+  <span>TaskIt! v<span class="page-version">1.5.2</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson 2026 &nbsp;&#x00B7;&nbsp;
     <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer" class="text-indigo-500 hover:underline">jahosi.co.uk</a>
     &nbsp;&#x00B7;&nbsp;
     <a href="/privacy-policy.html" class="text-indigo-500 hover:underline">Privacy Policy</a>
     &nbsp;&#x00B7;&nbsp;
-    <a href="/" class="text-indigo-500 hover:underline">Back to Jobber</a>
+    <a href="/" class="text-indigo-500 hover:underline">Back to TaskIt!</a>
   </span>
 </footer>
 

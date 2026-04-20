@@ -1,6 +1,6 @@
-# Jobber: Senior Technical Deep-Dive
+# TaskIt!: Senior Technical Deep-Dive
 
-This document provides a technical overview of the **Jobber** Android project for senior engineers. It details the architectural decisions, dependency stack, and deployment workflows.
+This document provides a technical overview of the **TaskIt!** Android project for senior engineers. It details the architectural decisions, dependency stack, and deployment workflows.
 
 ## 1. Technical Architecture
 The application follows a **Clean Architecture** approach with clear separation of concerns, although simplified for the current scale.

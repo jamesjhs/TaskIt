@@ -9,10 +9,11 @@
  * Boots when the arcade overlay dispatches 'arcade:open' with
  * gameId === 'wordsearch', and tears itself down cleanly on 'arcade:close'.
  *
- * Theme: "Jobber Tools & Tasks"
- * Words: CHORES, COLLABORATE, RECUR, ALERTS, PROGRESS, GROUP
+ * Theme: General knowledge — 6 words are drawn at random from a 100-word
+ *        pool spanning nature, animals, food, sports, science, arts, places,
+ *        and Jobber app concepts. Every new game shows a different set.
  *
- * The grid is 12 × 12 (large enough for COLLABORATE = 11 letters).
+ * The grid is 12 × 12 (supports words up to 12 letters).
  * Words are placed in any of 8 compass directions (right, left, down,
  * up, and all four 45° diagonals) using a randomised backtracking
  * algorithm.  Empty cells are padded with random letters.
@@ -44,8 +45,43 @@
 
   // ── Configuration ──────────────────────────────────────────────────────────
 
-  /** Target words to hide in the grid (upper-case). */
-  const TARGET_WORDS = ['CHORES', 'COLLABORATE', 'RECUR', 'ALERTS', 'PROGRESS', 'GROUP'];
+  /**
+   * 100-word pool across a variety of topics (all upper-case, max 12 letters).
+   * Six words are drawn at random at the start of every new game.
+   */
+  const WORD_POOL = [
+    // Jobber app concepts
+    'CHORES', 'COLLABORATE', 'RECUR', 'ALERTS', 'PROGRESS', 'GROUP',
+    'TASKS', 'SCHEDULE', 'WORKFLOW', 'COMPLETE', 'PRIORITY', 'DEADLINE',
+    // nature
+    'AVALANCHE', 'CANOPY', 'GLACIER', 'HURRICANE', 'LIGHTNING',
+    'RAINBOW', 'VOLCANO', 'WATERFALL', 'CANYON', 'FOREST',
+    'MEADOW', 'DESERT', 'LAGOON', 'GEYSER',
+    // animals
+    'BUTTERFLY', 'CROCODILE', 'ELEPHANT', 'FLAMINGO', 'KANGAROO',
+    'PORCUPINE', 'RACCOON', 'CHEETAH', 'DOLPHIN', 'PENGUIN',
+    'JAGUAR', 'PANTHER', 'LEOPARD', 'GORILLA', 'CHAMELEON', 'PEACOCK',
+    // food
+    'CHOCOLATE', 'CINNAMON', 'MUSHROOM', 'AVOCADO', 'BLUEBERRY',
+    'PINEAPPLE', 'CHEDDAR', 'RASPBERRY', 'BROCCOLI', 'ASPARAGUS',
+    'WALNUT', 'PAPAYA', 'SAFFRON', 'MANGO',
+    // sports
+    'MARATHON', 'BADMINTON', 'BASKETBALL', 'VOLLEYBALL', 'SWIMMING',
+    'CYCLING', 'ARCHERY', 'WRESTLING', 'FENCING', 'GYMNASTICS',
+    // science & technology
+    'ALGORITHM', 'CHEMISTRY', 'TELESCOPE', 'SATELLITE', 'MOLECULE',
+    'EVOLUTION', 'INVENTION', 'GRAVITY', 'RADIATION', 'SPECTRUM',
+    // arts & culture
+    'SYMPHONY', 'ORCHESTRA', 'FESTIVAL', 'CARNIVAL', 'SCULPTURE',
+    'MYTHOLOGY', 'FOLKLORE', 'DRAMA', 'BALLET', 'COMEDY',
+    // places & geography
+    'MOUNTAIN', 'CATHEDRAL', 'PENINSULA', 'STADIUM', 'LABYRINTH',
+    'ISLAND', 'HARBOR', 'VALLEY', 'CONTINENT', 'GEOGRAPHY',
+    'OBSERVATORY', 'JUNGLE', 'PLATEAU', 'TUNDRA',
+  ];
+
+  /** Number of words to pick from WORD_POOL each round. */
+  const WORDS_PER_ROUND = 6;
 
   /**
    * Grid dimension — both rows and columns.
@@ -71,9 +107,12 @@
   // ── Game state ─────────────────────────────────────────────────────────────
 
   /** 12 × 12 array of upper-case letter strings, built by buildGrid(). */
-  let _grid     = [];
+  let _grid        = [];
 
-  /** Set of TARGET_WORDS that have been found this round. */
+  /** Words chosen from WORD_POOL for the current round. */
+  let _targetWords = [];
+
+  /** Set of _targetWords that have been found this round. */
   let _found    = new Set();
 
   /** Start cell of the active drag selection: { r, c } or null. */
@@ -91,7 +130,7 @@
   // ── Grid generation ────────────────────────────────────────────────────────
 
   /**
-   * Build a fresh GRID_SIZE × GRID_SIZE grid with all TARGET_WORDS hidden.
+   * Build a fresh GRID_SIZE × GRID_SIZE grid with all _targetWords hidden.
    *
    * Algorithm
    * ---------
@@ -102,9 +141,9 @@
    *    either empty or already holds the same letter (allows crossings).
    * 4. Fill all remaining null cells with random letters.
    *
-   * In practice, placement always succeeds for these 6 short words in a
-   * 12 × 12 grid.  A word that somehow fails all 200 attempts is simply
-   * omitted (the player can still win by finding the others).
+   * In practice, placement always succeeds for 6 words in a 12 × 12 grid.
+   * A word that somehow fails all 200 attempts is simply omitted (the player
+   * can still win by finding the others).
    *
    * @returns {string[][]}  2-D array of single upper-case characters.
    */
@@ -116,7 +155,7 @@
     }
 
     // Step 2 — longest words first
-    var sorted = TARGET_WORDS.slice().sort(function (a, b) { return b.length - a.length; });
+    var sorted = _targetWords.slice().sort(function (a, b) { return b.length - a.length; });
 
     for (var wi = 0; wi < sorted.length; wi++) {
       var word   = sorted[wi];
@@ -223,7 +262,7 @@
     panel.appendChild(titleEl);
 
     // One item per target word — displayed in Title Case for readability
-    TARGET_WORDS.forEach(function (word) {
+    _targetWords.forEach(function (word) {
       var item       = document.createElement('span');
       item.id        = 'ws-word-' + word;
       item.className = 'ws-word-item' + (_found.has(word) ? ' ws-word-item--found' : '');
@@ -237,7 +276,7 @@
     winEl.id        = 'ws-win';
     winEl.className = 'ws-win-msg';
     winEl.textContent = '\uD83C\uDF89 All found!';   // 🎉
-    if (_found.size === TARGET_WORDS.length) winEl.style.display = 'block';
+    if (_found.size === _targetWords.length) winEl.style.display = 'block';
     panel.appendChild(winEl);
 
     // New-game button — hidden until all words are found
@@ -245,7 +284,7 @@
     replayBtn.id        = 'ws-replay';
     replayBtn.className = 'ws-replay';
     replayBtn.textContent = '\uD83D\uDD04 New Game';  // 🔄
-    if (_found.size === TARGET_WORDS.length) replayBtn.style.display = 'inline-block';
+    if (_found.size === _targetWords.length) replayBtn.style.display = 'inline-block';
     replayBtn.addEventListener('click', startGame);
     panel.appendChild(replayBtn);
 
@@ -456,8 +495,8 @@
       var spelled  = pathToWord(path);
       var reversed = spelled.split('').reverse().join('');
 
-      for (var i = 0; i < TARGET_WORDS.length; i++) {
-        var w = TARGET_WORDS[i];
+      for (var i = 0; i < _targetWords.length; i++) {
+        var w = _targetWords[i];
         if (_found.has(w)) continue;
 
         if (spelled === w || reversed === w) {
@@ -472,7 +511,7 @@
           });
 
           crossOffWord(w);
-          if (_found.size === TARGET_WORDS.length) showWin();
+          if (_found.size === _targetWords.length) showWin();
           break;  // only one word can match a given path
         }
       }
@@ -532,8 +571,27 @@
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
+  /**
+   * Return `n` unique words chosen at random from `pool`.
+   *
+   * @param {string[]} pool
+   * @param {number}   n
+   * @returns {string[]}
+   */
+  function pickWords(pool, n) {
+    var copy    = pool.slice();
+    var result  = [];
+    var count   = Math.min(n, copy.length);
+    for (var i = 0; i < count; i++) {
+      var idx = Math.floor(Math.random() * copy.length);
+      result.push(copy.splice(idx, 1)[0]);
+    }
+    return result;
+  }
+
   /** Generate a fresh grid and render a new round. */
   function startGame() {
+    _targetWords = pickWords(WORD_POOL, WORDS_PER_ROUND);
     _grid     = buildGrid();
     _found    = new Set();
     _selStart = null;

@@ -253,11 +253,16 @@ router.get('/:id/members', (req: Request, res: Response): void => {
   const members = db.prepare(`
     SELECT u.id, u.username, u.email, gm.role, gm.joined_at, gm.xp_share,
            CASE WHEN gm.xp_share = 1 OR u.id = ?
-                THEN COALESCE((SELECT SUM(us.xp) FROM user_skills us WHERE us.user_id = u.id), 0)
+                THEN COALESCE(xp_totals.total_xp, 0)
                 ELSE NULL
            END AS total_xp
     FROM users u
     JOIN group_members gm ON gm.user_id = u.id
+    LEFT JOIN (
+      SELECT user_id, SUM(xp) AS total_xp
+      FROM user_skills
+      GROUP BY user_id
+    ) xp_totals ON xp_totals.user_id = u.id
     WHERE gm.group_id = ?
     ORDER BY gm.joined_at ASC
   `).all(userId, groupId);

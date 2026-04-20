@@ -318,7 +318,8 @@ router.patch('/:id', (req: Request, res: Response): void => {
     }
   }
 
-  // Validate xpMultiplier if provided
+  // Validate xpMultiplier if provided, resolving the value for later use in the SET clause
+  let resolvedPatchMultiplier: number | undefined;
   if (xpMultiplier !== undefined && xpMultiplier !== null) {
     const fullTask = db.prepare('SELECT group_id FROM tasks WHERE id = ?').get(taskId) as { group_id: string | null } | undefined;
     const grpGamEnabled = fullTask?.group_id
@@ -333,6 +334,7 @@ router.patch('/:id', (req: Request, res: Response): void => {
       res.status(400).json({ error: 'xpMultiplier must be a number between 0.1 and 10' });
       return;
     }
+    resolvedPatchMultiplier = parsed;
   }
 
   const now = Date.now();
@@ -360,9 +362,8 @@ router.patch('/:id', (req: Request, res: Response): void => {
   if (dueDate !== undefined) { setClauses.push('due_date = ?'); vals.push(dueDate || null); }
   if (recurInterval !== undefined) { setClauses.push('recur_interval = ?'); vals.push(recurInterval ? parseInt(String(recurInterval), 10) : null); }
   if (recurUnit !== undefined) { setClauses.push('recur_unit = ?'); vals.push(recurUnit || null); }
-  if (xpMultiplier !== undefined && xpMultiplier !== null) {
-    const parsed = parseFloat(String(xpMultiplier));
-    setClauses.push('xp_multiplier = ?'); vals.push(Math.max(0.1, Math.min(10, parsed)));
+  if (resolvedPatchMultiplier !== undefined) {
+    setClauses.push('xp_multiplier = ?'); vals.push(resolvedPatchMultiplier);
   }
   if (notifyEmail !== undefined) { setClauses.push('notify_email = ?'); vals.push(notifyEmail === false || notifyEmail === 0 ? 0 : 1); }
   if (notify7day !== undefined) { setClauses.push('notify_7day = ?'); vals.push(notify7day === false || notify7day === 0 ? 0 : 1); }

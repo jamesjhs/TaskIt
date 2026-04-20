@@ -224,7 +224,7 @@ router.patch('/xp-events/:key', (req: Request, res: Response): void => {
 
   if (xp_value !== undefined) {
     const parsed = parseInt(String(xp_value), 10);
-    if (!Number.isInteger(parsed) || parsed < 0) {
+    if (Number.isNaN(parsed) || parsed < 0) {
       res.status(400).json({ error: 'xp_value must be a non-negative integer' });
       return;
     }

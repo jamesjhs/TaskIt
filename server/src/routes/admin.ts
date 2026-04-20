@@ -200,4 +200,62 @@ router.post('/feedback/:id/reply', (req: Request, res: Response): void => {
   res.status(201).json({ message: 'Alert sent to user' });
 });
 
+// GET /api/admin/xp-events — list all configurable XP events
+router.get('/xp-events', (_req: Request, res: Response): void => {
+  const rows = db.prepare(
+    'SELECT key, name, description, xp_value, enabled, updated_at FROM xp_events ORDER BY key ASC'
+  ).all();
+  res.json(rows);
+});
+
+// PATCH /api/admin/xp-events/:key — update the XP value or enabled flag for an event
+router.patch('/xp-events/:key', (req: Request, res: Response): void => {
+  const { key } = req.params;
+  const { xp_value, enabled } = req.body;
+
+  const row = db.prepare('SELECT key FROM xp_events WHERE key = ?').get(key);
+  if (!row) {
+    res.status(404).json({ error: 'XP event not found' });
+    return;
+  }
+
+  const setClauses: string[] = [];
+  const vals: (string | number)[] = [];
+
+  if (xp_value !== undefined) {
+    const parsed = parseInt(String(xp_value), 10);
+    if (Number.isNaN(parsed) || parsed < 0) {
+      res.status(400).json({ error: 'xp_value must be a non-negative integer' });
+      return;
+    }
+    setClauses.push('xp_value = ?');
+    vals.push(parsed);
+  }
+
+  if (enabled !== undefined) {
+    if (typeof enabled !== 'boolean' && enabled !== 0 && enabled !== 1) {
+      res.status(400).json({ error: '`enabled` must be a boolean' });
+      return;
+    }
+    setClauses.push('enabled = ?');
+    vals.push((enabled === false || enabled === 0) ? 0 : 1);
+  }
+
+  if (setClauses.length === 0) {
+    res.status(400).json({ error: 'No valid fields to update (xp_value, enabled)' });
+    return;
+  }
+
+  setClauses.push('updated_at = ?');
+  vals.push(Date.now());
+  vals.push(key);
+
+  db.prepare(`UPDATE xp_events SET ${setClauses.join(', ')} WHERE key = ?`).run(...vals);
+
+  const updated = db.prepare(
+    'SELECT key, name, description, xp_value, enabled, updated_at FROM xp_events WHERE key = ?'
+  ).get(key);
+  res.json(updated);
+});
+
 export default router;

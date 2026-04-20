@@ -4,6 +4,7 @@ import { authMiddleware } from '../middleware/auth';
 import db from '../db';
 import { BASE_URL } from '../config';
 import { generateFriendKey } from '../wordlists';
+import { awardEventXp } from '../services/gamification';
 
 const router = Router();
 
@@ -173,6 +174,13 @@ router.post('/invite', (req: Request, res: Response): void => {
 
   const baseUrl = getBaseUrl(req);
   const inviteUrl = `${baseUrl}?friend=${token}`;
+
+  // Award send_app_invite XP (non-critical)
+  try {
+    awardEventXp(userId, 'send_app_invite');
+  } catch (xpErr) {
+    console.error('[friends/invite] Failed to award send_app_invite XP:', xpErr);
+  }
 
   res.status(201).json({ token, invite_url: inviteUrl, expires_at: expiresAt });
 });

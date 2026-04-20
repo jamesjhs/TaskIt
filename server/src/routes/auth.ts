@@ -6,6 +6,7 @@ import db from '../db';
 import { BASE_URL, JWT_SECRET, MAX_LOGIN_ATTEMPTS, LOCKOUT_MINUTES, ADMIN_EMAIL } from '../config';
 import { sendMagicLink, sendOTP, sendPasswordReset } from '../services/mail';
 import { ALLOWED_LOCALES } from '../constants';
+import { awardEventXp } from '../services/gamification';
 
 const router = Router();
 
@@ -99,6 +100,13 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
   db.prepare(
     'INSERT INTO users (id, username, email, password_hash, created_at, role, email_verified, locale) VALUES (?, ?, ?, ?, ?, ?, 0, ?)'
   ).run(id, username.trim(), normalizedEmail, passwordHash, now, role, userLocale);
+
+  // Award sign-up XP (banked immediately; visible once gamification is enabled)
+  try {
+    awardEventXp(id, 'signup');
+  } catch (xpErr) {
+    console.error('[auth/register] Failed to award signup XP:', xpErr);
+  }
 
   // Generate and store a verification magic token
   const token = crypto.randomBytes(32).toString('hex');

@@ -5,6 +5,7 @@ import db from '../db';
 import { BASE_URL } from '../config';
 import { generateGroupName, generateSharedKey } from '../wordlists';
 import { sendGroupInvite } from '../services/mail';
+import { awardEventXp } from '../services/gamification';
 
 const router = Router();
 
@@ -111,13 +112,20 @@ router.post('/', (req: Request, res: Response): void => {
     'INSERT INTO group_members (group_id, user_id, role, joined_at) VALUES (?, ?, ?, ?)'
   ).run(id, userId, 'admin', now);
 
+  // Award create_group XP (non-critical)
+  try {
+    awardEventXp(userId, 'create_group');
+  } catch (xpErr) {
+    console.error('[groups/create] Failed to award create_group XP:', xpErr);
+  }
+
   const group = db.prepare('SELECT * FROM groups WHERE id = ?').get(id);
   res.status(201).json(group);
 });
 
 // POST /api/groups/join  — join by invite word pair + secret key
 router.post('/join', (req: Request, res: Response): void => {
-  const { invite_name, shared_key } = req.body;
+  const { invite_name, shared_key, xp_share } = req.body;
   const userId = req.user!.id;
 
   if (!invite_name || typeof invite_name !== 'string' || !shared_key || typeof shared_key !== 'string') {
@@ -144,9 +152,12 @@ router.post('/join', (req: Request, res: Response): void => {
     return;
   }
 
+  // xp_share defaults to 1 (share); pass false/0 to opt out
+  const xpShareVal = (xp_share === false || xp_share === 0) ? 0 : 1;
+
   db.prepare(
-    'INSERT INTO group_members (group_id, user_id, role, joined_at) VALUES (?, ?, ?, ?)'
-  ).run(group.id, userId, 'member', Date.now());
+    'INSERT INTO group_members (group_id, user_id, role, joined_at, xp_share) VALUES (?, ?, ?, ?, ?)'
+  ).run(group.id, userId, 'member', Date.now(), xpShareVal);
 
   res.json(group);
 
@@ -169,6 +180,7 @@ router.post('/invite/:token/accept', (req: Request, res: Response): void => {
   const { token } = req.params;
   const userId = req.user!.id;
   const userEmail = req.user!.email;
+  const { xp_share } = req.body;
 
   const invite = db.prepare('SELECT * FROM group_invites WHERE token = ?').get(token) as
     | { token: string; group_id: string; invited_email: string | null; multi_use: number; used: number; expires_at: number }
@@ -209,9 +221,12 @@ router.post('/invite/:token/accept', (req: Request, res: Response): void => {
     return;
   }
 
+  // xp_share defaults to 1 (share); pass false/0 to opt out
+  const xpShareVal = (xp_share === false || xp_share === 0) ? 0 : 1;
+
   db.prepare(
-    'INSERT INTO group_members (group_id, user_id, role, joined_at) VALUES (?, ?, ?, ?)'
-  ).run(group.id, userId, 'member', Date.now());
+    'INSERT INTO group_members (group_id, user_id, role, joined_at, xp_share) VALUES (?, ?, ?, ?, ?)'
+  ).run(group.id, userId, 'member', Date.now(), xpShareVal);
 
   // Mark single-use invites as used
   if (!invite.multi_use) {
@@ -236,14 +251,51 @@ router.get('/:id/members', (req: Request, res: Response): void => {
   }
 
   const members = db.prepare(`
-    SELECT u.id, u.username, u.email, gm.role, gm.joined_at
+    SELECT u.id, u.username, u.email, gm.role, gm.joined_at, gm.xp_share,
+           CASE WHEN gm.xp_share = 1 OR u.id = ?
+                THEN COALESCE(xp_totals.total_xp, 0)
+                ELSE NULL
+           END AS total_xp
     FROM users u
     JOIN group_members gm ON gm.user_id = u.id
+    LEFT JOIN (
+      SELECT user_id, SUM(xp) AS total_xp
+      FROM user_skills
+      GROUP BY user_id
+    ) xp_totals ON xp_totals.user_id = u.id AND (gm.xp_share = 1 OR u.id = ?)
     WHERE gm.group_id = ?
     ORDER BY gm.joined_at ASC
-  `).all(groupId);
+  `).all(userId, userId, groupId);
 
   res.json(members);
+});
+
+// PATCH /api/groups/:id/members/me/xp-share  — update the requesting user's XP sharing preference
+router.patch('/:id/members/me/xp-share', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const groupId = req.params.id;
+  const { xp_share } = req.body;
+
+  if (typeof xp_share !== 'boolean' && xp_share !== 0 && xp_share !== 1) {
+    res.status(400).json({ error: '`xp_share` must be a boolean or 0/1' });
+    return;
+  }
+
+  const membership = db.prepare(
+    'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(groupId, userId);
+
+  if (!membership) {
+    res.status(403).json({ error: 'Not a member of this group' });
+    return;
+  }
+
+  const xpShareVal = (xp_share === false || xp_share === 0) ? 0 : 1;
+  db.prepare(
+    'UPDATE group_members SET xp_share = ? WHERE group_id = ? AND user_id = ?'
+  ).run(xpShareVal, groupId, userId);
+
+  res.json({ message: 'XP sharing preference updated', xp_share: xpShareVal === 1 });
 });
 
 // POST /api/groups/:id/invite  — create an invite (email or generic/QR)
@@ -309,6 +361,13 @@ router.post('/:id/invite', async (req: Request, res: Response): Promise<void> =>
     }
   }
 
+  // Award send_group_invite XP (non-critical)
+  try {
+    awardEventXp(userId, 'send_group_invite');
+  } catch (xpErr) {
+    console.error('[groups/invite] Failed to award send_group_invite XP:', xpErr);
+  }
+
   res.status(201).json({ token, invite_url: inviteUrl, expires_at: expiresAt });
 });
 
@@ -355,6 +414,13 @@ router.get('/:id/qr', (req: Request, res: Response): void => {
   const baseUrl = getBaseUrl(req);
   const inviteUrl = `${baseUrl}?invite=${token}`;
 
+  // Award send_group_invite XP for generating the QR link (non-critical)
+  try {
+    awardEventXp(userId, 'send_group_invite');
+  } catch (xpErr) {
+    console.error('[groups/qr] Failed to award send_group_invite XP:', xpErr);
+  }
+
   res.json({ invite_url: inviteUrl, expires_at: expiresAt });
 });
 
@@ -385,6 +451,37 @@ router.patch('/:id/name', (req: Request, res: Response): void => {
   db.prepare('UPDATE groups SET name = ? WHERE id = ?').run(name.trim(), groupId);
   const group = db.prepare('SELECT * FROM groups WHERE id = ?').get(groupId);
   res.json(group);
+});
+
+// PATCH /api/groups/:id/gamification-enhanced
+// Toggle the gamification enhancements feature for a group (admin only).
+// When enabled, task creators in the group can set an XP multiplier on tasks.
+router.patch('/:id/gamification-enhanced', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const groupId = req.params.id;
+  const { enabled } = req.body;
+
+  if (typeof enabled !== 'boolean') {
+    res.status(400).json({ error: '`enabled` must be a boolean' });
+    return;
+  }
+
+  const membership = db.prepare(
+    'SELECT role FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(groupId, userId) as { role: string } | undefined;
+
+  if (!membership) {
+    res.status(403).json({ error: 'Not a member of this group' });
+    return;
+  }
+  if (membership.role !== 'admin') {
+    res.status(403).json({ error: 'Only group admins can change gamification settings' });
+    return;
+  }
+
+  db.prepare('UPDATE groups SET gamification_enhanced = ? WHERE id = ?').run(enabled ? 1 : 0, groupId);
+  const group = db.prepare('SELECT * FROM groups WHERE id = ?').get(groupId);
+  res.json({ message: `Gamification enhancements ${enabled ? 'enabled' : 'disabled'}`, group });
 });
 
 // DELETE /api/groups/:id

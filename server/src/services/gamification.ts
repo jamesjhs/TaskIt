@@ -38,6 +38,63 @@ export function computeLevel(totalXp: number): number {
 export const BASE_TASK_XP = 50;
 
 // ---------------------------------------------------------------------------
+// XP event catalogue helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the XP value configured for an event key.
+ * Returns 0 if the event is disabled or not found.
+ */
+export function getXpEventValue(key: string): number {
+  const row = db.prepare(
+    'SELECT xp_value, enabled FROM xp_events WHERE key = ?'
+  ).get(key) as { xp_value: number; enabled: number } | undefined;
+  if (!row || !row.enabled) return 0;
+  return row.xp_value;
+}
+
+/**
+ * Awards XP for a named event (e.g. 'signup', 'create_task') to the user's
+ * "Activity" skill.  Unlike awardTaskXp, this does NOT require gamification
+ * to be enabled — XP accumulates from day one so users have something waiting
+ * for them when they do opt in.
+ *
+ * Returns the updated skill row, or null if the event value is 0 / disabled.
+ */
+export function awardEventXp(
+  userId: string,
+  eventKey: string,
+): { skill_name: string; xp: number; level: number } | null {
+  const xpAmount = getXpEventValue(eventKey);
+  if (xpAmount <= 0) return null;
+
+  const SKILL = 'Activity';
+
+  const existing = db.prepare(
+    'SELECT xp, level FROM user_skills WHERE user_id = ? AND skill_name = ?'
+  ).get(userId, SKILL) as { xp: number; level: number } | undefined;
+
+  let newXp: number;
+  let newLevel: number;
+
+  if (existing) {
+    newXp = existing.xp + xpAmount;
+    newLevel = computeLevel(newXp);
+    db.prepare(
+      'UPDATE user_skills SET xp = ?, level = ? WHERE user_id = ? AND skill_name = ?'
+    ).run(newXp, newLevel, userId, SKILL);
+  } else {
+    newXp = xpAmount;
+    newLevel = computeLevel(newXp);
+    db.prepare(
+      'INSERT INTO user_skills (user_id, skill_name, xp, level) VALUES (?, ?, ?, ?)'
+    ).run(userId, SKILL, newXp, newLevel);
+  }
+
+  return { skill_name: SKILL, xp: newXp, level: newLevel };
+}
+
+// ---------------------------------------------------------------------------
 // Dynamic title generation
 // ---------------------------------------------------------------------------
 
@@ -69,13 +126,18 @@ export function computeDynamicTitle(userId: string): string | null {
 // ---------------------------------------------------------------------------
 
 /**
- * Awards BASE_TASK_XP to the skill mapped from `typeId` for `userId`.
+ * Awards task-completion XP to the skill mapped from `typeId` for `userId`.
+ * The base amount is read from the `xp_events` table (key: `complete_task`),
+ * falling back to BASE_TASK_XP if the event is disabled or not found.
+ * An optional `xpMultiplier` (default 1.0) scales the award — used by groups
+ * that have the gamification-enhancements feature enabled.
  * Silently skips if gamification is disabled for the user.
  * Returns the updated skill row (or null if skipped).
  */
 export function awardTaskXp(
   userId: string,
   typeId: string,
+  xpMultiplier: number = 1.0,
 ): { skill_name: string; xp: number; level: number } | null {
   const user = db.prepare(
     'SELECT gamification_enabled FROM users WHERE id = ?'
@@ -91,6 +153,12 @@ export function awardTaskXp(
 
   const skillName = taskType.name;
 
+  // Determine the XP to award: configurable base value scaled by the multiplier.
+  // Clamp the multiplier to a sensible range and ensure at least 1 XP is awarded.
+  const baseXp = getXpEventValue('complete_task') || BASE_TASK_XP;
+  const clampedMultiplier = Math.max(0.1, Math.min(10, xpMultiplier));
+  const awardXp = Math.max(1, Math.round(baseXp * clampedMultiplier));
+
   const existing = db.prepare(
     'SELECT xp, level FROM user_skills WHERE user_id = ? AND skill_name = ?'
   ).get(userId, skillName) as { xp: number; level: number } | undefined;
@@ -99,13 +167,13 @@ export function awardTaskXp(
   let newLevel: number;
 
   if (existing) {
-    newXp = existing.xp + BASE_TASK_XP;
+    newXp = existing.xp + awardXp;
     newLevel = computeLevel(newXp);
     db.prepare(
       'UPDATE user_skills SET xp = ?, level = ? WHERE user_id = ? AND skill_name = ?'
     ).run(newXp, newLevel, userId, skillName);
   } else {
-    newXp = BASE_TASK_XP;
+    newXp = awardXp;
     newLevel = computeLevel(newXp);
     db.prepare(
       'INSERT INTO user_skills (user_id, skill_name, xp, level) VALUES (?, ?, ?, ?)'

@@ -54,7 +54,7 @@
   <article class="prose prose-slate dark:prose-invert max-w-none bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 sm:p-8">
 
     <h1>👋 Jobber — Complete User Guide</h1>
-    <p class="lead" style="color:#6b7280;font-size:.95rem;margin-top:-4px">v<span class="page-version">1.3.2</span> &nbsp;·&nbsp; Copyright J Rowson 2026</p>
+    <p class="lead" style="color:#6b7280;font-size:.95rem;margin-top:-4px">v<span class="page-version">1.4.1</span> &nbsp;·&nbsp; Copyright J Rowson 2026</p>
     <p>Jobber is a friendly, self-hosted task manager for individuals and small teams. This guide covers every feature — from your very first login to competing with friends on the XP leaderboard.</p>
 
     <div class="toc">
@@ -67,7 +67,6 @@
         <li><a href="#profile">Your Profile &amp; Account Settings</a></li>
         <li><a href="#gamification">Gamification — XP, Skills, Achievements &amp; Streaks</a></li>
         <li><a href="#friends">Friends &amp; Leaderboards</a></li>
-        <li><a href="#admin">Admin Panel</a></li>
         <li><a href="#faq">Common Questions</a></li>
       </ol>
     </div>
@@ -97,8 +96,6 @@
     <div class="guide-step"><div class="step-num">3</div><div>Choose your preferred <strong>Date &amp; Time Format</strong> (locale).</div></div>
     <div class="guide-step"><div class="step-num">4</div><div>Click <strong>Create Account</strong>, then check your inbox for a verification email and click the link to activate your account.</div></div>
 
-    <div class="tip-box">&#x1F4A1; <strong>First user gets admin.</strong> The very first person to register automatically becomes the system administrator.</div>
-
     <h3>&#x1F511; Logging in</h3>
 
     <div class="mockup-card">
@@ -117,7 +114,7 @@
 
     <p>There are <strong>two ways</strong> to log in:</p>
     <ul>
-      <li><strong>Magic link</strong> — enter your email and click <em>Send Magic Link</em>. A one-click login link is sent to your inbox. No password required (needs email configured by your admin).</li>
+      <li><strong>Magic link</strong> — enter your email and click <em>Send Magic Link</em>. A one-click login link is sent to your inbox. No password required (needs email to be configured on the server).</li>
       <li><strong>Password</strong> — click <em>Use password instead</em>, enter your email and password, then verify the <strong>one-time 6-digit code</strong> sent to your email to complete sign-in (2FA).</li>
     </ul>
 
@@ -202,7 +199,7 @@
     <p>Jobber can fire native browser popups when tasks approach their deadline. When you first log in, your browser will ask for notification permission &#x2014; click <em>Allow</em>. Popups fire while the app is open, using the timing columns in the task's Reminders grid.</p>
 
     <h3>&#x1F4E7; Email reminders &amp; Notification grid</h3>
-    <p>When email is configured by your admin, Jobber sends reminders at the timings you choose per task. The <strong>Reminders</strong> grid in the task form:</p>
+    <p>When email is configured on the server, Jobber sends reminders at the timings you choose per task. The <strong>Reminders</strong> grid in the task form:</p>
     <table style="border-collapse:collapse;font-size:.88rem;margin:8px 0 14px">
       <tr>
         <th style="padding:5px 14px 5px 0;text-align:left;color:#6b7280;font-weight:400"></th>
@@ -235,9 +232,17 @@
     <h3>Joining a group</h3>
     <div class="guide-step"><div class="step-num">1</div><div>Click <strong>Join</strong> on the Groups page.</div></div>
     <div class="guide-step"><div class="step-num">2</div><div>Enter the <strong>invite word pair</strong> and <strong>secret key</strong> given to you by the group admin.</div></div>
-    <div class="guide-step"><div class="step-num">3</div><div>Click <strong>Join</strong> &#x2014; group tasks now appear in your task list.</div></div>
+    <div class="guide-step"><div class="step-num">3</div><div>Choose whether to <strong>share your XP</strong> with the group (see below), then click <strong>Join</strong> — group tasks now appear in your task list.</div></div>
 
     <div class="tip-box">&#x1F511; Both the invite word pair <em>and</em> the secret key are required &#x2014; the word pair alone is not enough.</div>
+
+    <h3>&#x2B50; XP Sharing in Groups</h3>
+    <p>When you join a group you can choose whether your total XP is visible to other members:</p>
+    <ul>
+      <li><strong>Share my XP</strong> (default, ticked) &#x2014; other members see your XP total next to your name in the member list.</li>
+      <li><strong>Keep private</strong> (unticked) &#x2014; your XP is hidden from others; you can always see your own XP regardless.</li>
+    </ul>
+    <p>You can change this at any time: open the group's <strong>Manage / Invite</strong> panel, scroll to <strong>My XP Sharing</strong>, and toggle the setting.</p>
 
     <h3>&#x1F6E1;&#xFE0F; Group Admin features</h3>
     <p>When you create a group you become its <strong>admin</strong>. From the <strong>Manage / Invite</strong> panel, admins can:</p>
@@ -246,13 +251,33 @@
       <li><strong>Invite by email</strong> &#x2014; send a personalised invitation link to someone's email address</li>
       <li><strong>Generate QR Code / Invite Link</strong> &#x2014; creates a multi-use shareable link (valid 30 days) and a scannable QR code; anyone who scans or clicks can join without needing the secret key</li>
       <li><strong>Promote</strong> a member to admin, or <strong>Demote</strong> an admin back to member</li>
+      <li><strong>Enable Gamification Enhancements</strong> &#x2014; unlocks the XP multiplier feature for task creators (see below)</li>
       <li><strong>Delete</strong> the group &#x2014; removes it for everyone (use with care!)</li>
     </ul>
 
     <div class="tip-box">&#x1F4A1; Any group member can edit all task details; only the task creator or a group admin can <strong>delete</strong> a task.</div>
 
+    <h3>&#x2B50; Gamification Enhancements</h3>
+    <p>Group admins can enable <strong>Gamification Enhancements</strong> from the Manage / Invite panel. Once on, task creators in the group can set an <strong>XP Multiplier</strong> on any task:</p>
+
+    <div class="mockup-card">
+      <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:8px">New Task — Group: Household</p>
+      <div class="mockup-field" style="color:#374151">Title: Deep clean kitchen</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;margin-bottom:8px;background:white">
+        <span style="font-size:.85rem;color:#374151">&#x2B50; XP Multiplier:</span>
+        <code style="font-size:.9rem;font-weight:700;color:#1a56db">2.0</code>
+        <span style="font-size:.78rem;color:#9ca3af">× base XP (0.1–10)</span>
+      </div>
+    </div>
+
+    <ul>
+      <li>A multiplier of <strong>2.0</strong> doubles the XP awarded when the task is completed.</li>
+      <li>Multipliers range from <strong>0.1 × to 10 ×</strong> base XP.</li>
+      <li>The multiplier is only shown in the task form when a group with enhancements enabled is selected.</li>
+    </ul>
+
     <h3>&#x1F3C6; Group Leaderboard</h3>
-    <p>Open the <strong>Manage / Invite</strong> panel for any group and click <strong>&#x1F3C6; Show Leaderboard</strong> to see members ranked by total XP (gamification must be enabled). The same leaderboard appears on the <strong>&#x2B50; Progress</strong> tab.</p>
+    <p>Open the <strong>Manage / Invite</strong> panel for any group and click <strong>&#x1F3C6; Show Leaderboard</strong> to see members ranked by total XP (gamification must be enabled). Members who have chosen to share their XP appear on the board; private members are not shown. The same leaderboard appears on the <strong>&#x2B50; Progress</strong> tab.</p>
 
     <hr/>
 
@@ -274,7 +299,7 @@
     <p>Click <strong>Copy Invite Link</strong> on your Profile page to copy a link to your Jobber instance to share with others.</p>
 
     <h3>&#x1F4AC; Feedback &amp; Feature Requests</h3>
-    <p>Found a bug or have an idea? Scroll to the <strong>Feedback &amp; Feature Requests</strong> card on your Profile page. Enter a subject and message (up to 4,000 characters), tick the box if you're happy for admin to reply, and click <strong>Send Feedback</strong>.</p>
+    <p>Found a bug or have an idea? Scroll to the <strong>Feedback &amp; Feature Requests</strong> card on your Profile page. Enter a subject and message (up to 4,000 characters), tick the box if you're happy to be contacted, and click <strong>Send Feedback</strong>.</p>
 
     <h3>&#x26A0;&#xFE0F; Delete My Account</h3>
     <p>You can permanently erase your account at any time &#x2014; no admin required.</p>
@@ -298,10 +323,27 @@
     <p>When gamification is enabled, a slim <strong>XP/streak strip</strong> also appears at the top of the My Tasks page showing your top skill, level, XP progress, and best streak. Tap it to go straight to the Progress tab.</p>
 
     <h3>&#x2B50; XP &amp; Skill Levels</h3>
-    <p>Every completed task earns <strong>50 XP</strong> in the skill matching its type (e.g. a <em>Household</em> task earns Household XP). XP builds skill levels on a triangular curve:</p>
+    <p>XP is earned from a range of actions &#x2014; not just completing tasks:</p>
+
+    <table style="border-collapse:collapse;font-size:.88rem;width:100%;margin:8px 0 16px">
+      <tr style="background:#f8fafc">
+        <th style="padding:7px 12px;text-align:left;border:1px solid #e2e8f0">Action</th>
+        <th style="padding:7px 12px;text-align:left;border:1px solid #e2e8f0">XP (default)</th>
+      </tr>
+      <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">&#x1F44B; Register / Sign up</td><td style="padding:6px 12px;border:1px solid #e2e8f0">100 XP</td></tr>
+      <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">&#x2705; Complete a task</td><td style="padding:6px 12px;border:1px solid #e2e8f0">50 XP (× any task multiplier)</td></tr>
+      <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">&#x2795; Create a task</td><td style="padding:6px 12px;border:1px solid #e2e8f0">10 XP</td></tr>
+      <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">&#x1F465; Create a group</td><td style="padding:6px 12px;border:1px solid #e2e8f0">25 XP</td></tr>
+      <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">&#x1F4E7; Send a group invite</td><td style="padding:6px 12px;border:1px solid #e2e8f0">15 XP</td></tr>
+      <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">&#x1F517; Send an app invite</td><td style="padding:6px 12px;border:1px solid #e2e8f0">15 XP</td></tr>
+    </table>
+
+    <div class="info-box">&#x2139;&#xFE0F; XP values shown above are defaults. The amounts for each event are configurable.</div>
+
+    <p>Completing a task also earns XP in the <strong>skill matching its type</strong> (e.g. a <em>Household</em> task earns Household XP). When a group admin has enabled <strong>Gamification Enhancements</strong> on the group, tasks can carry an <strong>XP Multiplier</strong> (e.g. ×2 for an especially demanding task). XP builds skill levels on a triangular curve:</p>
 
     <div class="mockup-card">
-      <div style="margin-bottom:8px;font-size:.85rem;font-weight:600;color:#374151">&#x1F9F9; Household &#x2014; Task completed</div>
+      <div style="margin-bottom:8px;font-size:.85rem;font-weight:600;color:#374151">&#x1F9F9; Household &#x2014; Task completed (×2 multiplier)</div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
         <span style="font-size:.8rem;color:#6b7280;white-space:nowrap">Household XP</span>
         <div style="flex:1;background:#e5e7eb;border-radius:99px;height:10px;overflow:hidden">
@@ -309,7 +351,7 @@
         </div>
         <span style="font-size:.8rem;font-weight:600;color:#1a56db;white-space:nowrap">Level 3</span>
       </div>
-      <div style="font-size:.78rem;color:#9ca3af">+50 XP earned &#x00B7; 630 / 1,000 XP to Level 5</div>
+      <div style="font-size:.78rem;color:#9ca3af">+100 XP earned &#x00B7; 630 / 1,000 XP to Level 5</div>
     </div>
 
     <table style="border-collapse:collapse;font-size:.88rem;width:100%;margin:8px 0 14px">
@@ -446,36 +488,23 @@
 
     <hr/>
 
-    <!-- ===== 8. ADMIN ===== -->
-    <h2 id="admin">8. &#x1F6E0;&#xFE0F; Admin Panel <em>(admins only)</em></h2>
-    <p>System administrators see an extra <strong>Admin</strong> menu item. From here:</p>
-    <ul>
-      <li><strong>Stats</strong> &#x2014; total users, users active today, total tasks, tasks created today</li>
-      <li><strong>SMTP Settings</strong> &#x2014; configure the outgoing email server for magic links, verification, and reminders</li>
-      <li><strong>Locked Accounts</strong> &#x2014; view and unlock accounts blocked after too many failed login attempts</li>
-      <li><strong>User Reports</strong> &#x2014; review reports submitted by users and mark them resolved</li>
-      <li><strong>Feedback</strong> &#x2014; read user messages, update status (Not Started / In Progress / Completed / Archived), and send in-app replies</li>
-    </ul>
-
-    <hr/>
-
-    <!-- ===== 9. FAQ ===== -->
-    <h2 id="faq">9. &#x2753; Common Questions</h2>
+    <!-- ===== 8. FAQ ===== -->
+    <h2 id="faq">8. &#x2753; Common Questions</h2>
 
     <h3>I can't log in</h3>
-    <p>Your account may be locked after too many failed attempts. Ask your admin to unlock it via <em>Admin &#x2192; Locked Accounts</em>. You can also try the magic link option if email is configured.</p>
+    <p>Your account may be locked after too many failed attempts. Try the magic link option if email is configured, or contact the person who manages your Jobber instance to have it unlocked.</p>
 
     <h3>My tasks aren't showing</h3>
     <p>Check the filter panel &#x2014; filters like <em>Show Archived</em>, <em>Assigned to Me</em>, or <em>Show Group Tasks</em> can hide tasks. Also confirm you're a member of the group the task belongs to.</p>
 
     <h3>I'm not receiving emails</h3>
-    <p>Email requires SMTP to be configured and enabled by your admin. Check with them to confirm it's set up correctly.</p>
+    <p>Email requires SMTP to be configured and enabled on the server. Check with the person who manages your Jobber instance to confirm it's set up correctly.</p>
 
     <h3>I lost my group's join details</h3>
     <p>Any group admin can find the invite word pair and secret key by clicking <strong>Manage / Invite</strong> on the group card.</p>
 
     <h3>I didn't receive my email verification link</h3>
-    <p>Check your spam folder. If SMTP is not configured, the link won't be delivered &#x2014; ask the admin to configure email or manually verify your account.</p>
+    <p>Check your spam folder. If SMTP is not configured, the link won't be delivered &#x2014; ask the person who manages your Jobber instance to configure email or manually verify your account.</p>
 
     <h3>Where is the gamification content?</h3>
     <p>Tap the <strong>&#x2B50; Progress</strong> tab in the bottom navigation. Enable or disable gamification from the <strong>&#x1F464; Profile</strong> page.</p>
@@ -503,7 +532,7 @@
 
     <hr/>
 
-    <p style="font-size:.88rem;color:#6b7280;margin-top:0">Jobber v<span class="page-version">1.3.2</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson 2026 &nbsp;&#x00B7;&nbsp;
+    <p style="font-size:.88rem;color:#6b7280;margin-top:0">Jobber v<span class="page-version">1.4.1</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson 2026 &nbsp;&#x00B7;&nbsp;
       <a href="https://jahosi.co.uk" class="text-indigo-500 hover:underline" target="_blank" rel="noopener noreferrer">jahosi.co.uk</a> &nbsp;&#x00B7;&nbsp;
       <a href="/privacy-policy.html" class="text-indigo-500 hover:underline">Privacy Policy</a>
     </p>
@@ -512,7 +541,7 @@
 </main>
 
 <footer class="border-t border-slate-200 dark:border-slate-700 py-4 mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-  <span>Jobber v<span class="page-version">1.3.2</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson 2026 &nbsp;&#x00B7;&nbsp;
+  <span>Jobber v<span class="page-version">1.4.1</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson 2026 &nbsp;&#x00B7;&nbsp;
     <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer" class="text-indigo-500 hover:underline">jahosi.co.uk</a>
     &nbsp;&#x00B7;&nbsp;
     <a href="/privacy-policy.html" class="text-indigo-500 hover:underline">Privacy Policy</a>

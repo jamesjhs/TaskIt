@@ -1096,6 +1096,7 @@
       <button onclick="showAdminTab('locked')" id="adminTabLocked" class="tab-btn">Locked</button>
       <button onclick="showAdminTab('reports')" id="adminTabReports" class="tab-btn">Reports</button>
       <button onclick="showAdminTab('feedback')" id="adminTabFeedback" class="tab-btn">Feedback</button>
+      <button onclick="showAdminTab('xpevents')" id="adminTabXpevents" class="tab-btn">XP Events</button>
     </div>
     <div id="adminSmtpTab">
       <div class="card">
@@ -1160,6 +1161,16 @@
           <button onclick="loadAdminFeedback()" class="btn btn-sm btn-secondary">Refresh</button>
         </div>
         <div id="adminFeedbackList"><div class="loading">Loading…</div></div>
+      </div>
+    </div>
+    <div id="adminXpeventsTab" class="hidden">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <p class="card-title" style="margin:0">XP Events</p>
+          <button onclick="loadXpEvents()" class="btn btn-sm btn-secondary">Refresh</button>
+        </div>
+        <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Configure how much XP each action awards. Changes take effect immediately for all users.</p>
+        <div id="adminXpEventsList"><div class="loading">Loading…</div></div>
       </div>
     </div>
   </div>
@@ -1386,6 +1397,14 @@
             <option value="years">Years</option>
           </select>
         </div>
+        <div id="taskXpMultiplierRow" class="form-group hidden">
+          <label>⭐ XP Multiplier <span style="font-weight:400;font-size:.8rem;color:#9ca3af">(group boost)</span></label>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <input id="taskXpMultiplier" type="number" min="0.1" max="10" step="0.1" value="1.0" class="input" style="width:90px;flex-shrink:0" aria-label="XP multiplier" />
+            <span style="font-size:.82rem;color:#6b7280">× base XP &nbsp;(0.1 – 10)</span>
+          </div>
+          <p style="font-size:.75rem;color:#9ca3af;margin-top:4px">Scales the XP awarded when this task is completed. Requires gamification enhancements to be enabled on the group.</p>
+        </div>
         <div class="form-group" style="border-top:1px solid #e5e7eb;margin-top:8px;padding-top:12px">
           <label style="font-size:.9rem;font-weight:500;color:#374151;display:block;margin-bottom:8px">Reminders</label>
           <table style="width:100%;font-size:.85rem;border-collapse:collapse">
@@ -1452,6 +1471,13 @@
         <div class="form-group">
           <label>Secret Key</label>
           <input id="joinGroupKey" type="text" required placeholder="e.g. spark482" class="input" />
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+            <input type="checkbox" id="joinGroupXpShare" style="width:18px;height:18px;accent-color:#1a56db;flex-shrink:0;margin-top:1px" checked />
+            <span style="font-size:.9rem;font-weight:600;color:#374151">Share my XP with this group</span>
+          </label>
+          <p style="font-size:.78rem;color:#9ca3af;margin-top:4px;padding-left:28px">When on, your total XP is visible to other members. You can change this later in the group's member panel.</p>
         </div>
       </form>
     </div>
@@ -1628,8 +1654,27 @@
           <p id="groupQRExpiry" style="font-size:.7rem;color:#9ca3af;margin-top:6px"></p>
         </div>
         <button onclick="deleteGroup()" class="btn btn-danger btn-sm btn-full">Delete Group</button>
+        <!-- Gamification enhancements toggle (admin only) -->
+        <div style="margin-top:12px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px">
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+            <input type="checkbox" id="groupGamifEnhancedToggle" onchange="toggleGroupGamification(this.checked)" style="width:18px;height:18px;accent-color:#1a56db;flex-shrink:0;margin-top:2px" aria-label="Enable gamification enhancements" />
+            <div>
+              <p style="font-size:.9rem;font-weight:600;color:#374151;margin:0">⭐ Enable Gamification Enhancements</p>
+              <p style="font-size:.78rem;color:#9ca3af;margin:3px 0 0">Allows task creators in this group to set an XP multiplier on tasks, boosting the XP awarded on completion.</p>
+            </div>
+          </label>
+        </div>
       </div>
       <div id="groupMembersList"><div class="loading">Loading…</div></div>
+      <!-- Per-user XP sharing preference -->
+      <div id="groupMyXpSettings" style="margin-top:10px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px">
+        <p style="font-size:.85rem;font-weight:600;color:#374151;margin:0 0 8px">My XP Sharing</p>
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+          <input type="checkbox" id="myXpShareToggle" onchange="updateMyXpShare(this.checked)" style="width:18px;height:18px;accent-color:#1a56db;flex-shrink:0;margin-top:1px" />
+          <span style="font-size:.88rem;color:#374151">Share my XP total with this group</span>
+        </label>
+        <p style="font-size:.75rem;color:#9ca3af;margin-top:4px">When on, your total XP is visible to other members of this group.</p>
+      </div>
       <!-- Group leaderboard (lazy-loaded) -->
       <div id="groupLeaderboardArea" style="margin-top:12px">
         <button id="groupLeaderboardToggle" onclick="toggleGroupLeaderboard()" class="btn btn-outline btn-sm btn-full">🏆 Show Leaderboard</button>
@@ -2191,6 +2236,7 @@ async function handleCreateGroup(e) {
 function openJoinGroupModal() {
   document.getElementById('joinGroupName').value = '';
   document.getElementById('joinGroupKey').value = '';
+  document.getElementById('joinGroupXpShare').checked = true;
   document.getElementById('joinGroupModal').classList.remove('hidden');
 }
 function closeJoinGroupModal() { document.getElementById('joinGroupModal').classList.add('hidden'); }
@@ -2200,7 +2246,8 @@ async function handleJoinGroup(e) {
   try {
     const invite_name = document.getElementById('joinGroupName').value.trim();
     const key = document.getElementById('joinGroupKey').value.trim();
-    await api('POST', '/groups/join', { invite_name, shared_key: key });
+    const xp_share = document.getElementById('joinGroupXpShare').checked;
+    await api('POST', '/groups/join', { invite_name, shared_key: key, xp_share });
     closeJoinGroupModal(); toast('Joined group!');
     await loadGroups(); renderGroups();
   } catch (err) { toast(err.message, 'error'); }
@@ -2389,6 +2436,8 @@ function openTaskModal(task = null) {
       const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
       document.getElementById('taskDueDate').value = iso;
     } else { document.getElementById('taskDueDate').value = ''; }
+    // Pre-populate XP multiplier when editing (show/hide based on group flag happens in loadGroupMembersForTask)
+    document.getElementById('taskXpMultiplier').value = task.xp_multiplier != null ? task.xp_multiplier : 1.0;
     loadGroupMembersForTask(task.assignees ? task.assignees.map(a => a.id) : []);
   } else {
     document.getElementById('taskModalTitle').textContent = 'New Task';
@@ -2409,6 +2458,8 @@ function openTaskModal(task = null) {
     document.getElementById('notifyPopup7day').checked = false;
     document.getElementById('notifyPopup1day').checked = false;
     document.getElementById('notifyPopupOnday').checked = false;
+    document.getElementById('taskXpMultiplier').value = '1.0';
+    document.getElementById('taskXpMultiplierRow').classList.add('hidden');
     document.getElementById('assigneeContainer').innerHTML = '<span style="font-size:.9rem;color:#9ca3af;font-style:italic">Select a group to see members</span>';
   }
   document.getElementById('taskModal').classList.remove('hidden');
@@ -2419,10 +2470,16 @@ function closeTaskModal() { document.getElementById('taskModal').classList.add('
 async function loadGroupMembersForTask(selectedIds = []) {
   const groupId = document.getElementById('taskGroup').value;
   const container = document.getElementById('assigneeContainer');
+  const xpMultiplierRow = document.getElementById('taskXpMultiplierRow');
   if (!groupId) {
     container.innerHTML = '<span style="font-size:.9rem;color:#9ca3af;font-style:italic">Select a group to see members</span>';
+    if (xpMultiplierRow) xpMultiplierRow.classList.add('hidden');
     return;
   }
+  // Show/hide XP multiplier field based on whether the group has gamification enhancements
+  const selectedGroup = groups.find(g => g.id === groupId);
+  const gamifEnhanced = !!(selectedGroup && selectedGroup.gamification_enhanced);
+  if (xpMultiplierRow) xpMultiplierRow.classList.toggle('hidden', !gamifEnhanced);
   try {
     const members = await api('GET', '/groups/' + groupId + '/members');
     container.innerHTML = members.map(m => `
@@ -2457,6 +2514,12 @@ async function handleTaskSubmit(e) {
   } else {
     body.recurInterval = null;
     body.recurUnit = null;
+  }
+  // Include XP multiplier only when the field is visible (group has enhancements enabled)
+  const xpMultiplierRow = document.getElementById('taskXpMultiplierRow');
+  if (xpMultiplierRow && !xpMultiplierRow.classList.contains('hidden')) {
+    const multiplierVal = parseFloat(document.getElementById('taskXpMultiplier').value);
+    if (!isNaN(multiplierVal)) body.xpMultiplier = Math.min(10, Math.max(0.1, multiplierVal));
   }
   const email7day   = document.getElementById('notifyEmail7day').checked;
   const email1day   = document.getElementById('notifyEmail1day').checked;
@@ -3164,6 +3227,12 @@ async function openGroupMembers(groupId) {
     const myMembership = members.find(m => currentUser && m.id === currentUser.id);
     const isAdmin = myMembership && myMembership.role === 'admin';
     document.getElementById('groupAdminControls').classList.toggle('hidden', !isAdmin);
+    // Populate the gamification enhancements toggle for admins
+    const gamifToggle = document.getElementById('groupGamifEnhancedToggle');
+    if (gamifToggle) gamifToggle.checked = !!(group && group.gamification_enhanced);
+    // Populate the XP share toggle for the current user
+    const xpShareToggle = document.getElementById('myXpShareToggle');
+    if (xpShareToggle && myMembership) xpShareToggle.checked = myMembership.xp_share !== 0;
     // Reset leaderboard toggle state for the new group
     groupLeaderboardVisible = false;
     const lb = document.getElementById('groupLeaderboardContent');
@@ -3175,6 +3244,9 @@ async function openGroupMembers(groupId) {
       const isMe = currentUser && m.id === currentUser.id;
       const isBlocked = blockedUserIds.has(m.id);
       const roleBadge = `<span class="badge ${m.role === 'admin' ? 'badge-purple' : 'badge-gray'}">${m.role}</span>`;
+      const xpInfo = m.total_xp != null
+        ? `<span style="font-size:.75rem;color:#1a56db;background:#eff6ff;border-radius:99px;padding:2px 7px;margin-left:4px">⭐ ${m.total_xp.toLocaleString()} XP</span>`
+        : '';
       const promoteBtn = isAdmin && !isMe ? `
         <button onclick="changeMemberRole('${escHtml(m.id)}', '${m.role === 'admin' ? 'member' : 'admin'}')" class="btn btn-sm btn-outline">
           ${m.role === 'admin' ? 'Demote' : 'Promote'}
@@ -3182,7 +3254,7 @@ async function openGroupMembers(groupId) {
       return `
         <div class="member-row">
           <div>
-            <p class="member-info-name">${escHtml(m.username)}${isMe ? ' <span style="color:#1a56db;font-size:.8rem">(you)</span>' : ''} ${roleBadge}</p>
+            <p class="member-info-name">${escHtml(m.username)}${isMe ? ' <span style="color:#1a56db;font-size:.8rem">(you)</span>' : ''} ${roleBadge}${xpInfo}</p>
             <p class="member-info-email">${escHtml(m.email)}</p>
           </div>
           ${!isMe ? `
@@ -3234,6 +3306,34 @@ async function renameGroup() {
     await api('PATCH', '/groups/' + currentGroupId + '/name', { name });
     toast('Group renamed!'); await loadGroups(); renderGroups(); openGroupMembers(currentGroupId);
   } catch (err) { toast(err.message, 'error'); }
+}
+
+async function toggleGroupGamification(enabled) {
+  if (!currentGroupId) return;
+  try {
+    await api('PATCH', '/groups/' + currentGroupId + '/gamification-enhanced', { enabled });
+    // Update the local groups cache so task form picks up the new value immediately
+    const g = groups.find(g => g.id === currentGroupId);
+    if (g) g.gamification_enhanced = enabled ? 1 : 0;
+    toast('Gamification enhancements ' + (enabled ? 'enabled' : 'disabled') + '!');
+  } catch (err) {
+    toast(err.message, 'error');
+    // Revert toggle on failure
+    const toggle = document.getElementById('groupGamifEnhancedToggle');
+    if (toggle) toggle.checked = !enabled;
+  }
+}
+
+async function updateMyXpShare(enabled) {
+  if (!currentGroupId) return;
+  try {
+    await api('PATCH', '/groups/' + currentGroupId + '/members/me/xp-share', { xp_share: enabled });
+    toast('XP sharing preference updated!');
+  } catch (err) {
+    toast(err.message, 'error');
+    const toggle = document.getElementById('myXpShareToggle');
+    if (toggle) toggle.checked = !enabled;
+  }
 }
 
 async function deleteGroup() {
@@ -3294,7 +3394,7 @@ async function loadAdminStats() {
 }
 
 function showAdminTab(tab) {
-  ['smtp', 'locked', 'reports', 'feedback'].forEach(t => {
+  ['smtp', 'locked', 'reports', 'feedback', 'xpevents'].forEach(t => {
     document.getElementById('admin' + t.charAt(0).toUpperCase() + t.slice(1) + 'Tab').classList.toggle('hidden', t !== tab);
     const btn = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
     btn.classList.toggle('active', t === tab);
@@ -3302,6 +3402,7 @@ function showAdminTab(tab) {
   if (tab === 'locked') loadLockedAccounts();
   if (tab === 'reports') loadUserReports();
   if (tab === 'feedback') loadAdminFeedback();
+  if (tab === 'xpevents') loadXpEvents();
 }
 
 async function loadAdminPage() {
@@ -3427,6 +3528,46 @@ async function sendFeedbackReply(id) {
     await api('POST', '/admin/feedback/' + id + '/reply', { message });
     inp.value = '';
     toast('Alert sent to user!');
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function loadXpEvents() {
+  const listEl = document.getElementById('adminXpEventsList');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="loading">Loading\u2026</div>';
+  try {
+    const events = await api('GET', '/admin/xp-events');
+    if (!events.length) { listEl.innerHTML = '<div class="loading">No XP events found.</div>'; return; }
+    listEl.innerHTML = events.map(ev => `
+      <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9">
+        <div>
+          <p style="font-size:.9rem;font-weight:600;color:#374151;margin:0">${escHtml(ev.name || ev.key)}</p>
+          ${ev.description ? `<p style="font-size:.78rem;color:#9ca3af;margin:2px 0 0">${escHtml(ev.description)}</p>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <label style="font-size:.78rem;color:#6b7280;white-space:nowrap">XP:</label>
+          <input type="number" id="xpEventVal_${escHtml(ev.key)}" value="${ev.xp_value}" min="0" style="width:70px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:.88rem;text-align:center" aria-label="XP value for ${escHtml(ev.name || ev.key)}" />
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <label style="display:flex;align-items:center;gap:5px;font-size:.78rem;color:#6b7280;white-space:nowrap">
+            <input type="checkbox" id="xpEventEnabled_${escHtml(ev.key)}" ${ev.enabled ? 'checked' : ''} style="width:15px;height:15px;accent-color:#1a56db" aria-label="Enable ${escHtml(ev.name || ev.key)}" />
+            On
+          </label>
+          <button onclick="saveXpEvent('${escHtml(ev.key)}')" class="btn btn-sm btn-primary" style="white-space:nowrap">Save</button>
+        </div>
+      </div>`).join('');
+  } catch (err) { listEl.innerHTML = `<div class="loading" style="color:#dc2626">${escHtml(err.message)}</div>`; }
+}
+
+async function saveXpEvent(key) {
+  const valEl = document.getElementById('xpEventVal_' + key);
+  const enabledEl = document.getElementById('xpEventEnabled_' + key);
+  if (!valEl || !enabledEl) return;
+  const xp_value = parseInt(valEl.value, 10);
+  if (isNaN(xp_value) || xp_value < 0) { toast('XP value must be a non-negative number', 'error'); return; }
+  try {
+    await api('PATCH', '/admin/xp-events/' + encodeURIComponent(key), { xp_value, enabled: enabledEl.checked });
+    toast('XP event saved!');
   } catch (err) { toast(err.message, 'error'); }
 }
 

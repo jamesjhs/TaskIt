@@ -1953,3 +1953,311 @@ body.arcade-open { overflow: hidden; }
   .arcade-game-title  { font-size: .95rem; }
   .arcade-game-subtitle { display: none; }
 }
+
+/* =========================================================
+   JOBBER ARCADE — Stage 2: Shared game theme + Hangman + Word Search
+   =========================================================
+   All colours are declared as CSS custom properties on each game's
+   root element so they can be overridden from a parent stylesheet
+   to restyle every game at once without touching the JS files.
+   ========================================================= */
+
+/* ── Theme variables (scoped to each game's root element) ── */
+.hm-root, .ws-root {
+  /* Text colours */
+  --jba-text:        #e0e7ff;
+  --jba-text-dim:    rgba(196,181,253,.7);
+  /* Brand accent */
+  --jba-accent:      #1a56db;
+  --jba-purple:      #c4b5fd;
+  /* Success (correct / found) */
+  --jba-ok-bg:       rgba(22,163,74,.42);
+  --jba-ok-text:     #4ade80;
+  /* Danger (wrong / lost) */
+  --jba-err-bg:      rgba(220,38,38,.35);
+  --jba-err-text:    #f87171;
+  /* Cell / key surfaces */
+  --jba-surface:     rgba(255,255,255,.08);
+  --jba-surface-hi:  rgba(255,255,255,.2);
+  --jba-border:      rgba(255,255,255,.18);
+  /* Drag-selection highlight */
+  --jba-sel-bg:      rgba(196,181,253,.38);
+  /* SVG gallows stroke */
+  --jba-gallows:     rgba(196,181,253,.6);
+  /* SVG hangman figure stroke/fill */
+  --jba-figure:      #f9a8d4;
+}
+
+/* ── Shared game-root rules ── */
+/* align-self:stretch overrides the parent arcade-game-frame's
+   align-items:center so the game fills the full frame height.    */
+.hm-root, .ws-root {
+  width: 100%;
+  align-self: stretch;
+  box-sizing: border-box;
+  overflow-y: auto;    /* scroll on very short viewports instead of clipping */
+  overflow-x: hidden;
+}
+
+/* ── Shared replay / new-game button ── */
+.hm-replay, .ws-replay {
+  display: none;              /* shown by JS when the game ends */
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--jba-accent);
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: opacity .15s;
+}
+.hm-replay:hover, .ws-replay:hover { opacity: .86; }
+
+/* =========================================================
+   HANGMAN
+   ========================================================= */
+
+/* Root — two-column flex row */
+.hm-root {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+/* Left column — SVG gallows */
+.hm-svg-col {
+  flex-shrink: 0;
+  width: 130px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 6px;
+}
+.hm-svg-col svg { display: block; width: 100%; max-width: 130px; }
+
+/* SVG stroke/fill classes — scoped under .hm-svg-col so they never
+   accidentally match HTML elements with the same class name           */
+.hm-svg-col .hm-gallows {
+  stroke: var(--jba-gallows);
+  stroke-width: 3;
+  stroke-linecap: round;
+  fill: none;
+}
+.hm-svg-col .hm-body {
+  stroke: var(--jba-figure);
+  stroke-width: 3;
+  stroke-linecap: round;
+  fill: none;
+}
+.hm-svg-col circle.hm-body {
+  fill: var(--jba-figure);
+  stroke: none;
+}
+
+/* Right panel */
+.hm-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Wrong-guess counter */
+.hm-wrong-count {
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--jba-err-text);
+  margin: 0;
+}
+
+/* Word display — row of letter slots */
+.hm-word {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Individual letter slot — underline style */
+.hm-letter-slot {
+  display: inline-flex;
+  width: 20px;
+  height: 28px;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2px;
+  border-bottom: 2px solid var(--jba-purple);
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--jba-ok-text);   /* correctly guessed letters shown in green */
+}
+/* Unguessed letters are invisible (slot is still shown) */
+.hm-letter-slot--hidden { color: transparent; }
+/* Revealed on loss — shown in red */
+.hm-letter-slot--revealed { color: var(--jba-err-text); }
+
+/* Win / lose message */
+.hm-msg {
+  font-size: .88rem;
+  font-weight: 700;
+  min-height: 1.3em;
+  color: var(--jba-text);
+  margin: 0;
+}
+.hm-msg--win  { color: var(--jba-ok-text); }
+.hm-msg--lose { color: var(--jba-err-text); }
+
+/* A–Z keyboard */
+.hm-keyboard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+/* Individual letter key */
+.hm-key {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  border: 1px solid var(--jba-border);
+  background: var(--jba-surface);
+  color: var(--jba-text);
+  font-size: .68rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .1s, transform .1s;
+}
+.hm-key:not(:disabled):hover {
+  background: var(--jba-surface-hi);
+  transform: scale(1.1);
+}
+.hm-key:disabled { cursor: not-allowed; }
+
+/* Correct guess — green tint */
+.hm-key--correct {
+  background: var(--jba-ok-bg);
+  color: var(--jba-ok-text);
+  border-color: transparent;
+}
+/* Wrong guess — red tint, dimmed text */
+.hm-key--wrong {
+  background: var(--jba-err-bg);
+  color: rgba(255,255,255,.3);
+  border-color: transparent;
+}
+
+/* =========================================================
+   WORD SEARCH
+   ========================================================= */
+
+/* Root — grid (flex:1) + word-list panel (fixed) */
+.ws-root {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+/* Grid wrapper — fills remaining horizontal space */
+.ws-grid-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 12-column CSS Grid for the letter cells */
+.ws-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1px;
+  width: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;   /* prevent browser scroll-gestures during drag */
+}
+
+/* Individual letter cell */
+.ws-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .65rem;   /* overridden to best-fit value by JS after layout */
+  font-weight: 700;
+  border-radius: 2px;
+  cursor: pointer;
+  color: var(--jba-purple);
+  background: var(--jba-surface);
+  transition: background .07s;
+}
+/* Active drag-selection highlight */
+.ws-cell--sel {
+  background: var(--jba-sel-bg);
+  color: #fff;
+}
+/* Permanently found cell — green */
+.ws-cell--found {
+  background: var(--jba-ok-bg);
+  color: var(--jba-ok-text);
+}
+
+/* Right-hand word-list panel */
+.ws-panel {
+  width: 100px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 2px 0;
+  justify-content: center;
+  overflow-y: auto;
+}
+.ws-panel-title {
+  font-size: .66rem;
+  font-weight: 700;
+  color: var(--jba-text-dim);
+  margin: 0 0 3px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+/* Word items in the panel */
+.ws-word-item {
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--jba-text);
+  transition: color .2s;
+}
+.ws-word-item--found {
+  color: var(--jba-ok-text);
+  text-decoration: line-through;
+}
+
+/* Win message */
+.ws-win-msg {
+  display: none;     /* shown by JS when all words are found */
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--jba-ok-text);
+  margin-top: 6px;
+}
+.ws-replay { margin-top: 4px; }
+
+/* Narrow screens (≤ 380 px): stack word list below the grid */
+@media (max-width: 380px) {
+  .ws-root    { flex-direction: column; }
+  .ws-panel   { width: 100%; flex-direction: row; flex-wrap: wrap;
+                gap: 8px; justify-content: flex-start; }
+  .ws-panel-title { width: 100%; margin-bottom: 0; }
+  .ws-win-msg, .ws-replay { margin: 0; }
+}

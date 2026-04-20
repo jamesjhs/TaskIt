@@ -3860,8 +3860,8 @@ if ('serviceWorker' in navigator) {
  * that Stage 2 game modules will use to boot the correct mini-game.
  */
 const ARCADE_GAMES = {
-  first_task:      { title: 'First Steps',       icon: '🥇', subtitle: 'Catch the falling task cards!',        gameId: 'catch'  },
-  task_10:         { title: 'Task Rocket',        icon: '🚀', subtitle: 'Dodge the asteroids and fly free!',    gameId: 'rocket' },
+  first_task:      { title: 'Productivity Hangman', icon: '🥇', subtitle: 'Guess the word — don\u2019t lose your head!',       gameId: 'hangman'    },
+  task_10:         { title: 'Job Search',            icon: '🚀', subtitle: 'Find all six Jobber tools hidden in the grid!',    gameId: 'wordsearch' },
   task_50:         { title: 'On a Roll',          icon: '🔥', subtitle: 'Keep the combo alive!',                gameId: 'roll'   },
   task_100:        { title: 'Century Clash',      icon: '⚔️', subtitle: 'Defeat 100 enemies to claim glory!',  gameId: 'clash'  },
   task_500:        { title: 'Legendary Quest',    icon: '👑', subtitle: 'Conquer the leaderboard!',             gameId: 'legend' },
@@ -3938,7 +3938,7 @@ function openArcade(badgeKey) {
   // then add it back — this guarantees the keyframe animation replays on
   // every open, not just the first time the overlay becomes visible.
   overlay.classList.remove('hidden', 'arcade-animating');
-  const _reflow = overlay.offsetWidth; // intentional: force CSS reflow so .arcade-animating restart is registered
+  const forceReflow = overlay.offsetWidth; // intentional: force CSS reflow so .arcade-animating restart is registered
   overlay.classList.add('arcade-animating');
   document.body.classList.add('arcade-open');
 
@@ -4037,5 +4037,11 @@ document.addEventListener('DOMContentLoaded', function() {
   <p>Jobber uses essential browser storage (localStorage) to keep you signed in and save your preferences. No tracking cookies. <a href="/privacy-policy.html" target="_blank" rel="noopener">Privacy Policy</a></p>
   <button class="cookie-notice-close" onclick="dismissCookieNotice()">Got it</button>
 </div>
+<!-- ===== JOBBER ARCADE — Stage 2 game modules ===== -->
+<!-- Each file is a self-contained IIFE that listens for 'arcade:open' /     -->
+<!-- 'arcade:close' on #arcadeOverlay and boots / tears down its own game.  -->
+<script src="/js/game-hangman.js"></script>
+<script src="/js/game-wordsearch.js"></script>
+
 </body>
 </html>

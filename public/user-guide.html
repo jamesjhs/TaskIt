@@ -4,17 +4,37 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>User Guide – Jobber Task Manager</title>
-  <meta name="description" content="Complete user guide for Jobber — the free, self-hosted collaborative task manager with gamification, skill trees, achievements, streaks, and freeze credits." />
+  <meta name="description" content="Complete guide to Jobber: tasks, groups, notifications, gamification (XP, achievements, streaks, freeze credits), friends &amp; leaderboards, and more." />
   <meta name="robots" content="index, follow" />
   <meta property="og:title" content="User Guide – Jobber Task Manager" />
-  <meta property="og:description" content="Everything you need to get started with Jobber: tasks, groups, notifications, calendar integration, and the optional gamification system." />
+  <meta property="og:description" content="Everything you need to get started with Jobber: tasks, groups, gamification, friends leaderboards, and persistent login." />
   <meta property="og:type" content="article" />
   <link rel="stylesheet" href="/tailwind.css" />
   <link rel="icon" type="image/png" href="/favicon.png" />
+  <style>
+    .guide-step { display:flex; gap:14px; align-items:flex-start; margin-bottom:12px; }
+    .step-num { flex-shrink:0; width:30px; height:30px; border-radius:50%; background:#1a56db; color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.9rem; }
+    .mockup-card { background:#f8fafc; border:2px solid #e2e8f0; border-radius:12px; padding:16px; margin:14px 0; }
+    .mockup-field { background:white; border:1px solid #cbd5e1; border-radius:6px; padding:8px 12px; margin-bottom:8px; font-size:.85rem; color:#94a3b8; }
+    .mockup-btn { background:#1a56db; color:white; border-radius:6px; padding:8px 16px; font-size:.85rem; font-weight:600; display:inline-block; margin-top:4px; }
+    .mockup-btn-sm { background:#1a56db; color:white; border-radius:6px; padding:4px 10px; font-size:.82rem; font-weight:600; display:inline-block; }
+    .mockup-btn-outline { background:white; color:#1a56db; border:1px solid #1a56db; border-radius:6px; padding:8px 16px; font-size:.85rem; font-weight:600; display:inline-block; margin-top:4px; }
+    .status-flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:14px 0; }
+    .status-box { background:#f1f5f9; border:2px solid #cbd5e1; border-radius:8px; padding:8px 14px; font-weight:600; font-size:.88rem; text-align:center; }
+    .tip-box { background:#eff6ff; border-left:4px solid #1a56db; border-radius:0 8px 8px 0; padding:11px 15px; margin:12px 0; font-size:.88rem; color:#1e40af; }
+    .warn-box { background:#fef3c7; border-left:4px solid #f59e0b; border-radius:0 8px 8px 0; padding:11px 15px; margin:12px 0; font-size:.88rem; color:#92400e; }
+    .info-box { background:#f0fdf4; border-left:4px solid #16a34a; border-radius:0 8px 8px 0; padding:11px 15px; margin:12px 0; font-size:.88rem; color:#15803d; }
+    .toc { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px 20px; margin:16px 0 24px; }
+    .toc ol { margin:8px 0 0 16px; padding:0; }
+    .toc li { margin-bottom:4px; font-size:.9rem; }
+    .toc a { color:#1a56db; text-decoration:none; }
+    .toc a:hover { text-decoration:underline; }
+    h2[id], h3[id] { scroll-margin-top: 80px; }
+  </style>
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 font-sans min-h-screen flex flex-col">
 
-<header class="bg-indigo-700 shadow-md">
+<header class="bg-indigo-700 shadow-md sticky top-0 z-10">
   <div class="max-w-4xl mx-auto px-4 flex items-center gap-3 h-14">
     <a href="/" class="flex items-center gap-3 text-white font-bold text-xl hover:opacity-90 transition-opacity">
       <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
@@ -26,312 +46,478 @@
       </div>
       Jobber
     </a>
+    <span class="ml-auto text-white/70 text-sm hidden sm:block">User Guide</span>
   </div>
 </header>
 
 <main class="flex-1 max-w-4xl mx-auto w-full px-4 py-10">
-  <article class="prose prose-slate dark:prose-invert max-w-none bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-8">
+  <article class="prose prose-slate dark:prose-invert max-w-none bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 sm:p-8">
 
-    <h1>👋 Welcome to Jobber!</h1>
-    <p class="lead">Jobber is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.</p>
+    <h1>👋 Jobber — Complete User Guide</h1>
+    <p class="lead" style="color:#6b7280;font-size:.95rem;margin-top:-4px">v<span class="page-version">1.3.2</span> &nbsp;·&nbsp; Copyright J Rowson 2026</p>
+    <p>Jobber is a friendly, self-hosted task manager for individuals and small teams. This guide covers every feature — from your very first login to competing with friends on the XP leaderboard.</p>
 
-    <hr />
+    <div class="toc">
+      <strong>Contents</strong>
+      <ol>
+        <li><a href="#getting-started">Getting Started — Register &amp; Log In</a></li>
+        <li><a href="#tasks">Creating &amp; Managing Tasks</a></li>
+        <li><a href="#notifications">Notifications &amp; Reminders</a></li>
+        <li><a href="#groups">Groups &amp; Collaboration</a></li>
+        <li><a href="#profile">Your Profile &amp; Account Settings</a></li>
+        <li><a href="#gamification">Gamification — XP, Skills, Achievements &amp; Streaks</a></li>
+        <li><a href="#friends">Friends &amp; Leaderboards</a></li>
+        <li><a href="#admin">Admin Panel</a></li>
+        <li><a href="#faq">Common Questions</a></li>
+      </ol>
+    </div>
 
-    <h2>🚀 Getting Started</h2>
+    <hr/>
 
-    <h3>Creating your account</h3>
-    <ol>
-      <li>Open Jobber in your browser and click <strong>Register</strong>.</li>
-      <li>Enter a username, your email address, and a password.</li>
-      <li>Choose your preferred <strong>Date &amp; Time Format</strong> (locale).</li>
-      <li>Click <strong>Create Account</strong>.</li>
-      <li>Check your inbox for a <strong>verification email</strong> and click the link to activate your account.</li>
-    </ol>
-    <p>The very first person to register becomes the <strong>system administrator</strong>, with access to extra settings.</p>
+    <!-- ===== 1. GETTING STARTED ===== -->
+    <h2 id="getting-started">1. Getting Started — Register &amp; Log In</h2>
 
-    <h3>Logging in</h3>
-    <p>There are two ways to log in:</p>
+    <h3>&#x270A; Creating your account</h3>
+    <p>Open Jobber in your browser. Click the <strong>Register</strong> tab on the login screen:</p>
+
+    <div class="mockup-card">
+      <div style="display:flex;gap:0;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:14px">
+        <div style="flex:1;padding:8px;text-align:center;background:white;color:#6b7280;font-size:.9rem">Login</div>
+        <div style="flex:1;padding:8px;text-align:center;background:#1a56db;color:white;font-weight:600;font-size:.9rem">Register</div>
+      </div>
+      <div class="mockup-field">&#x1F464; Username (e.g. johndoe)</div>
+      <div class="mockup-field">&#x1F4E7; Email address</div>
+      <div class="mockup-field">&#x1F512; Password (min. 8 characters)</div>
+      <div class="mockup-field" style="color:#374151">&#x1F30D; Date &amp; Time Format &#x25BE;</div>
+      <div class="mockup-btn" style="width:100%;text-align:center;margin-top:4px">Create Account</div>
+    </div>
+
+    <div class="guide-step"><div class="step-num">1</div><div>Click the <strong>Register</strong> tab.</div></div>
+    <div class="guide-step"><div class="step-num">2</div><div>Enter a <strong>username</strong>, your <strong>email address</strong>, and a <strong>password</strong> (at least 8 characters).</div></div>
+    <div class="guide-step"><div class="step-num">3</div><div>Choose your preferred <strong>Date &amp; Time Format</strong> (locale).</div></div>
+    <div class="guide-step"><div class="step-num">4</div><div>Click <strong>Create Account</strong>, then check your inbox for a verification email and click the link to activate your account.</div></div>
+
+    <div class="tip-box">&#x1F4A1; <strong>First user gets admin.</strong> The very first person to register automatically becomes the system administrator.</div>
+
+    <h3>&#x1F511; Logging in</h3>
+
+    <div class="mockup-card">
+      <div style="display:flex;gap:0;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:14px">
+        <div style="flex:1;padding:8px;text-align:center;background:#1a56db;color:white;font-weight:600;font-size:.9rem">Login</div>
+        <div style="flex:1;padding:8px;text-align:center;background:white;color:#6b7280;font-size:.9rem">Register</div>
+      </div>
+      <div class="mockup-field">&#x1F4E7; you@example.com</div>
+      <div style="display:flex;align-items:center;gap:8px;margin:8px 0 10px;padding:6px 2px">
+        <div style="width:16px;height:16px;border:2px solid #1a56db;border-radius:3px;flex-shrink:0;background:#eff6ff"></div>
+        <span style="font-size:.85rem;color:#374151">Keep me signed in for 30 days</span>
+      </div>
+      <div class="mockup-btn" style="width:100%;text-align:center">Send Magic Link</div>
+      <div style="text-align:center;margin-top:8px;font-size:.82rem;color:#6b7280">or <span style="color:#1a56db;text-decoration:underline">Use password instead</span></div>
+    </div>
+
+    <p>There are <strong>two ways</strong> to log in:</p>
     <ul>
-      <li><strong>Magic link</strong> – enter your email and click <em>Send Magic Link</em>. Check your inbox for a one-click login link (requires email to be configured by your admin).</li>
-      <li><strong>Password</strong> – click <em>Use password instead</em> and enter your email and password. You will be sent a <strong>one-time 6-digit code</strong> by email — enter it to complete sign-in.</li>
+      <li><strong>Magic link</strong> — enter your email and click <em>Send Magic Link</em>. A one-click login link is sent to your inbox. No password required (needs email configured by your admin).</li>
+      <li><strong>Password</strong> — click <em>Use password instead</em>, enter your email and password, then verify the <strong>one-time 6-digit code</strong> sent to your email to complete sign-in (2FA).</li>
     </ul>
-    <blockquote>
-      <p>💡 Forgot your password? Click <strong>Forgot password?</strong> on the sign-in screen to receive a password-reset link by email.</p>
-    </blockquote>
-    <blockquote>
-      <p>🔑 You can change your password at any time from your <strong>Profile</strong> page → <em>Change Password</em>.</p>
-    </blockquote>
 
-    <hr />
-
-    <h2>✅ Managing Tasks</h2>
-
-    <h3>Creating a task</h3>
-    <ol>
-      <li>Go to the <strong>Tasks</strong> page and click <strong>New Task</strong>.</li>
-      <li>Give your task a <strong>title</strong> and choose a <strong>type</strong> (e.g. Urgent, Routine, Hobby). Select <em>+ Add new type…</em> to create a custom type on the fly.</li>
-      <li>Optionally set a <strong>group</strong>, <strong>assignees</strong>, any <strong>notes</strong>, and a <strong>due date</strong>.</li>
-      <li>To make the task repeat automatically, tick <strong>Repeat Task</strong> and choose the interval (e.g. every 2 weeks).</li>
-      <li>Click <strong>Save Task</strong>.</li>
-    </ol>
-    <p>Due dates default to <strong>midnight on today's date (00:00)</strong> — handy for quick captures!</p>
-
-    <h3>Recurring tasks</h3>
-    <p>When <strong>Repeat Task</strong> is enabled, completing a task automatically creates the next occurrence with the due date advanced by the chosen interval (days, weeks, months, or years). Assignees are carried over to the new task.</p>
-
-    <h3>Updating a task</h3>
-    <p>Click any task card to open the detail panel. From here you can:</p>
+    <h3>&#x1F501; Keep me signed in (Remember me)</h3>
+    <p>Tick <strong>"Keep me signed in for 30 days"</strong> before clicking Send Magic Link or Sign In.</p>
     <ul>
-      <li>Move it through the stages: <strong>Not Started → Started → Complete</strong></li>
-      <li><strong>Edit</strong> any of the task's details</li>
-      <li><strong>Defer</strong> – click the <em>Defer</em> button to reschedule the due date without opening the full edit form</li>
-      <li><strong>Archive</strong> it to tidy your view (archived tasks can always be brought back)</li>
-      <li><strong>Delete</strong> it permanently — for group tasks, only the task creator or a group admin can delete; other group members can edit all other details</li>
+      <li><strong>Checked</strong> — your session persists in browser storage for 30 days. You won't need to sign in each time you open the app.</li>
+      <li><strong>Unchecked</strong> — your session lasts only until you close the browser tab (session storage only).</li>
     </ul>
 
-    <h3>Filtering your task list</h3>
-    <p>Use the filter bar at the top of the Tasks page to narrow down what you see:</p>
+    <div class="tip-box">&#x1F4A1; Forgot your password? Click <strong>Forgot password?</strong> on the sign-in screen. You can also change your password from your <strong>Profile</strong> page at any time.</div>
+
+    <hr/>
+
+    <!-- ===== 2. TASKS ===== -->
+    <h2 id="tasks">2. Creating &amp; Managing Tasks</h2>
+
+    <h3>&#x2795; Creating a task</h3>
+    <p>After logging in you land on the <strong>Tasks</strong> page. Tap the large <strong>+</strong> floating button at the bottom-right of the screen.</p>
+
+    <div class="mockup-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span style="font-size:1.05rem;font-weight:700;color:#1a1a2e">New Task</span>
+        <span style="font-size:.8rem;color:#94a3b8">&#x2715;</span>
+      </div>
+      <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:4px">Title <span style="color:#dc2626">*</span></p>
+      <div class="mockup-field">Buy groceries</div>
+      <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:4px;margin-top:10px">Type <span style="color:#dc2626">*</span></p>
+      <div class="mockup-field" style="color:#374151">Routine &#x25BE;</div>
+      <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:4px;margin-top:10px">Group</p>
+      <div class="mockup-field">Personal (no group) &#x25BE;</div>
+      <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:4px;margin-top:10px">Due Date</p>
+      <div class="mockup-field">Midnight today &#x2014; 00:00 (default)</div>
+      <div class="mockup-btn" style="width:100%;text-align:center;margin-top:10px">Save Task</div>
+    </div>
+
+    <div class="guide-step"><div class="step-num">1</div><div>Enter a <strong>Title</strong>.</div></div>
+    <div class="guide-step"><div class="step-num">2</div><div>Choose a <strong>Type</strong> (e.g. Urgent, Routine, Hobby). Select <em>+ Add new type&hellip;</em> to create a custom type on the fly.</div></div>
+    <div class="guide-step"><div class="step-num">3</div><div>Optionally set a <strong>Group</strong>, <strong>Assignees</strong>, <strong>Notes</strong>, and <strong>Due Date</strong>.</div></div>
+    <div class="guide-step"><div class="step-num">4</div><div>To make the task repeat automatically, tick <strong>Repeat Task</strong> and choose the interval (days, weeks, months, or years).</div></div>
+    <div class="guide-step"><div class="step-num">5</div><div>Click <strong>Save Task</strong>.</div></div>
+
+    <div class="warn-box">&#x26A0;&#xFE0F; Do not enter sensitive personal, financial, medical, or legal data in task titles or notes. See the <a href="/privacy-policy.html" style="color:#92400e;text-decoration:underline">Privacy Policy</a>.</div>
+
+    <h3>&#x1F501; Recurring tasks</h3>
+    <p>When <strong>Repeat Task</strong> is ticked, completing a task automatically creates the next occurrence with the due date advanced by the chosen interval. Assignees carry over.</p>
+
+    <h3>&#x1F4CB; Task status</h3>
+    <p>Every task moves through three stages. Click a task card to open it:</p>
+
+    <div class="status-flow">
+      <div class="status-box">&#x1F4CB; Not Started</div>
+      <span style="color:#94a3b8;font-size:1.1rem;font-weight:700">&#x2192;</span>
+      <div class="status-box" style="background:#dbeafe;border-color:#1a56db">&#x1F504; Started</div>
+      <span style="color:#94a3b8;font-size:1.1rem;font-weight:700">&#x2192;</span>
+      <div class="status-box" style="background:#dcfce7;border-color:#16a34a;color:#15803d">&#x2705; Complete</div>
+    </div>
+
+    <h3>Other task actions</h3>
     <ul>
-      <li>Filter by <strong>status</strong>, <strong>group</strong>, or <strong>type</strong></li>
-      <li><strong>Show Archived</strong> – include archived tasks in the list</li>
-      <li><strong>Assigned to Me</strong> – show only tasks you have been assigned to</li>
-      <li><strong>Show Group Tasks</strong> – toggle group tasks on/off to focus on your personal tasks</li>
+      <li><strong>Edit</strong> &#x2014; change any detail of the task</li>
+      <li><strong>Defer</strong> &#x2014; set a new due date quickly without opening the full edit form</li>
+      <li><strong>Archive</strong> &#x2014; hide from the default view (restore via <em>Show Archived</em> filter)</li>
+      <li><strong>Delete</strong> &#x2014; permanent. For group tasks only the creator or a group admin can delete.</li>
     </ul>
-    <p>Tasks are always sorted by <strong>due date</strong> (soonest first), with <strong>Urgent</strong> tasks pinned to the very top.</p>
 
-    <h3>Adding progress notes</h3>
-    <p>Inside the task detail panel, you'll find a <strong>Progress Notes</strong> section — a running log of updates.</p>
-    <ol>
-      <li>Click <strong>+ Add Note</strong>.</li>
-      <li>Type your update and click <strong>Save Note</strong>.</li>
-    </ol>
-    <p>Notes are visible to everyone involved with that task.</p>
+    <h3>&#x1F50D; Filtering tasks</h3>
+    <p>Tap the <strong>&#x2699;&#xFE0F; Filters</strong> chip at the top of the Tasks page. Filter by status, group, or type; toggle <em>Show Archived</em>, <em>Assigned to Me</em>, or <em>Show Group Tasks</em>. An active-filter count badge appears on the chip when filters are on. Tasks are sorted by <strong>due date</strong> (soonest first), with <strong>Urgent</strong> pinned to the top.</p>
 
-    <hr />
+    <h3>&#x1F4DD; Progress notes</h3>
+    <p>Inside any task detail panel, find the <strong>Progress Notes</strong> section. Click <strong>+ Add Note</strong>, type your update, and save. Notes are visible to all task participants.</p>
 
-    <h2>🔔 Notifications</h2>
-    <p>The <strong>bell icon</strong> in the top navigation shows a red badge whenever you have tasks that are:</p>
-    <ul>
-      <li><strong>Overdue</strong> – the deadline has passed and the task isn't complete yet</li>
-      <li><strong>Due within 24 hours</strong> – approaching fast!</li>
-    </ul>
-    <p>Click the bell to see what needs your attention, and click any item to jump straight to that task.</p>
+    <hr/>
 
-    <hr />
+    <!-- ===== 3. NOTIFICATIONS ===== -->
+    <h2 id="notifications">3. Notifications &amp; Reminders</h2>
 
-    <h2>👥 Groups</h2>
-    <p>Groups let you collaborate with others — share tasks, assign work to teammates, and stay in sync.</p>
+    <h3>&#x1F514; In-app bell</h3>
+    <p>The <strong>Alerts</strong> button in the bottom navigation shows a red badge for tasks that are <strong>overdue</strong> or <strong>due within 24 hours</strong>. Tap it to see the list; tap any item to jump to that task.</p>
+
+    <h3>&#x1F5A5;&#xFE0F; Browser popup notifications</h3>
+    <p>Jobber can fire native browser popups when tasks approach their deadline. When you first log in, your browser will ask for notification permission &#x2014; click <em>Allow</em>. Popups fire while the app is open, using the timing columns in the task's Reminders grid.</p>
+
+    <h3>&#x1F4E7; Email reminders &amp; Notification grid</h3>
+    <p>When email is configured by your admin, Jobber sends reminders at the timings you choose per task. The <strong>Reminders</strong> grid in the task form:</p>
+    <table style="border-collapse:collapse;font-size:.88rem;margin:8px 0 14px">
+      <tr>
+        <th style="padding:5px 14px 5px 0;text-align:left;color:#6b7280;font-weight:400"></th>
+        <th style="padding:5px 10px;text-align:center;color:#6b7280;font-weight:400">7 days</th>
+        <th style="padding:5px 10px;text-align:center;color:#6b7280;font-weight:400">1 day</th>
+        <th style="padding:5px 10px;text-align:center;color:#6b7280;font-weight:400">On day</th>
+      </tr>
+      <tr>
+        <td style="padding:5px 14px 5px 0">&#x1F4E7; Email</td>
+        <td style="text-align:center">&#x2611;</td><td style="text-align:center">&#x2611;</td><td style="text-align:center">&#x2611;</td>
+      </tr>
+      <tr>
+        <td style="padding:5px 14px 5px 0">&#x1F514; Popup</td>
+        <td style="text-align:center">&#x2610;</td><td style="text-align:center">&#x2610;</td><td style="text-align:center">&#x2610;</td>
+      </tr>
+    </table>
+    <p>Tick each cell independently. Each reminder is sent once per task and stops when the task is marked complete.</p>
+
+    <hr/>
+
+    <!-- ===== 4. GROUPS ===== -->
+    <h2 id="groups">4. Groups &amp; Collaboration</h2>
+    <p>Groups let you share tasks and work together. Go to the <strong>Groups</strong> tab in the bottom navigation.</p>
 
     <h3>Creating a group</h3>
-    <ol>
-      <li>Go to the <strong>Groups</strong> page and click <strong>+ New</strong>.</li>
-      <li>Enter a name, or leave it blank for a fun random name to be generated for you.</li>
-      <li>Your new group appears with a unique <strong>invite word pair</strong> and <strong>secret key</strong>. Share both with anyone you'd like to invite.</li>
-    </ol>
+    <div class="guide-step"><div class="step-num">1</div><div>Click <strong>+ New</strong> on the Groups page.</div></div>
+    <div class="guide-step"><div class="step-num">2</div><div>Enter a name (or leave blank for a fun auto-generated name).</div></div>
+    <div class="guide-step"><div class="step-num">3</div><div>Your new group shows a unique <strong>invite word pair</strong> and <strong>secret key</strong>. Share both with anyone you want to invite.</div></div>
 
     <h3>Joining a group</h3>
-    <ol>
-      <li>Click <strong>Join</strong> on the Groups page.</li>
-      <li>Enter the <strong>invite word pair</strong> and <strong>secret key</strong> your group admin gave you, then click <strong>Join</strong>.</li>
-    </ol>
-    <blockquote>
-      <p>🔑 Both the invite word pair <em>and</em> the secret key are required — the word pair alone is not enough to join.</p>
-    </blockquote>
+    <div class="guide-step"><div class="step-num">1</div><div>Click <strong>Join</strong> on the Groups page.</div></div>
+    <div class="guide-step"><div class="step-num">2</div><div>Enter the <strong>invite word pair</strong> and <strong>secret key</strong> given to you by the group admin.</div></div>
+    <div class="guide-step"><div class="step-num">3</div><div>Click <strong>Join</strong> &#x2014; group tasks now appear in your task list.</div></div>
 
-    <h3>Viewing members</h3>
-    <p>Click <strong>Manage / Invite</strong> on any group card to see who's in the group and their roles.</p>
+    <div class="tip-box">&#x1F511; Both the invite word pair <em>and</em> the secret key are required &#x2014; the word pair alone is not enough.</div>
 
-    <hr />
-
-    <h2>🛡️ Group Admin Features</h2>
-    <p>When you create a group you're automatically its <strong>admin</strong>. Other admins can be promoted by any existing admin.</p>
-    <p>From the <strong>Manage / Invite</strong> panel, admins can:</p>
+    <h3>&#x1F6E1;&#xFE0F; Group Admin features</h3>
+    <p>When you create a group you become its <strong>admin</strong>. From the <strong>Manage / Invite</strong> panel, admins can:</p>
     <ul>
-      <li><strong>Rename</strong> the group — enter a new name and click <em>Rename</em></li>
-      <li><strong>Invite by email</strong> — enter an email address and click <em>Send Invite</em> to send a personalised invitation link</li>
-      <li><strong>Generate QR Code / Invite Link</strong> — creates a multi-use shareable link (valid 30 days) and a scannable QR code; anyone who scans or clicks can join without needing the secret key</li>
+      <li><strong>Rename</strong> the group</li>
+      <li><strong>Invite by email</strong> &#x2014; send a personalised invitation link to someone's email address</li>
+      <li><strong>Generate QR Code / Invite Link</strong> &#x2014; creates a multi-use shareable link (valid 30 days) and a scannable QR code; anyone who scans or clicks can join without needing the secret key</li>
       <li><strong>Promote</strong> a member to admin, or <strong>Demote</strong> an admin back to member</li>
-      <li><strong>Delete</strong> the group — removes it for everyone (use with care!)</li>
+      <li><strong>Delete</strong> the group &#x2014; removes it for everyone (use with care!)</li>
     </ul>
 
-    <hr />
+    <div class="tip-box">&#x1F4A1; Any group member can edit all task details; only the task creator or a group admin can <strong>delete</strong> a task.</div>
 
-    <h2>🔔 Notifications</h2>
-    <h3>In-app bell</h3>
-    <p>The <strong>bell icon</strong> at the top of the screen shows a red badge when you have tasks that are overdue or due within 24 hours. Click it to see what needs attention.</p>
+    <h3>&#x1F3C6; Group Leaderboard</h3>
+    <p>Open the <strong>Manage / Invite</strong> panel for any group and click <strong>&#x1F3C6; Show Leaderboard</strong> to see members ranked by total XP (gamification must be enabled). The same leaderboard appears on the <strong>&#x2B50; Progress</strong> tab.</p>
 
-    <h3>Browser popup notifications</h3>
-    <p>Jobber can send native browser popup notifications when a task is approaching its deadline. When you first log in your browser will ask for notification permission — click <em>Allow</em> to enable them. Popups are fired while the app is open, using the timing columns you choose in the task's Reminders grid.</p>
+    <hr/>
 
-    <h2>📧 Email Reminders &amp; Notification Grid</h2>
-    <p>When email is enabled by your admin, Jobber sends reminders at the timings you choose per task. When creating or editing a task, the <strong>Reminders</strong> section shows a grid:</p>
-    <table style="border-collapse:collapse;font-size:.9rem;margin-bottom:8px">
-      <tr>
-        <th style="padding:4px 12px 4px 0;text-align:left;color:#6b7280;font-weight:400"></th>
-        <th style="padding:4px 8px;text-align:center;color:#6b7280;font-weight:400">7 days</th>
-        <th style="padding:4px 8px;text-align:center;color:#6b7280;font-weight:400">1 day</th>
-        <th style="padding:4px 8px;text-align:center;color:#6b7280;font-weight:400">On day</th>
-      </tr>
-      <tr>
-        <td style="padding:4px 12px 4px 0">📧 Email</td>
-        <td style="text-align:center">☑</td>
-        <td style="text-align:center">☑</td>
-        <td style="text-align:center">☑</td>
-      </tr>
-      <tr>
-        <td style="padding:4px 12px 4px 0">🔔 Popup</td>
-        <td style="text-align:center">☐</td>
-        <td style="text-align:center">☐</td>
-        <td style="text-align:center">☐</td>
-      </tr>
-    </table>
-    <p>Tick each cell independently. Each reminder is sent once per task. Reminders stop once the task is marked complete.</p>
+    <!-- ===== 5. PROFILE ===== -->
+    <h2 id="profile">5. Your Profile &amp; Account Settings</h2>
+    <p>Tap <strong>&#x1F464; Profile</strong> in the navigation to access your account settings.</p>
 
-    <hr />
+    <h3>&#x1F30D; Date &amp; Time Format</h3>
+    <p>Choose the locale for dates and times (e.g. DD/MM/YYYY vs. MM/DD/YYYY). Click <strong>Save Format</strong> to apply.</p>
 
-    <h2>⚙️ Your Profile</h2>
-    <p>Click <strong>Profile</strong> in the navigation to access your account settings:</p>
+    <h3>&#x1F511; Change Password</h3>
+    <p>Click <strong>Change Password</strong> to expand a form. Enter your current password, then your new password (minimum 8 characters) twice, and click <strong>Update Password</strong>.</p>
 
-    <h3>Date &amp; Time Format</h3>
-    <p>Choose the locale used to format dates and times throughout the app (e.g. DD/MM/YYYY vs. MM/DD/YYYY). Click <strong>Save Format</strong> to apply.</p>
+    <h3>&#x1F4C5; Calendar Integration</h3>
+    <p>Subscribe to your Jobber tasks in any calendar app (Google Calendar, Apple Calendar, Outlook, etc.) using the private <strong>ICS feed link</strong> in the <em>Calendar Integration</em> card. Copy the link and add it as a new calendar subscription.</p>
+    <div class="warn-box">&#x26A0;&#xFE0F; Keep this link private &#x2014; anyone with it can view your tasks. Click <strong>&#x1F504; Regenerate Link</strong> to invalidate the old one.</div>
 
-    <h3>🔑 Change Password</h3>
-    <p>Click <strong>Change Password</strong> to expand a form where you can update your password. Enter your current password, then your new password (minimum 8 characters) twice to confirm, and click <strong>Update Password</strong>.</p>
+    <h3>&#x1F4E4; Invite to Jobber</h3>
+    <p>Click <strong>Copy Invite Link</strong> on your Profile page to copy a link to your Jobber instance to share with others.</p>
 
-    <h3>📅 Calendar Integration</h3>
-    <p>Subscribe to your Jobber tasks in any calendar app (Google Calendar, Apple Calendar, Outlook, etc.) using the private <strong>ICS feed link</strong> shown in the <em>Calendar Integration</em> card. Copy the link and add it as a new calendar subscription in your calendar app.</p>
-    <p>Click <strong>🔄 Regenerate Link</strong> to invalidate the old link and create a new one (e.g. if you think the link has been shared unintentionally). Keep this link private — anyone who has it can view your tasks.</p>
+    <h3>&#x1F4AC; Feedback &amp; Feature Requests</h3>
+    <p>Found a bug or have an idea? Scroll to the <strong>Feedback &amp; Feature Requests</strong> card on your Profile page. Enter a subject and message (up to 4,000 characters), tick the box if you're happy for admin to reply, and click <strong>Send Feedback</strong>.</p>
 
-    <h3>Invite to Jobber</h3>
-    <p>Share Jobber with others — click <strong>Copy Invite Link</strong> to copy a link to your Jobber instance.</p>
+    <h3>&#x26A0;&#xFE0F; Delete My Account</h3>
+    <p>You can permanently erase your account at any time &#x2014; no admin required.</p>
+    <div class="guide-step"><div class="step-num">1</div><div>Scroll to the bottom of your Profile page and click <strong>&#x26A0;&#xFE0F; Delete My Account</strong>.</div></div>
+    <div class="guide-step"><div class="step-num">2</div><div>Confirm twice. This is a two-step process to prevent accidents.</div></div>
+    <div class="guide-step"><div class="step-num">3</div><div>All tasks, notes, group memberships, and your account are permanently removed immediately.</div></div>
+    <div class="tip-box">&#x2139;&#xFE0F; If you were the sole admin of a group, that group and all its tasks are deleted. If there are other admins, the group continues without you.</div>
 
-    <h3>💬 Feedback &amp; Feature Requests</h3>
-    <p>Found a bug or have an idea? Type your message and click <strong>Send Feedback</strong>. Tick the box if you'd like admin to reply to you in-app.</p>
+    <hr/>
 
-    <h3>⚠️ Delete My Account</h3>
-    <p>You can permanently delete your account and all your data at any time — no administrator action required. Scroll to the bottom of your Profile page and click <strong>Delete My Account</strong>, then confirm twice. All your tasks, notes, group memberships, and account details are removed immediately.</p>
+    <!-- ===== 6. GAMIFICATION ===== -->
+    <h2 id="gamification">6. &#x1F3AE; Gamification &#x2014; XP, Skills, Achievements &amp; Streaks</h2>
+    <p>Jobber includes a fully opt-in gamification system. It is <strong>disabled by default</strong> and can be toggled any time from your Profile page. Your progress is always preserved when toggling.</p>
 
-    <hr />
-
-    <h2>🎮 Gamification <em>(optional)</em></h2>
-    <p>Jobber includes a fully opt-in gamification system that rewards consistent productivity with XP, skill levels, achievements, streaks, and a Freeze mechanic. It is <strong>disabled by default</strong> and can be toggled any time from your Profile page.</p>
+    <div class="info-box">&#x2139;&#xFE0F; Gamification is <strong>fully opt-in</strong> and never affects the core task experience for users who keep it off.</div>
 
     <h3>Enabling gamification</h3>
-    <ol>
-      <li>Click <strong>Profile</strong> in the navigation.</li>
-      <li>Find the <strong>Gamification</strong> card and click <strong>Enable Gamification</strong>.</li>
-      <li>Your progress is preserved if you toggle it off and back on.</li>
-    </ol>
+    <div class="guide-step"><div class="step-num">1</div><div>Go to <strong>&#x1F464; Profile</strong> &#x2192; find the <strong>Gamification</strong> card.</div></div>
+    <div class="guide-step"><div class="step-num">2</div><div>Click <strong>Enable Gamification</strong>. All gamification content lives in the <strong>&#x2B50; Progress</strong> tab in the bottom navigation.</div></div>
 
-    <h3>⭐ XP &amp; Skill Levels</h3>
-    <p>Every completed task earns you <strong>50 XP</strong> in the skill matching its task type (e.g. completing a <em>Household</em> task earns Household XP). XP builds your skill level following a triangular curve — each level costs more than the last:</p>
-    <table style="border-collapse:collapse;font-size:.9rem;margin:8px 0 16px">
-      <tr>
-        <th style="padding:6px 16px 6px 0;text-align:left;border-bottom:2px solid #e5e7eb">Level</th>
-        <th style="padding:6px 16px 6px 0;text-align:left;border-bottom:2px solid #e5e7eb">Total XP required</th>
-        <th style="padding:6px 0;text-align:left;border-bottom:2px solid #e5e7eb">Title earned</th>
+    <p>When gamification is enabled, a slim <strong>XP/streak strip</strong> also appears at the top of the My Tasks page showing your top skill, level, XP progress, and best streak. Tap it to go straight to the Progress tab.</p>
+
+    <h3>&#x2B50; XP &amp; Skill Levels</h3>
+    <p>Every completed task earns <strong>50 XP</strong> in the skill matching its type (e.g. a <em>Household</em> task earns Household XP). XP builds skill levels on a triangular curve:</p>
+
+    <div class="mockup-card">
+      <div style="margin-bottom:8px;font-size:.85rem;font-weight:600;color:#374151">&#x1F9F9; Household &#x2014; Task completed</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <span style="font-size:.8rem;color:#6b7280;white-space:nowrap">Household XP</span>
+        <div style="flex:1;background:#e5e7eb;border-radius:99px;height:10px;overflow:hidden">
+          <div style="width:63%;background:#1a56db;height:100%;border-radius:99px"></div>
+        </div>
+        <span style="font-size:.8rem;font-weight:600;color:#1a56db;white-space:nowrap">Level 3</span>
+      </div>
+      <div style="font-size:.78rem;color:#9ca3af">+50 XP earned &#x00B7; 630 / 1,000 XP to Level 5</div>
+    </div>
+
+    <table style="border-collapse:collapse;font-size:.88rem;width:100%;margin:8px 0 14px">
+      <tr style="background:#f8fafc">
+        <th style="padding:7px 12px;text-align:left;border:1px solid #e2e8f0">Level</th>
+        <th style="padding:7px 12px;text-align:left;border:1px solid #e2e8f0">Total XP required</th>
+        <th style="padding:7px 12px;text-align:left;border:1px solid #e2e8f0">Title earned</th>
       </tr>
-      <tr><td style="padding:5px 16px 5px 0">1</td><td style="padding:5px 16px 5px 0">0 XP</td><td style="padding:5px 0">Apprentice of …</td></tr>
-      <tr><td style="padding:5px 16px 5px 0">2</td><td style="padding:5px 16px 5px 0">100 XP</td><td style="padding:5px 0">Apprentice of …</td></tr>
-      <tr><td style="padding:5px 16px 5px 0">3</td><td style="padding:5px 16px 5px 0">300 XP</td><td style="padding:5px 0">Skilled …</td></tr>
-      <tr><td style="padding:5px 16px 5px 0">5</td><td style="padding:5px 16px 5px 0">1,000 XP</td><td style="padding:5px 0">Expert …</td></tr>
-      <tr><td style="padding:5px 16px 5px 0">7</td><td style="padding:5px 16px 5px 0">2,100 XP</td><td style="padding:5px 0">Master …</td></tr>
-      <tr><td style="padding:5px 16px 5px 0">10</td><td style="padding:5px 16px 5px 0">4,500 XP</td><td style="padding:5px 0">Guru of …</td></tr>
+      <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">1&#x2013;2</td><td style="padding:6px 12px;border:1px solid #e2e8f0">0 / 100 XP</td><td style="padding:6px 12px;border:1px solid #e2e8f0">Apprentice of &hellip;</td></tr>
+      <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">3&#x2013;4</td><td style="padding:6px 12px;border:1px solid #e2e8f0">300 / 600 XP</td><td style="padding:6px 12px;border:1px solid #e2e8f0">Skilled &hellip;</td></tr>
+      <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">5&#x2013;6</td><td style="padding:6px 12px;border:1px solid #e2e8f0">1,000 / 1,500 XP</td><td style="padding:6px 12px;border:1px solid #e2e8f0">Expert &hellip;</td></tr>
+      <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">7&#x2013;9</td><td style="padding:6px 12px;border:1px solid #e2e8f0">2,100 / 3,600 XP</td><td style="padding:6px 12px;border:1px solid #e2e8f0">Master &hellip;</td></tr>
+      <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">10+</td><td style="padding:6px 12px;border:1px solid #e2e8f0">4,500+ XP</td><td style="padding:6px 12px;border:1px solid #e2e8f0">Guru of &hellip;</td></tr>
     </table>
-    <p>Your highest skill level determines your <strong>dynamic title</strong> — for example <em>Expert Household</em> or <em>Guru of Routine</em> — displayed on your Profile.</p>
 
-    <h3>🏆 Achievements</h3>
-    <p>Achievements are one-time awards that unlock automatically when you hit milestones. They are shown on your Profile with the date they were unlocked:</p>
+    <p>Your highest skill level determines your <strong>dynamic title</strong> (e.g. <em>Expert Household</em> or <em>Guru of Routine</em>) shown on your Profile.</p>
+
+    <h3>&#x1F3C6; Achievements</h3>
+    <p>Achievements unlock automatically at milestones:</p>
+
+    <div class="mockup-card">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px">
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:1.4rem;margin-bottom:3px">&#x1F947;</div>
+          <div style="font-size:.8rem;font-weight:600;color:#1e40af">First Steps</div>
+          <div style="font-size:.7rem;color:#6b7280;margin-top:2px">Complete first task</div>
+        </div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:1.4rem;margin-bottom:3px">&#x1F525;</div>
+          <div style="font-size:.8rem;font-weight:600;color:#166534">On a Roll</div>
+          <div style="font-size:.7rem;color:#6b7280;margin-top:2px">Complete 50 tasks</div>
+        </div>
+        <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:1.4rem;margin-bottom:3px">&#x1F3AF;</div>
+          <div style="font-size:.8rem;font-weight:600;color:#6b21a8">Specialist</div>
+          <div style="font-size:.7rem;color:#6b7280;margin-top:2px">Level 5 in any skill</div>
+        </div>
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px;text-align:center;opacity:.5">
+          <div style="font-size:1.4rem;margin-bottom:3px">&#x1F682;</div>
+          <div style="font-size:.8rem;font-weight:600;color:#9a3412">Unstoppable</div>
+          <div style="font-size:.7rem;color:#6b7280;margin-top:2px">&#x1F512; Streak 30</div>
+        </div>
+      </div>
+      <p style="font-size:.72rem;color:#9ca3af;margin-top:10px;margin-bottom:0">&#x26A0;&#xFE0F; Example data &#x2014; illustration only</p>
+    </div>
+
     <table style="border-collapse:collapse;font-size:.875rem;margin:8px 0 16px;width:100%">
-      <tr>
-        <th style="padding:6px 12px 6px 0;text-align:left;border-bottom:2px solid #e5e7eb">Achievement</th>
-        <th style="padding:6px 0;text-align:left;border-bottom:2px solid #e5e7eb">How to earn</th>
-      </tr>
-      <tr><td style="padding:5px 12px 5px 0">🥇 First Steps</td><td style="padding:5px 0">Complete your first task</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">🚀 Getting Started</td><td style="padding:5px 0">Complete 10 tasks</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">🔥 On a Roll</td><td style="padding:5px 0">Complete 50 tasks</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">⚔️ Centurion</td><td style="padding:5px 0">Complete 100 tasks</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">👑 Task Master</td><td style="padding:5px 0">Complete 500 tasks</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">📝 Detail Oriented</td><td style="padding:5px 0">Add 50 progress notes</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">🐦 Early Bird</td><td style="padding:5px 0">Complete 10 tasks before their due date</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">🗺️ Type Explorer</td><td style="padding:5px 0">Complete tasks in 5 different task types</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">🎯 Specialist</td><td style="padding:5px 0">Reach level 5 in any skill</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">🎓 Master of the Craft</td><td style="padding:5px 0">Reach level 10 in any skill</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">🎩 Hat Trick</td><td style="padding:5px 0">Maintain a recurring task streak of 3</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">🍀 Lucky Streak</td><td style="padding:5px 0">Maintain a recurring task streak of 7</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">🚂 Unstoppable</td><td style="padding:5px 0">Maintain a recurring task streak of 30</td></tr>
+      <tr><th style="padding:6px 12px 6px 0;text-align:left;border-bottom:2px solid #e5e7eb">Achievement</th><th style="padding:6px 0;text-align:left;border-bottom:2px solid #e5e7eb">How to earn</th></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F947; First Steps</td><td>Complete your first task</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F680; Getting Started</td><td>Complete 10 tasks</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F525; On a Roll</td><td>Complete 50 tasks</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x2694;&#xFE0F; Centurion</td><td>Complete 100 tasks</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F451; Task Master</td><td>Complete 500 tasks</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F4DD; Detail Oriented</td><td>Add 50 progress notes</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F426; Early Bird</td><td>Complete 10 tasks before their due date</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F5FA;&#xFE0F; Type Explorer</td><td>Complete tasks in 5 different task types</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F3AF; Specialist</td><td>Reach level 5 in any skill</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F393; Master of the Craft</td><td>Reach level 10 in any skill</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F3A9; Hat Trick</td><td>Maintain a recurring task streak of 3</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F340; Lucky Streak</td><td>Maintain a recurring task streak of 7</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F682; Unstoppable</td><td>Maintain a recurring task streak of 30</td></tr>
     </table>
 
-    <h3>🔥 Streaks</h3>
-    <p>Recurring tasks track a <strong>streak</strong> — the number of consecutive times you have completed them on or before the due date:</p>
+    <h3>&#x1F525; Streaks</h3>
+    <p>Recurring tasks track a <strong>streak</strong> &#x2014; the count of consecutive on-time completions:</p>
     <ul>
-      <li><strong>Streak increases</strong> every time you complete the task on time.</li>
-      <li><strong>Streak resets to 0</strong> if the task becomes overdue without being completed.</li>
-      <li>Your <strong>all-time best</strong> (longest streak) is always preserved and drives the streak achievements.</li>
-    </ul>
-    <p>Streak data appears in the task detail panel and in the <strong>Gamification</strong> section of your Profile.</p>
-
-    <h3>❄️ Freeze Credits</h3>
-    <p>Freeze Credits let you protect a streak against one missed deadline without resetting it.</p>
-    <p><strong>Earning credits:</strong> You earn 1 Freeze Credit each time you complete any task.</p>
-    <p><strong>Using a Freeze:</strong></p>
-    <ol>
-      <li>Open the detail panel for a recurring task.</li>
-      <li>Click <strong>Apply Freeze</strong> — this costs 1 credit. A ❄️ icon confirms it is active.</li>
-      <li>If the task is then missed, the Freeze is consumed, the streak is preserved, and the ❄️ is cleared automatically.</li>
-    </ol>
-    <blockquote><p>💡 Tip: Build up a reserve of credits by staying on top of non-recurring tasks, then spend them to protect your most important streaks.</p></blockquote>
-
-    <hr />
-
-    <h2>🛠️ Admin Panel <em>(admins only)</em></h2>
-    <p>System administrators see an extra <strong>Admin</strong> menu item. From here you can:</p>
-    <ul>
-      <li><strong>Stats</strong> – a dashboard showing total users, users active today, total tasks, and tasks created today</li>
-      <li><strong>SMTP Settings</strong> – configure the outgoing email server for magic links and reminders</li>
-      <li><strong>Locked Accounts</strong> – view and unlock accounts blocked after too many failed login attempts</li>
-      <li><strong>User Reports</strong> – review reports submitted by users and mark them as resolved</li>
-      <li><strong>Feedback</strong> – read feedback messages from users, update their status, and send in-app replies</li>
+      <li><strong>Streak increases</strong> every time you complete on or before the due date.</li>
+      <li><strong>Streak resets to 0</strong> if the task becomes overdue without being completed (unless a Freeze is active).</li>
+      <li>Your <strong>all-time best</strong> streak is always preserved and drives achievement milestones.</li>
     </ul>
 
-    <hr />
+    <h3>&#x2744;&#xFE0F; Freeze Credits</h3>
+    <p>Freeze Credits protect a streak against one missed deadline. You earn <strong>1 credit</strong> for every task you complete (recurring or not).</p>
+    <div class="guide-step"><div class="step-num">1</div><div>Open the detail panel for a recurring task and click <strong>Apply Freeze</strong> &#x2014; costs 1 credit. A &#x2744;&#xFE0F; icon confirms the Freeze is active.</div></div>
+    <div class="guide-step"><div class="step-num">2</div><div>If the task is then missed, the Freeze is consumed, the streak is preserved, and the &#x2744;&#xFE0F; clears automatically.</div></div>
+    <div class="tip-box">&#x1F4A1; Each task can hold one active Freeze at a time. Apply it before you know you'll be busy &#x2014; you can't retroactively protect a streak that has already reset.</div>
 
-    <h2>❓ Common Questions</h2>
+    <hr/>
+
+    <!-- ===== 7. FRIENDS & LEADERBOARDS ===== -->
+    <h2 id="friends">7. &#x1F91D; Friends &amp; Leaderboards</h2>
+    <p>Friends let you compete on XP leaderboards with people <em>outside</em> your groups. You're never added to each other's task groups &#x2014; you just see each other's total XP rank. Both users must be registered on the same Jobber instance.</p>
+
+    <p>Go to the <strong>&#x2B50; Progress</strong> tab and scroll to the <strong>&#x1F91D; Friends</strong> section.</p>
+
+    <h3>Your friend details</h3>
+    <p>Your <strong>username</strong> and personal <strong>friend key</strong> are shown at the top of the Friends section. Share both with anyone you want to connect with:</p>
+
+    <div class="mockup-card">
+      <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:8px">&#x1F4CB; Your details (share with friends):</p>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:.8rem;color:#6b7280;width:84px">Username:</span>
+        <code style="font-size:.9rem;color:#111827;font-weight:600;flex:1">johndoe</code>
+        <div class="mockup-btn-sm">Copy</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:.8rem;color:#6b7280;width:84px">Friend key:</span>
+        <code style="font-size:.9rem;font-family:monospace;color:#1a56db;font-weight:700;letter-spacing:.12em;flex:1">a1b2c3d4</code>
+        <div class="mockup-btn-sm">Copy</div>
+      </div>
+    </div>
+
+    <h3>Three ways to add a friend</h3>
+
+    <h4>Option 1 &#x2014; Username &amp; key (quickest)</h4>
+    <p>Expand <strong>&#x2795; Add friend by username &amp; key</strong>. Enter your friend's <strong>username</strong> and their <strong>friend key</strong> (they share both with you), then click <strong>Add Friend</strong>. The friendship is created immediately &#x2014; no waiting for them to accept.</p>
+
+    <div class="mockup-card">
+      <div class="mockup-field">&#x1F464; Their username</div>
+      <div class="mockup-field" style="font-family:monospace">&#x1F511; Their friend key (e.g. a1b2c3d4)</div>
+      <div class="mockup-btn" style="width:100%;text-align:center;margin-top:8px">Add Friend</div>
+    </div>
+
+    <h4>Option 2 &#x2014; Invite link or QR code</h4>
+    <p>Click <strong>&#x1F4E4; Generate Invite Link &amp; QR Code</strong>. Jobber creates a one-time link (valid 7 days) and displays a scannable QR code. Share the link or QR &#x2014; when the other person opens it and logs in, they're automatically connected as your friend.</p>
+
+    <div class="mockup-card" style="text-align:center">
+      <div style="width:96px;height:96px;background:#f1f5f9;border:2px dashed #cbd5e1;border-radius:8px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:2.2rem">&#x25AA;&#xFE0F;</div>
+      <div style="font-size:.75rem;color:#6b7280;margin-bottom:8px">Scan the QR code, or share the link below:</div>
+      <div class="mockup-field" style="text-align:left;font-size:.75rem">https://jobber.example.com/?friend=abc123&#x2026;</div>
+      <div style="font-size:.7rem;color:#9ca3af;margin-top:6px">Expires in 7 days &#x00B7; single-use</div>
+    </div>
+
+    <h4>Option 3 &#x2014; New to Jobber? Send them the invite link</h4>
+    <p>If the person you want to add isn't on Jobber yet, share your invite link. When they open it they'll be prompted to register. Once they log in, the friend connection completes automatically. After that you can use Option 1 for any future connections.</p>
+
+    <div class="tip-box">&#x1F4A1; Invite links are single-use and expire after 7 days. Click <em>Generate</em> again to get a fresh link &#x2014; this automatically cancels the previous one.</div>
+
+    <h3>Friends Leaderboard</h3>
+    <p>Once you have friends, a <strong>Friends Leaderboard</strong> appears in the Progress tab, ranking everyone by total XP. Your own row is highlighted in blue. Use the <em>Remove</em> buttons to unfriend anyone.</p>
+
+    <h3>Group Leaderboards</h3>
+    <p>The Progress tab also shows a leaderboard card for each group you're in. The same leaderboard is available inside the <strong>Manage / Invite</strong> panel of any group via <em>&#x1F3C6; Show Leaderboard</em>.</p>
+
+    <hr/>
+
+    <!-- ===== 8. ADMIN ===== -->
+    <h2 id="admin">8. &#x1F6E0;&#xFE0F; Admin Panel <em>(admins only)</em></h2>
+    <p>System administrators see an extra <strong>Admin</strong> menu item. From here:</p>
+    <ul>
+      <li><strong>Stats</strong> &#x2014; total users, users active today, total tasks, tasks created today</li>
+      <li><strong>SMTP Settings</strong> &#x2014; configure the outgoing email server for magic links, verification, and reminders</li>
+      <li><strong>Locked Accounts</strong> &#x2014; view and unlock accounts blocked after too many failed login attempts</li>
+      <li><strong>User Reports</strong> &#x2014; review reports submitted by users and mark them resolved</li>
+      <li><strong>Feedback</strong> &#x2014; read user messages, update status (Not Started / In Progress / Completed / Archived), and send in-app replies</li>
+    </ul>
+
+    <hr/>
+
+    <!-- ===== 9. FAQ ===== -->
+    <h2 id="faq">9. &#x2753; Common Questions</h2>
 
     <h3>I can't log in</h3>
-    <p>Your account may be locked after too many failed attempts. Ask your system admin to unlock it via <em>Admin → Locked Accounts</em>. You can also try the magic link option if email is configured.</p>
+    <p>Your account may be locked after too many failed attempts. Ask your admin to unlock it via <em>Admin &#x2192; Locked Accounts</em>. You can also try the magic link option if email is configured.</p>
 
     <h3>My tasks aren't showing</h3>
-    <p>Check the filter bar — filters like <em>Show Archived</em>, <em>Assigned to Me</em>, or <em>Show Group Tasks</em> can hide tasks. Also make sure you're a member of the group a task belongs to.</p>
+    <p>Check the filter panel &#x2014; filters like <em>Show Archived</em>, <em>Assigned to Me</em>, or <em>Show Group Tasks</em> can hide tasks. Also confirm you're a member of the group the task belongs to.</p>
 
     <h3>I'm not receiving emails</h3>
-    <p>Email sending requires SMTP to be configured and enabled by your admin. Check with them to confirm it's set up correctly.</p>
+    <p>Email requires SMTP to be configured and enabled by your admin. Check with them to confirm it's set up correctly.</p>
 
     <h3>I lost my group's join details</h3>
     <p>Any group admin can find the invite word pair and secret key by clicking <strong>Manage / Invite</strong> on the group card.</p>
 
     <h3>I didn't receive my email verification link</h3>
-    <p>Check your spam folder. If SMTP is not configured by the admin, the link will not be delivered — ask the admin to configure email or manually verify your account.</p>
+    <p>Check your spam folder. If SMTP is not configured, the link won't be delivered &#x2014; ask the admin to configure email or manually verify your account.</p>
 
-    <hr />
+    <h3>Where is the gamification content?</h3>
+    <p>Tap the <strong>&#x2B50; Progress</strong> tab in the bottom navigation. Enable or disable gamification from the <strong>&#x1F464; Profile</strong> page.</p>
 
-    <p style="font-size:.9rem;color:#6b7280">Jobber v<span class="page-version">1.1.0</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp;
-      <a href="https://jahosi.co.uk" class="text-indigo-500 hover:underline" target="_blank" rel="noopener noreferrer">jahosi.co.uk</a>
+    <h3>My friend can't find me by username + key</h3>
+    <p>Make sure they have your exact username (case-sensitive) and the 8-character friend key from the Friends section of your Progress tab. Both are required. If you've recently changed your username, share the updated details.</p>
+
+    <h3>The "Keep me signed in" option didn't persist my session</h3>
+    <p>Tick the checkbox <em>before</em> clicking Send Magic Link or Sign In. If your browser is set to clear all site data on close, session storage is also cleared regardless of this setting.</p>
+
+    <h3>What data does Jobber store in my browser?</h3>
+    <table style="border-collapse:collapse;font-size:.875rem;margin:8px 0">
+      <tr style="background:#f8fafc">
+        <th style="padding:7px 14px 7px 0;text-align:left;border-bottom:2px solid #e5e7eb">Key</th>
+        <th style="padding:7px 0;text-align:left;border-bottom:2px solid #e5e7eb">What it stores</th>
+      </tr>
+      <tr><td style="padding:5px 14px 5px 0"><code>jbToken</code></td><td style="padding:5px 0">Your login session token</td></tr>
+      <tr><td style="padding:5px 14px 5px 0"><code>jbUser</code></td><td style="padding:5px 0">Your username, email, and locale preference</td></tr>
+      <tr><td style="padding:5px 14px 5px 0"><code>jobber_app_version</code></td><td style="padding:5px 0">App version (for update detection)</td></tr>
+      <tr><td style="padding:5px 14px 5px 0"><code>jbPopupFired</code></td><td style="padding:5px 0">Which browser popup notifications have fired today</td></tr>
+      <tr><td style="padding:5px 14px 5px 0"><code>jbGamifAsked</code></td><td style="padding:5px 0">Whether you've seen the gamification opt-in prompt</td></tr>
+      <tr><td style="padding:5px 14px 5px 0"><code>jbCookieNotice</code></td><td style="padding:5px 0">Whether you've dismissed the storage notice</td></tr>
+    </table>
+    <p>No cookies are used. Your data is never sold or shared with advertisers. See the full <a href="/privacy-policy.html">Privacy Policy</a>.</p>
+
+    <hr/>
+
+    <p style="font-size:.88rem;color:#6b7280;margin-top:0">Jobber v<span class="page-version">1.3.2</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson 2026 &nbsp;&#x00B7;&nbsp;
+      <a href="https://jahosi.co.uk" class="text-indigo-500 hover:underline" target="_blank" rel="noopener noreferrer">jahosi.co.uk</a> &nbsp;&#x00B7;&nbsp;
+      <a href="/privacy-policy.html" class="text-indigo-500 hover:underline">Privacy Policy</a>
     </p>
 
   </article>
 </main>
 
 <footer class="border-t border-slate-200 dark:border-slate-700 py-4 mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-  <span>Jobber v<span class="page-version">1.1.0</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp;
-    <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer"
-       class="text-indigo-500 hover:underline">jahosi.co.uk</a>
-    &nbsp;·&nbsp;
+  <span>Jobber v<span class="page-version">1.3.2</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson 2026 &nbsp;&#x00B7;&nbsp;
+    <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer" class="text-indigo-500 hover:underline">jahosi.co.uk</a>
+    &nbsp;&#x00B7;&nbsp;
     <a href="/privacy-policy.html" class="text-indigo-500 hover:underline">Privacy Policy</a>
-    &nbsp;·&nbsp;
-    <a href="/user-guide.html" class="text-indigo-500 hover:underline">User Guide</a>
-    &nbsp;·&nbsp;
-    <a href="/howto.html" class="text-indigo-500 hover:underline">How To</a>
+    &nbsp;&#x00B7;&nbsp;
+    <a href="/" class="text-indigo-500 hover:underline">Back to Jobber</a>
   </span>
 </footer>
 

@@ -183,7 +183,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 // POST /api/auth/verify-otp
 // Second step of password login: validates the email OTP and issues a JWT.
 router.post('/verify-otp', (req: Request, res: Response): void => {
-  const { sessionId, code } = req.body;
+  const { sessionId, code, rememberMe } = req.body;
 
   if (!sessionId || !code) {
     res.status(400).json({ error: 'sessionId and code are required' });
@@ -221,12 +221,13 @@ router.post('/verify-otp', (req: Request, res: Response): void => {
     return;
   }
 
+  const tokenExpiry = rememberMe ? '30d' : '7d';
   const token = jwt.sign(
     { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale },
     JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: tokenExpiry }
   );
-  res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale } });
+  res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale }, rememberMe: !!rememberMe });
 });
 
 // POST /api/auth/magic-link
@@ -268,7 +269,7 @@ router.post('/magic-link', async (req: Request, res: Response): Promise<void> =>
 
 // GET /api/auth/magic-link/verify
 router.get('/magic-link/verify', (req: Request, res: Response): void => {
-  const { token } = req.query;
+  const { token, rememberMe } = req.query;
 
   if (!token || typeof token !== 'string') {
     res.status(400).json({ error: 'Token is required' });
@@ -308,13 +309,14 @@ router.get('/magic-link/verify', (req: Request, res: Response): void => {
     return;
   }
 
+  const tokenExpiry = rememberMe === 'true' ? '30d' : '7d';
   const jwtToken = jwt.sign(
     { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale },
     JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: tokenExpiry }
   );
 
-  res.json({ token: jwtToken, user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale } });
+  res.json({ token: jwtToken, user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale }, rememberMe: rememberMe === 'true' });
 });
 
 // POST /api/auth/forgot-password

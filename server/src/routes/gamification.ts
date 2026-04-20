@@ -80,6 +80,67 @@ router.get('/streaks', (req: Request, res: Response): void => {
 });
 
 /**
+ * GET /api/gamification/leaderboard/group/:groupId
+ * Returns a ranked list of group members (who have gamification enabled) by
+ * total XP.  Only accessible to members of the group.
+ */
+router.get('/leaderboard/group/:groupId', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const { groupId } = req.params;
+
+  const membership = db.prepare(
+    'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
+  ).get(groupId, userId);
+
+  if (!membership) {
+    res.status(403).json({ error: 'Not a member of this group' });
+    return;
+  }
+
+  const rows = db.prepare(`
+    SELECT u.id, u.username,
+           COALESCE(SUM(us.xp), 0) AS totalXp,
+           MAX(us.level) AS topLevel
+    FROM group_members gm
+    JOIN users u ON u.id = gm.user_id
+    LEFT JOIN user_skills us ON us.user_id = u.id
+    WHERE gm.group_id = ? AND u.gamification_enabled = 1
+    GROUP BY u.id, u.username
+    ORDER BY totalXp DESC, u.username ASC
+  `).all(groupId) as Array<{ id: string; username: string; totalXp: number; topLevel: number | null }>;
+
+  res.json(rows.map((row, i) => ({ ...row, rank: i + 1 })));
+});
+
+/**
+ * GET /api/gamification/leaderboard/friends
+ * Returns the current user plus all their friends who have gamification
+ * enabled, ranked by total XP.
+ */
+router.get('/leaderboard/friends', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+
+  const rows = db.prepare(`
+    SELECT u.id, u.username,
+           COALESCE(SUM(us.xp), 0) AS totalXp,
+           MAX(us.level) AS topLevel,
+           CASE WHEN u.id = ? THEN 1 ELSE 0 END AS isMe
+    FROM users u
+    LEFT JOIN user_skills us ON us.user_id = u.id
+    WHERE u.id = ?
+       OR (u.gamification_enabled = 1 AND EXISTS (
+         SELECT 1 FROM user_friends uf WHERE uf.user_id = ? AND uf.friend_id = u.id
+       ))
+    GROUP BY u.id, u.username
+    ORDER BY totalXp DESC, u.username ASC
+  `).all(userId, userId, userId) as Array<{
+    id: string; username: string; totalXp: number; topLevel: number | null; isMe: number;
+  }>;
+
+  res.json(rows.map((row, i) => ({ ...row, rank: i + 1, isMe: row.isMe === 1 })));
+});
+
+/**
  * POST /api/gamification/streaks/:taskId/freeze
  * Spends 1 freeze credit to protect the streak on a recurring task.
  * The Freeze absorbs the next missed deadline without resetting the streak.

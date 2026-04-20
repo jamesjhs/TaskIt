@@ -235,6 +235,26 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (achievement_id) REFERENCES achievements(id)
   );
+
+  -- Friends: invite tokens used to connect users outside groups
+  CREATE TABLE IF NOT EXISTS friend_invites (
+    token TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    used INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  -- Friends: bidirectional friendship pairs (both (A,B) and (B,A) rows stored)
+  CREATE TABLE IF NOT EXISTS user_friends (
+    user_id TEXT NOT NULL,
+    friend_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, friend_id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (friend_id) REFERENCES users(id)
+  );
 `);
 
 // Runtime migrations — add columns if they don't exist yet
@@ -295,6 +315,18 @@ addCol('tasks', 'streak_longest', 'INTEGER NOT NULL DEFAULT 0');
 addCol('tasks', 'streak_frozen', 'INTEGER NOT NULL DEFAULT 0');
 // Gamification Step 2: secondary currency for purchasing Freezes
 addCol('users', 'freeze_credits', 'INTEGER NOT NULL DEFAULT 0');
+// Friends: each user has a short friend key they can share to be added without a QR/link
+addCol('users', 'friend_key', 'TEXT');
+// Backfill: generate a friend_key for any user that doesn't have one yet
+{
+  const missingKey = db.prepare("SELECT id FROM users WHERE friend_key IS NULL OR friend_key = ''").all() as Array<{ id: string }>;
+  const updateKey = db.prepare('UPDATE users SET friend_key = ? WHERE id = ?');
+  const crypto = require('crypto') as typeof import('crypto');
+  for (const row of missingKey) {
+    const key = crypto.randomBytes(4).toString('hex');
+    updateKey.run(key, row.id);
+  }
+}
 // Backfill existing groups: generate a proper unique invite word pair for any group that lacks one
 {
   const ungrouped = db.prepare("SELECT id FROM groups WHERE invite_name = ''").all() as Array<{ id: string }>;

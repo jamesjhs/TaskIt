@@ -15,6 +15,7 @@ import taskTypeRoutes from './routes/taskTypes';
 import adminRoutes from './routes/admin';
 import userRoutes from './routes/users';
 import gamificationRoutes from './routes/gamification';
+import friendRoutes from './routes/friends';
 
 const app = express();
 
@@ -252,6 +253,7 @@ app.use('/api/task-types', authenticatedLimiter, taskTypeRoutes);
 app.use('/api/admin', authenticatedLimiter, adminRoutes);
 app.use('/api/users', authenticatedLimiter, userRoutes);
 app.use('/api/gamification', authenticatedLimiter, gamificationRoutes);
+app.use('/api/friends', authenticatedLimiter, friendRoutes);
 
 // Serve sw.js dynamically so its CACHE_NAME always reflects the current app
 // version. The SW's activate handler deletes every cache whose name doesn't

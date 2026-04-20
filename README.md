@@ -1,6 +1,6 @@
 # Jobber – Task Management App
 
-**Version 1.3.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.3.2** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -32,6 +32,8 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - Admin panel: stats dashboard, SMTP configuration, locked accounts, user reports, feedback management
 - **Database encryption** — full SQLite file encryption at rest via SQLCipher (set `DB_ENCRYPTION_KEY` env var)
 - **Gamification Engine** — opt-in XP system, skill trees, dynamic titles, personal achievements, streak tracking, and freeze mechanic (see below)
+- **Friends & Leaderboards** — connect with other users via invite link, QR code, or username + friend key; compete on XP leaderboards per group and across friends
+- **Persistent login** — optional "Remember me" session storage (30-day JWT in localStorage vs session-only)
 
 ## Gamification Engine
 
@@ -101,6 +103,13 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.3.2
+
+- **🤝 Friends system** — users can connect with each other outside of groups for cross-group XP competition. Three ways to add a friend: share your personal **invite link / QR code** (valid 7 days), use a direct **username + friend key** lookup, or send the link to someone new to Jobber. Friends are shown on the Progress tab in a dedicated leaderboard.
+- **🏆 Leaderboards** — group members ranked by total XP are shown directly in the Group Members modal (lazy-loaded). The Progress tab also shows per-group leaderboards and a friends leaderboard.
+- **🔑 Persistent login ("Remember me")** — a *Remember me* checkbox on the login screen keeps the session alive in `localStorage` for 30 days. Without it the session is stored in `sessionStorage` only and clears when the browser tab closes (7-day JWT).
+- **Version bump** — server, README, user guides updated to 1.3.2.
 
 ### v1.3.1
 

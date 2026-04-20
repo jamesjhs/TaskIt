@@ -8,6 +8,7 @@ import {
   awardFreezeCredit,
   consumeFreezeCredit,
   computeNewStreakValues,
+  awardEventXp,
 } from '../services/gamification';
 
 const router = Router();
@@ -146,7 +147,8 @@ router.post('/', (req: Request, res: Response): void => {
   const userId = req.user!.id;
   const { title, details, typeId, groupId, assigneeIds, dueDate, recurInterval, recurUnit,
           notifyEmail, notify7day, notify1day, notifyOnday,
-          notifyPopup7day, notifyPopup1day, notifyPopupOnday } = req.body;
+          notifyPopup7day, notifyPopup1day, notifyPopupOnday,
+          xpMultiplier } = req.body;
 
   if (!title || !typeId) {
     res.status(400).json({ error: 'title and typeId are required' });
@@ -173,6 +175,7 @@ router.post('/', (req: Request, res: Response): void => {
   }
 
   // If groupId provided, verify membership
+  let groupGamificationEnhanced = false;
   if (groupId) {
     const member = db.prepare(
       'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
@@ -181,14 +184,33 @@ router.post('/', (req: Request, res: Response): void => {
       res.status(403).json({ error: 'Not a member of the specified group' });
       return;
     }
+    const grp = db.prepare(
+      'SELECT gamification_enhanced FROM groups WHERE id = ?'
+    ).get(groupId) as { gamification_enhanced: number } | undefined;
+    groupGamificationEnhanced = !!(grp?.gamification_enhanced);
+  }
+
+  // Validate and resolve the XP multiplier
+  let resolvedMultiplier = 1.0;
+  if (xpMultiplier !== undefined && xpMultiplier !== null) {
+    if (!groupGamificationEnhanced) {
+      res.status(400).json({ error: 'xpMultiplier can only be set for tasks in a group with gamification enhancements enabled' });
+      return;
+    }
+    const parsed = parseFloat(String(xpMultiplier));
+    if (!Number.isFinite(parsed) || parsed < 0.1 || parsed > 10) {
+      res.status(400).json({ error: 'xpMultiplier must be a number between 0.1 and 10' });
+      return;
+    }
+    resolvedMultiplier = parsed;
   }
 
   const id = randomUUID();
   const now = Date.now();
 
   db.prepare(`
-    INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday)
-    VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday, xp_multiplier)
+    VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(id, title, details || null, typeId, userId, groupId || null, now, now, dueDate || null,
     recurInterval ? parseInt(String(recurInterval), 10) : null,
     recurUnit || null,
@@ -198,7 +220,15 @@ router.post('/', (req: Request, res: Response): void => {
     notifyOnday === false || notifyOnday === 0 ? 0 : 1,
     notifyPopup7day === false || notifyPopup7day === 0 ? 0 : 1,
     notifyPopup1day === false || notifyPopup1day === 0 ? 0 : 1,
-    notifyPopupOnday === false || notifyPopupOnday === 0 ? 0 : 1);
+    notifyPopupOnday === false || notifyPopupOnday === 0 ? 0 : 1,
+    resolvedMultiplier);
+
+  // Award create_task XP (non-critical)
+  try {
+    awardEventXp(userId, 'create_task');
+  } catch (xpErr) {
+    console.error('[tasks/create] Failed to award create_task XP:', xpErr);
+  }
 
   // Insert assignees — validate each ID refers to a real user before inserting
   // to avoid a FK constraint exception (and a 500 response) on bad input.
@@ -264,7 +294,8 @@ router.patch('/:id', (req: Request, res: Response): void => {
 
   const { title, details, typeId, status, assigneeIds, dueDate, recurInterval, recurUnit,
           notifyEmail, notify7day, notify1day, notifyOnday,
-          notifyPopup7day, notifyPopup1day, notifyPopupOnday } = req.body;
+          notifyPopup7day, notifyPopup1day, notifyPopupOnday,
+          xpMultiplier } = req.body;
 
   // Validate status if provided
   if (status !== undefined && !ALLOWED_STATUSES.has(status as string)) {
@@ -284,6 +315,23 @@ router.patch('/:id', (req: Request, res: Response): void => {
         res.status(400).json({ error: 'recurUnit must be one of: days, weeks, months, years' });
         return;
       }
+    }
+  }
+
+  // Validate xpMultiplier if provided
+  if (xpMultiplier !== undefined && xpMultiplier !== null) {
+    const fullTask = db.prepare('SELECT group_id FROM tasks WHERE id = ?').get(taskId) as { group_id: string | null } | undefined;
+    const grpGamEnabled = fullTask?.group_id
+      ? !!(db.prepare('SELECT gamification_enhanced FROM groups WHERE id = ?').get(fullTask.group_id) as { gamification_enhanced: number } | undefined)?.gamification_enhanced
+      : false;
+    if (!grpGamEnabled) {
+      res.status(400).json({ error: 'xpMultiplier can only be set for tasks in a group with gamification enhancements enabled' });
+      return;
+    }
+    const parsed = parseFloat(String(xpMultiplier));
+    if (!Number.isFinite(parsed) || parsed < 0.1 || parsed > 10) {
+      res.status(400).json({ error: 'xpMultiplier must be a number between 0.1 and 10' });
+      return;
     }
   }
 
@@ -312,6 +360,10 @@ router.patch('/:id', (req: Request, res: Response): void => {
   if (dueDate !== undefined) { setClauses.push('due_date = ?'); vals.push(dueDate || null); }
   if (recurInterval !== undefined) { setClauses.push('recur_interval = ?'); vals.push(recurInterval ? parseInt(String(recurInterval), 10) : null); }
   if (recurUnit !== undefined) { setClauses.push('recur_unit = ?'); vals.push(recurUnit || null); }
+  if (xpMultiplier !== undefined && xpMultiplier !== null) {
+    const parsed = parseFloat(String(xpMultiplier));
+    setClauses.push('xp_multiplier = ?'); vals.push(Math.max(0.1, Math.min(10, parsed)));
+  }
   if (notifyEmail !== undefined) { setClauses.push('notify_email = ?'); vals.push(notifyEmail === false || notifyEmail === 0 ? 0 : 1); }
   if (notify7day !== undefined) { setClauses.push('notify_7day = ?'); vals.push(notify7day === false || notify7day === 0 ? 0 : 1); }
   if (notify1day !== undefined) { setClauses.push('notify_1day = ?'); vals.push(notify1day === false || notify1day === 0 ? 0 : 1); }
@@ -415,6 +467,7 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
       notify_email: number; notify_7day: number; notify_1day: number; notify_onday: number;
       notify_popup_7day: number; notify_popup_1day: number; notify_popup_onday: number;
       streak_current: number; streak_longest: number; streak_frozen: number;
+      xp_multiplier: number;
     } | undefined;
 
     if (fullTask && fullTask.recur_interval && fullTask.recur_unit) {
@@ -435,13 +488,14 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
       const spawnAndArchive = db.transaction(() => {
         db.prepare(`
-          INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday, streak_current, streak_longest, streak_frozen)
-          VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+          INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday, streak_current, streak_longest, streak_frozen, xp_multiplier)
+          VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
         `).run(newId, fullTask.title, fullTask.details, fullTask.type_id, fullTask.created_by,
           fullTask.group_id, now, now, nextDue, fullTask.recur_interval, fullTask.recur_unit,
           fullTask.notify_email, fullTask.notify_7day, fullTask.notify_1day, fullTask.notify_onday,
           fullTask.notify_popup_7day, fullTask.notify_popup_1day, fullTask.notify_popup_onday,
-          streakResult.newStreak, streakResult.newLongest);
+          streakResult.newStreak, streakResult.newLongest,
+          fullTask.xp_multiplier ?? 1.0);
 
         const assignees = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(taskId) as Array<{ user_id: string }>;
         const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
@@ -460,11 +514,11 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
     // Errors here must never break the status update response.
     try {
       const completedTask = db.prepare(
-        'SELECT type_id FROM tasks WHERE id = ?'
-      ).get(taskId) as { type_id: string } | undefined;
+        'SELECT type_id, xp_multiplier FROM tasks WHERE id = ?'
+      ).get(taskId) as { type_id: string; xp_multiplier: number } | undefined;
 
       if (completedTask) {
-        awardTaskXp(userId, completedTask.type_id);
+        awardTaskXp(userId, completedTask.type_id, completedTask.xp_multiplier ?? 1.0);
         awardFreezeCredit(userId);
         if (freezeConsumed) {
           consumeFreezeCredit(userId);

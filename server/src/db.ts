@@ -255,6 +255,16 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (friend_id) REFERENCES users(id)
   );
+
+  -- Gamification: admin-configurable XP event catalogue
+  CREATE TABLE IF NOT EXISTS xp_events (
+    key TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    xp_value INTEGER NOT NULL DEFAULT 0,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    updated_at INTEGER NOT NULL DEFAULT 0
+  );
 `);
 
 // Runtime migrations — add columns if they don't exist yet
@@ -317,6 +327,12 @@ addCol('tasks', 'streak_frozen', 'INTEGER NOT NULL DEFAULT 0');
 addCol('users', 'freeze_credits', 'INTEGER NOT NULL DEFAULT 0');
 // Friends: each user has a short friend key they can share to be added without a QR/link
 addCol('users', 'friend_key', 'TEXT');
+// Gamification enhancements: groups can enable an XP multiplier feature
+addCol('groups', 'gamification_enhanced', 'INTEGER NOT NULL DEFAULT 0');
+// Gamification enhancements: per-task XP multiplier (applied when group has enhancements enabled)
+addCol('tasks', 'xp_multiplier', 'REAL NOT NULL DEFAULT 1.0');
+// Gamification enhancements: per-membership XP sharing preference (default: share)
+addCol('group_members', 'xp_share', 'INTEGER NOT NULL DEFAULT 1');
 // Backfill: generate a friend_key for any user that doesn't have one yet
 {
   const missingKey = db.prepare("SELECT id FROM users WHERE friend_key IS NULL OR friend_key = ''").all() as Array<{ id: string }>;
@@ -410,6 +426,25 @@ if (countRow.cnt === 0) {
     // foreign key lookups, and deterministic across server restarts so the same
     // row is never duplicated or double-inserted.
     insertAchievement.run(a.key, a.key, a.name, a.description, now);
+  }
+}
+
+// Seed default XP events using INSERT OR IGNORE so existing admin-configured values are preserved
+{
+  const insertXpEvent = db.prepare(
+    'INSERT OR IGNORE INTO xp_events (key, name, description, xp_value, enabled, updated_at) VALUES (?, ?, ?, ?, 1, ?)'
+  );
+  const now = Date.now();
+  const defaultXpEvents: Array<{ key: string; name: string; description: string; xp_value: number }> = [
+    { key: 'signup',            name: 'Sign Up',             description: 'Award XP when a user registers for the app.',              xp_value: 100 },
+    { key: 'create_task',       name: 'Create Task',         description: 'Award XP when a user creates a new task.',                 xp_value: 10  },
+    { key: 'create_group',      name: 'Create Group',        description: 'Award XP when a user creates a new group.',                xp_value: 25  },
+    { key: 'send_app_invite',   name: 'Send App Invite',     description: 'Award XP when a user generates a friend invite link.',     xp_value: 15  },
+    { key: 'send_group_invite', name: 'Send Group Invite',   description: 'Award XP when a user sends or generates a group invite.',  xp_value: 15  },
+    { key: 'complete_task',     name: 'Complete Task',       description: 'Base XP awarded per task completion (before multiplier).', xp_value: 50  },
+  ];
+  for (const e of defaultXpEvents) {
+    insertXpEvent.run(e.key, e.name, e.description, e.xp_value, now);
   }
 }
 

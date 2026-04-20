@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
 import { BASE_URL } from '../config';
+import { generateFriendKey } from '../wordlists';
 
 const router = Router();
 
@@ -63,7 +64,7 @@ router.get('/my-key', (req: Request, res: Response): void => {
   // Generate a key if one is missing (should not happen after migration, but defensive)
   let key = user.friend_key;
   if (!key) {
-    key = crypto.randomBytes(4).toString('hex');
+    key = generateFriendKey();
     db.prepare('UPDATE users SET friend_key = ? WHERE id = ?').run(key, userId);
   }
 
@@ -92,9 +93,11 @@ router.post('/add-by-key', (req: Request, res: Response): void => {
     return;
   }
 
-  // Constant-time key comparison to prevent timing attacks
-  const submittedKey = Buffer.from(String(friend_key).trim().toLowerCase(), 'utf8');
-  const storedKey = Buffer.from(target.friend_key.toLowerCase(), 'utf8');
+  // Constant-time key comparison to prevent timing attacks.
+  // Normalise both sides: strip all whitespace and lowercase so that users can
+  // type "Brave Ocean", "braveocean", or "BraveOcean" and they all match.
+  const submittedKey = Buffer.from(String(friend_key).replace(/\s+/g, '').toLowerCase(), 'utf8');
+  const storedKey = Buffer.from(target.friend_key.replace(/\s+/g, '').toLowerCase(), 'utf8');
   const match = submittedKey.length === storedKey.length &&
     crypto.timingSafeEqual(submittedKey, storedKey);
 

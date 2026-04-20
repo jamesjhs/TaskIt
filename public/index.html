@@ -836,7 +836,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">Jobber v<span id="authFooterVersion">1.3.2</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
+      <p class="version-footer" style="margin-top:16px">Jobber v<span id="authFooterVersion">1.5.1</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>
@@ -1698,6 +1698,9 @@ let currentFilter = { status: '', groupId: '', typeId: '', archived: false, assi
 let currentDetailTask = null;
 let blockedUserIds = new Set();
 let gamificationEnabled = false;
+// Keys of achievements whose mini-games the current user may play.
+// Populated from the server-fetched profile; admins receive all 13 keys.
+let unlockedArcadeKeys = new Set();
 
 // ========== Reminder window constants (must match server/src/services/scheduler.ts) ==========
 const POPUP_WINDOW_7D_MIN_MS  = 6  * 24 * 3600000;
@@ -1883,6 +1886,8 @@ function logout() {
   token = ''; currentUser = null;
   localStorage.removeItem('jbToken'); localStorage.removeItem('jbUser');
   sessionStorage.removeItem('jbToken'); sessionStorage.removeItem('jbUser');
+  unlockedArcadeKeys.clear();
+  closeArcade();
   document.getElementById('appPage').classList.add('hidden');
   document.getElementById('authPage').classList.remove('hidden');
   document.getElementById('landingPage').classList.add('hidden');
@@ -2827,23 +2832,36 @@ function renderGamificationProfile(profile, streaks) {
   }
 
   // Achievements
+  // Rebuild the set of keys the current user is allowed to open in the arcade.
+  // Admins get all 13 keys so they can test every game without having to earn it.
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  unlockedArcadeKeys.clear();
+  if (isAdmin) {
+    Object.keys(ARCADE_GAMES).forEach(k => unlockedArcadeKeys.add(k));
+  } else if (profile.achievements) {
+    profile.achievements.forEach(a => { if (a.unlockedAt) unlockedArcadeKeys.add(a.key); });
+  }
+
   const achEl = document.getElementById('gamifAchievementsList');
   if (profile.achievements && profile.achievements.length) {
     achEl.innerHTML = profile.achievements.map(a => {
       const icon = ACHIEVEMENT_ICONS[a.key] || '\uD83C\uDFC5';
       const unlocked = !!a.unlockedAt;
       const dateStr = unlocked ? new Date(a.unlockedAt).toLocaleDateString(userLocale()) : '';
-      const hasGame = unlocked && ARCADE_GAMES && ARCADE_GAMES[a.key];
-      const clickAttr = hasGame
-        ? ` onclick="openArcade('${a.key}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')openArcade('${a.key}')"`
-        : '';
+      // For admins every badge with a registered game is playable (for testing).
+      const hasGame = ARCADE_GAMES && ARCADE_GAMES[a.key] && (unlocked || isAdmin);
       const playableClass = hasGame ? ' arcade-playable' : '';
+      // Use data attribute + event delegation — avoids inline JS and single-quote injection.
+      const dataAttr = hasGame ? ` data-arcade-key="${escHtml(a.key)}" role="button" tabindex="0"` : '';
+      const dateLabel = unlocked
+        ? escHtml(dateStr)
+        : (isAdmin ? '\uD83D\uDEE0\uFE0F Admin preview' : '\uD83D\uDD12 Locked');
       return `
-        <div class="gamif-ach ${unlocked ? 'gamif-ach-unlocked' + playableClass : 'gamif-ach-locked'}" title="${escHtml(a.description)}"${clickAttr}>
+        <div class="gamif-ach ${unlocked ? 'gamif-ach-unlocked' + playableClass : (isAdmin ? 'gamif-ach-admin-preview' + playableClass : 'gamif-ach-locked')}" title="${escHtml(a.description)}"${dataAttr}>
           <span class="gamif-ach-icon">${icon}</span>
           <div class="gamif-ach-name">${escHtml(a.name)}</div>
           <div class="gamif-ach-desc">${escHtml(a.description)}</div>
-          <div class="gamif-ach-date">${unlocked ? escHtml(dateStr) : '\uD83D\uDD12 Locked'}</div>
+          <div class="gamif-ach-date">${dateLabel}</div>
           ${hasGame ? '<div class="gamif-ach-play-hint">🕹️ Play</div>' : ''}
         </div>`;
     }).join('');
@@ -3859,6 +3877,13 @@ const ARCADE_GAMES = {
 
 /**
  * Opens the Arcade overlay for the given achievement badge key.
+ *
+ * Access rules:
+ *   • Regular users: only keys present in `unlockedArcadeKeys` (populated
+ *     from the server-fetched gamification profile after authentication).
+ *   • Site administrators: all 13 keys, regardless of earned status, so they
+ *     can test every game without needing to earn the badge first.
+ *
  * Stage 2 game modules listen for the 'arcade:open' CustomEvent on
  * #arcadeOverlay to boot themselves; 'arcade:close' is fired on exit.
  *
@@ -3867,6 +3892,11 @@ const ARCADE_GAMES = {
 function openArcade(badgeKey) {
   const game = ARCADE_GAMES[badgeKey];
   if (!game) return;
+
+  // Authorization check: the key must be in the server-verified unlock set,
+  // OR the current user must be the site administrator.
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  if (!isAdmin && !unlockedArcadeKeys.has(badgeKey)) return;
 
   const overlay = document.getElementById('arcadeOverlay');
   if (!overlay) return;
@@ -3884,16 +3914,32 @@ function openArcade(badgeKey) {
   const frame = document.getElementById('arcadeGameFrame');
   frame.innerHTML = '';
   const placeholder = document.createElement('div');
-  placeholder.id        = 'arcadeComingSoon';
   placeholder.className = 'arcade-coming-soon';
-  placeholder.innerHTML =
-    `<span class="arcade-coming-soon-icon" aria-hidden="true">${game.icon}</span>` +
-    `<p class="arcade-coming-soon-title">${game.title}</p>` +
-    `<p class="arcade-coming-soon-sub">Mini-game arriving in Stage 2 — watch this space!</p>`;
+  // textContent prevents any HTML injection from game metadata
+  const iconEl = document.createElement('span');
+  iconEl.className = 'arcade-coming-soon-icon';
+  iconEl.setAttribute('aria-hidden', 'true');
+  iconEl.textContent = game.icon;
+  const titleEl = document.createElement('p');
+  titleEl.className = 'arcade-coming-soon-title';
+  titleEl.textContent = game.title;
+  const subEl = document.createElement('p');
+  subEl.className = 'arcade-coming-soon-sub';
+  subEl.textContent = 'Mini-game arriving in Stage 2 — watch this space!';
+  placeholder.appendChild(iconEl);
+  placeholder.appendChild(titleEl);
+  placeholder.appendChild(subEl);
   frame.appendChild(placeholder);
 
-  // Show overlay and lock body scroll
-  overlay.classList.remove('hidden');
+  // Show overlay, lock body scroll, and re-trigger the entry animation.
+  // The animation lives on `.arcade-animating`, not on the base class.
+  // We remove it, force a reflow (reading offsetWidth causes the browser to
+  // flush pending style changes and register the removal before the re-add),
+  // then add it back — this guarantees the keyframe animation replays on
+  // every open, not just the first time the overlay becomes visible.
+  overlay.classList.remove('hidden', 'arcade-animating');
+  const _reflow = overlay.offsetWidth; // intentional: force CSS reflow so .arcade-animating restart is registered
+  overlay.classList.add('arcade-animating');
   document.body.classList.add('arcade-open');
 
   // Notify Stage 2 modules
@@ -3926,6 +3972,35 @@ function closeArcade() {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeArcade();
 });
+
+/**
+ * One-time setup for arcade badge interaction on the achievements list.
+ * Delegated listeners are attached here (once) rather than inside
+ * renderGamificationProfile to avoid any risk of duplicate handlers.
+ * openArcade() enforces the real access check on every call.
+ */
+document.addEventListener('DOMContentLoaded', function() {
+  // Back button in the arcade overlay
+  const backBtn = document.getElementById('arcadeBackBtn');
+  if (backBtn) backBtn.addEventListener('click', closeArcade);
+
+  // Delegated click/keyboard listeners for arcade badges in the achievements list.
+  // Attached here once so there is never a risk of duplicate handlers across
+  // multiple calls to renderGamificationProfile. openArcade() enforces the
+  // real access check on every call.
+  const achEl = document.getElementById('gamifAchievementsList');
+  if (!achEl) return;
+  achEl.addEventListener('click', function(e) {
+    const badge = e.target.closest('[data-arcade-key]');
+    if (badge) openArcade(badge.dataset.arcadeKey);
+  });
+  achEl.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const badge = e.target.closest('[data-arcade-key]');
+      if (badge) { e.preventDefault(); openArcade(badge.dataset.arcadeKey); }
+    }
+  });
+});
 </script>
 
 <!-- ===== JOBBER ARCADE OVERLAY (Stage 1) ===== -->
@@ -3934,7 +4009,7 @@ document.addEventListener('keydown', function(e) {
 
   <!-- Top bar: back button + centred logo + spacer -->
   <div class="arcade-topbar">
-    <button onclick="closeArcade()" class="arcade-back-btn" aria-label="Close Arcade and return to tasks">
+    <button id="arcadeBackBtn" class="arcade-back-btn" aria-label="Close Arcade and return to tasks">
       🔙 Back to Tasks
     </button>
     <div class="arcade-logo">🕹️ Jobber Arcade</div>
@@ -3951,12 +4026,7 @@ document.addEventListener('keydown', function(e) {
   <!-- Game frame — Stage 2 injects canvases / game UIs here -->
   <div class="arcade-container">
     <div id="arcadeGameFrame" class="arcade-game-frame">
-      <!-- Default coming-soon placeholder; replaced when a game loads -->
-      <div id="arcadeComingSoon" class="arcade-coming-soon">
-        <span class="arcade-coming-soon-icon">🎮</span>
-        <p class="arcade-coming-soon-title">Mini-Game Loading…</p>
-        <p class="arcade-coming-soon-sub">Stage 2 games arriving soon.</p>
-      </div>
+      <!-- Content injected by openArcade() at runtime -->
     </div>
   </div>
 </div>

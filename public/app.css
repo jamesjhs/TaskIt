@@ -1768,7 +1768,7 @@ a:hover { text-decoration: underline; }
 /* Body lock — prevents background scroll while arcade is open */
 body.arcade-open { overflow: hidden; }
 
-/* Full-screen overlay */
+/* Full-screen overlay — animation is triggered by JS via .arcade-animating */
 .arcade-overlay {
   position: fixed;
   inset: 0;
@@ -1779,20 +1779,24 @@ body.arcade-open { overflow: hidden; }
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: arcadeIn .22s ease;
 }
 .arcade-overlay.hidden { display: none; }
+
+/* Animation class — added by JS on every open so it always replays */
+.arcade-overlay.arcade-animating {
+  animation: arcadeIn .22s ease both;
+}
 
 @keyframes arcadeIn {
   from { opacity: 0; transform: scale(.97); }
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* Top bar */
+/* Top bar — CSS Grid for perfect centering independent of button width */
 .arcade-topbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 10px 16px;
   background: rgba(0,0,0,.35);
   border-bottom: 1px solid rgba(255,255,255,.08);
@@ -1801,6 +1805,7 @@ body.arcade-open { overflow: hidden; }
 }
 
 .arcade-back-btn {
+  justify-self: start;
   background: rgba(255,255,255,.12);
   border: 1px solid rgba(255,255,255,.25);
   color: #e0e7ff;
@@ -1811,7 +1816,6 @@ body.arcade-open { overflow: hidden; }
   cursor: pointer;
   transition: background .15s, border-color .15s;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 .arcade-back-btn:hover { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.45); }
 
@@ -1821,30 +1825,26 @@ body.arcade-open { overflow: hidden; }
   color: #c4b5fd;
   letter-spacing: .04em;
   text-align: center;
-  flex: 1;
 }
 
-/* Spacer to balance the back button on the right */
-.arcade-topbar-spacer {
-  flex-shrink: 0;
-  min-width: 90px; /* matches approximate back-btn width */
-}
+/* Third grid cell — invisible but keeps the logo centred */
+.arcade-topbar-spacer { visibility: hidden; pointer-events: none; }
 
 /* Game title section */
 .arcade-title-bar {
   text-align: center;
-  padding: 18px 16px 12px;
+  padding: 14px 16px 10px;
   flex-shrink: 0;
 }
 .arcade-game-icon {
-  font-size: 2.8rem;
+  font-size: 2.4rem;
   line-height: 1;
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   filter: drop-shadow(0 0 12px rgba(196,181,253,.6));
 }
 .arcade-game-title {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 800;
   color: #fff;
   margin: 0 0 4px;
@@ -1862,7 +1862,7 @@ body.arcade-open { overflow: hidden; }
   display: flex;
   align-items: stretch;
   justify-content: center;
-  padding: 12px 16px 16px;
+  padding: 8px 12px 12px;
   overflow: hidden;
   min-height: 0;
 }
@@ -1871,6 +1871,7 @@ body.arcade-open { overflow: hidden; }
 .arcade-game-frame {
   width: 100%;
   max-width: 640px;
+  min-height: 180px;
   background: rgba(0,0,0,.3);
   border: 1px solid rgba(255,255,255,.1);
   border-radius: 16px;
@@ -1884,23 +1885,23 @@ body.arcade-open { overflow: hidden; }
 /* Coming-soon placeholder (replaced by Stage 2 games) */
 .arcade-coming-soon {
   text-align: center;
-  padding: 32px 24px;
-  animation: arcadeIn .3s ease;
+  padding: 28px 20px;
+  animation: arcadeIn .3s ease both;
 }
 .arcade-coming-soon-icon {
-  font-size: 4rem;
+  font-size: 3.6rem;
   display: block;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   animation: arcadeBounce 1.8s ease-in-out infinite;
 }
 .arcade-coming-soon-title {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: #e0e7ff;
   margin: 0 0 8px;
 }
 .arcade-coming-soon-sub {
-  font-size: .85rem;
+  font-size: .82rem;
   color: #6b7280;
   margin: 0;
 }
@@ -1911,14 +1912,24 @@ body.arcade-open { overflow: hidden; }
 }
 
 /* Clickable unlocked achievement badges */
-.gamif-ach-unlocked.arcade-playable {
+.gamif-ach-unlocked.arcade-playable,
+.gamif-ach-admin-preview.arcade-playable {
   cursor: pointer;
   transition: transform .15s, box-shadow .15s;
 }
-.gamif-ach-unlocked.arcade-playable:hover {
+.gamif-ach-unlocked.arcade-playable:hover,
+.gamif-ach-admin-preview.arcade-playable:hover {
   transform: translateY(-2px) scale(1.03);
   box-shadow: 0 4px 14px rgba(134,239,172,.35);
 }
+
+/* Admin-preview badge style (not yet earned but admin can test) */
+.gamif-ach-admin-preview {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  opacity: .85;
+}
+
 .gamif-ach-play-hint {
   font-size: .6rem;
   color: #16a34a;
@@ -1928,8 +1939,17 @@ body.arcade-open { overflow: hidden; }
 
 /* Responsive tweaks */
 @media (max-width: 480px) {
-  .arcade-game-title  { font-size: 1.15rem; }
-  .arcade-game-icon   { font-size: 2.2rem; }
-  .arcade-logo        { font-size: .875rem; }
-  .arcade-back-btn    { font-size: .78rem; padding: 6px 10px; }
+  .arcade-game-title  { font-size: 1.05rem; }
+  .arcade-game-icon   { font-size: 1.9rem; }
+  .arcade-logo        { font-size: .82rem; }
+  .arcade-back-btn    { font-size: .75rem; padding: 6px 10px; }
+  .arcade-title-bar   { padding: 10px 12px 8px; }
+}
+
+/* Landscape + short viewport: shrink title area to maximise game space */
+@media (max-height: 500px) {
+  .arcade-title-bar   { padding: 6px 12px 4px; }
+  .arcade-game-icon   { font-size: 1.4rem; margin-bottom: 3px; }
+  .arcade-game-title  { font-size: .95rem; }
+  .arcade-game-subtitle { display: none; }
 }

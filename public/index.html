@@ -2833,12 +2833,18 @@ function renderGamificationProfile(profile, streaks) {
       const icon = ACHIEVEMENT_ICONS[a.key] || '\uD83C\uDFC5';
       const unlocked = !!a.unlockedAt;
       const dateStr = unlocked ? new Date(a.unlockedAt).toLocaleDateString(userLocale()) : '';
+      const hasGame = unlocked && ARCADE_GAMES && ARCADE_GAMES[a.key];
+      const clickAttr = hasGame
+        ? ` onclick="openArcade('${a.key}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')openArcade('${a.key}')"`
+        : '';
+      const playableClass = hasGame ? ' arcade-playable' : '';
       return `
-        <div class="gamif-ach ${unlocked ? 'gamif-ach-unlocked' : 'gamif-ach-locked'}" title="${escHtml(a.description)}">
+        <div class="gamif-ach ${unlocked ? 'gamif-ach-unlocked' + playableClass : 'gamif-ach-locked'}" title="${escHtml(a.description)}"${clickAttr}>
           <span class="gamif-ach-icon">${icon}</span>
           <div class="gamif-ach-name">${escHtml(a.name)}</div>
           <div class="gamif-ach-desc">${escHtml(a.description)}</div>
           <div class="gamif-ach-date">${unlocked ? escHtml(dateStr) : '\uD83D\uDD12 Locked'}</div>
+          ${hasGame ? '<div class="gamif-ach-play-hint">🕹️ Play</div>' : ''}
         </div>`;
     }).join('');
   } else {
@@ -3828,7 +3834,132 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
 }
+
+// ========== Jobber Arcade — Stage 1: Overlay & Routing ==========
+
+/**
+ * Maps each achievement badge key to display metadata and a gameId
+ * that Stage 2 game modules will use to boot the correct mini-game.
+ */
+const ARCADE_GAMES = {
+  first_task:      { title: 'First Steps',       icon: '🥇', subtitle: 'Catch the falling task cards!',        gameId: 'catch'  },
+  task_10:         { title: 'Task Rocket',        icon: '🚀', subtitle: 'Dodge the asteroids and fly free!',    gameId: 'rocket' },
+  task_50:         { title: 'On a Roll',          icon: '🔥', subtitle: 'Keep the combo alive!',                gameId: 'roll'   },
+  task_100:        { title: 'Century Clash',      icon: '⚔️', subtitle: 'Defeat 100 enemies to claim glory!',  gameId: 'clash'  },
+  task_500:        { title: 'Legendary Quest',    icon: '👑', subtitle: 'Conquer the leaderboard!',             gameId: 'legend' },
+  detail_oriented: { title: 'Memory Matrix',      icon: '📝', subtitle: 'Match every task-card pair!',          gameId: 'memory' },
+  early_bird:      { title: 'Early Bird Dash',    icon: '🐦', subtitle: 'Flap your way past the deadlines!',   gameId: 'bird'   },
+  type_explorer:   { title: "Explorer's Maze",    icon: '🗺️', subtitle: 'Navigate through the task maze!',     gameId: 'maze'   },
+  skill_level_5:   { title: 'Bullseye!',          icon: '🎯', subtitle: 'Hit every target with precision!',    gameId: 'target' },
+  skill_level_10:  { title: 'Quiz Master',        icon: '🎓', subtitle: 'Test your Jobber knowledge!',         gameId: 'quiz'   },
+  streak_3:        { title: 'Hat Trick',          icon: '🎩', subtitle: 'Pull off three tricks in a row!',     gameId: 'trick'  },
+  streak_7:        { title: 'Lucky Seven',        icon: '🍀', subtitle: 'Spin your luck and win big!',         gameId: 'lucky'  },
+  streak_30:       { title: 'Unstoppable Train',  icon: '🚂', subtitle: 'Keep the train running — no stops!', gameId: 'train'  },
+};
+
+/**
+ * Opens the Arcade overlay for the given achievement badge key.
+ * Stage 2 game modules listen for the 'arcade:open' CustomEvent on
+ * #arcadeOverlay to boot themselves; 'arcade:close' is fired on exit.
+ *
+ * @param {string} badgeKey - One of the keys in ARCADE_GAMES.
+ */
+function openArcade(badgeKey) {
+  const game = ARCADE_GAMES[badgeKey];
+  if (!game) return;
+
+  const overlay = document.getElementById('arcadeOverlay');
+  if (!overlay) return;
+
+  // Populate header
+  document.getElementById('arcadeGameIcon').textContent     = game.icon;
+  document.getElementById('arcadeTitle').textContent        = game.title;
+  document.getElementById('arcadeGameSubtitle').textContent = game.subtitle;
+
+  // Store active game context on the element for Stage 2 modules
+  overlay.dataset.activeGame   = badgeKey;
+  overlay.dataset.activeGameId = game.gameId;
+
+  // Render the coming-soon placeholder; Stage 2 replaces this
+  const frame = document.getElementById('arcadeGameFrame');
+  frame.innerHTML = '';
+  const placeholder = document.createElement('div');
+  placeholder.id        = 'arcadeComingSoon';
+  placeholder.className = 'arcade-coming-soon';
+  placeholder.innerHTML =
+    `<span class="arcade-coming-soon-icon" aria-hidden="true">${game.icon}</span>` +
+    `<p class="arcade-coming-soon-title">${game.title}</p>` +
+    `<p class="arcade-coming-soon-sub">Mini-game arriving in Stage 2 — watch this space!</p>`;
+  frame.appendChild(placeholder);
+
+  // Show overlay and lock body scroll
+  overlay.classList.remove('hidden');
+  document.body.classList.add('arcade-open');
+
+  // Notify Stage 2 modules
+  overlay.dispatchEvent(new CustomEvent('arcade:open', {
+    bubbles: false,
+    detail: { badgeKey, gameId: game.gameId, title: game.title },
+  }));
+}
+
+/**
+ * Closes the Arcade overlay and restores the main app.
+ */
+function closeArcade() {
+  const overlay = document.getElementById('arcadeOverlay');
+  if (!overlay || overlay.classList.contains('hidden')) return;
+
+  // Notify Stage 2 modules so they can tear down canvases / timers
+  overlay.dispatchEvent(new CustomEvent('arcade:close', {
+    bubbles: false,
+    detail: { gameId: overlay.dataset.activeGameId },
+  }));
+
+  overlay.classList.add('hidden');
+  document.body.classList.remove('arcade-open');
+  delete overlay.dataset.activeGame;
+  delete overlay.dataset.activeGameId;
+}
+
+// Keyboard escape-hatch: pressing Escape closes the arcade
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeArcade();
+});
 </script>
+
+<!-- ===== JOBBER ARCADE OVERLAY (Stage 1) ===== -->
+<div id="arcadeOverlay" class="arcade-overlay hidden"
+     role="dialog" aria-modal="true" aria-labelledby="arcadeTitle">
+
+  <!-- Top bar: back button + centred logo + spacer -->
+  <div class="arcade-topbar">
+    <button onclick="closeArcade()" class="arcade-back-btn" aria-label="Close Arcade and return to tasks">
+      🔙 Back to Tasks
+    </button>
+    <div class="arcade-logo">🕹️ Jobber Arcade</div>
+    <div class="arcade-topbar-spacer" aria-hidden="true"></div>
+  </div>
+
+  <!-- Game title / subtitle -->
+  <div class="arcade-title-bar">
+    <span id="arcadeGameIcon" class="arcade-game-icon" aria-hidden="true">🏆</span>
+    <h2 id="arcadeTitle" class="arcade-game-title">Achievement Game</h2>
+    <p id="arcadeGameSubtitle" class="arcade-game-subtitle">Loading…</p>
+  </div>
+
+  <!-- Game frame — Stage 2 injects canvases / game UIs here -->
+  <div class="arcade-container">
+    <div id="arcadeGameFrame" class="arcade-game-frame">
+      <!-- Default coming-soon placeholder; replaced when a game loads -->
+      <div id="arcadeComingSoon" class="arcade-coming-soon">
+        <span class="arcade-coming-soon-icon">🎮</span>
+        <p class="arcade-coming-soon-title">Mini-Game Loading…</p>
+        <p class="arcade-coming-soon-sub">Stage 2 games arriving soon.</p>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ===== COOKIE / STORAGE NOTICE ===== -->
 <!-- Shown once on landing/auth pages; dismissed state stored in localStorage -->

@@ -262,10 +262,10 @@ router.get('/:id/members', (req: Request, res: Response): void => {
       SELECT user_id, SUM(xp) AS total_xp
       FROM user_skills
       GROUP BY user_id
-    ) xp_totals ON xp_totals.user_id = u.id
+    ) xp_totals ON xp_totals.user_id = u.id AND (gm.xp_share = 1 OR u.id = ?)
     WHERE gm.group_id = ?
     ORDER BY gm.joined_at ASC
-  `).all(userId, groupId);
+  `).all(userId, userId, groupId);
 
   res.json(members);
 });
@@ -277,7 +277,7 @@ router.patch('/:id/members/me/xp-share', (req: Request, res: Response): void => 
   const { xp_share } = req.body;
 
   if (typeof xp_share !== 'boolean' && xp_share !== 0 && xp_share !== 1) {
-    res.status(400).json({ error: '`xp_share` must be a boolean' });
+    res.status(400).json({ error: '`xp_share` must be a boolean or 0/1' });
     return;
   }
 

@@ -3538,14 +3538,10 @@ async function loadXpEvents() {
   try {
     const events = await api('GET', '/admin/xp-events');
     if (!events.length) { listEl.innerHTML = '<div class="loading">No XP events found.</div>'; return; }
-    const eventLabels = {
-      signup: 'Sign Up', create_task: 'Create Task', create_group: 'Create Group',
-      send_app_invite: 'Send App Invite', send_group_invite: 'Send Group Invite', complete_task: 'Complete Task'
-    };
     listEl.innerHTML = events.map(ev => `
       <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9">
         <div>
-          <p style="font-size:.9rem;font-weight:600;color:#374151;margin:0">${escHtml(ev.name || eventLabels[ev.key] || ev.key)}</p>
+          <p style="font-size:.9rem;font-weight:600;color:#374151;margin:0">${escHtml(ev.name || ev.key)}</p>
           ${ev.description ? `<p style="font-size:.78rem;color:#9ca3af;margin:2px 0 0">${escHtml(ev.description)}</p>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:6px">

@@ -321,10 +321,13 @@ router.patch('/:id', (req: Request, res: Response): void => {
   // Validate xpMultiplier if provided, resolving the value for later use in the SET clause
   let resolvedPatchMultiplier: number | undefined;
   if (xpMultiplier !== undefined && xpMultiplier !== null) {
-    const fullTask = db.prepare('SELECT group_id FROM tasks WHERE id = ?').get(taskId) as { group_id: string | null } | undefined;
-    const grpGamEnabled = fullTask?.group_id
-      ? !!(db.prepare('SELECT gamification_enhanced FROM groups WHERE id = ?').get(fullTask.group_id) as { gamification_enhanced: number } | undefined)?.gamification_enhanced
-      : false;
+    const taskGroup = db.prepare(`
+      SELECT t.group_id, g.gamification_enhanced
+      FROM tasks t
+      LEFT JOIN groups g ON g.id = t.group_id
+      WHERE t.id = ?
+    `).get(taskId) as { group_id: string | null; gamification_enhanced: number | null } | undefined;
+    const grpGamEnabled = !!(taskGroup?.group_id && taskGroup?.gamification_enhanced);
     if (!grpGamEnabled) {
       res.status(400).json({ error: 'xpMultiplier can only be set for tasks in a group with gamification enhancements enabled' });
       return;

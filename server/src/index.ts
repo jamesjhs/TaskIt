@@ -128,7 +128,7 @@ app.use(express.json());
 
 // ─── Health-check endpoint (exempt from auth and rate limiting) ──────────────
 app.get('/readyz', (_req, res) => {
-  res.json({ ok: true, service: 'leccy', version: APP_VERSION, timestamp: new Date().toISOString() });
+  res.json({ ok: true, service: 'taskit', version: APP_VERSION, timestamp: new Date().toISOString() });
 });
 
 // Version endpoint
@@ -202,10 +202,10 @@ app.get('/calendar/:token/tasks.ics', generalLimiter, (req, res): void => {
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Jobber//Jobber Task Manager//EN',
+    'PRODID:-//TaskIt!//TaskIt! Task Manager//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    `X-WR-CALNAME:Jobber – ${escIcs(user.username)}`,
+    `X-WR-CALNAME:TaskIt! – ${escIcs(user.username)}`,
     'X-WR-TIMEZONE:UTC',
   ];
 
@@ -215,7 +215,7 @@ app.get('/calendar/:token/tasks.ics', generalLimiter, (req, res): void => {
     const dtDue = toIcsDate(t.due_date);
     const dtCreated = toIcsDate(t.created_at);
     const dtStamp = toIcsDate(t.updated_at);
-    const uidDomain = BASE_URL ? BASE_URL.replace(/^https?:\/\//, '') : 'jobber.jahosi.co.uk';
+    const uidDomain = BASE_URL ? BASE_URL.replace(/^https?:\/\//, '') : 'taskit.jahosi.co.uk';
     const uid = `${t.id}@${uidDomain}`;
     const descParts: string[] = [];
     if (t.details) descParts.push(t.details);
@@ -240,7 +240,7 @@ app.get('/calendar/:token/tasks.ics', generalLimiter, (req, res): void => {
   const body = lines.join('\r\n') + '\r\n';
 
   res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-  res.setHeader('Content-Disposition', 'attachment; filename="jobber-tasks.ics"');
+  res.setHeader('Content-Disposition', 'attachment; filename="taskit-tasks.ics"');
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.send(body);
 });
@@ -264,7 +264,7 @@ let swContent: string;
 try {
   swContent = fs
     .readFileSync(path.join(__dirname, '..', '..', 'public', 'sw.js'), 'utf8')
-    .replace(/'jobber-__APP_VERSION__'/g, `'jobber-${APP_VERSION}'`);
+    .replace(/'taskit-__APP_VERSION__'/g, `'taskit-${APP_VERSION}'`);
 } catch (err) {
   console.error('Failed to read public/sw.js:', err);
   swContent = '/* sw.js not found */';
@@ -296,7 +296,7 @@ app.get('*', generalLimiter, (_req, res) => {
 startScheduler();
 
 app.listen(PORT, () => {
-  console.log(`Jobber server running on port ${PORT}`);
+  console.log(`TaskIt! server running on port ${PORT}`);
 });
 
 export default app;

@@ -1,5 +1,5 @@
 /**
- * Jobber Arcade — Stage 2 Mini-Game: Job Search (Word Search)
+ * TaskIt! Arcade — Stage 2 Mini-Game: Job Search (Word Search)
  * ============================================================
  * GameId : 'wordsearch'
  * Badge  : task_10 (🚀 Getting Started)
@@ -11,7 +11,7 @@
  *
  * Theme: General knowledge — 6 words are drawn at random from a 100-word
  *        pool spanning nature, animals, food, sports, science, arts, places,
- *        and Jobber app concepts. Every new game shows a different set.
+ *        and TaskIt! app concepts. Every new game shows a different set.
  *
  * The grid is 12 × 12 (supports words up to 12 letters).
  * Words are placed in any of 8 compass directions (right, left, down,
@@ -50,7 +50,7 @@
    * Six words are drawn at random at the start of every new game.
    */
   const WORD_POOL = [
-    // Jobber app concepts
+    // TaskIt! app concepts
     'CHORES', 'COLLABORATE', 'RECUR', 'ALERTS', 'PROGRESS', 'GROUP',
     'TASKS', 'SCHEDULE', 'WORKFLOW', 'COMPLETE', 'PRIORITY', 'DEADLINE',
     // nature

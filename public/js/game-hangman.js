@@ -1,5 +1,5 @@
 /**
- * Jobber Arcade — Stage 2 Mini-Game: Productivity Hangman
+ * TaskIt! Arcade — Stage 2 Mini-Game: Productivity Hangman
  * ========================================================
  * GameId : 'hangman'
  * Badge  : first_task (🥇 First Steps)

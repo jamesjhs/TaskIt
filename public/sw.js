@@ -1,9 +1,9 @@
 /* ============================================================
-   Jobber — Service Worker
+   TaskIt! — Service Worker
    Cache-first for static assets, network-first for /api/
    ============================================================ */
 
-const CACHE_NAME = 'jobber-__APP_VERSION__'; // replaced with the real version by the server at runtime
+const CACHE_NAME = 'taskit-__APP_VERSION__'; // replaced with the real version by the server at runtime
 
 const STATIC_ASSETS = [
   '/',

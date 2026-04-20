@@ -1,6 +1,6 @@
 /**
  * Minimal PNG icon generator – no external dependencies.
- * Produces Jobber app icons at multiple sizes and places them in ../public/icons/.
+ * Produces TaskIt! app icons at multiple sizes and places them in ../public/icons/.
  *
  * Usage: node scripts/generate-icons.js   (run from repo root or server/)
  */

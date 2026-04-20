@@ -1,4 +1,4 @@
-# Jobber – How-To Manual
+# TaskIt! – How-To Manual
 
 **Version 1.3.2**  
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
@@ -12,7 +12,7 @@ Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 3. [Installation](#installation)
 4. [Configuration](#configuration)
 5. [Running the Application](#running-the-application)
-6. [Using Jobber](#using-jobber)
+6. [Using TaskIt!](#using-taskit)
    - [Registering & Logging In](#registering--logging-in)
    - [Creating Tasks](#creating-tasks)
    - [Recurring Tasks](#recurring-tasks)
@@ -31,7 +31,7 @@ Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ## Introduction
 
-**Jobber** is a self-hosted, collaborative task management application. It runs as a Node.js server with a built-in web front-end and an Android app. Features include:
+**TaskIt!** is a self-hosted, collaborative task management application. It runs as a Node.js server with a built-in web front-end and an Android app. Features include:
 
 - Personal and group task management with statuses, due dates, and assignees
 - Recurring tasks — automatically create the next occurrence when a task is completed
@@ -64,8 +64,8 @@ Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 1. **Clone or download** the repository:
 
    ```bash
-   git clone https://github.com/jamesjhs/Jobber.git
-   cd Jobber
+   git clone https://github.com/jamesjhs/TaskIt!.git
+   cd TaskIt!
    ```
 
 2. **Install server dependencies:**
@@ -103,7 +103,7 @@ Create a `.env` file inside the `server/` directory. A template is provided at `
 |--------------------|--------------------------------|----------------------------------------------------------|
 | `PORT`             | `3000`                         | Port the server listens on                               |
 | `JWT_SECRET`       | *(insecure dev default)*       | **Required in production.** Secret key for JWT tokens   |
-| `DB_PATH`          | `server/jobber.db`             | Path to the SQLite database file                         |
+| `DB_PATH`          | `server/taskit.db`             | Path to the SQLite database file                         |
 | `DB_ENCRYPTION_KEY` | *(none — plaintext)*          | Passphrase for full-file SQLite encryption (see below)   |
 | `ADMIN_EMAIL`      | *(none)*                       | Email address that is automatically granted admin role   |
 | `BASE_URL`         | *(derived from request host)*  | Public base URL used in invite links and magic links     |
@@ -122,24 +122,24 @@ Create a `.env` file inside the `server/` directory. A template is provided at `
 PORT=3000
 JWT_SECRET=change-this-to-a-long-random-secret
 ADMIN_EMAIL=admin@example.com
-BASE_URL=https://jobber.example.com
+BASE_URL=https://taskit.example.com
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=noreply@example.com
 SMTP_PASS=your-smtp-password
-SMTP_FROM=Jobber <noreply@example.com>
+SMTP_FROM=TaskIt! <noreply@example.com>
 ```
 
 > **Security note:** Always set a strong, unique `JWT_SECRET` before deploying to production.
 
-> **BASE_URL note:** Set this to your public-facing URL (e.g. `https://jobber.example.com`) so that invite links, magic links, and QR codes contain the correct address rather than the internal request host.
+> **BASE_URL note:** Set this to your public-facing URL (e.g. `https://taskit.example.com`) so that invite links, magic links, and QR codes contain the correct address rather than the internal request host.
 
 ---
 
 ## Encrypting the Database
 
-By default Jobber stores data in a plain SQLite file. Setting `DB_ENCRYPTION_KEY` in `server/.env` enables full-file encryption via [SQLite3MultipleCiphers](https://utelle.github.io/SQLite3MultipleCiphers/).
+By default TaskIt! stores data in a plain SQLite file. Setting `DB_ENCRYPTION_KEY` in `server/.env` enables full-file encryption via [SQLite3MultipleCiphers](https://utelle.github.io/SQLite3MultipleCiphers/).
 
 ### New installations
 
@@ -160,16 +160,16 @@ SqliteError: file is not a database
 2. **Run the migration script** from the `server/` directory:
 
    ```bash
-   node server/encrypt-db.js /path/to/jobber.db /path/to/jobber-encrypted.db
+   node server/encrypt-db.js /path/to/taskit.db /path/to/taskit-encrypted.db
    ```
 
-   Both paths are optional; they default to `server/jobber.db` → `server/jobber-encrypted.db`. The script reads `DB_ENCRYPTION_KEY` from `server/.env` — set the key there first before running it.
+   Both paths are optional; they default to `server/taskit.db` → `server/taskit-encrypted.db`. The script reads `DB_ENCRYPTION_KEY` from `server/.env` — set the key there first before running it.
 
 3. **Verify** the encrypted database can be opened (the script prints a ready-to-run verification command after a successful migration).
 
-4. **Back up** the original: `cp jobber.db jobber.db.bak`
+4. **Back up** the original: `cp taskit.db taskit.db.bak`
 
-5. **Replace** the original with the encrypted file: `mv jobber-encrypted.db jobber.db`
+5. **Replace** the original with the encrypted file: `mv taskit-encrypted.db taskit.db`
 
 6. **Restart** the server. If `DB_ENCRYPTION_KEY` is correctly set in `server/.env`, the server will open the encrypted database transparently.
 
@@ -181,7 +181,7 @@ To convert an encrypted database back to plaintext, use the `sqlite3` CLI:
 sqlite3 /path/to/encrypted.db ".dump" | sqlite3 /path/to/plain.db
 ```
 
-Make sure the `sqlite3` binary on your system supports the same cipher (SQLite3MultipleCiphers / sqleet) that Jobber uses. If not, you can open the database in Node.js and export via `better-sqlite3-multiple-ciphers`'s `backup()` API after applying the key pragma.
+Make sure the `sqlite3` binary on your system supports the same cipher (SQLite3MultipleCiphers / sqleet) that TaskIt! uses. If not, you can open the database in Node.js and export via `better-sqlite3-multiple-ciphers`'s `backup()` API after applying the key pragma.
 
 ---
 
@@ -206,7 +206,7 @@ The application will be available at `http://localhost:3000` (or whichever port 
 
 ---
 
-## Using Jobber
+## Using TaskIt!
 
 ### Registering & Logging In
 
@@ -295,7 +295,7 @@ Click the bell to open the notification panel. Click any item to jump to that ta
 
 #### Browser popup notifications
 
-Jobber can send native browser popup notifications when tasks are approaching their deadline. When you first log in, your browser will prompt for **notification permission** — click *Allow* to enable them. Popups fire while the app is open in your browser, using the timing columns you configure in the task's Reminders grid.
+TaskIt! can send native browser popup notifications when tasks are approaching their deadline. When you first log in, your browser will prompt for **notification permission** — click *Allow* to enable them. Popups fire while the app is open in your browser, using the timing columns you configure in the task's Reminders grid.
 
 #### Reminders grid
 
@@ -351,7 +351,7 @@ Click **Profile** in the navigation to access your account settings:
 
 - **Date & Time Format** – change the locale used to display dates and times (e.g. DD/MM/YYYY vs MM/DD/YYYY); click *Save Format* to apply
 - **Calendar Integration** – copy your personal ICS feed URL to subscribe to your tasks in any calendar app (Google Calendar, Apple Calendar, Outlook, etc.); click *Regenerate Link* to invalidate the old URL
-- **Invite to Jobber** – copy a shareable link to your Jobber instance
+- **Invite to TaskIt!** – copy a shareable link to your TaskIt! instance
 - **Feedback & Feature Requests** – send a message to the admin; tick the box to allow an in-app reply
 - **Delete My Account** – permanently deletes your account and all associated data immediately, without contacting the admin
 
@@ -381,7 +381,7 @@ Read feedback messages and feature requests submitted by users. Update the statu
 
 ## Email Reminders
 
-When SMTP is configured and enabled, Jobber automatically sends reminder emails for each incomplete task that has a due date, according to the **Reminders grid** you configure per task:
+When SMTP is configured and enabled, TaskIt! automatically sends reminder emails for each incomplete task that has a due date, according to the **Reminders grid** you configure per task:
 
 | Reminder       | Timing                                   |
 |----------------|------------------------------------------|
@@ -395,7 +395,7 @@ Each reminder is sent only **once** per task. Reminders are checked every hour.
 
 ## Gamification
 
-Jobber includes an opt-in gamification layer — XP, skill levels, achievements, streaks, and a Freeze mechanic — designed to make staying on top of tasks more rewarding without getting in the way of the core experience.
+TaskIt! includes an opt-in gamification layer — XP, skill levels, achievements, streaks, and a Freeze mechanic — designed to make staying on top of tasks more rewarding without getting in the way of the core experience.
 
 ### Enabling Gamification
 
@@ -507,8 +507,8 @@ The Freeze is consumed automatically, the streak is preserved, and the ❄️ is
 - Ensure you are a member of the group the task belongs to
 
 **Invite links or QR codes point to the wrong URL**  
-- Set the `BASE_URL` environment variable to your public-facing URL (e.g. `https://jobber.example.com`) so generated links are correct
+- Set the `BASE_URL` environment variable to your public-facing URL (e.g. `https://taskit.example.com`) so generated links are correct
 
 ---
 
-*Jobber v1.1.0 – Copyright J Rowson 2026 | jahosi.co.uk*
+*TaskIt! v1.1.0 – Copyright J Rowson 2026 | jahosi.co.uk*

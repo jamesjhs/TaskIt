@@ -1240,7 +1240,7 @@
             <div style="padding:10px 0 2px">
               <div style="display:flex;flex-direction:column;gap:6px">
                 <input id="addFriendUsername" type="text" placeholder="Their username" class="input" style="font-size:.875rem" />
-                <input id="addFriendKey" type="text" placeholder="Their friend key (e.g. a1b2c3d4)" class="input" style="font-size:.875rem;font-family:monospace" maxlength="8" />
+                <input id="addFriendKey" type="text" placeholder="Their friend key (e.g. BraveOcean)" class="input" style="font-size:.875rem;font-family:monospace" maxlength="30" />
                 <button onclick="addFriendByKey()" class="btn btn-primary btn-sm">Add Friend</button>
               </div>
             </div>
@@ -1253,6 +1253,11 @@
             <div style="display:flex;gap:6px;align-items:center;justify-content:center">
               <input id="friendInviteLink" type="text" readonly class="input" style="font-size:.75rem;flex:1" />
               <button onclick="copyToClipboard(document.getElementById('friendInviteLink').value)" class="btn btn-sm btn-secondary">Copy</button>
+            </div>
+            <p style="font-size:.72rem;color:#6b7280;margin-top:8px;margin-bottom:4px">Or share a friendly message:</p>
+            <div style="display:flex;gap:6px;align-items:flex-start;justify-content:center">
+              <textarea id="friendInviteMessage" readonly class="input" rows="3" style="font-size:.75rem;flex:1;resize:none;line-height:1.4"></textarea>
+              <button onclick="copyToClipboard(document.getElementById('friendInviteMessage').value)" class="btn btn-sm btn-secondary" style="align-self:flex-end">Copy</button>
             </div>
             <p id="friendInviteExpiry" style="font-size:.7rem;color:#9ca3af;margin-top:6px"></p>
           </div>
@@ -1714,9 +1719,10 @@ function toggleLoginMode() {
 async function handleMagicLinkSend(e) {
   e.preventDefault();
   if (loginMode === 'password') { await handlePasswordLogin(); return; }
-  // Stash rememberMe so it can be picked up after the email link redirect
+  // Stash rememberMe in localStorage so it survives a browser close before the
+  // email link is clicked.
   const rememberMe = document.getElementById('rememberMeMagic').checked;
-  sessionStorage.setItem('jbRememberMe', rememberMe ? 'true' : 'false');
+  localStorage.setItem('jbRememberMe', rememberMe ? 'true' : 'false');
   try {
     const data = await api('POST', '/auth/magic-link', { email: document.getElementById('loginEmail').value });
     toast(data.message || 'Check your email for a login link.', 'info');
@@ -2909,6 +2915,11 @@ async function generateFriendInvite() {
     qr.make();
     document.getElementById('friendQRImage').src = qr.createDataURL(4, 4);
     document.getElementById('friendInviteLink').value = data.invite_url;
+    const senderName = (currentUser && currentUser.username) ? currentUser.username : 'Someone';
+    const msgEl = document.getElementById('friendInviteMessage');
+    if (msgEl) {
+      msgEl.value = 'Hey! I\u2019d like to add you as a friend on Jobber so we can compete on XP leaderboards \uD83C\uDFC6\n\nClick this link to accept: ' + data.invite_url + '\n\n(Link valid for 7 days \u2013 sent by ' + senderName + ')';
+    }
     document.getElementById('friendInviteExpiry').textContent =
       data.expires_at ? 'Expires: ' + fmtDate(data.expires_at) : '';
     area.classList.remove('hidden');
@@ -3095,8 +3106,13 @@ async function performAppUpdate() {
       const regs = await navigator.serviceWorker.getRegistrations();
       await Promise.all(regs.map(reg => reg.unregister()));
     }
+    // Preserve auth tokens so "Remember Me" users remain logged in after update
+    const savedToken = localStorage.getItem('jbToken');
+    const savedUser = localStorage.getItem('jbUser');
     localStorage.clear();
     if (latestVersion) localStorage.setItem(JOBBER_VERSION_KEY, latestVersion);
+    if (savedToken) localStorage.setItem('jbToken', savedToken);
+    if (savedUser) localStorage.setItem('jbUser', savedUser);
   } catch (e) { /* best-effort */ }
   window.location.reload();
 }
@@ -3546,12 +3562,12 @@ document.addEventListener('click', function(e) {
   }
 
   if (magicToken) {
-    // Carry the rememberMe preference from sessionStorage if the user set it before being redirected
-    const rememberedChoice = sessionStorage.getItem('jbRememberMe') === 'true';
+    // Carry the rememberMe preference from localStorage if the user set it before being redirected
+    const rememberedChoice = localStorage.getItem('jbRememberMe') === 'true';
     const rememberMeQS = rememberedChoice ? '&rememberMe=true' : '';
     try {
       const data = await api('GET', '/auth/magic-link/verify?token=' + encodeURIComponent(magicToken) + rememberMeQS);
-      sessionStorage.removeItem('jbRememberMe');
+      localStorage.removeItem('jbRememberMe');
       history.replaceState(null, '', window.location.pathname);
       // Preserve any pending invite/friend token through the auth flow
       const pendingInvite = sessionStorage.getItem('pendingInvite') || inviteToken;

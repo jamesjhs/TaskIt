@@ -2,7 +2,7 @@ import Database from 'better-sqlite3-multiple-ciphers';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { DB_PATH as DB_PATH_OVERRIDE, DB_ENCRYPTION_KEY } from './config';
-import { generateGroupName } from './wordlists';
+import { generateGroupName, generateFriendKey } from './wordlists';
 
 const DB_PATH = DB_PATH_OVERRIDE || path.join(__dirname, '..', 'jobber.db');
 
@@ -321,10 +321,8 @@ addCol('users', 'friend_key', 'TEXT');
 {
   const missingKey = db.prepare("SELECT id FROM users WHERE friend_key IS NULL OR friend_key = ''").all() as Array<{ id: string }>;
   const updateKey = db.prepare('UPDATE users SET friend_key = ? WHERE id = ?');
-  const crypto = require('crypto') as typeof import('crypto');
   for (const row of missingKey) {
-    const key = crypto.randomBytes(4).toString('hex');
-    updateKey.run(key, row.id);
+    updateKey.run(generateFriendKey(), row.id);
   }
 }
 // Backfill existing groups: generate a proper unique invite word pair for any group that lacks one

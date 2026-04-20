@@ -133,6 +133,30 @@ const PASSWORD_WORDS = [
   'waves', 'willow', 'wisdom', 'wonder', 'worthy',
 ];
 
+// Positive-sounding nouns used as the second word of a friend key word-pair
+export const NOUNS = [
+  'Amber', 'Anchor', 'Apex', 'Arch', 'Arc',
+  'Arrow', 'Bay', 'Beacon', 'Bell', 'Berry',
+  'Bloom', 'Blossom', 'Boulder', 'Breeze', 'Brook',
+  'Bud', 'Candle', 'Canyon', 'Cedar', 'Chime',
+  'Clover', 'Coast', 'Coral', 'Crest', 'Crystal',
+  'Daisy', 'Dawn', 'Delta', 'Dream', 'Dune',
+  'Ember', 'Flame', 'Flint', 'Forest', 'Gale',
+  'Garden', 'Gem', 'Glade', 'Gleam', 'Glen',
+  'Grove', 'Harbor', 'Haven', 'Heath', 'Hedge',
+  'Hilltop', 'Horizon', 'Island', 'Jasper', 'Jewel',
+  'Lake', 'Lantern', 'Laurel', 'Leaf', 'Light',
+  'Maple', 'Meadow', 'Mesa', 'Mist', 'Moon',
+  'Mosaic', 'Mountain', 'Oasis', 'Ocean', 'Orchard',
+  'Peak', 'Pebble', 'Petal', 'Pine', 'Pinnacle',
+  'Plain', 'Prism', 'Quartz', 'Rainbow', 'Rapid',
+  'Ridge', 'Ripple', 'River', 'Rose', 'Sage',
+  'Shore', 'Sky', 'Solar', 'Spark', 'Spring',
+  'Star', 'Stone', 'Stream', 'Summit', 'Sunrise',
+  'Temple', 'Tide', 'Timber', 'Topaz', 'Torch',
+  'Tower', 'Trail', 'Valley', 'Vista', 'Wave',
+];
+
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -144,4 +168,9 @@ export function generateGroupName(): string {
 export function generateSharedKey(): string {
   const suffix = String(Math.floor(Math.random() * 900) + 100);
   return pick(PASSWORD_WORDS) + suffix;
+}
+
+/** Generate a memorable friend-key word-pair, e.g. "BraveOcean". */
+export function generateFriendKey(): string {
+  return pick(ADJECTIVES) + pick(NOUNS);
 }

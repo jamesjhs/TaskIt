@@ -333,6 +333,10 @@ addCol('groups', 'gamification_enhanced', 'INTEGER NOT NULL DEFAULT 0');
 addCol('tasks', 'xp_multiplier', 'REAL NOT NULL DEFAULT 1.0');
 // Gamification enhancements: per-membership XP sharing preference (default: share)
 addCol('group_members', 'xp_share', 'INTEGER NOT NULL DEFAULT 1');
+// Deadline audit trail: immutable snapshot of the original due date set at creation
+addCol('tasks', 'original_due_date', 'INTEGER');
+// Anti-farming: set to 1 once XP has been claimed for this task to prevent re-awarding
+addCol('tasks', 'xp_claimed', 'INTEGER NOT NULL DEFAULT 0');
 // Backfill: generate a friend_key for any user that doesn't have one yet
 {
   const missingKey = db.prepare("SELECT id FROM users WHERE friend_key IS NULL OR friend_key = ''").all() as Array<{ id: string }>;
@@ -355,6 +359,12 @@ addCol('group_members', 'xp_share', 'INTEGER NOT NULL DEFAULT 1');
     update.run(candidate, row.id);
   }
 }
+
+// Backfill original_due_date for tasks created before this column was added.
+// Use their current due_date as a best-effort snapshot of the original deadline.
+db.prepare(
+  "UPDATE tasks SET original_due_date = due_date WHERE original_due_date IS NULL AND due_date IS NOT NULL"
+).run();
 
 // Ensure smtp_settings has exactly one row (singleton pattern)
 const smtpRow = db.prepare('SELECT id FROM smtp_settings WHERE id = 1').get();

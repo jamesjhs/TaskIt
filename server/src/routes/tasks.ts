@@ -20,6 +20,12 @@ const ALLOWED_RECUR_UNITS = new Set(['days', 'weeks', 'months', 'years']);
 // The system task type that is always sorted to the top of the task list
 const URGENT_TASK_TYPE = 'urgent';
 
+/** Format a UNIX-millisecond timestamp as a YYYY-MM-DD string for audit notes. */
+function formatDueDate(ms: number | null | undefined): string {
+  if (ms == null) return '(no date)';
+  return new Date(ms).toISOString().split('T')[0];
+}
+
 // Returns true when the requesting user may act on a task — either because they
 // created it, or because the task belongs to a group the user is a member of.
 // Personal (non-group) tasks remain accessible only to their creator.
@@ -209,9 +215,10 @@ router.post('/', (req: Request, res: Response): void => {
   const now = Date.now();
 
   db.prepare(`
-    INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday, xp_multiplier)
-    VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, original_due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday, xp_multiplier)
+    VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(id, title, details || null, typeId, userId, groupId || null, now, now, dueDate || null,
+    dueDate || null,
     recurInterval ? parseInt(String(recurInterval), 10) : null,
     recurUnit || null,
     notifyEmail === false || notifyEmail === 0 ? 0 : 1,
@@ -278,7 +285,7 @@ router.patch('/:id', (req: Request, res: Response): void => {
   const taskId = req.params.id;
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string; group_id: string | null; archived: number }
+    | { id: string; created_by: string; group_id: string | null; archived: number; due_date: number | null }
     | undefined;
 
   if (!task) {
@@ -383,6 +390,20 @@ router.patch('/:id', (req: Request, res: Response): void => {
     db.prepare(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = ?`).run(...vals);
   }
 
+  // Audit trail: insert a system note if the due_date has changed
+  if (dueDate !== undefined) {
+    const newDueDate = dueDate || null;
+    if (newDueDate !== task.due_date) {
+      db.prepare(
+        'INSERT INTO task_notes (id, task_id, user_id, note, created_at) VALUES (?, ?, ?, ?, ?)'
+      ).run(
+        randomUUID(), taskId, userId,
+        `System: Deadline deferred from ${formatDueDate(task.due_date)} to ${formatDueDate(newDueDate)}`,
+        now
+      );
+    }
+  }
+
   if (Array.isArray(assigneeIds)) {
     db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(taskId);
     // Batch-validate all assignee IDs in a single query
@@ -427,7 +448,7 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
   }
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string; group_id: string | null }
+    | { id: string; created_by: string; group_id: string | null; created_at: number; xp_claimed: number; recur_interval: number | null }
     | undefined;
 
   if (!task) {
@@ -447,12 +468,19 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
   const now = Date.now();
 
+  // Anti-farming: tasks completed within 60 s of creation (non-recurring only) earn no XP/Loot.
+  const isTimegated = status === 'complete' && (now - task.created_at < 60000) && task.recur_interval === null;
+  // xp_claimed is a one-time flag — once XP has been awarded for this task it must not be re-awarded.
+  const shouldAwardXp = status === 'complete' && !isTimegated && task.xp_claimed === 0;
+
   // Update status, always stamp updated_at.
   // When completing: record who completed it and when (for accurate achievement logic).
+  // When completing with a fresh XP claim: atomically set xp_claimed = 1.
   // When reverting from complete: clear those fields.
   if (status === 'complete') {
+    const xpClaimedClause = shouldAwardXp ? ', xp_claimed = 1' : '';
     db.prepare(
-      'UPDATE tasks SET status = ?, updated_at = ?, completed_at = ?, completed_by = ? WHERE id = ?'
+      `UPDATE tasks SET status = ?, updated_at = ?, completed_at = ?, completed_by = ?${xpClaimedClause} WHERE id = ?`
     ).run(status, now, now, userId, taskId);
   } else {
     db.prepare(
@@ -515,6 +543,8 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
     }
 
     // Award XP, freeze credits, check achievements for the completing user.
+    // XP/Loot are skipped when the task is timegated (too new, non-recurring) or
+    // when XP has already been claimed for this task (xp_claimed = 1).
     // Errors here must never break the status update response.
     try {
       const completedTask = db.prepare(
@@ -522,10 +552,12 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
       ).get(taskId) as { type_id: string; xp_multiplier: number } | undefined;
 
       if (completedTask) {
-        awardTaskXp(userId, completedTask.type_id, completedTask.xp_multiplier ?? 1.0);
-        awardFreezeCredit(userId);
-        if (freezeConsumed) {
-          consumeFreezeCredit(userId);
+        if (shouldAwardXp) {
+          awardTaskXp(userId, completedTask.type_id, completedTask.xp_multiplier ?? 1.0);
+          awardFreezeCredit(userId);
+          if (freezeConsumed) {
+            consumeFreezeCredit(userId);
+          }
         }
         checkAndGrantAchievements(userId);
       }
@@ -549,7 +581,7 @@ router.patch('/:id/defer', (req: Request, res: Response): void => {
   const taskId = req.params.id;
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string; group_id: string | null }
+    | { id: string; created_by: string; group_id: string | null; due_date: number | null }
     | undefined;
 
   if (!task) {
@@ -569,10 +601,24 @@ router.patch('/:id/defer', (req: Request, res: Response): void => {
   }
 
   const { dueDate } = req.body;
+  const oldDueDate = task.due_date;
+  const newDueDate = dueDate !== undefined ? dueDate : null;
+  const deferNow = Date.now();
 
   db.prepare('UPDATE tasks SET due_date = ?, updated_at = ? WHERE id = ?').run(
-    dueDate !== undefined ? dueDate : null, Date.now(), taskId
+    newDueDate, deferNow, taskId
   );
+
+  // Audit trail: insert a system note if the due_date has changed
+  if (newDueDate !== oldDueDate) {
+    db.prepare(
+      'INSERT INTO task_notes (id, task_id, user_id, note, created_at) VALUES (?, ?, ?, ?, ?)'
+    ).run(
+      randomUUID(), taskId, userId,
+      `System: Deadline deferred from ${formatDueDate(oldDueDate)} to ${formatDueDate(newDueDate)}`,
+      deferNow
+    );
+  }
 
   const updated = db.prepare(`
     SELECT t.*, tt.name AS type_name

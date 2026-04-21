@@ -144,10 +144,30 @@ router.get('/', (req: Request, res: Response): void => {
     }
   }
 
+  // Attach subtask summary counts (total / completed) in a single batch query
+  type SubtaskSummary = { subtask_total: number; subtask_done: number };
+  let subtaskMap: Record<string, SubtaskSummary> = {};
+  if (taskIds.length > 0) {
+    const placeholders = taskIds.map(() => '?').join(',');
+    const subtaskRows = db.prepare(`
+      SELECT task_id,
+        COUNT(*) AS subtask_total,
+        COALESCE(SUM(completed), 0) AS subtask_done
+      FROM task_subtasks
+      WHERE task_id IN (${placeholders})
+      GROUP BY task_id
+    `).all(...taskIds) as Array<{ task_id: string; subtask_total: number; subtask_done: number }>;
+    for (const r of subtaskRows) {
+      subtaskMap[r.task_id] = { subtask_total: r.subtask_total, subtask_done: r.subtask_done };
+    }
+  }
+
   const result = tasks.map((t) => ({
     ...t,
     archived: t.archived === 1,
     assignees: assigneeMap[t.id as string] || [],
+    subtask_total: subtaskMap[t.id as string]?.subtask_total ?? 0,
+    subtask_done: subtaskMap[t.id as string]?.subtask_done ?? 0,
   }));
 
   res.json(result);
@@ -840,6 +860,7 @@ router.delete('/:id', (req: Request, res: Response): void => {
       db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(taskId);
       db.prepare('DELETE FROM task_notes WHERE task_id = ?').run(taskId);
       db.prepare('DELETE FROM task_reminders_sent WHERE task_id = ?').run(taskId);
+      db.prepare('DELETE FROM task_subtasks WHERE task_id = ?').run(taskId);
       db.prepare('DELETE FROM tasks WHERE id = ?').run(taskId);
     });
 
@@ -851,6 +872,7 @@ router.delete('/:id', (req: Request, res: Response): void => {
   db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(taskId);
   db.prepare('DELETE FROM task_notes WHERE task_id = ?').run(taskId);
   db.prepare('DELETE FROM task_reminders_sent WHERE task_id = ?').run(taskId);
+  db.prepare('DELETE FROM task_subtasks WHERE task_id = ?').run(taskId);
   db.prepare('DELETE FROM tasks WHERE id = ?').run(taskId);
 
   res.status(204).send();
@@ -955,6 +977,200 @@ router.post('/:id/notes', (req: Request, res: Response): void => {
   `).get(id);
 
   res.status(201).json(created);
+});
+
+// ─── Sub-tasks ────────────────────────────────────────────────────────────────
+
+// GET /api/tasks/:id/subtasks — list sub-tasks for a task
+router.get('/:id/subtasks', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const taskId = req.params.id;
+
+  const task = db.prepare('SELECT id, created_by, group_id FROM tasks WHERE id = ?').get(taskId) as
+    | { id: string; created_by: string; group_id: string | null }
+    | undefined;
+
+  if (!task) { res.status(404).json({ error: 'Task not found' }); return; }
+
+  const isAssignee = !!db.prepare(
+    'SELECT 1 FROM task_assignees WHERE task_id = ? AND user_id = ?'
+  ).get(taskId, userId);
+
+  if (!hasTaskAccess(task, userId) && !isAssignee) {
+    res.status(403).json({ error: 'Not authorized' }); return;
+  }
+
+  const subtasks = db.prepare(
+    'SELECT id, title, completed, completed_by, completed_at, sort_order, created_at FROM task_subtasks WHERE task_id = ? ORDER BY sort_order ASC, created_at ASC'
+  ).all(taskId);
+
+  res.json(subtasks);
+});
+
+// POST /api/tasks/:id/subtasks — create a sub-task
+router.post('/:id/subtasks', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const taskId = req.params.id;
+  const { title } = req.body;
+
+  if (!title || typeof title !== 'string' || !title.trim()) {
+    res.status(400).json({ error: 'title is required' }); return;
+  }
+
+  if (title.length > 255) {
+    res.status(400).json({ error: 'title must not exceed 255 characters' }); return;
+  }
+
+  const task = db.prepare('SELECT id, created_by, group_id FROM tasks WHERE id = ?').get(taskId) as
+    | { id: string; created_by: string; group_id: string | null }
+    | undefined;
+
+  if (!task) { res.status(404).json({ error: 'Task not found' }); return; }
+
+  if (!hasTaskAccess(task, userId)) {
+    res.status(403).json({ error: 'Not authorized' }); return;
+  }
+
+  // Limit to 50 sub-tasks per task
+  const count = (db.prepare('SELECT COUNT(*) AS cnt FROM task_subtasks WHERE task_id = ?').get(taskId) as { cnt: number }).cnt;
+  if (count >= 50) {
+    res.status(400).json({ error: 'A task cannot have more than 50 sub-tasks' }); return;
+  }
+
+  const id = randomUUID();
+  const now = Date.now();
+  const sortOrder = count; // append at end
+
+  db.prepare(
+    'INSERT INTO task_subtasks (id, task_id, title, completed, sort_order, created_at) VALUES (?, ?, ?, 0, ?, ?)'
+  ).run(id, taskId, title.trim(), sortOrder, now);
+
+  const created = db.prepare(
+    'SELECT id, title, completed, completed_by, completed_at, sort_order, created_at FROM task_subtasks WHERE id = ?'
+  ).get(id);
+
+  res.status(201).json(created);
+});
+
+// PATCH /api/tasks/:id/subtasks/:subId — update a sub-task (title or completed)
+router.patch('/:id/subtasks/:subId', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const taskId = req.params.id;
+  const subId = req.params.subId;
+
+  const task = db.prepare('SELECT id, created_by, group_id, status FROM tasks WHERE id = ?').get(taskId) as
+    | { id: string; created_by: string; group_id: string | null; status: string }
+    | undefined;
+
+  if (!task) { res.status(404).json({ error: 'Task not found' }); return; }
+
+  const isAssignee = !!db.prepare(
+    'SELECT 1 FROM task_assignees WHERE task_id = ? AND user_id = ?'
+  ).get(taskId, userId);
+
+  if (!hasTaskAccess(task, userId) && !isAssignee) {
+    res.status(403).json({ error: 'Not authorized' }); return;
+  }
+
+  const subtask = db.prepare(
+    'SELECT id, task_id, completed FROM task_subtasks WHERE id = ? AND task_id = ?'
+  ).get(subId, taskId) as { id: string; task_id: string; completed: number } | undefined;
+
+  if (!subtask) { res.status(404).json({ error: 'Sub-task not found' }); return; }
+
+  const { title, completed } = req.body;
+  const setClauses: string[] = [];
+  const vals: (string | number | null)[] = [];
+  const now = Date.now();
+
+  if (title !== undefined) {
+    if (typeof title !== 'string' || !title.trim() || title.length > 255) {
+      res.status(400).json({ error: 'title must be between 1 and 255 characters' }); return;
+    }
+    setClauses.push('title = ?'); vals.push(title.trim());
+  }
+
+  const wasCompleted = subtask.completed === 1;
+  let justCompleted = false;
+
+  if (completed !== undefined) {
+    const completedBool = completed === true || completed === 1;
+    setClauses.push('completed = ?'); vals.push(completedBool ? 1 : 0);
+    if (completedBool) {
+      setClauses.push('completed_by = ?'); vals.push(userId);
+      setClauses.push('completed_at = ?'); vals.push(now);
+      justCompleted = !wasCompleted;
+    } else {
+      setClauses.push('completed_by = ?'); vals.push(null);
+      setClauses.push('completed_at = ?'); vals.push(null);
+    }
+  }
+
+  if (setClauses.length === 0) {
+    res.status(400).json({ error: 'Nothing to update' }); return;
+  }
+
+  vals.push(subId);
+  db.prepare(`UPDATE task_subtasks SET ${setClauses.join(', ')} WHERE id = ?`).run(...vals);
+
+  // When a sub-task is ticked for the first time, set the parent task to 'started'
+  // (if it was 'not_started') so the Started flag is applied automatically.
+  if (justCompleted && task.status === 'not_started') {
+    db.prepare(
+      "UPDATE tasks SET status = 'started', updated_at = ? WHERE id = ?"
+    ).run(now, taskId);
+  }
+
+  // Award XP for completing a sub-task (non-critical, runs regardless of gamification flag)
+  let awardedXp = 0;
+  if (justCompleted) {
+    try {
+      awardEventXp(userId, 'complete_subtask');
+      // Also track the XP value for the response (best-effort)
+      const ev = db.prepare('SELECT xp_value, enabled FROM xp_events WHERE key = ?')
+        .get('complete_subtask') as { xp_value: number; enabled: number } | undefined;
+      if (ev && ev.enabled) awardedXp = ev.xp_value;
+    } catch (xpErr) {
+      console.error('[subtasks] Failed to award complete_subtask XP:', xpErr);
+    }
+  }
+
+  const updated = db.prepare(
+    'SELECT id, title, completed, completed_by, completed_at, sort_order, created_at FROM task_subtasks WHERE id = ?'
+  ).get(subId);
+
+  // Refresh the parent task status for the response
+  const updatedTask = db.prepare(
+    `SELECT t.*, tt.name AS type_name FROM tasks t JOIN task_types tt ON tt.id = t.type_id WHERE t.id = ?`
+  ).get(taskId) as Record<string, unknown>;
+
+  res.json({ subtask: updated, task: { ...updatedTask, archived: updatedTask.archived === 1 }, awardedXp });
+});
+
+// DELETE /api/tasks/:id/subtasks/:subId — remove a sub-task
+router.delete('/:id/subtasks/:subId', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const taskId = req.params.id;
+  const subId = req.params.subId;
+
+  const task = db.prepare('SELECT id, created_by, group_id FROM tasks WHERE id = ?').get(taskId) as
+    | { id: string; created_by: string; group_id: string | null }
+    | undefined;
+
+  if (!task) { res.status(404).json({ error: 'Task not found' }); return; }
+
+  if (!hasTaskAccess(task, userId)) {
+    res.status(403).json({ error: 'Not authorized' }); return;
+  }
+
+  const subtask = db.prepare(
+    'SELECT id FROM task_subtasks WHERE id = ? AND task_id = ?'
+  ).get(subId, taskId);
+
+  if (!subtask) { res.status(404).json({ error: 'Sub-task not found' }); return; }
+
+  db.prepare('DELETE FROM task_subtasks WHERE id = ?').run(subId);
+  res.status(204).send();
 });
 
 export default router;

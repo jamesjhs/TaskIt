@@ -1094,11 +1094,8 @@
     <div class="tab-group" style="margin-bottom:20px">
       <button onclick="showAdminTab('smtp')" id="adminTabSmtp" class="tab-btn active">SMTP</button>
       <button onclick="showAdminTab('users')" id="adminTabUsers" class="tab-btn">👥 Users</button>
-      <button onclick="showAdminTab('locked')" id="adminTabLocked" class="tab-btn">Locked</button>
-      <button onclick="showAdminTab('reports')" id="adminTabReports" class="tab-btn">Reports</button>
       <button onclick="showAdminTab('feedback')" id="adminTabFeedback" class="tab-btn">Feedback</button>
-      <button onclick="showAdminTab('xpevents')" id="adminTabXpevents" class="tab-btn">XP Events</button>
-      <button onclick="showAdminTab('collectibles')" id="adminTabCollectibles" class="tab-btn">🎒 Items</button>
+      <button onclick="showAdminTab('gamify')" id="adminTabGamify" class="tab-btn">🎮 Gamify</button>
     </div>
     <div id="adminSmtpTab">
       <div class="card">
@@ -1140,52 +1137,57 @@
     </div>
     <!-- ===== USERS ADMIN TAB ===== -->
     <div id="adminUsersTab" class="hidden">
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <p class="card-title" style="margin:0">👥 User Management</p>
-          <button onclick="loadUsersPanel()" class="btn btn-sm btn-secondary">Refresh</button>
+      <!-- User Management card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+        <summary class="admin-collapsible-summary">
+          <span>👥 User Management</span>
+          <button onclick="event.preventDefault();event.stopPropagation();loadUsersPanel()" class="btn btn-sm btn-secondary">Refresh</button>
+        </summary>
+        <div style="padding-top:12px">
+          <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">
+            Manage roles, unlock locked accounts, and review reports — all in one place.
+            The <strong>original site administrator</strong> cannot be demoted.
+          </p>
+          <!-- Search -->
+          <div style="margin-bottom:12px">
+            <input id="userSearchInput" type="search" placeholder="Search by username or email…" class="input"
+              oninput="filterUsersList()" style="font-size:.9rem" />
+          </div>
+          <!-- Filter chips -->
+          <div class="filter-chips" style="margin-bottom:16px" id="userFilterChips">
+            <button class="chip active" onclick="setUserFilter('all')" id="userChipAll">All</button>
+            <button class="chip" onclick="setUserFilter('admins')" id="userChipAdmins">Admins</button>
+            <button class="chip" onclick="setUserFilter('locked')" id="userChipLocked">🔒 Locked</button>
+            <button class="chip" onclick="setUserFilter('reported')" id="userChipReported">⚠️ Reported</button>
+          </div>
+          <div id="adminUsersList"><div class="loading">Loading…</div></div>
         </div>
-        <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">
-          Manage roles, unlock locked accounts, and review reports — all in one place.
-          The <strong>original site administrator</strong> cannot be demoted.
-        </p>
+      </details>
 
-        <!-- Search -->
-        <div style="margin-bottom:12px">
-          <input id="userSearchInput" type="search" placeholder="Search by username or email…" class="input"
-            oninput="filterUsersList()" style="font-size:.9rem" />
+      <!-- Locked Accounts card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px">
+        <summary class="admin-collapsible-summary">
+          <span>🔒 Locked Accounts</span>
+          <button onclick="event.preventDefault();event.stopPropagation();loadLockedAccounts()" class="btn btn-sm btn-secondary">Refresh</button>
+        </summary>
+        <div style="padding-top:12px">
+          <div id="lockedAccountsList"><div class="loading">Loading…</div></div>
         </div>
+      </details>
 
-        <!-- Filter chips -->
-        <div class="filter-chips" style="margin-bottom:16px" id="userFilterChips">
-          <button class="chip active" onclick="setUserFilter('all')" id="userChipAll">All</button>
-          <button class="chip" onclick="setUserFilter('admins')" id="userChipAdmins">Admins</button>
-          <button class="chip" onclick="setUserFilter('locked')" id="userChipLocked">🔒 Locked</button>
-          <button class="chip" onclick="setUserFilter('reported')" id="userChipReported">⚠️ Reported</button>
+      <!-- User Reports card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px">
+        <summary class="admin-collapsible-summary">
+          <span>⚠️ User Reports</span>
+          <button onclick="event.preventDefault();event.stopPropagation();loadUserReports()" class="btn btn-sm btn-secondary">Refresh</button>
+        </summary>
+        <div style="padding-top:12px">
+          <div id="userReportsList"><div class="loading">Loading…</div></div>
         </div>
-
-        <div id="adminUsersList"><div class="loading">Loading…</div></div>
-      </div>
+      </details>
     </div>
 
-    <div id="adminLockedTab" class="hidden">
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <p class="card-title" style="margin:0">Locked Accounts</p>
-          <button onclick="loadLockedAccounts()" class="btn btn-sm btn-secondary">Refresh</button>
-        </div>
-        <div id="lockedAccountsList"><div class="loading">Loading…</div></div>
-      </div>
-    </div>
-    <div id="adminReportsTab" class="hidden">
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <p class="card-title" style="margin:0">User Reports</p>
-          <button onclick="loadUserReports()" class="btn btn-sm btn-secondary">Refresh</button>
-        </div>
-        <div id="userReportsList"><div class="loading">Loading…</div></div>
-      </div>
-    </div>
+    <!-- ===== FEEDBACK ADMIN TAB ===== -->
     <div id="adminFeedbackTab" class="hidden">
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -1195,80 +1197,89 @@
         <div id="adminFeedbackList"><div class="loading">Loading…</div></div>
       </div>
     </div>
-    <div id="adminXpeventsTab" class="hidden">
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <p class="card-title" style="margin:0">XP Events</p>
-          <button onclick="loadXpEvents()" class="btn btn-sm btn-secondary">Refresh</button>
-        </div>
-        <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Configure how much XP each action awards. Changes take effect immediately for all users.</p>
-        <div id="adminXpEventsList"><div class="loading">Loading…</div></div>
-      </div>
-    </div>
 
-    <!-- ===== COLLECTIBLES ADMIN TAB ===== -->
-    <div id="adminCollectiblesTab" class="hidden">
+    <!-- ===== GAMIFY ADMIN TAB ===== -->
+    <div id="adminGamifyTab" class="hidden">
 
-      <!-- Categories -->
-      <div class="card" style="margin-bottom:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <p class="card-title" style="margin:0">📁 Categories</p>
-          <button onclick="loadCollectiblesAdmin()" class="btn btn-sm btn-secondary">Refresh</button>
+      <!-- XP Events card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+        <summary class="admin-collapsible-summary">
+          <span>⚡ XP Events</span>
+          <button onclick="event.preventDefault();event.stopPropagation();loadXpEvents()" class="btn btn-sm btn-secondary">Refresh</button>
+        </summary>
+        <div style="padding-top:12px">
+          <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Configure how much XP each action awards. Changes take effect immediately for all users.</p>
+          <div id="adminXpEventsList"><div class="loading">Loading…</div></div>
         </div>
-        <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Group collectibles into named collections. Deleting a category soft-archives it and hides it from drop rolls.</p>
-        <!-- Add category -->
-        <div style="display:flex;gap:8px;margin-bottom:14px">
-          <input id="newCatName" type="text" placeholder="New category name…" class="input" style="flex:1;font-size:.9rem" maxlength="80" />
-          <button onclick="adminCreateCategory()" class="btn btn-primary btn-sm" style="white-space:nowrap">+ Add</button>
-        </div>
-        <div id="adminCatList"><div class="loading">Loading…</div></div>
-      </div>
+      </details>
 
-      <!-- Items -->
-      <div class="card" style="margin-bottom:16px">
-        <p class="card-title">🎁 Collectible Items</p>
-        <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Create, edit or delete individual items. Each item belongs to a category and has a rarity tier.</p>
-        <!-- Add / Edit form -->
-        <div id="collectibleForm" style="background:#f5f3ff;border-radius:10px;padding:14px;margin-bottom:14px">
-          <p id="collectibleFormTitle" style="font-size:.88rem;font-weight:700;color:#374151;margin-bottom:10px">New Item</p>
-          <input type="hidden" id="collectibleEditId" value="" />
-          <div class="form-group">
-            <label>Name</label>
-            <input id="collectibleName" type="text" class="input" placeholder="e.g. Golden Compass" maxlength="100" />
+      <!-- Categories card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+        <summary class="admin-collapsible-summary">
+          <span>📁 Collectible Categories</span>
+          <button onclick="event.preventDefault();event.stopPropagation();loadCollectiblesAdmin()" class="btn btn-sm btn-secondary">Refresh</button>
+        </summary>
+        <div style="padding-top:12px">
+          <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Group collectibles into named collections. Deleting a category soft-archives it and hides it from drop rolls.</p>
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <input id="newCatName" type="text" placeholder="New category name…" class="input" style="flex:1;font-size:.9rem" maxlength="80" />
+            <button onclick="adminCreateCategory()" class="btn btn-primary btn-sm" style="white-space:nowrap">+ Add</button>
           </div>
-          <div class="form-group">
-            <label>Description</label>
-            <input id="collectibleDesc" type="text" class="input" placeholder="Short flavour text (optional)" maxlength="255" />
-          </div>
-          <div class="admin-field-row">
+          <div id="adminCatList"><div class="loading">Loading…</div></div>
+        </div>
+      </details>
+
+      <!-- Collectible Items card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+        <summary class="admin-collapsible-summary">
+          <span>🎁 Collectible Items</span>
+        </summary>
+        <div style="padding-top:12px">
+          <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Create, edit or delete individual items. Each item belongs to a category and has a rarity tier.</p>
+          <div id="collectibleForm" style="background:#f5f3ff;border-radius:10px;padding:14px;margin-bottom:14px">
+            <p id="collectibleFormTitle" style="font-size:.88rem;font-weight:700;color:#374151;margin-bottom:10px">New Item</p>
+            <input type="hidden" id="collectibleEditId" value="" />
             <div class="form-group">
-              <label>Category</label>
-              <select id="collectibleCatId" class="select"></select>
+              <label>Name</label>
+              <input id="collectibleName" type="text" class="input" placeholder="e.g. Golden Compass" maxlength="100" />
             </div>
             <div class="form-group">
-              <label>Rarity</label>
-              <select id="collectibleRarity" class="select">
-                <option value="common">Common</option>
-                <option value="rare">Rare</option>
-                <option value="epic">Epic</option>
-              </select>
+              <label>Description</label>
+              <input id="collectibleDesc" type="text" class="input" placeholder="Short flavour text (optional)" maxlength="255" />
+            </div>
+            <div class="admin-field-row">
+              <div class="form-group">
+                <label>Category</label>
+                <select id="collectibleCatId" class="select"></select>
+              </div>
+              <div class="form-group">
+                <label>Rarity</label>
+                <select id="collectibleRarity" class="select">
+                  <option value="common">Common</option>
+                  <option value="rare">Rare</option>
+                  <option value="epic">Epic</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button onclick="adminSaveCollectible()" class="btn btn-primary btn-sm" style="flex:1">Save Item</button>
+              <button onclick="adminClearCollectibleForm()" class="btn btn-secondary btn-sm">Clear</button>
             </div>
           </div>
-          <div style="display:flex;gap:8px">
-            <button onclick="adminSaveCollectible()" class="btn btn-primary btn-sm" style="flex:1">Save Item</button>
-            <button onclick="adminClearCollectibleForm()" class="btn btn-secondary btn-sm">Clear</button>
-          </div>
+          <div id="adminItemList"><div class="loading">Loading…</div></div>
         </div>
-        <div id="adminItemList"><div class="loading">Loading…</div></div>
-      </div>
+      </details>
 
-      <!-- Bulk Seed -->
-      <div class="card">
-        <p class="card-title">🌱 Bulk Seed</p>
-        <p style="font-size:.82rem;color:#6b7280;margin-bottom:10px">Paste a JSON array to create multiple categories and items at once. Existing entries (matched by name) are skipped without error.</p>
-        <details style="margin-bottom:10px">
-          <summary style="font-size:.82rem;font-weight:600;color:#374151;cursor:pointer;padding:4px 0">Format reference</summary>
-          <pre style="font-size:.75rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px;overflow-x:auto;margin-top:8px;line-height:1.5">[
+      <!-- Bulk Seed card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px">
+        <summary class="admin-collapsible-summary">
+          <span>🌱 Bulk Seed</span>
+        </summary>
+        <div style="padding-top:12px">
+          <p style="font-size:.82rem;color:#6b7280;margin-bottom:10px">Paste a JSON array to create multiple categories and items at once. Existing entries (matched by name) are skipped without error.</p>
+          <details style="margin-bottom:10px">
+            <summary style="font-size:.82rem;font-weight:600;color:#374151;cursor:pointer;padding:4px 0">Format reference</summary>
+            <pre style="font-size:.75rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px;overflow-x:auto;margin-top:8px;line-height:1.5">[
   {
     "name": "Space Explorer",
     "items": [
@@ -1278,11 +1289,12 @@
     ]
   }
 ]</pre>
-        </details>
-        <textarea id="seedPayloadInput" class="textarea" rows="8" placeholder="Paste JSON array here…" style="font-family:monospace;font-size:.8rem"></textarea>
-        <button onclick="adminSeedCollectibles()" class="btn btn-primary btn-full" style="margin-top:10px">🌱 Run Seed</button>
-        <div id="seedResult" class="hidden" style="margin-top:10px;font-size:.85rem;color:#374151;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px"></div>
-      </div>
+          </details>
+          <textarea id="seedPayloadInput" class="textarea" rows="8" placeholder="Paste JSON array here…" style="font-family:monospace;font-size:.8rem"></textarea>
+          <button onclick="adminSeedCollectibles()" class="btn btn-primary btn-full" style="margin-top:10px">🌱 Run Seed</button>
+          <div id="seedResult" class="hidden" style="margin-top:10px;font-size:.85rem;color:#374151;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px"></div>
+        </div>
+      </details>
 
     </div>
   </div>
@@ -1840,6 +1852,13 @@ let gamificationEnabled = false;
 // Keys of achievements whose mini-games the current user may play.
 // Populated from the server-fetched profile; admins receive all 13 keys.
 let unlockedArcadeKeys = new Set();
+// Arcade token balance and daily play limit (minutes); refreshed with the gamification profile.
+let arcadeTokens = 0;
+let arcadeDailyPlayMinutes = 15;
+// Far-future task list collapse state.
+let _farFutureExpanded = false;
+// Last task array passed to renderTasks — used by toggleFarFuture to re-render without a network fetch.
+let _lastRenderInput = [];
 
 // ========== Reminder window constants (must match server/src/services/scheduler.ts) ==========
 const POPUP_WINDOW_7D_MIN_MS  = 6  * 24 * 3600000;
@@ -2419,6 +2438,8 @@ async function loadTasks() {
 
 function renderTasks(tasks) {
   const grid = document.getElementById('taskGrid');
+  // Save for re-renders triggered by toggleFarFuture (avoids a network fetch)
+  _lastRenderInput = tasks;
   let displayTasks = tasks;
   if (!currentFilter.showGroupTasks) {
     displayTasks = tasks.filter(t => !t.group_id);
@@ -2443,7 +2464,19 @@ function renderTasks(tasks) {
     return a.due_date - b.due_date;
   });
 
-  const html = displayTasks.map(t => {
+  // ── Far-future split ────────────────────────────────────────────────────────
+  // Pending (non-complete) tasks due more than 2 weeks from now are collapsed
+  // behind a toggle so the active task list stays focused.
+  const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+  const farThreshold = now + TWO_WEEKS_MS;
+  const mainTasks = displayTasks.filter(
+    t => t.status === 'complete' || !t.due_date || t.due_date <= farThreshold
+  );
+  const farFutureTasks = displayTasks.filter(
+    t => t.status !== 'complete' && t.due_date && t.due_date > farThreshold
+  );
+
+  function buildCard(t) {
     const statusInfo = statusMeta(t.status);
     const overdue = t.due_date && t.due_date < now && t.status !== 'complete';
     const dueSoon = t.due_date && t.status !== 'complete' && t.due_date > now && t.due_date <= now + 24 * 60 * 60 * 1000;
@@ -2463,8 +2496,29 @@ function renderTasks(tasks) {
         ${t.details ? `<p class="task-card-meta" style="margin-top:6px">${escHtml(t.details.length > 80 ? t.details.substring(0, 80) + '\u2026' : t.details)}</p>` : ''}
       </div>
     `;
-  }).join('');
+  }
+
+  let html = mainTasks.map(buildCard).join('');
+
+  if (farFutureTasks.length) {
+    const arrow = _farFutureExpanded ? '\u2227' : '\u2228';
+    const count = farFutureTasks.length;
+    html += `<button class="task-far-future-toggle" onclick="toggleFarFuture()">Tasks due more than two weeks from now (${count}) ${arrow}</button>`;
+    if (_farFutureExpanded) {
+      html += farFutureTasks.map(buildCard).join('');
+    }
+  }
+
   grid.innerHTML = html;
+}
+
+/**
+ * Toggles the visibility of tasks due more than two weeks from now.
+ * Re-renders from the cached task list without a network fetch.
+ */
+function toggleFarFuture() {
+  _farFutureExpanded = !_farFutureExpanded;
+  renderTasks(_lastRenderInput);
 }
 
 function statusMeta(status) {
@@ -2879,6 +2933,11 @@ async function loadGamificationProfile() {
     ]);
     if (!profile) return;
     gamificationEnabled = !!profile.enabled;
+    arcadeTokens = profile.arcadeTokens ?? 0;
+    arcadeDailyPlayMinutes = profile.dailyPlayMinutes ?? 15;
+    // Sync token display if the arcade overlay is currently open
+    const tokenEl = document.getElementById('arcadeTokenDisplay');
+    if (tokenEl) tokenEl.textContent = '\uD83C\uDFDF\uFE0F ' + arcadeTokens;
     toggleEl.checked = gamificationEnabled;
 
     // Progress page — show correct state
@@ -3563,17 +3622,14 @@ async function loadAdminStats() {
 }
 
 function showAdminTab(tab) {
-  ['smtp', 'users', 'locked', 'reports', 'feedback', 'xpevents', 'collectibles'].forEach(t => {
+  ['smtp', 'users', 'feedback', 'gamify'].forEach(t => {
     document.getElementById('admin' + t.charAt(0).toUpperCase() + t.slice(1) + 'Tab').classList.toggle('hidden', t !== tab);
     const btn = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
     btn.classList.toggle('active', t === tab);
   });
-  if (tab === 'users') loadUsersPanel();
-  if (tab === 'locked') loadLockedAccounts();
-  if (tab === 'reports') loadUserReports();
+  if (tab === 'users') { loadUsersPanel(); loadLockedAccounts(); loadUserReports(); }
   if (tab === 'feedback') loadAdminFeedback();
-  if (tab === 'xpevents') loadXpEvents();
-  if (tab === 'collectibles') loadCollectiblesAdmin();
+  if (tab === 'gamify') { loadXpEvents(); loadCollectiblesAdmin(); }
 }
 
 async function loadAdminPage() {
@@ -4355,6 +4411,9 @@ if ('serviceWorker' in navigator) {
 
 // ========== TaskIt! Arcade — Stage 1: Overlay & Routing ==========
 
+/** Seconds added to the daily play budget when a token is spent. */
+const TOKEN_TIME_EXTENSION_SECONDS = 30;
+
 /**
  * Maps each achievement badge key to display metadata and a gameId
  * that Stage 2 game modules will use to boot the correct mini-game.
@@ -4370,8 +4429,8 @@ const ARCADE_GAMES = {
   type_explorer:   { title: "Explorer's Maze",    icon: '🗺️', subtitle: 'Navigate through the task maze!',     gameId: 'maze'   },
   skill_level_5:   { title: 'Bullseye!',          icon: '🎯', subtitle: 'Hit every target with precision!',    gameId: 'target' },
   skill_level_10:  { title: 'Quiz Master',        icon: '🎓', subtitle: 'Test your TaskIt! knowledge!',         gameId: 'quiz'   },
-  streak_3:        { title: 'Hat Trick',          icon: '🎩', subtitle: 'Pull off three tricks in a row!',     gameId: 'trick'  },
-  streak_7:        { title: 'Lucky Seven',        icon: '🍀', subtitle: 'Spin your luck and win big!',         gameId: 'lucky'  },
+  streak_3:        { title: 'Whac-A-Bug',    icon: '\uD83D\uDC1B', subtitle: 'Squash the bugs before they crash the system!',  gameId: 'whac_a_bug'   },
+  streak_7:        { title: 'Code Breaker',  icon: '\uD83D\uDD10', subtitle: 'Crack the secret 4-colour code in 10 attempts!', gameId: 'code_breaker' },
   streak_30:       { title: 'Unstoppable Train',  icon: '🚂', subtitle: 'Keep the train running — no stops!', gameId: 'train'  },
 };
 
@@ -4383,6 +4442,10 @@ const ARCADE_GAMES = {
  *     from the server-fetched gamification profile after authentication).
  *   • Site administrators: all 13 keys, regardless of earned status, so they
  *     can test every game without needing to earn the badge first.
+ *
+ * Includes a Time Budget pre-game check: if the user has consumed all of
+ * their daily play allowance the game frame shows a locked message instead
+ * of launching the game.  Admins bypass the time budget entirely.
  *
  * Stage 2 game modules listen for the 'arcade:open' CustomEvent on
  * #arcadeOverlay to boot themselves; 'arcade:close' is fired on exit.
@@ -4410,12 +4473,58 @@ function openArcade(badgeKey) {
   overlay.dataset.activeGame   = badgeKey;
   overlay.dataset.activeGameId = game.gameId;
 
-  // Render the coming-soon placeholder; Stage 2 replaces this
+  // ── Time Budget pre-game check ──────────────────────────────────────────
+  // Daily play time is tracked per calendar day in localStorage.
+  const today = new Date().toISOString().slice(0, 10);
+  if (localStorage.getItem('arcadePlayDate') !== today) {
+    localStorage.setItem('arcadePlayDate', today);
+    localStorage.setItem('arcadePlaySeconds', '0');
+  }
+  const playedSeconds  = parseInt(localStorage.getItem('arcadePlaySeconds') || '0', 10);
+  const limitSeconds   = arcadeDailyPlayMinutes * 60;
+  const remainingSeconds = Math.max(0, limitSeconds - playedSeconds);
+
+  // Sync token display
+  const tokenEl = document.getElementById('arcadeTokenDisplay');
+  if (tokenEl) tokenEl.textContent = '\uD83C\uDFDF\uFE0F ' + arcadeTokens;
+
+  // Show overlay with animation
+  overlay.classList.remove('hidden', 'arcade-animating');
+  void overlay.offsetWidth; // intentional: force CSS reflow so .arcade-animating restart is registered
+  overlay.classList.add('arcade-animating');
+  document.body.classList.add('arcade-open');
+
+  // ── Time budget HUD ────────────────────────────────────────────────────
+  arcadeUpdateTimeBudget(remainingSeconds);
+
   const frame = document.getElementById('arcadeGameFrame');
   frame.innerHTML = '';
+
+  // If the daily limit is reached (non-admin), show locked screen
+  if (remainingSeconds <= 0 && !isAdmin) {
+    const lockDiv = document.createElement('div');
+    lockDiv.className = 'arcade-time-locked';
+    const lockIcon = document.createElement('span');
+    lockIcon.className = 'arcade-time-locked-icon';
+    lockIcon.setAttribute('aria-hidden', 'true');
+    lockIcon.textContent = '\u23F1\uFE0F';
+    const lockTitle = document.createElement('p');
+    lockTitle.className = 'arcade-time-locked-title';
+    lockTitle.textContent = 'Arcade Locked';
+    const lockSub = document.createElement('p');
+    lockSub.className = 'arcade-time-locked-sub';
+    lockSub.textContent = 'Complete a task to earn more break time!';
+    lockDiv.appendChild(lockIcon);
+    lockDiv.appendChild(lockTitle);
+    lockDiv.appendChild(lockSub);
+    frame.appendChild(lockDiv);
+    // Game does not start — do not fire arcade:open
+    return;
+  }
+
+  // Render the coming-soon placeholder; Stage 2 replaces this
   const placeholder = document.createElement('div');
   placeholder.className = 'arcade-coming-soon';
-  // textContent prevents any HTML injection from game metadata
   const iconEl = document.createElement('span');
   iconEl.className = 'arcade-coming-soon-icon';
   iconEl.setAttribute('aria-hidden', 'true');
@@ -4425,22 +4534,14 @@ function openArcade(badgeKey) {
   titleEl.textContent = game.title;
   const subEl = document.createElement('p');
   subEl.className = 'arcade-coming-soon-sub';
-  subEl.textContent = 'Mini-game arriving in Stage 2 — watch this space!';
+  subEl.textContent = 'Mini-game arriving in Stage 2 \u2014 watch this space!';
   placeholder.appendChild(iconEl);
   placeholder.appendChild(titleEl);
   placeholder.appendChild(subEl);
   frame.appendChild(placeholder);
 
-  // Show overlay, lock body scroll, and re-trigger the entry animation.
-  // The animation lives on `.arcade-animating`, not on the base class.
-  // We remove it, force a reflow (reading offsetWidth causes the browser to
-  // flush pending style changes and register the removal before the re-add),
-  // then add it back — this guarantees the keyframe animation replays on
-  // every open, not just the first time the overlay becomes visible.
-  overlay.classList.remove('hidden', 'arcade-animating');
-  const forceReflow = overlay.offsetWidth; // intentional: force CSS reflow so .arcade-animating restart is registered
-  overlay.classList.add('arcade-animating');
-  document.body.classList.add('arcade-open');
+  // Start tracking play time: increment once per second while the arcade is open
+  arcadeStartPlayTimer(overlay, limitSeconds, playedSeconds);
 
   // Notify Stage 2 modules
   overlay.dispatchEvent(new CustomEvent('arcade:open', {
@@ -4450,17 +4551,118 @@ function openArcade(badgeKey) {
 }
 
 /**
+ * Updates the time budget row text and the spend-token button state.
+ * @param {number} remainingSeconds
+ */
+function arcadeUpdateTimeBudget(remainingSeconds) {
+  const budgetEl = document.getElementById('arcadeTimeBudget');
+  const textEl   = document.getElementById('arcadeTimeBudgetText');
+  const spendBtn = document.getElementById('arcadeSpendTokenBtn');
+  if (!budgetEl || !textEl) return;
+
+  if (remainingSeconds <= 0) {
+    textEl.textContent = '\u23F1\uFE0F No time remaining today';
+  } else {
+    const m = Math.floor(remainingSeconds / 60);
+    const s = remainingSeconds % 60;
+    textEl.textContent = '\u23F1\uFE0F ' + m + 'm ' + (s < 10 ? '0' : '') + s + 's remaining';
+  }
+  if (spendBtn) spendBtn.disabled = arcadeTokens < 1;
+  budgetEl.classList.remove('hidden');
+}
+
+/** Interval ID for the in-session play timer (cleared on close). */
+let _arcadeTimerInterval = null;
+
+/**
+ * Starts the per-second play timer that accumulates usage in localStorage
+ * and keeps the time-budget HUD updated.  Clears any existing interval first
+ * so there is never more than one timer running at a time.
+ * @param {Element} overlay   The arcade overlay element (used to detect close).
+ * @param {number}  limitSeconds  User's configured daily cap in seconds.
+ * @param {number}  startedAt    Seconds already played at session start.
+ */
+function arcadeStartPlayTimer(overlay, limitSeconds, startedAt) {
+  if (_arcadeTimerInterval !== null) {
+    clearInterval(_arcadeTimerInterval);
+    _arcadeTimerInterval = null;
+  }
+  let elapsed = 0;
+  _arcadeTimerInterval = setInterval(function() {
+    if (overlay.classList.contains('hidden')) {
+      clearInterval(_arcadeTimerInterval);
+      _arcadeTimerInterval = null;
+      return;
+    }
+    elapsed++;
+    const totalPlayed = startedAt + elapsed;
+    localStorage.setItem('arcadePlaySeconds', String(totalPlayed));
+    const remaining = Math.max(0, limitSeconds - totalPlayed);
+    arcadeUpdateTimeBudget(remaining);
+  }, 1000);
+}
+
+/**
+ * Spends 1 Arcade Token to extend the user's daily play budget by 30 seconds.
+ * Calls the backend, updates the local state, and fires `arcade:addTime` on
+ * the overlay so active game modules can extend their own countdown.
+ */
+async function arcadeSpendToken() {
+  const spendBtn = document.getElementById('arcadeSpendTokenBtn');
+  if (spendBtn) spendBtn.disabled = true;
+  try {
+    const data = await api('POST', '/gamification/arcade/spend-token');
+    if (!data) return;
+    arcadeTokens = data.arcadeTokens;
+    const tokenEl = document.getElementById('arcadeTokenDisplay');
+    if (tokenEl) tokenEl.textContent = '\uD83C\uDFDF\uFE0F ' + arcadeTokens;
+
+    // Extend the stored daily budget by TOKEN_TIME_EXTENSION_SECONDS so the HUD updates immediately
+    const today = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem('arcadePlayDate') === today) {
+      const current = parseInt(localStorage.getItem('arcadePlaySeconds') || '0', 10);
+      const extended = Math.max(0, current - TOKEN_TIME_EXTENSION_SECONDS);
+      localStorage.setItem('arcadePlaySeconds', String(extended));
+    }
+
+    // Notify active game modules to inject extra seconds into their own timer
+    const overlay = document.getElementById('arcadeOverlay');
+    if (overlay && !overlay.classList.contains('hidden')) {
+      overlay.dispatchEvent(new CustomEvent('arcade:addTime', {
+        bubbles: false,
+        detail: { seconds: TOKEN_TIME_EXTENSION_SECONDS },
+      }));
+    }
+
+    toast('+' + TOKEN_TIME_EXTENSION_SECONDS + ' seconds added! \uD83C\uDF89');
+  } catch (err) {
+    toast(err.message || 'Could not spend token', 'error');
+    if (spendBtn) spendBtn.disabled = arcadeTokens < 1;
+  }
+}
+
+/**
  * Closes the Arcade overlay and restores the main app.
  */
 function closeArcade() {
   const overlay = document.getElementById('arcadeOverlay');
   if (!overlay || overlay.classList.contains('hidden')) return;
 
+  // Stop play timer
+  if (_arcadeTimerInterval !== null) {
+    clearInterval(_arcadeTimerInterval);
+    _arcadeTimerInterval = null;
+  }
+
   // Notify Stage 2 modules so they can tear down canvases / timers
   overlay.dispatchEvent(new CustomEvent('arcade:close', {
     bubbles: false,
     detail: { gameId: overlay.dataset.activeGameId },
   }));
+
+  // Hide time budget row until next open
+  const budgetEl = document.getElementById('arcadeTimeBudget');
+  if (budgetEl) budgetEl.classList.add('hidden');
 
   overlay.classList.add('hidden');
   document.body.classList.remove('arcade-open');
@@ -4689,13 +4891,15 @@ async function loadInventory() {
 <div id="arcadeOverlay" class="arcade-overlay hidden"
      role="dialog" aria-modal="true" aria-labelledby="arcadeTitle">
 
-  <!-- Top bar: back button + centred logo + spacer -->
+  <!-- Top bar: back button + centred logo + token balance -->
   <div class="arcade-topbar">
     <button id="arcadeBackBtn" class="arcade-back-btn" aria-label="Close Arcade and return to tasks">
       🔙 Back to Tasks
     </button>
     <div class="arcade-logo">🕹️ TaskIt! Arcade</div>
-    <div class="arcade-topbar-spacer" aria-hidden="true"></div>
+    <div class="arcade-topbar-right">
+      <span id="arcadeTokenDisplay" class="arcade-token-display" aria-label="Arcade token balance">🎟️ 0</span>
+    </div>
   </div>
 
   <!-- Game title / subtitle -->
@@ -4703,6 +4907,14 @@ async function loadInventory() {
     <span id="arcadeGameIcon" class="arcade-game-icon" aria-hidden="true">🏆</span>
     <h2 id="arcadeTitle" class="arcade-game-title">Achievement Game</h2>
     <p id="arcadeGameSubtitle" class="arcade-game-subtitle">Loading…</p>
+  </div>
+
+  <!-- Time budget HUD — shown when a game session is active -->
+  <div id="arcadeTimeBudget" class="arcade-time-budget hidden" aria-live="polite">
+    <span id="arcadeTimeBudgetText" class="arcade-time-budget-text">⏱️ Loading…</span>
+    <button id="arcadeSpendTokenBtn" class="arcade-spend-token-btn" onclick="arcadeSpendToken()" disabled>
+      +30s (1 token)
+    </button>
   </div>
 
   <!-- Game frame — Stage 2 injects canvases / game UIs here -->
@@ -4724,6 +4936,8 @@ async function loadInventory() {
 <!-- 'arcade:close' on #arcadeOverlay and boots / tears down its own game.  -->
 <script src="/js/game-hangman.js"></script>
 <script src="/js/game-wordsearch.js"></script>
+<script src="/js/game-whac-a-bug.js"></script>
+<script src="/js/game-code-breaker.js"></script>
 
 </body>
 </html>

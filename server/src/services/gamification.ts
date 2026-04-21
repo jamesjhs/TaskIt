@@ -241,6 +241,8 @@ export function awardEventXp(
   let newXp: number;
   let newLevel: number;
 
+  const oldLevel = existing ? existing.level : 1;
+
   if (existing) {
     newXp = existing.xp + xpAmount;
     newLevel = computeLevel(newXp);
@@ -253,6 +255,13 @@ export function awardEventXp(
     db.prepare(
       'INSERT INTO user_skills (user_id, skill_name, xp, level) VALUES (?, ?, ?, ?)'
     ).run(userId, SKILL, newXp, newLevel);
+  }
+
+  // Award 3 Arcade Tokens whenever the user crosses a level threshold.
+  if (newLevel > oldLevel) {
+    db.prepare(
+      'UPDATE users SET arcade_tokens = arcade_tokens + 3 WHERE id = ?'
+    ).run(userId);
   }
 
   const drop = rollLootDrop(userId, xpAmount);
@@ -331,6 +340,8 @@ export function awardTaskXp(
   let newXp: number;
   let newLevel: number;
 
+  const oldLevel = existing ? existing.level : 1;
+
   if (existing) {
     newXp = existing.xp + awardXp;
     newLevel = computeLevel(newXp);
@@ -343,6 +354,13 @@ export function awardTaskXp(
     db.prepare(
       'INSERT INTO user_skills (user_id, skill_name, xp, level) VALUES (?, ?, ?, ?)'
     ).run(userId, skillName, newXp, newLevel);
+  }
+
+  // Award 3 Arcade Tokens whenever the user crosses a level threshold.
+  if (newLevel > oldLevel) {
+    db.prepare(
+      'UPDATE users SET arcade_tokens = arcade_tokens + 3 WHERE id = ?'
+    ).run(userId);
   }
 
   const drop = rollLootDrop(userId, awardXp);
@@ -482,6 +500,8 @@ export interface GamificationProfile {
   title: string | null;
   totalXp: number;
   freezeCredits: number;
+  arcadeTokens: number;
+  dailyPlayMinutes: number;
   skills: Array<{ skill_name: string; xp: number; level: number; xpForNextLevel: number }>;
   achievements: Array<{
     id: string;
@@ -494,11 +514,13 @@ export interface GamificationProfile {
 
 export function getGamificationProfile(userId: string): GamificationProfile {
   const user = db.prepare(
-    'SELECT gamification_enabled, freeze_credits FROM users WHERE id = ?'
-  ).get(userId) as { gamification_enabled: number; freeze_credits: number } | undefined;
+    'SELECT gamification_enabled, freeze_credits, arcade_tokens, daily_play_minutes FROM users WHERE id = ?'
+  ).get(userId) as { gamification_enabled: number; freeze_credits: number; arcade_tokens: number; daily_play_minutes: number } | undefined;
 
   const enabled = !!(user?.gamification_enabled);
   const freezeCredits = user?.freeze_credits ?? 0;
+  const arcadeTokens = user?.arcade_tokens ?? 0;
+  const dailyPlayMinutes = user?.daily_play_minutes ?? 15;
 
   const skills = (db.prepare(
     'SELECT skill_name, xp, level FROM user_skills WHERE user_id = ? ORDER BY level DESC, xp DESC'
@@ -526,6 +548,8 @@ export function getGamificationProfile(userId: string): GamificationProfile {
     title: enabled ? computeDynamicTitle(userId) : null,
     totalXp,
     freezeCredits,
+    arcadeTokens,
+    dailyPlayMinutes,
     skills,
     achievements: achievementRows,
   };

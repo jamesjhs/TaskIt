@@ -294,4 +294,64 @@ router.post('/inventory/recycle', (req: Request, res: Response): void => {
   });
 });
 
+// ─── Arcade Token Economy ─────────────────────────────────────────────────────
+
+/**
+ * PATCH /api/gamification/arcade/daily-limit
+ * Updates the current user's daily arcade play limit (in minutes).
+ * Body: { minutes: number }  — must be an integer between 1 and 180.
+ */
+router.patch('/arcade/daily-limit', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const { minutes } = req.body;
+
+  if (typeof minutes !== 'number' || !Number.isInteger(minutes) || minutes < 1 || minutes > 180) {
+    res.status(400).json({ error: '`minutes` must be an integer between 1 and 180' });
+    return;
+  }
+
+  db.prepare('UPDATE users SET daily_play_minutes = ? WHERE id = ?').run(minutes, userId);
+  res.json({ dailyPlayMinutes: minutes });
+});
+
+/**
+ * POST /api/gamification/arcade/spend-token
+ * Deducts 1 Arcade Token from the current user's balance and returns the new balance.
+ * Uses a database transaction with a conditional UPDATE to prevent the balance
+ * from dropping below zero, even under concurrent requests.
+ */
+router.post('/arcade/spend-token', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+
+  const spendToken = db.transaction((): number => {
+    // The WHERE clause (arcade_tokens > 0) acts as an atomic guard:
+    // if a concurrent request has already spent the last token, changes === 0.
+    const info = db.prepare(
+      'UPDATE users SET arcade_tokens = arcade_tokens - 1 WHERE id = ? AND arcade_tokens > 0'
+    ).run(userId);
+
+    if (info.changes === 0) {
+      // Either the user doesn't exist or the balance is already zero.
+      const exists = db.prepare('SELECT 1 FROM users WHERE id = ?').get(userId);
+      throw new Error(exists ? 'NO_TOKENS' : 'USER_NOT_FOUND');
+    }
+
+    const updated = db.prepare(
+      'SELECT arcade_tokens FROM users WHERE id = ?'
+    ).get(userId) as { arcade_tokens: number };
+
+    return updated.arcade_tokens;
+  });
+
+  try {
+    const newBalance = spendToken();
+    res.json({ arcadeTokens: newBalance });
+  } catch (err) {
+    const msg = (err as Error).message;
+    if (msg === 'USER_NOT_FOUND') { res.status(404).json({ error: 'User not found' }); return; }
+    if (msg === 'NO_TOKENS') { res.status(400).json({ error: 'No arcade tokens available' }); return; }
+    throw err;
+  }
+});
+
 export default router;

@@ -94,9 +94,11 @@ export async function sendGroupInvite(to: string, groupName: string, inviteUrl: 
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
   const from = settings?.from_addr || DEFAULT_FROM;
 
+  // Plain-text label for subject/text body; HTML-escaped label for the HTML body.
   const inviterLabel = inviterName ? `${inviterName} has` : 'You have been';
+  const htmlInviterLabel = inviterName ? `${escHtml(inviterName)} has` : 'You have been';
   const subject = `${inviterLabel} invited you to join "${groupName}" on TaskIt!`;
-  const intro = `${escHtml(inviterLabel)} invited you to join the group <strong>${escHtml(groupName)}</strong> on TaskIt!.`;
+  const intro = `${htmlInviterLabel} invited you to join the group <strong>${escHtml(groupName)}</strong> on TaskIt!.`;
   const body = `Click the link below to accept the invitation and join the group (link expires in 7 days):`;
 
   await transporter.sendMail({

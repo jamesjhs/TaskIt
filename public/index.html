@@ -1579,6 +1579,17 @@
             </tr>
           </table>
         </div>
+        <!-- Sub-tasks section -->
+        <div class="form-group" style="border-top:1px solid #e5e7eb;margin-top:8px;padding-top:12px">
+          <button type="button" class="subtask-add-toggle" onclick="toggleSubtaskPanel()" id="subtaskToggleBtn" aria-expanded="false" aria-controls="subtaskFormPanel">
+            <span id="subtaskToggleIcon">▶</span> Add Sub-tasks
+          </button>
+          <div id="subtaskFormPanel" class="hidden" style="margin-top:10px">
+            <div id="subtaskFormList"></div>
+            <button type="button" class="subtask-add-item-btn" onclick="addSubtaskFormRow()">+ Add item</button>
+            <p style="font-size:.75rem;color:#9ca3af;margin-top:6px">Sub-tasks let you break this task into individual steps. Each can be ticked off separately.</p>
+          </div>
+        </div>
       </form>
     </div>
     <div class="modal-footer">
@@ -1676,6 +1687,17 @@
       <!-- Gamification Streak Panel — shown for recurring tasks when gamification is enabled -->
       <div id="detailStreakSection" class="detail-section hidden">
         <!-- populated by renderStreakInDetail() -->
+      </div>
+      <!-- Sub-tasks checklist section -->
+      <div id="detailSubtaskSection" class="detail-section hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <p class="detail-section-title" style="margin:0">✅ Sub-tasks</p>
+          <span id="detailSubtaskProgress" style="font-size:.78rem;color:#6b7280"></span>
+        </div>
+        <div id="detailSubtaskProgressBar" class="subtask-progress-bar" style="margin-bottom:10px">
+          <div id="detailSubtaskProgressFill" class="subtask-progress-bar-fill" style="width:0%"></div>
+        </div>
+        <div id="detailSubtaskList"></div>
       </div>
       <div class="detail-section">
         <p class="detail-section-title">Change Status</p>
@@ -2482,6 +2504,15 @@ function renderTasks(tasks) {
     const dueSoon = t.due_date && t.status !== 'complete' && t.due_date > now && t.due_date <= now + 24 * 60 * 60 * 1000;
     const isUrgent = (t.type_name || '').toLowerCase() === 'urgent';
     const cardClass = dueSoon ? 'task-card task-card-due-soon' : (isUrgent ? 'task-card task-card-urgent' : 'task-card');
+    const hasSubtasks = t.subtask_total > 0;
+    const subtaskPct = hasSubtasks ? Math.round((t.subtask_done / t.subtask_total) * 100) : 0;
+    const subtaskBar = hasSubtasks ? `
+      <div class="subtask-card-meta">
+        <span>&#x2705; ${t.subtask_done}/${t.subtask_total} steps</span>
+      </div>
+      <div class="subtask-progress-bar">
+        <div class="subtask-progress-bar-fill" style="width:${subtaskPct}%"></div>
+      </div>` : '';
     return `
       <div onclick="openDetailById('${escHtml(t.id)}')" class="${cardClass}">
         <div class="task-card-title${t.group_id ? ' task-card-title-group' : ''}">${escHtml(t.title)}</div>
@@ -2494,6 +2525,7 @@ function renderTasks(tasks) {
         ${t.assignees && t.assignees.length ? `<p class="task-card-meta">\ud83d\udc64 ${t.assignees.map(a => escHtml(a.username)).join(', ')}</p>` : ''}
         ${t.due_date ? `<p class="task-card-meta ${overdue ? 'due-overdue' : ''}">\ud83d\udcc5 ${fmtDate(t.due_date)}</p>` : ''}
         ${t.details ? `<p class="task-card-meta" style="margin-top:6px">${escHtml(t.details.length > 80 ? t.details.substring(0, 80) + '\u2026' : t.details)}</p>` : ''}
+        ${subtaskBar}
       </div>
     `;
   }
@@ -2588,6 +2620,7 @@ function applyFilters() {
 
 // ========== Task Modal ==========
 function openTaskModal(task = null) {
+  resetSubtaskPanel();
   const typeSelect = document.getElementById('taskType');
   typeSelect.innerHTML = '<option value="">Select type\u2026</option>';
   taskTypes.forEach(t => {
@@ -2664,7 +2697,7 @@ function openTaskModal(task = null) {
   document.getElementById('taskModal').classList.remove('hidden');
 }
 
-function closeTaskModal() { document.getElementById('taskModal').classList.add('hidden'); }
+function closeTaskModal() { resetSubtaskPanel(); document.getElementById('taskModal').classList.add('hidden'); }
 
 async function loadGroupMembersForTask(selectedIds = []) {
   const groupId = document.getElementById('taskGroup').value;
@@ -2731,8 +2764,15 @@ async function handleTaskSubmit(e) {
   body.notifyPopup1day  = document.getElementById('notifyPopup1day').checked;
   body.notifyPopupOnday = document.getElementById('notifyPopupOnday').checked;
   try {
-    if (editId) { await api('PATCH', '/tasks/' + editId, body); toast('Task updated!'); }
-    else { await api('POST', '/tasks', body); toast('Task created!'); }
+    if (editId) {
+      await api('PATCH', '/tasks/' + editId, body);
+      toast('Task updated!');
+    } else {
+      const created = await api('POST', '/tasks', body);
+      if (created && created.id) await createPendingSubtasks(created.id);
+      toast('Task created!');
+    }
+    resetSubtaskPanel();
     closeTaskModal(); loadTasks();
   } catch (err) { toast(err.message, 'error'); }
 }
@@ -2784,6 +2824,7 @@ function openDetail(task) {
   document.getElementById('detailDeleteBtn').classList.toggle('hidden', !canDelete);
   document.getElementById('taskDetailModal').classList.remove('hidden');
   loadTaskNotes(task.id);
+  loadSubtasks(task.id);
   renderStreakInDetail(task);
 }
 
@@ -2826,6 +2867,165 @@ function closeDetailModal() {
   document.getElementById('taskDetailModal').classList.add('hidden');
   document.getElementById('deferSection').classList.add('hidden');
   currentDetailTask = null;
+}
+
+// ========== Sub-tasks ==========
+
+// State: list of pending sub-tasks to create (for the task creation modal)
+let _pendingSubtasks = [];
+
+function toggleSubtaskPanel() {
+  const panel = document.getElementById('subtaskFormPanel');
+  const btn = document.getElementById('subtaskToggleBtn');
+  const icon = document.getElementById('subtaskToggleIcon');
+  const isHidden = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !isHidden);
+  btn.setAttribute('aria-expanded', String(isHidden));
+  icon.textContent = isHidden ? '▼' : '▶';
+  if (isHidden && _pendingSubtasks.length === 0) addSubtaskFormRow();
+}
+
+function addSubtaskFormRow(value = '') {
+  const list = document.getElementById('subtaskFormList');
+  const idx = _pendingSubtasks.length;
+  _pendingSubtasks.push(value);
+  const row = document.createElement('div');
+  row.className = 'subtask-form-row';
+  row.dataset.idx = idx;
+  row.innerHTML = `
+    <input type="text" class="subtask-form-input" maxlength="255" placeholder="Sub-task description…"
+      value="${escHtml(value)}"
+      oninput="_pendingSubtasks[${idx}] = this.value"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();addSubtaskFormRow();}" />
+    <button type="button" class="subtask-form-remove" onclick="removeSubtaskFormRow(${idx})" title="Remove">✕</button>
+  `;
+  list.appendChild(row);
+  row.querySelector('input').focus();
+}
+
+function removeSubtaskFormRow(idx) {
+  _pendingSubtasks[idx] = null; // mark as removed
+  const list = document.getElementById('subtaskFormList');
+  const rows = list.querySelectorAll('.subtask-form-row');
+  for (const r of rows) {
+    if (parseInt(r.dataset.idx, 10) === idx) { r.remove(); break; }
+  }
+}
+
+function resetSubtaskPanel() {
+  _pendingSubtasks = [];
+  const list = document.getElementById('subtaskFormList');
+  if (list) list.innerHTML = '';
+  const panel = document.getElementById('subtaskFormPanel');
+  if (panel) panel.classList.add('hidden');
+  const btn = document.getElementById('subtaskToggleBtn');
+  if (btn) { btn.setAttribute('aria-expanded', 'false'); }
+  const icon = document.getElementById('subtaskToggleIcon');
+  if (icon) icon.textContent = '▶';
+}
+
+async function createPendingSubtasks(taskId) {
+  const titles = _pendingSubtasks.filter(t => t && t.trim());
+  for (const title of titles) {
+    try {
+      await api('POST', '/tasks/' + taskId + '/subtasks', { title });
+    } catch (err) {
+      console.error('[subtasks] Failed to create subtask:', err);
+    }
+  }
+}
+
+// Load and render subtasks in the detail modal
+async function loadSubtasks(taskId) {
+  const section = document.getElementById('detailSubtaskSection');
+  const listEl = document.getElementById('detailSubtaskList');
+  if (!section || !listEl) return;
+
+  try {
+    const subtasks = await api('GET', '/tasks/' + taskId + '/subtasks');
+    if (!subtasks || subtasks.length === 0) {
+      section.classList.add('hidden');
+      return;
+    }
+    section.classList.remove('hidden');
+    renderSubtaskList(subtasks);
+  } catch {
+    section.classList.add('hidden');
+  }
+}
+
+function renderSubtaskList(subtasks) {
+  const listEl = document.getElementById('detailSubtaskList');
+  const progressEl = document.getElementById('detailSubtaskProgress');
+  const fillEl = document.getElementById('detailSubtaskProgressFill');
+  if (!listEl) return;
+
+  const total = subtasks.length;
+  const done = subtasks.filter(s => s.completed).length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  if (progressEl) progressEl.textContent = `${done} of ${total} complete`;
+  if (fillEl) fillEl.style.width = pct + '%';
+
+  const task = currentDetailTask;
+  const canEdit = task && ((currentUser && task.created_by === currentUser.id) ||
+    task.group_role === 'admin' || task.group_role === 'member' ||
+    (task.assignees && task.assignees.some(a => a.id === (currentUser && currentUser.id))));
+  const isComplete = task && task.status === 'complete';
+
+  listEl.innerHTML = subtasks.map(s => `
+    <div class="subtask-checklist-item" id="subtask-row-${escHtml(s.id)}">
+      <input type="checkbox" class="subtask-check" ${s.completed ? 'checked' : ''}
+        ${isComplete ? 'disabled' : ''}
+        onchange="toggleSubtask('${escHtml(s.id)}', this.checked)"
+        aria-label="${escHtml(s.title)}" />
+      <span class="subtask-label ${s.completed ? 'subtask-label-done' : ''}">${escHtml(s.title)}</span>
+      ${canEdit && !isComplete ? `<button class="subtask-delete-btn" onclick="deleteSubtask('${escHtml(s.id)}')" title="Remove sub-task" aria-label="Delete sub-task">✕</button>` : ''}
+    </div>
+  `).join('');
+}
+
+async function toggleSubtask(subId, checked) {
+  if (!currentDetailTask) return;
+  try {
+    const result = await api('PATCH', '/tasks/' + currentDetailTask.id + '/subtasks/' + subId, { completed: checked });
+    // Update the task in local state in case status changed (e.g. started)
+    if (result && result.task) {
+      const updatedTask = result.task;
+      currentDetailTask = { ...currentDetailTask, status: updatedTask.status };
+      tasksMap.set(updatedTask.id, updatedTask);
+      // Refresh the status badge in the detail modal
+      const statusBadge = document.getElementById('detailStatusBadge');
+      if (statusBadge) {
+        const si = statusMeta(updatedTask.status);
+        statusBadge.textContent = si.label;
+        statusBadge.className = 'badge ' + si.cls;
+      }
+    }
+    if (result && result.awardedXp && gamificationEnabled) {
+      loadGamificationProfile();
+    }
+    await loadSubtasks(currentDetailTask.id);
+    loadTasks();
+  } catch (err) {
+    toast(err.message, 'error');
+    // Revert the checkbox on error
+    const row = document.getElementById('subtask-row-' + subId);
+    if (row) {
+      const cb = row.querySelector('.subtask-check');
+      if (cb) cb.checked = !checked;
+    }
+  }
+}
+
+async function deleteSubtask(subId) {
+  if (!currentDetailTask) return;
+  if (!confirm('Remove this sub-task?')) return;
+  try {
+    await api('DELETE', '/tasks/' + currentDetailTask.id + '/subtasks/' + subId);
+    await loadSubtasks(currentDetailTask.id);
+    loadTasks();
+  } catch (err) { toast(err.message, 'error'); }
 }
 
 async function quickStatus(status) {

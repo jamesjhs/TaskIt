@@ -1,6 +1,6 @@
 # TaskIt! – How-To Manual
 
-**Version 1.7.0**  
+**Version 1.8.0**  
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -15,6 +15,7 @@ Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 6. [Using TaskIt!](#using-taskit)
    - [Registering & Logging In](#registering--logging-in)
    - [Creating Tasks](#creating-tasks)
+   - [Sub-tasks](#sub-tasks)
    - [Recurring Tasks](#recurring-tasks)
    - [Managing Tasks](#managing-tasks)
    - [Progress Notes](#progress-notes)
@@ -232,7 +233,31 @@ The application will be available at `http://localhost:3000` (or whichever port 
    - **Notes** – free-text notes or description for the task
    - **Due Date** – defaults to **midnight on today's date** (00:00); adjust as needed
 3. To make the task repeat, tick **Repeat Task** and set the interval (see [Recurring Tasks](#recurring-tasks)).
-4. Click **Save Task**.
+4. To add sub-tasks, click **Add Sub-tasks** (see [Sub-tasks](#sub-tasks)).
+5. Click **Save Task**.
+
+---
+
+### Sub-tasks
+
+Sub-tasks let you break a task into individual checklist steps — for example, turning "Clean Kitchen" into discrete steps like "Wipe counters", "Clean oven", "Mop floor".
+
+**Adding sub-tasks when creating a task:**
+1. In the New Task form, click the **▶ Add Sub-tasks** toggle at the bottom.
+2. Type each step in the input boxes that appear.
+3. Click **+ Add item** to add more rows.
+4. Click the **✕** button next to a row to remove that step.
+5. Save the task normally — sub-tasks are created automatically.
+
+**Working with sub-tasks in the task detail:**
+- Open any task to see the **✅ Sub-tasks** section showing all steps and a progress bar.
+- Tick a step's checkbox to mark it complete — this also sets the parent task to **Started** if it was *Not Started*.
+- Each sub-task tick earns a small XP reward (configurable by the admin).
+- Delete an individual step with the **✕** button next to it.
+- The progress bar and counter (e.g. *2 of 5 complete*) update instantly.
+- Clicking **Complete** on the parent task finalises it through the normal flow.
+
+> **Note:** Sub-tasks cannot be added retroactively via the edit form — use the task detail panel's sub-task section to manage them after creation (coming in a future update).
 
 ---
 

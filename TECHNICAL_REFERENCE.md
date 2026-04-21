@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version:** 1.7.0  
+**Version:** 1.8.0  
 **Author:** J Rowson  
 **Generated:** 2026-04-21
 
@@ -556,6 +556,18 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `note` | TEXT NOT NULL | Free text progress note |
 | `created_at` | INTEGER NOT NULL | Unix ms |
 
+#### `task_subtasks`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | UUID |
+| `task_id` | TEXT NOT NULL | FK → tasks.id |
+| `title` | TEXT NOT NULL | Sub-task description, max 255 chars |
+| `completed` | INTEGER NOT NULL DEFAULT 0 | 0 = pending, 1 = done |
+| `completed_by` | TEXT | FK → users.id; NULL until ticked |
+| `completed_at` | INTEGER | Unix ms; NULL until ticked |
+| `sort_order` | INTEGER NOT NULL DEFAULT 0 | Ascending display order |
+| `created_at` | INTEGER NOT NULL | Unix ms |
+
 #### `feedback_messages`
 | Column | Type | Notes |
 |---|---|---|
@@ -735,6 +747,10 @@ Attached to `req.user` by `authMiddleware`.
 | `DELETE` | `/api/tasks/:id` | JWT | authed | Delete task (spawns next recurrence if recurring) |
 | `GET` | `/api/tasks/:id/notes` | JWT | authed | List task notes |
 | `POST` | `/api/tasks/:id/notes` | JWT | authed | Add progress note |
+| `GET` | `/api/tasks/:id/subtasks` | JWT | authed | List sub-tasks for a task |
+| `POST` | `/api/tasks/:id/subtasks` | JWT | authed | Create a sub-task |
+| `PATCH` | `/api/tasks/:id/subtasks/:subId` | JWT | authed | Update sub-task (title and/or completed); sets parent to 'started' on first tick; awards XP |
+| `DELETE` | `/api/tasks/:id/subtasks/:subId` | JWT | authed | Delete a sub-task |
 | `GET` | `/api/groups` | JWT | authed | List user's groups |
 | `POST` | `/api/groups` | JWT | authed | Create group |
 | `GET` | `/api/groups/invite/:token` | None | authed | Look up invite info |
@@ -1607,6 +1623,7 @@ These are stored in `xp_events` and admin-configurable:
 | `send_group_invite` | 15 | Awarded when a group invite is sent |
 | `complete_task` | 50 | Base XP per task completion (before multiplier) |
 | `recycle_drop` | 15 | Awarded when the user recycles (discards) a pending loot drop |
+| `complete_subtask` | 5 | Awarded each time a sub-task checklist item is ticked off |
 
 All event XP goes to the `'Activity'` skill via `awardEventXp()`.  
 Task-completion XP goes to the skill matching the task type name via `awardTaskXp()`.

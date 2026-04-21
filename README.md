@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.7.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.8.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -13,6 +13,7 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - Account lockout protection
 - Create and manage tasks with types, notes, and status tracking
 - Task statuses: Not Started → Started → Complete
+- **Sub-tasks** — break any task into individual checklist steps; tick each off one at a time, with a progress bar on the task card and detail modal; completing a sub-task automatically sets the parent task to "Started", and each sub-task completion earns a small configurable XP reward
 - Recurring tasks — automatically create the next occurrence when complete
 - Task deferral — reschedule due date from the detail panel
 - Custom task types per user and per group
@@ -103,6 +104,12 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.8.0
+
+- **✅ Sub-tasks** — tasks can now be broken down into individual checklist steps. When creating a task, expand the "Add Sub-tasks" panel to add as many steps as needed (up to 50 per task). Each sub-task can be ticked off independently from the task detail modal. A progress bar (and step count) appears on both the task card and the detail modal. Ticking any sub-task automatically sets the parent task status to "Started". Completing the final sub-task (or clicking Complete) finalises the task through the normal flow.
+- **⭐ Sub-task XP** — each sub-task tick earns a small configurable XP reward (`complete_subtask` event, default 5 XP). Admins can adjust this in the XP Events section of the admin panel.
+- **Version bump** — server, README, user guides, and technical reference updated to 1.8.0.
 
 ### v1.7.0
 

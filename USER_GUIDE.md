@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.7.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.8.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -37,9 +37,27 @@ There are two ways to log in:
 2. Give your task a **title** and choose a **type** (e.g. Urgent, Routine, Hobby). You can also add a custom type by selecting *+ Add new type…* from the dropdown.
 3. Optionally set a **group**, **assignees**, any **notes**, and a **due date**.
 4. To make the task repeat automatically, tick **Repeat Task** and choose the interval (e.g. every 2 weeks). When a recurring task is marked complete, a new copy is created for the next due date.
-5. Click **Save Task**.
+5. To break the task into steps, click the **▶ Add Sub-tasks** toggle and enter each step (see [Sub-tasks](#sub-tasks) below).
+6. Click **Save Task**.
 
 Due dates default to **midnight on today's date** — handy for quick captures!
+
+### Sub-tasks
+
+Sub-tasks let you split a big task into manageable steps — like turning "Clean Kitchen" into "Wipe counters", "Clean oven", and "Mop floor".
+
+**When creating a task:**
+- Click **▶ Add Sub-tasks** at the bottom of the form to expand the panel.
+- Type each step and click **+ Add item** to add more. Press **Enter** to jump to a new row.
+- Remove any row with the **✕** button.
+
+**Inside the task detail:**
+- Every task with sub-tasks shows a **progress bar** on its card, so you can see progress at a glance.
+- Open the task to see the full **✅ Sub-tasks** checklist with a counter (e.g. *2 of 5 complete*).
+- Tick a checkbox to mark that step done — the first tick automatically sets the task to **Started**.
+- Each tick earns a small XP reward if gamification is enabled.
+- Delete individual steps with the **✕** button next to them.
+- Clicking **Complete** finishes the whole task in the normal way.
 
 ### Updating a task
 

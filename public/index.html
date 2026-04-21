@@ -1093,6 +1093,7 @@
     </div>
     <div class="tab-group" style="margin-bottom:20px">
       <button onclick="showAdminTab('smtp')" id="adminTabSmtp" class="tab-btn active">SMTP</button>
+      <button onclick="showAdminTab('users')" id="adminTabUsers" class="tab-btn">👥 Users</button>
       <button onclick="showAdminTab('locked')" id="adminTabLocked" class="tab-btn">Locked</button>
       <button onclick="showAdminTab('reports')" id="adminTabReports" class="tab-btn">Reports</button>
       <button onclick="showAdminTab('feedback')" id="adminTabFeedback" class="tab-btn">Feedback</button>
@@ -1137,6 +1138,36 @@
         </form>
       </div>
     </div>
+    <!-- ===== USERS ADMIN TAB ===== -->
+    <div id="adminUsersTab" class="hidden">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <p class="card-title" style="margin:0">👥 User Management</p>
+          <button onclick="loadUsersPanel()" class="btn btn-sm btn-secondary">Refresh</button>
+        </div>
+        <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">
+          Manage roles, unlock locked accounts, and review reports — all in one place.
+          The <strong>original site administrator</strong> cannot be demoted.
+        </p>
+
+        <!-- Search -->
+        <div style="margin-bottom:12px">
+          <input id="userSearchInput" type="search" placeholder="Search by username or email…" class="input"
+            oninput="filterUsersList()" style="font-size:.9rem" />
+        </div>
+
+        <!-- Filter chips -->
+        <div class="filter-chips" style="margin-bottom:16px" id="userFilterChips">
+          <button class="chip active" onclick="setUserFilter('all')" id="userChipAll">All</button>
+          <button class="chip" onclick="setUserFilter('admins')" id="userChipAdmins">Admins</button>
+          <button class="chip" onclick="setUserFilter('locked')" id="userChipLocked">🔒 Locked</button>
+          <button class="chip" onclick="setUserFilter('reported')" id="userChipReported">⚠️ Reported</button>
+        </div>
+
+        <div id="adminUsersList"><div class="loading">Loading…</div></div>
+      </div>
+    </div>
+
     <div id="adminLockedTab" class="hidden">
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -3532,11 +3563,12 @@ async function loadAdminStats() {
 }
 
 function showAdminTab(tab) {
-  ['smtp', 'locked', 'reports', 'feedback', 'xpevents', 'collectibles'].forEach(t => {
+  ['smtp', 'users', 'locked', 'reports', 'feedback', 'xpevents', 'collectibles'].forEach(t => {
     document.getElementById('admin' + t.charAt(0).toUpperCase() + t.slice(1) + 'Tab').classList.toggle('hidden', t !== tab);
     const btn = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
     btn.classList.toggle('active', t === tab);
   });
+  if (tab === 'users') loadUsersPanel();
   if (tab === 'locked') loadLockedAccounts();
   if (tab === 'reports') loadUserReports();
   if (tab === 'feedback') loadAdminFeedback();
@@ -3571,6 +3603,138 @@ async function handleSmtpSave(e) {
       enabled: document.getElementById('smtpEnabled').checked,
     });
     toast('SMTP settings saved!'); document.getElementById('smtpPass').value = '';
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+// ========== Users Admin Panel ==========
+
+/** Full user list fetched from /admin/users; cached for filter/search. */
+let _adminUsers = [];
+/** Active filter: 'all' | 'admins' | 'locked' | 'reported' */
+let _userFilter = 'all';
+
+async function loadUsersPanel() {
+  const listEl = document.getElementById('adminUsersList');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="loading">Loading\u2026</div>';
+  try {
+    _adminUsers = await api('GET', '/admin/users');
+    renderUsersList();
+  } catch (err) {
+    listEl.innerHTML = `<div class="loading" style="color:#dc2626">${escHtml(err.message)}</div>`;
+  }
+}
+
+function setUserFilter(filter) {
+  _userFilter = filter;
+  ['all', 'admins', 'locked', 'reported'].forEach(f => {
+    const el = document.getElementById('userChip' + f.charAt(0).toUpperCase() + f.slice(1));
+    if (el) el.classList.toggle('active', f === filter);
+  });
+  renderUsersList();
+}
+
+function filterUsersList() {
+  renderUsersList();
+}
+
+function renderUsersList() {
+  const listEl = document.getElementById('adminUsersList');
+  if (!listEl) return;
+
+  const query = (document.getElementById('userSearchInput')?.value || '').toLowerCase().trim();
+
+  let users = _adminUsers;
+
+  // Apply filter
+  if (_userFilter === 'admins')   users = users.filter(u => u.role === 'admin');
+  if (_userFilter === 'locked')   users = users.filter(u => u.is_locked);
+  if (_userFilter === 'reported') users = users.filter(u => u.open_reports > 0);
+
+  // Apply search
+  if (query) {
+    users = users.filter(u =>
+      u.username.toLowerCase().includes(query) ||
+      u.email.toLowerCase().includes(query)
+    );
+  }
+
+  if (!users.length) {
+    listEl.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic;padding:8px 0">No users match the current filter.</p>';
+    return;
+  }
+
+  const isSelf = id => currentUser && currentUser.id === id;
+
+  listEl.innerHTML = users.map(u => {
+    const roleBadge = u.role === 'admin'
+      ? `<span class="badge badge-purple" style="font-size:.72rem">admin</span>`
+      : `<span class="badge badge-gray" style="font-size:.72rem">user</span>`;
+
+    const originalBadge = u.is_original_admin
+      ? `<span class="badge badge-purple" style="font-size:.72rem;background:#f5f3ff;color:#7c3aed;border:1px solid #c4b5fd" title="Original site administrator — cannot be demoted">⭐ original</span>`
+      : '';
+
+    const lockedBadge = u.is_locked
+      ? `<span class="badge" style="font-size:.72rem;background:#fef3c7;color:#d97706">🔒 locked</span>`
+      : '';
+
+    const reportBadge = u.open_reports > 0
+      ? `<span class="badge" style="font-size:.72rem;background:#fee2e2;color:#dc2626">⚠️ ${u.open_reports} report${u.open_reports > 1 ? 's' : ''}</span>`
+      : '';
+
+    const selfBadge = isSelf(u.id)
+      ? `<span class="badge badge-gray" style="font-size:.72rem">you</span>`
+      : '';
+
+    // Role toggle: disable for self and for original admin being demoted
+    const canToggleRole = !isSelf(u.id) && !(u.is_original_admin && u.role === 'admin');
+    const roleBtn = canToggleRole
+      ? `<button onclick="adminToggleUserRole('${escHtml(u.id)}', '${u.role}')"
+           class="btn btn-sm btn-outline" style="white-space:nowrap">
+           ${u.role === 'admin' ? 'Demote' : 'Promote'}
+         </button>`
+      : '';
+
+    // Unlock button: only for locked users
+    const unlockBtn = u.is_locked
+      ? `<button onclick="adminUnlockUser('${escHtml(u.id)}')" class="btn btn-sm btn-secondary" style="white-space:nowrap">Unlock</button>`
+      : '';
+
+    return `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
+            <span style="font-size:.9rem;font-weight:700;color:#374151">${escHtml(u.username)}</span>
+            ${roleBadge}${originalBadge}${selfBadge}${lockedBadge}${reportBadge}
+          </div>
+          <p style="font-size:.78rem;color:#9ca3af;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(u.email)}</p>
+          <p style="font-size:.72rem;color:#d1d5db;margin:2px 0 0">Joined ${new Date(u.created_at).toLocaleDateString(userLocale())}</p>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;align-items:center">
+          ${unlockBtn}
+          ${roleBtn}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function adminToggleUserRole(id, currentRole) {
+  const newRole = currentRole === 'admin' ? 'user' : 'admin';
+  const label = newRole === 'admin' ? 'Promote this user to admin?' : 'Demote this user from admin?';
+  if (!window.confirm(label)) return;
+  try {
+    await api('PUT', '/admin/users/' + id + '/role', { role: newRole });
+    toast(newRole === 'admin' ? 'User promoted to admin.' : 'User demoted to regular user.');
+    await loadUsersPanel();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function adminUnlockUser(userId) {
+  try {
+    await api('POST', '/admin/users/' + userId + '/unlock');
+    toast('Account unlocked.');
+    await loadUsersPanel();
   } catch (err) { toast(err.message, 'error'); }
 }
 

@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import { adminMiddleware } from '../middleware/admin';
 import db from '../db';
+import { ADMIN_EMAIL } from '../config';
 
 const router = Router();
 
@@ -54,11 +55,53 @@ router.put('/smtp', (req: Request, res: Response): void => {
   res.json({ message: 'SMTP settings updated' });
 });
 
+// ─── Original-admin guard helper ──────────────────────────────────────────────
+// The "original admin" is the user matched by ADMIN_EMAIL (if configured) OR
+// the first-ever registered user (lowest created_at across all users).
+// This user can never be demoted via the admin panel.
+function isOriginalAdmin(userId: string): boolean {
+  if (ADMIN_EMAIL) {
+    const row = db.prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1').get(ADMIN_EMAIL) as { id: string } | undefined;
+    if (row && row.id === userId) return true;
+  }
+  // Always protect the very first registered user regardless of ADMIN_EMAIL setting
+  const first = db.prepare('SELECT id FROM users ORDER BY created_at ASC LIMIT 1').get() as { id: string } | undefined;
+  return !!first && first.id === userId;
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+
 router.get('/users', (_req: Request, res: Response): void => {
+  const now = Date.now();
   const users = db.prepare(
     'SELECT id, username, email, role, failed_logins, locked_until, created_at FROM users ORDER BY created_at ASC'
-  ).all();
-  res.json(users);
+  ).all() as Array<{
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+    failed_logins: number;
+    locked_until: number | null;
+    created_at: number;
+  }>;
+
+  // Open (unresolved) report counts per reported user
+  const reportCounts = db.prepare(`
+    SELECT reported_id AS user_id, COUNT(*) AS cnt
+    FROM user_reports
+    WHERE resolved = 0
+    GROUP BY reported_id
+  `).all() as Array<{ user_id: string; cnt: number }>;
+  const reportMap = new Map(reportCounts.map(r => [r.user_id, r.cnt]));
+
+  const result = users.map(u => ({
+    ...u,
+    is_locked: u.locked_until != null && u.locked_until > now,
+    open_reports: reportMap.get(u.id) ?? 0,
+    is_original_admin: isOriginalAdmin(u.id),
+  }));
+
+  res.json(result);
 });
 
 router.get('/locked', (_req: Request, res: Response): void => {
@@ -90,9 +133,15 @@ router.put('/users/:id/role', (req: Request, res: Response): void => {
     return;
   }
 
-  const target = db.prepare('SELECT id FROM users WHERE id = ?').get(targetId);
+  const target = db.prepare('SELECT id, role FROM users WHERE id = ?').get(targetId) as { id: string; role: string } | undefined;
   if (!target) {
     res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  // Prevent demotion of the original (founding) admin
+  if (role === 'user' && isOriginalAdmin(targetId)) {
+    res.status(403).json({ error: 'The original site administrator cannot be demoted' });
     return;
   }
 

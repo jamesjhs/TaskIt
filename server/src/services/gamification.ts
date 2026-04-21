@@ -241,7 +241,7 @@ export function awardEventXp(
   let newXp: number;
   let newLevel: number;
 
-  const oldEventLevel = existing ? existing.level : 1;
+  const oldLevel = existing ? existing.level : 1;
 
   if (existing) {
     newXp = existing.xp + xpAmount;
@@ -258,7 +258,7 @@ export function awardEventXp(
   }
 
   // Award 3 Arcade Tokens whenever the user crosses a level threshold.
-  if (newLevel > oldEventLevel) {
+  if (newLevel > oldLevel) {
     db.prepare(
       'UPDATE users SET arcade_tokens = arcade_tokens + 3 WHERE id = ?'
     ).run(userId);

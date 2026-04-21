@@ -4402,6 +4402,9 @@ if ('serviceWorker' in navigator) {
 
 // ========== TaskIt! Arcade — Stage 1: Overlay & Routing ==========
 
+/** Seconds added to the daily play budget when a token is spent. */
+const TOKEN_TIME_EXTENSION_SECONDS = 30;
+
 /**
  * Maps each achievement badge key to display metadata and a gameId
  * that Stage 2 game modules will use to boot the correct mini-game.
@@ -4478,7 +4481,7 @@ function openArcade(badgeKey) {
 
   // Show overlay with animation
   overlay.classList.remove('hidden', 'arcade-animating');
-  const forceReflow = overlay.offsetWidth; // intentional: force CSS reflow so .arcade-animating restart is registered
+  void overlay.offsetWidth; // intentional: force CSS reflow so .arcade-animating restart is registered
   overlay.classList.add('arcade-animating');
   document.body.classList.add('arcade-open');
 
@@ -4605,24 +4608,24 @@ async function arcadeSpendToken() {
     const tokenEl = document.getElementById('arcadeTokenDisplay');
     if (tokenEl) tokenEl.textContent = '\uD83C\uDFDF\uFE0F ' + arcadeTokens;
 
-    // Extend the stored daily budget by 30 s so the HUD updates immediately
+    // Extend the stored daily budget by TOKEN_TIME_EXTENSION_SECONDS so the HUD updates immediately
     const today = new Date().toISOString().slice(0, 10);
     if (localStorage.getItem('arcadePlayDate') === today) {
       const current = parseInt(localStorage.getItem('arcadePlaySeconds') || '0', 10);
-      const extended = Math.max(0, current - 30); // reduce "played" by 30 s
+      const extended = Math.max(0, current - TOKEN_TIME_EXTENSION_SECONDS);
       localStorage.setItem('arcadePlaySeconds', String(extended));
     }
 
-    // Notify active game modules to inject 30 s into their own timer
+    // Notify active game modules to inject extra seconds into their own timer
     const overlay = document.getElementById('arcadeOverlay');
     if (overlay && !overlay.classList.contains('hidden')) {
       overlay.dispatchEvent(new CustomEvent('arcade:addTime', {
         bubbles: false,
-        detail: { seconds: 30 },
+        detail: { seconds: TOKEN_TIME_EXTENSION_SECONDS },
       }));
     }
 
-    toast('+30 seconds added! \uD83C\uDF89');
+    toast('+' + TOKEN_TIME_EXTENSION_SECONDS + ' seconds added! \uD83C\uDF89');
   } catch (err) {
     toast(err.message || 'Could not spend token', 'error');
     if (spendBtn) spendBtn.disabled = arcadeTokens < 1;

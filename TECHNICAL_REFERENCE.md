@@ -1326,9 +1326,9 @@ The entire application UI and all client-side logic is contained in a single HTM
 | `updateFilterBadge()` | Updates active-filter count badge |
 | `setFilter(key, value)` | Updates `currentFilter` and calls `loadTasks()` |
 | `applyFilters()` | Reads all filter form controls into `currentFilter` and calls `loadTasks()` |
-| `openTaskModal(task?)` | Opens create (null) or edit (task) modal; populates form fields |
+| `openTaskModal(task?)` | Opens create (null) or edit (task) modal; populates form fields; collapses Notes panel (auto-expands if task has existing notes); hides assignee row |
 | `closeTaskModal()` | Hides task modal |
-| `loadGroupMembersForTask(selectedIds?)` | Populates assignee checkboxes for selected group |
+| `loadGroupMembersForTask(selectedIds?)` | Populates assignee checkboxes for selected group; shows/hides `assigneeRow` depending on whether a group is selected |
 | `handleTaskSubmit(e)` | POST or PATCH `/api/tasks[/:id]`; builds request body including all notification flags |
 | `openDetailById(id)` | Looks up task in `tasksMap` and calls `openDetail()` |
 | `openDetail(task)` | Renders task detail modal |
@@ -1348,6 +1348,8 @@ The entire application UI and all client-side logic is contained in a single HTM
 | `toggleRecurChangeForm()` | Shows/hides recurrence-change UI |
 | `saveRecurChange()` | PATCH recurrence fields |
 | `toggleRecurFields()` | Shows/hides recur interval/unit fields based on checkbox |
+| `setNotesPanel(open)` | Opens or closes the collapsible Notes panel; updates `aria-expanded` and toggle icon |
+| `toggleNotesPanel()` | Toggles the Notes panel open/closed; focuses the textarea when opening |
 
 #### Gamification
 | Function | Description |
@@ -1458,7 +1460,11 @@ The entire application UI and all client-side logic is contained in a single HTM
 | `taskRecurEnabled` | checkbox | Enable recurrence checkbox |
 | `taskXpMultiplierRow` | div | XP multiplier row (group-only) |
 | `taskXpMultiplier` | input | XP multiplier value |
-| `assigneeContainer` | div | Assignee checkboxes container |
+| `assigneeRow` | div | "Assign To" form row — hidden until a group is selected |
+| `assigneeContainer` | div | Assignee checkboxes container (inside `assigneeRow`) |
+| `notesToggleBtn` | button | Notes collapsible toggle button |
+| `notesToggleIcon` | span | Arrow icon inside notes toggle (▶ / ▼) |
+| `notesPanel` | div | Collapsible notes panel (hidden by default; auto-expanded when editing a task with existing notes) |
 | `loginForm` | form | Login form |
 | `registerForm` | form | Register form |
 | `loginEmail` | input | Login email |

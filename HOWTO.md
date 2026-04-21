@@ -230,7 +230,7 @@ The application will be available at `http://localhost:3000` (or whichever port 
    - **Type** *(required)* – choose from default types, your own custom types, or group-specific types. Select *+ Add new type…* to create a new custom type on the fly.
    - **Group** – assign to a group (optional); this allows assigning to group members
    - **Assign To** – select group members to assign the task to (only visible when a group is selected)
-   - **Notes** – free-text notes or description for the task
+   - **Notes** – click the **▶ Notes** toggle to expand a free-text notes field; it opens automatically when editing a task that already has notes
    - **Due Date** – defaults to **midnight on today's date** (00:00); adjust as needed
 3. To make the task repeat, tick **Repeat Task** and set the interval (see [Recurring Tasks](#recurring-tasks)).
 4. To add sub-tasks, click **Add Sub-tasks** (see [Sub-tasks](#sub-tasks)).
@@ -243,7 +243,7 @@ The application will be available at `http://localhost:3000` (or whichever port 
 Sub-tasks let you break a task into individual checklist steps — for example, turning "Clean Kitchen" into discrete steps like "Wipe counters", "Clean oven", "Mop floor".
 
 **Adding sub-tasks when creating a task:**
-1. In the New Task form, click the **▶ Add Sub-tasks** toggle at the bottom.
+1. In the New Task form, click the **▶ Add Sub-tasks** toggle just below the Group field.
 2. Type each step in the input boxes that appear.
 3. Click **+ Add item** to add more rows.
 4. Click the **✕** button next to a row to remove that step.

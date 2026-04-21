@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version:** 1.8.1  
+**Version:** 1.8.2  
 **Author:** J Rowson  
 **Generated:** 2026-04-21
 
@@ -1750,10 +1750,11 @@ When a recurring task is completed (`PATCH /:id/status` with `status='complete'`
    - `streak_frozen = 0`
    - Same `xp_multiplier`
 3. All assignees from the completed task are copied to the new task.
-4. The **original task** is archived (`archived = 1`).
-5. This is done in a single `db.transaction()`.
+4. All **sub-tasks** from the completed task are copied to the new task with `completed = 0`, `completed_by = NULL`, `completed_at = NULL` — so the checklist is ready to be worked through again in the next recurrence.
+5. The **original task** is archived (`archived = 1`).
+6. This is done in a single `db.transaction()`.
 
-When a recurring task is **deleted** (by creator or group admin), the same spawn logic runs first (preserving the schedule), then the original row is deleted.
+When a recurring task is **deleted** (by creator or group admin), the same spawn logic runs first (copying assignees and sub-tasks to the new occurrence with reset completion state, then preserving the schedule), then the original row is deleted.
 
 The `PATCH /:id/fast-forward` endpoint advances the due date by one interval **without** completing the task — useful for skipping an occurrence while preserving the task's active status. It also clears `task_reminders_sent` for the task so reminders re-fire against the new date.
 

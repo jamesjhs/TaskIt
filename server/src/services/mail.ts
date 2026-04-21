@@ -3,6 +3,11 @@ import db from '../db';
 
 const DEFAULT_FROM = process.env.SMTP_DEFAULT_FROM || 'noreply@taskit.jahosi.co.uk';
 
+/** Strip CR and LF characters from a string to prevent email header injection. */
+function sanitizeHeaderValue(s: string): string {
+  return s.replace(/[\r\n]+/g, ' ');
+}
+
 /** Escape special HTML characters to prevent injection in HTML email bodies. */
 function escHtml(s: string): string {
   return s
@@ -95,17 +100,20 @@ export async function sendGroupInvite(to: string, groupName: string, inviteUrl: 
   const from = settings?.from_addr || DEFAULT_FROM;
 
   // Plain-text label for subject/text body; HTML-escaped label for the HTML body.
-  const inviterLabel = inviterName ? `${inviterName} has` : 'You have been';
-  const htmlInviterLabel = inviterName ? `${escHtml(inviterName)} has` : 'You have been';
-  const subject = `${inviterLabel} invited you to join "${groupName}" on TaskIt!`;
-  const intro = `${htmlInviterLabel} invited you to join the group <strong>${escHtml(groupName)}</strong> on TaskIt!.`;
+  // sanitizeHeaderValue strips CR/LF to prevent email header injection in the subject line.
+  const safeInviterName = inviterName ? sanitizeHeaderValue(inviterName) : undefined;
+  const safeGroupName = sanitizeHeaderValue(groupName);
+  const inviterLabel = safeInviterName ? `${safeInviterName} has` : 'You have been';
+  const htmlInviterLabel = safeInviterName ? `${escHtml(safeInviterName)} has` : 'You have been';
+  const subject = `${inviterLabel} invited you to join "${safeGroupName}" on TaskIt!`;
+  const intro = `${htmlInviterLabel} invited you to join the group <strong>${escHtml(safeGroupName)}</strong> on TaskIt!.`;
   const body = `Click the link below to accept the invitation and join the group (link expires in 7 days):`;
 
   await transporter.sendMail({
     from,
     to,
     subject,
-    text: `${inviterLabel} invited you to join "${groupName}" on TaskIt!.\n\n${body}\n\n${inviteUrl}\n\nIf you did not expect this invitation, you can safely ignore this email.`,
+    text: `${inviterLabel} invited you to join "${safeGroupName}" on TaskIt!.\n\n${body}\n\n${inviteUrl}\n\nIf you did not expect this invitation, you can safely ignore this email.`,
     html: `<p>${intro}</p><p>${body}</p><p><a href="${escHtml(inviteUrl)}">${escHtml(inviteUrl)}</a></p><p>If you did not expect this invitation, you can safely ignore this email.</p>`,
   });
 }
@@ -141,9 +149,12 @@ export async function sendTaskReminder(to: string, task: { title: string; due_da
   const from = settings?.from_addr || DEFAULT_FROM;
   const dueStr = new Date(task.due_date).toLocaleString();
   const isOverdue = task.due_date < Date.now();
+  // sanitizeHeaderValue strips CR/LF to prevent email header injection in the subject line.
+  const safeTitle = sanitizeHeaderValue(task.title);
+  const safeLabel = sanitizeHeaderValue(reminderLabel ?? 'upcoming');
   const subject = isOverdue
-    ? `Overdue: "${task.title}" was due on ${dueStr}`
-    : `Reminder (${reminderLabel ?? 'upcoming'}): "${task.title}" is due soon`;
+    ? `Overdue: "${safeTitle}" was due on ${dueStr}`
+    : `Reminder (${safeLabel}): "${safeTitle}" is due soon`;
   const bodyText = isOverdue
     ? `The task "${task.title}" was due on ${dueStr} and has not been completed.`
     : `This is a reminder that the task "${task.title}" is due on ${dueStr}.`;

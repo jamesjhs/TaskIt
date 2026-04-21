@@ -171,7 +171,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 
   // Generate a 6-digit OTP for 2FA.
   // Store only the SHA-256 hash so that a database leak does not expose pending codes.
-  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const code = String(crypto.randomInt(100000, 1000000));
   const codeHash = crypto.createHash('sha256').update(code).digest('hex');
   const sessionId = crypto.randomUUID();
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes

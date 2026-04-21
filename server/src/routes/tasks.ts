@@ -9,6 +9,7 @@ import {
   consumeFreezeCredit,
   computeNewStreakValues,
   awardEventXp,
+  LootDropResult,
 } from '../services/gamification';
 
 const router = Router();
@@ -19,6 +20,15 @@ const ALLOWED_RECUR_UNITS = new Set(['days', 'weeks', 'months', 'years']);
 
 // The system task type that is always sorted to the top of the task list
 const URGENT_TASK_TYPE = 'urgent';
+
+// Anti-farming: tasks completed this many ms after creation earn no XP (non-recurring only)
+const ANTI_FARM_TIMEGATE_MS = 60 * 1000; // 60 seconds
+
+/** Format a UNIX-millisecond timestamp as a YYYY-MM-DD string for audit notes. */
+function formatDueDate(ms: number | null | undefined): string {
+  if (ms == null) return '(no date)';
+  return new Date(ms).toISOString().split('T')[0];
+}
 
 // Returns true when the requesting user may act on a task — either because they
 // created it, or because the task belongs to a group the user is a member of.
@@ -209,9 +219,10 @@ router.post('/', (req: Request, res: Response): void => {
   const now = Date.now();
 
   db.prepare(`
-    INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday, xp_multiplier)
-    VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, original_due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday, xp_multiplier)
+    VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(id, title, details || null, typeId, userId, groupId || null, now, now, dueDate || null,
+    dueDate || null,
     recurInterval ? parseInt(String(recurInterval), 10) : null,
     recurUnit || null,
     notifyEmail === false || notifyEmail === 0 ? 0 : 1,
@@ -278,7 +289,7 @@ router.patch('/:id', (req: Request, res: Response): void => {
   const taskId = req.params.id;
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string; group_id: string | null; archived: number }
+    | { id: string; created_by: string; group_id: string | null; archived: number; due_date: number | null }
     | undefined;
 
   if (!task) {
@@ -380,7 +391,26 @@ router.patch('/:id', (req: Request, res: Response): void => {
   vals.push(taskId);
 
   if (setClauses.length > 0) {
-    db.prepare(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = ?`).run(...vals);
+    const patchTx = db.transaction(() => {
+      db.prepare(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = ?`).run(...vals);
+
+      // Audit trail: insert a system note if the due_date has actually changed.
+      // Normalise dueDate to number|null (same type SQLite returns) so a string
+      // "123" from req.body doesn't falsely differ from the stored numeric 123.
+      if (dueDate !== undefined) {
+        const newDueDateNorm: number | null = dueDate ? Number(dueDate) : null;
+        if (newDueDateNorm !== task.due_date) {
+          db.prepare(
+            'INSERT INTO task_notes (id, task_id, user_id, note, created_at) VALUES (?, ?, ?, ?, ?)'
+          ).run(
+            randomUUID(), taskId, userId,
+            `System: Deadline deferred from ${formatDueDate(task.due_date)} to ${formatDueDate(newDueDateNorm)}`,
+            now
+          );
+        }
+      }
+    });
+    patchTx();
   }
 
   if (Array.isArray(assigneeIds)) {
@@ -427,7 +457,7 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
   }
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string; group_id: string | null }
+    | { id: string; created_by: string; group_id: string | null; created_at: number; xp_claimed: number; recur_interval: number | null }
     | undefined;
 
   if (!task) {
@@ -447,12 +477,19 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
   const now = Date.now();
 
+  // Anti-farming: tasks completed within ANTI_FARM_TIMEGATE_MS of creation (non-recurring only) earn no XP/Loot.
+  const isTimegated = status === 'complete' && (now - task.created_at < ANTI_FARM_TIMEGATE_MS) && task.recur_interval === null;
+  // xp_claimed is a one-time flag — once XP has been awarded for this task it must not be re-awarded.
+  const shouldAwardXp = status === 'complete' && !isTimegated && task.xp_claimed === 0;
+
   // Update status, always stamp updated_at.
   // When completing: record who completed it and when (for accurate achievement logic).
+  // When completing with a fresh XP claim: atomically set xp_claimed = 1.
   // When reverting from complete: clear those fields.
   if (status === 'complete') {
+    const xpClaimedClause = shouldAwardXp ? ', xp_claimed = 1' : '';
     db.prepare(
-      'UPDATE tasks SET status = ?, updated_at = ?, completed_at = ?, completed_by = ? WHERE id = ?'
+      `UPDATE tasks SET status = ?, updated_at = ?, completed_at = ?, completed_by = ?${xpClaimedClause} WHERE id = ?`
     ).run(status, now, now, userId, taskId);
   } else {
     db.prepare(
@@ -462,6 +499,8 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
   // Track whether a freeze was consumed (needed for the gamification block below)
   let freezeConsumed = false;
+  // Loot drop result from this task completion (null when XP is not awarded)
+  let lootDrop: LootDropResult | null = null;
 
   // If task is completed and has recurrence, spawn the next occurrence and archive the parent
   if (status === 'complete') {
@@ -492,10 +531,10 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
       const spawnAndArchive = db.transaction(() => {
         db.prepare(`
-          INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday, streak_current, streak_longest, streak_frozen, xp_multiplier)
-          VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+          INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, original_due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday, streak_current, streak_longest, streak_frozen, xp_multiplier)
+          VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
         `).run(newId, fullTask.title, fullTask.details, fullTask.type_id, fullTask.created_by,
-          fullTask.group_id, now, now, nextDue, fullTask.recur_interval, fullTask.recur_unit,
+          fullTask.group_id, now, now, nextDue, nextDue, fullTask.recur_interval, fullTask.recur_unit,
           fullTask.notify_email, fullTask.notify_7day, fullTask.notify_1day, fullTask.notify_onday,
           fullTask.notify_popup_7day, fullTask.notify_popup_1day, fullTask.notify_popup_onday,
           streakResult.newStreak, streakResult.newLongest,
@@ -515,6 +554,10 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
     }
 
     // Award XP, freeze credits, check achievements for the completing user.
+    // XP/Loot are skipped when the task is timegated (too new, non-recurring) or
+    // when XP has already been claimed for this task (xp_claimed = 1).
+    // Consuming a freeze credit is independent of XP: a freeze is logically spent
+    // as soon as it protects a streak, regardless of whether XP is awarded.
     // Errors here must never break the status update response.
     try {
       const completedTask = db.prepare(
@@ -522,8 +565,14 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
       ).get(taskId) as { type_id: string; xp_multiplier: number } | undefined;
 
       if (completedTask) {
-        awardTaskXp(userId, completedTask.type_id, completedTask.xp_multiplier ?? 1.0);
-        awardFreezeCredit(userId);
+        if (shouldAwardXp) {
+          const xpResult = awardTaskXp(userId, completedTask.type_id, completedTask.xp_multiplier ?? 1.0);
+          if (xpResult) lootDrop = xpResult.drop;
+          awardFreezeCredit(userId);
+        }
+        // Deduct the freeze credit whenever a freeze was used, even if XP was not
+        // awarded (timegate / already claimed). The freeze protected the streak and
+        // must always be consumed to keep the balance consistent.
         if (freezeConsumed) {
           consumeFreezeCredit(userId);
         }
@@ -541,7 +590,9 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
     WHERE t.id = ?
   `).get(taskId) as Record<string, unknown>;
 
-  res.json({ ...updated, archived: updated.archived === 1 });
+  const statusResponsePayload: Record<string, unknown> = { ...updated, archived: updated.archived === 1 };
+  if (lootDrop) statusResponsePayload.drop = lootDrop;
+  res.json(statusResponsePayload);
 });
 
 router.patch('/:id/defer', (req: Request, res: Response): void => {
@@ -549,7 +600,7 @@ router.patch('/:id/defer', (req: Request, res: Response): void => {
   const taskId = req.params.id;
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string; group_id: string | null }
+    | { id: string; created_by: string; group_id: string | null; due_date: number | null }
     | undefined;
 
   if (!task) {
@@ -569,10 +620,29 @@ router.patch('/:id/defer', (req: Request, res: Response): void => {
   }
 
   const { dueDate } = req.body;
+  const oldDueDate = task.due_date;
+  // Normalise to number|null so the strict equality comparison is reliable
+  // regardless of whether the client sent a number or a numeric string.
+  const newDueDate: number | null = dueDate !== undefined ? (dueDate ? Number(dueDate) : null) : null;
+  const deferNow = Date.now();
 
-  db.prepare('UPDATE tasks SET due_date = ?, updated_at = ? WHERE id = ?').run(
-    dueDate !== undefined ? dueDate : null, Date.now(), taskId
-  );
+  const deferTx = db.transaction(() => {
+    db.prepare('UPDATE tasks SET due_date = ?, updated_at = ? WHERE id = ?').run(
+      newDueDate, deferNow, taskId
+    );
+
+    // Audit trail: insert a system note if the due_date has actually changed
+    if (newDueDate !== oldDueDate) {
+      db.prepare(
+        'INSERT INTO task_notes (id, task_id, user_id, note, created_at) VALUES (?, ?, ?, ?, ?)'
+      ).run(
+        randomUUID(), taskId, userId,
+        `System: Deadline deferred from ${formatDueDate(oldDueDate)} to ${formatDueDate(newDueDate)}`,
+        deferNow
+      );
+    }
+  });
+  deferTx();
 
   const updated = db.prepare(`
     SELECT t.*, tt.name AS type_name
@@ -724,10 +794,10 @@ router.delete('/:id', (req: Request, res: Response): void => {
 
     const spawnAndDelete = db.transaction(() => {
       db.prepare(`
-        INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday)
-        VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, original_due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday)
+        VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(newId, task.title, task.details, task.type_id, task.created_by,
-        task.group_id, now2, now2, nextDue, task.recur_interval, task.recur_unit,
+        task.group_id, now2, now2, nextDue, nextDue, task.recur_interval, task.recur_unit,
         task.notify_email, task.notify_7day, task.notify_1day, task.notify_onday,
         task.notify_popup_7day, task.notify_popup_1day, task.notify_popup_onday);
 

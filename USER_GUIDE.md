@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.3.2** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.6.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -295,6 +295,37 @@ Miss a deadline but don't want to lose your streak? Use a **Freeze**!
 
 > 💡 Tip: Build up a reserve of Freeze Credits by staying on top of your other tasks — then use them to protect your most important streaks.
 
+### 🎒 Loot Drops & My Collection
+
+Completing tasks doesn't just earn XP — it can also reward a random **collectible item**!
+
+#### How drops work
+
+Each time you mark a task **Complete**, the server may roll a loot drop for you (the more XP the task awards, the higher the chance). If a drop is rolled, a **Loot Drop Modal** appears immediately after you complete the task. It shows:
+
+- The item's name and description
+- Its **rarity tier**: Common 🟢, Rare 💜, or Epic ✨
+- Its category (e.g. *Space Explorer*, *Kitchen Hero*)
+
+#### Keep or Recycle?
+
+| Choice | What happens |
+|--------|-------------|
+| **🎒 Keep** | The item is saved permanently to your personal inventory. |
+| **♻️ Recycle** | The item is discarded and you receive a small XP bonus instead. Epic items prompt a confirmation before recycling. |
+
+You have a short window (10 minutes) to decide — after that the pending drop expires and is removed automatically.
+
+#### My Collection
+
+Open the **⭐ Progress** tab and scroll to the **🎒 My Collection** section at the bottom. Here you can:
+
+- See every item you own, grouped by category, displayed in full colour.
+- Browse the complete catalogue — items you haven't collected yet appear as greyed-out silhouettes so you can track your progress.
+- See duplicate counts (×2, ×3, etc.) if you've collected the same item more than once.
+
+Each category is collapsible, keeping the view tidy even if the catalogue grows large.
+
 ---
 
 ## 🔐 Privacy & Browser Storage
@@ -336,4 +367,4 @@ Tap the **⭐ Progress** tab in the bottom navigation. You can also enable or di
 
 ---
 
-*TaskIt! v1.3.2 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*TaskIt! v1.6.1 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*

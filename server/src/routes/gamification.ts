@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { randomUUID } from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
 import {
@@ -6,6 +7,9 @@ import {
   checkAndGrantAchievements,
   getStreaksForUser,
   applyStreakFreeze,
+  claimPendingDrop,
+  getPendingDrop,
+  awardEventXp,
 } from '../services/gamification';
 
 const router = Router();
@@ -161,6 +165,133 @@ router.post('/streaks/:taskId/freeze', (req: Request, res: Response): void => {
   const streaks = getStreaksForUser(userId);
   const profile = getGamificationProfile(userId);
   res.json({ message: 'Freeze applied', streaks, freezeCredits: profile.freezeCredits });
+});
+
+/**
+ * GET /api/gamification/catalogue
+ * Returns the full catalogue of active (non-archived) collectibles with their
+ * category details.  Available to any authenticated user so the frontend can
+ * render unowned silhouette placeholders.
+ */
+router.get('/catalogue', (_req: Request, res: Response): void => {
+  const rows = db.prepare(`
+    SELECT c.id, c.name, c.description, c.rarity,
+           ic.id AS category_id, ic.name AS category_name
+    FROM collectibles c
+    JOIN item_categories ic ON ic.id = c.category_id
+    WHERE c.archived = 0 AND ic.archived = 0
+    ORDER BY ic.name ASC, c.rarity ASC, c.name ASC
+  `).all();
+  res.json(rows);
+});
+
+// ─── User Inventory ───────────────────────────────────────────────────────────
+
+/**
+ * GET /api/gamification/inventory
+ * Returns the authenticated user's full collectible inventory, joined with
+ * item and category details, ordered by acquisition date (newest first).
+ */
+router.get('/inventory', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+
+  const rows = db.prepare(`
+    SELECT ui.id, ui.acquired_at,
+           c.id AS collectible_id, c.name AS collectible_name,
+           c.description, c.rarity,
+           ic.id AS category_id, ic.name AS category_name
+    FROM user_inventory ui
+    JOIN collectibles c ON c.id = ui.collectible_id
+    JOIN item_categories ic ON ic.id = c.category_id
+    WHERE ui.user_id = ?
+    ORDER BY ui.acquired_at DESC
+  `).all(userId);
+
+  res.json(rows);
+});
+
+/**
+ * POST /api/gamification/inventory/claim
+ * Claims the authenticated user's pending loot drop (if any) by removing it
+ * from the in-memory cache and persisting it to user_inventory.
+ * Returns 404 if no pending drop exists or it has expired.
+ */
+router.post('/inventory/claim', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+
+  // Check (non-destructively) before writing — gives a clean 404 without side effects
+  const pending = getPendingDrop(userId);
+  if (!pending) {
+    res.status(404).json({ error: 'No pending drop to claim' });
+    return;
+  }
+
+  // Verify the collectible still exists and is not archived before saving
+  const collectible = db.prepare(
+    'SELECT id FROM collectibles WHERE id = ? AND archived = 0'
+  ).get(pending.collectibleId);
+  if (!collectible) {
+    // The item was archived between the drop roll and the claim — cancel the drop
+    claimPendingDrop(userId); // remove from cache
+    res.status(410).json({ error: 'The dropped item was archived and can no longer be claimed' });
+    return;
+  }
+
+  // Atomically consume the pending drop and write to user_inventory
+  const claimTx = db.transaction(() => {
+    const drop = claimPendingDrop(userId);
+    if (!drop) return null; // raced to expiry between check and claim
+
+    const id = randomUUID();
+    const now = Date.now();
+    db.prepare(
+      'INSERT INTO user_inventory (id, user_id, collectible_id, acquired_at) VALUES (?, ?, ?, ?)'
+    ).run(id, userId, drop.collectibleId, now);
+
+    return {
+      id,
+      acquired_at: now,
+      collectible_id: drop.collectibleId,
+      collectible_name: drop.collectibleName,
+      rarity: drop.rarity,
+      category_name: drop.categoryName,
+    };
+  });
+
+  const saved = claimTx();
+  if (!saved) {
+    res.status(404).json({ error: 'No pending drop to claim' });
+    return;
+  }
+
+  res.status(201).json(saved);
+});
+
+/**
+ * POST /api/gamification/inventory/recycle
+ * Discards the authenticated user's pending loot drop (if any) and awards a
+ * small XP consolation bonus via the 'recycle_drop' XP event key.
+ * Returns 404 if no pending drop exists or it has expired.
+ */
+router.post('/inventory/recycle', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+
+  const pending = getPendingDrop(userId);
+  if (!pending) {
+    res.status(404).json({ error: 'No pending drop to recycle' });
+    return;
+  }
+
+  // Consume (discard) the pending drop from the cache
+  claimPendingDrop(userId);
+
+  // Award a consolation XP bonus (event key configured via /api/admin/xp-events)
+  const xpResult = awardEventXp(userId, 'recycle_drop');
+
+  res.json({
+    message: 'Drop recycled',
+    xpAwarded: xpResult ? xpResult.xp : null,
+  });
 });
 
 export default router;

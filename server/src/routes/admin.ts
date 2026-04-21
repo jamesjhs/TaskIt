@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import { adminMiddleware } from '../middleware/admin';
 import db from '../db';
+import { ADMIN_EMAIL } from '../config';
 
 const router = Router();
 
@@ -54,11 +55,71 @@ router.put('/smtp', (req: Request, res: Response): void => {
   res.json({ message: 'SMTP settings updated' });
 });
 
+// ─── Original-admin guard helper ──────────────────────────────────────────────
+// The "original admin" is the user matched by ADMIN_EMAIL (if configured) OR
+// the first-ever registered user (lowest created_at across all users).
+// This user can never be demoted via the admin panel.
+//
+// The result is computed lazily and then cached — the founding admin never
+// changes, so a one-time lookup is sufficient for the lifetime of the process.
+let _originalAdminId: string | null | undefined = undefined; // undefined = not yet resolved
+
+function getOriginalAdminId(): string | null {
+  if (_originalAdminId !== undefined) return _originalAdminId;
+
+  // Prefer the explicitly configured ADMIN_EMAIL
+  if (ADMIN_EMAIL) {
+    const row = db.prepare('SELECT id FROM users WHERE email = ? COLLATE NOCASE LIMIT 1').get(ADMIN_EMAIL) as { id: string } | undefined;
+    if (row) {
+      _originalAdminId = row.id;
+      return _originalAdminId;
+    }
+  }
+
+  // Fall back to the first-ever registered user
+  const first = db.prepare('SELECT id FROM users ORDER BY created_at ASC LIMIT 1').get() as { id: string } | undefined;
+  _originalAdminId = first ? first.id : null;
+  return _originalAdminId;
+}
+
+function isOriginalAdmin(userId: string): boolean {
+  const oid = getOriginalAdminId();
+  return oid !== null && oid === userId;
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+
 router.get('/users', (_req: Request, res: Response): void => {
+  const now = Date.now();
   const users = db.prepare(
     'SELECT id, username, email, role, failed_logins, locked_until, created_at FROM users ORDER BY created_at ASC'
-  ).all();
-  res.json(users);
+  ).all() as Array<{
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+    failed_logins: number;
+    locked_until: number | null;
+    created_at: number;
+  }>;
+
+  // Open (unresolved) report counts per reported user
+  const reportCounts = db.prepare(`
+    SELECT reported_id AS user_id, COUNT(*) AS cnt
+    FROM user_reports
+    WHERE resolved = 0
+    GROUP BY reported_id
+  `).all() as Array<{ user_id: string; cnt: number }>;
+  const reportMap = new Map(reportCounts.map(r => [r.user_id, r.cnt]));
+
+  const result = users.map(u => ({
+    ...u,
+    is_locked: u.locked_until != null && u.locked_until > now,
+    open_reports: reportMap.get(u.id) ?? 0,
+    is_original_admin: isOriginalAdmin(u.id),
+  }));
+
+  res.json(result);
 });
 
 router.get('/locked', (_req: Request, res: Response): void => {
@@ -90,9 +151,15 @@ router.put('/users/:id/role', (req: Request, res: Response): void => {
     return;
   }
 
-  const target = db.prepare('SELECT id FROM users WHERE id = ?').get(targetId);
+  const target = db.prepare('SELECT id, role FROM users WHERE id = ?').get(targetId) as { id: string; role: string } | undefined;
   if (!target) {
     res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  // Prevent demotion of the original (founding) admin
+  if (role === 'user' && isOriginalAdmin(targetId)) {
+    res.status(403).json({ error: 'The original site administrator cannot be demoted' });
     return;
   }
 
@@ -256,6 +323,313 @@ router.patch('/xp-events/:key', (req: Request, res: Response): void => {
     'SELECT key, name, description, xp_value, enabled, updated_at FROM xp_events WHERE key = ?'
   ).get(key);
   res.json(updated);
+});
+
+// ─── Collectible Categories ───────────────────────────────────────────────────
+
+const ALLOWED_RARITIES = new Set(['common', 'rare', 'epic']);
+
+// GET /api/admin/collectible-categories — list active categories
+router.get('/collectible-categories', (_req: Request, res: Response): void => {
+  const rows = db.prepare(
+    'SELECT id, name, created_at FROM item_categories WHERE archived = 0 ORDER BY name ASC'
+  ).all();
+  res.json(rows);
+});
+
+// POST /api/admin/collectible-categories — create a new category
+router.post('/collectible-categories', (req: Request, res: Response): void => {
+  const { name } = req.body;
+
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    res.status(400).json({ error: 'name is required' });
+    return;
+  }
+
+  const id = randomUUID();
+  const now = Date.now();
+
+  db.prepare(
+    'INSERT INTO item_categories (id, name, archived, created_at) VALUES (?, ?, 0, ?)'
+  ).run(id, name.trim(), now);
+
+  const created = db.prepare(
+    'SELECT id, name, created_at FROM item_categories WHERE id = ?'
+  ).get(id);
+  res.status(201).json(created);
+});
+
+// PATCH /api/admin/collectible-categories/:id — update category name
+router.patch('/collectible-categories/:id', (req: Request, res: Response): void => {
+  const catId = req.params.id;
+  const { name } = req.body;
+
+  const cat = db.prepare(
+    'SELECT id FROM item_categories WHERE id = ? AND archived = 0'
+  ).get(catId);
+  if (!cat) {
+    res.status(404).json({ error: 'Category not found' });
+    return;
+  }
+
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    res.status(400).json({ error: 'name is required' });
+    return;
+  }
+
+  db.prepare('UPDATE item_categories SET name = ? WHERE id = ?').run(name.trim(), catId);
+
+  const updated = db.prepare(
+    'SELECT id, name, created_at FROM item_categories WHERE id = ?'
+  ).get(catId);
+  res.json(updated);
+});
+
+// DELETE /api/admin/collectible-categories/:id — soft delete (archived = 1)
+router.delete('/collectible-categories/:id', (req: Request, res: Response): void => {
+  const catId = req.params.id;
+
+  const cat = db.prepare(
+    'SELECT id FROM item_categories WHERE id = ? AND archived = 0'
+  ).get(catId);
+  if (!cat) {
+    res.status(404).json({ error: 'Category not found' });
+    return;
+  }
+
+  db.prepare('UPDATE item_categories SET archived = 1 WHERE id = ?').run(catId);
+  res.status(204).send();
+});
+
+// ─── Collectibles ─────────────────────────────────────────────────────────────
+
+// GET /api/admin/collectibles — list active collectibles with their category
+router.get('/collectibles', (_req: Request, res: Response): void => {
+  const rows = db.prepare(`
+    SELECT c.id, c.name, c.description, c.rarity, c.archived, c.created_at,
+           ic.id AS category_id, ic.name AS category_name
+    FROM collectibles c
+    JOIN item_categories ic ON ic.id = c.category_id
+    WHERE c.archived = 0
+    ORDER BY ic.name ASC, c.name ASC
+  `).all();
+  res.json(rows);
+});
+
+// POST /api/admin/collectibles — create a new collectible
+router.post('/collectibles', (req: Request, res: Response): void => {
+  const { name, description, categoryId, rarity } = req.body;
+
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    res.status(400).json({ error: 'name is required' });
+    return;
+  }
+  if (!categoryId || typeof categoryId !== 'string') {
+    res.status(400).json({ error: 'categoryId is required' });
+    return;
+  }
+  if (!rarity || !ALLOWED_RARITIES.has(rarity)) {
+    res.status(400).json({ error: 'rarity must be one of: common, rare, epic' });
+    return;
+  }
+
+  const cat = db.prepare(
+    'SELECT id FROM item_categories WHERE id = ? AND archived = 0'
+  ).get(categoryId);
+  if (!cat) {
+    res.status(404).json({ error: 'Category not found' });
+    return;
+  }
+
+  const id = randomUUID();
+  const now = Date.now();
+
+  db.prepare(`
+    INSERT INTO collectibles (id, name, description, category_id, rarity, archived, created_at)
+    VALUES (?, ?, ?, ?, ?, 0, ?)
+  `).run(id, name.trim(), description?.trim() || null, categoryId, rarity, now);
+
+  const created = db.prepare(`
+    SELECT c.id, c.name, c.description, c.rarity, c.created_at,
+           ic.id AS category_id, ic.name AS category_name
+    FROM collectibles c
+    JOIN item_categories ic ON ic.id = c.category_id
+    WHERE c.id = ?
+  `).get(id);
+  res.status(201).json(created);
+});
+
+// PATCH /api/admin/collectibles/:id — update collectible fields
+router.patch('/collectibles/:id', (req: Request, res: Response): void => {
+  const itemId = req.params.id;
+  const { name, description, categoryId, rarity } = req.body;
+
+  const item = db.prepare(
+    'SELECT id FROM collectibles WHERE id = ? AND archived = 0'
+  ).get(itemId);
+  if (!item) {
+    res.status(404).json({ error: 'Collectible not found' });
+    return;
+  }
+
+  const setClauses: string[] = [];
+  const vals: (string | null)[] = [];
+
+  if (name !== undefined) {
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      res.status(400).json({ error: 'name must be a non-empty string' });
+      return;
+    }
+    setClauses.push('name = ?');
+    vals.push(name.trim());
+  }
+
+  if (description !== undefined) {
+    setClauses.push('description = ?');
+    vals.push(description ? String(description).trim() : null);
+  }
+
+  if (categoryId !== undefined) {
+    const cat = db.prepare(
+      'SELECT id FROM item_categories WHERE id = ? AND archived = 0'
+    ).get(categoryId);
+    if (!cat) {
+      res.status(404).json({ error: 'Category not found' });
+      return;
+    }
+    setClauses.push('category_id = ?');
+    vals.push(categoryId);
+  }
+
+  if (rarity !== undefined) {
+    if (!ALLOWED_RARITIES.has(rarity)) {
+      res.status(400).json({ error: 'rarity must be one of: common, rare, epic' });
+      return;
+    }
+    setClauses.push('rarity = ?');
+    vals.push(rarity);
+  }
+
+  if (setClauses.length === 0) {
+    res.status(400).json({ error: 'No valid fields to update (name, description, categoryId, rarity)' });
+    return;
+  }
+
+  vals.push(itemId);
+  db.prepare(`UPDATE collectibles SET ${setClauses.join(', ')} WHERE id = ?`).run(...vals);
+
+  const updated = db.prepare(`
+    SELECT c.id, c.name, c.description, c.rarity, c.created_at,
+           ic.id AS category_id, ic.name AS category_name
+    FROM collectibles c
+    JOIN item_categories ic ON ic.id = c.category_id
+    WHERE c.id = ?
+  `).get(itemId);
+  res.json(updated);
+});
+
+// DELETE /api/admin/collectibles/:id — soft delete (archived = 1)
+router.delete('/collectibles/:id', (req: Request, res: Response): void => {
+  const itemId = req.params.id;
+
+  const item = db.prepare(
+    'SELECT id FROM collectibles WHERE id = ? AND archived = 0'
+  ).get(itemId);
+  if (!item) {
+    res.status(404).json({ error: 'Collectible not found' });
+    return;
+  }
+
+  db.prepare('UPDATE collectibles SET archived = 1 WHERE id = ?').run(itemId);
+  res.status(204).send();
+});
+
+// ─── Bulk Seed ─────────────────────────────────────────────────────────────────
+
+/**
+ * POST /api/admin/collectibles/seed
+ * Bulk-creates categories and collectibles from a JSON payload.
+ *
+ * Body: an array of category objects:
+ * [
+ *   {
+ *     "name": "Category Name",
+ *     "items": [
+ *       { "name": "Item Name", "description": "Optional description", "rarity": "common|rare|epic" }
+ *     ]
+ *   }
+ * ]
+ *
+ * Categories that already exist (same name, case-insensitive) are reused.
+ * Items that already exist (same name + category, case-insensitive) are skipped.
+ * Returns a summary: { categoriesCreated, categoriesReused, itemsCreated, itemsSkipped }.
+ */
+router.post('/collectibles/seed', (req: Request, res: Response): void => {
+  const payload = req.body;
+
+  if (!Array.isArray(payload) || payload.length === 0) {
+    res.status(400).json({ error: 'Body must be a non-empty array of category objects' });
+    return;
+  }
+
+  let categoriesCreated = 0;
+  let categoriesReused  = 0;
+  let itemsCreated      = 0;
+  let itemsSkipped      = 0;
+
+  const now = Date.now();
+
+  const seedTx = db.transaction(() => {
+    for (const cat of payload) {
+      if (!cat.name || typeof cat.name !== 'string' || !cat.name.trim()) continue;
+      const catName = cat.name.trim();
+
+      // Check for an existing (non-archived) category with this name (case-insensitive)
+      let existing = db.prepare(
+        'SELECT id FROM item_categories WHERE LOWER(name) = LOWER(?) AND archived = 0'
+      ).get(catName) as { id: string } | undefined;
+
+      let catId: string;
+      if (existing) {
+        catId = existing.id;
+        categoriesReused++;
+      } else {
+        catId = randomUUID();
+        db.prepare(
+          'INSERT INTO item_categories (id, name, archived, created_at) VALUES (?, ?, 0, ?)'
+        ).run(catId, catName, now);
+        categoriesCreated++;
+      }
+
+      if (!Array.isArray(cat.items)) continue;
+
+      for (const item of cat.items) {
+        if (!item.name || typeof item.name !== 'string' || !item.name.trim()) continue;
+        const itemName = item.name.trim();
+        const rarity   = (item.rarity || 'common').toLowerCase();
+        if (!ALLOWED_RARITIES.has(rarity)) continue;
+
+        // Skip if an item with the same name already exists in this category
+        const dup = db.prepare(
+          'SELECT id FROM collectibles WHERE LOWER(name) = LOWER(?) AND category_id = ? AND archived = 0'
+        ).get(itemName, catId);
+        if (dup) {
+          itemsSkipped++;
+          continue;
+        }
+
+        const itemId = randomUUID();
+        db.prepare(
+          'INSERT INTO collectibles (id, name, description, category_id, rarity, archived, created_at) VALUES (?, ?, ?, ?, ?, 0, ?)'
+        ).run(itemId, itemName, item.description?.trim() || null, catId, rarity, now);
+        itemsCreated++;
+      }
+    }
+  });
+
+  seedTx();
+
+  res.status(201).json({ categoriesCreated, categoriesReused, itemsCreated, itemsSkipped });
 });
 
 export default router;

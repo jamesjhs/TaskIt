@@ -265,6 +265,36 @@ db.exec(`
     enabled INTEGER NOT NULL DEFAULT 1,
     updated_at INTEGER NOT NULL DEFAULT 0
   );
+
+  -- Collectibles: admin-managed item categories
+  CREATE TABLE IF NOT EXISTS item_categories (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    archived INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL
+  );
+
+  -- Collectibles: master catalogue of droppable items
+  CREATE TABLE IF NOT EXISTS collectibles (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    category_id TEXT NOT NULL,
+    rarity TEXT NOT NULL,
+    archived INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (category_id) REFERENCES item_categories(id)
+  );
+
+  -- Collectibles: junction table of items owned by each user
+  CREATE TABLE IF NOT EXISTS user_inventory (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    collectible_id TEXT NOT NULL,
+    acquired_at INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (collectible_id) REFERENCES collectibles(id)
+  );
 `);
 
 // Runtime migrations — add columns if they don't exist yet
@@ -333,6 +363,10 @@ addCol('groups', 'gamification_enhanced', 'INTEGER NOT NULL DEFAULT 0');
 addCol('tasks', 'xp_multiplier', 'REAL NOT NULL DEFAULT 1.0');
 // Gamification enhancements: per-membership XP sharing preference (default: share)
 addCol('group_members', 'xp_share', 'INTEGER NOT NULL DEFAULT 1');
+// Deadline audit trail: immutable snapshot of the original due date set at creation
+addCol('tasks', 'original_due_date', 'INTEGER');
+// Anti-farming: set to 1 once XP has been claimed for this task to prevent re-awarding
+addCol('tasks', 'xp_claimed', 'INTEGER NOT NULL DEFAULT 0');
 // Backfill: generate a friend_key for any user that doesn't have one yet
 {
   const missingKey = db.prepare("SELECT id FROM users WHERE friend_key IS NULL OR friend_key = ''").all() as Array<{ id: string }>;
@@ -355,6 +389,12 @@ addCol('group_members', 'xp_share', 'INTEGER NOT NULL DEFAULT 1');
     update.run(candidate, row.id);
   }
 }
+
+// Backfill original_due_date for tasks created before this column was added.
+// Use their current due_date as a best-effort snapshot of the original deadline.
+db.prepare(
+  "UPDATE tasks SET original_due_date = due_date WHERE original_due_date IS NULL AND due_date IS NOT NULL"
+).run();
 
 // Ensure smtp_settings has exactly one row (singleton pattern)
 const smtpRow = db.prepare('SELECT id FROM smtp_settings WHERE id = 1').get();
@@ -442,6 +482,7 @@ if (countRow.cnt === 0) {
     { key: 'send_app_invite',   name: 'Send App Invite',     description: 'Award XP when a user generates a friend invite link.',     xp_value: 15  },
     { key: 'send_group_invite', name: 'Send Group Invite',   description: 'Award XP when a user sends or generates a group invite.',  xp_value: 15  },
     { key: 'complete_task',     name: 'Complete Task',       description: 'Base XP awarded per task completion (before multiplier).', xp_value: 50  },
+    { key: 'recycle_drop',     name: 'Recycle Drop',        description: 'Consolation XP awarded when a user recycles a pending loot drop.', xp_value: 15 },
   ];
   for (const e of defaultXpEvents) {
     insertXpEvent.run(e.key, e.name, e.description, e.xp_value, now);

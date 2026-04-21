@@ -4,11 +4,175 @@
  * Step 1: Skill Trees & Dynamic Titles (Priority 1)
  *         Personal Achievements (Priority 2)
  * Step 2: Streak System with Freeze mechanic (Priority 3)
+ * Step 3: Collectibles Loot Drop Engine
  *
  * All public functions are no-ops when gamification_enabled = 0 on the user.
  */
 
 import db from '../db';
+
+// ---------------------------------------------------------------------------
+// Collectibles — Loot Drop Engine (Step 3)
+// ---------------------------------------------------------------------------
+
+/** Describes a collectible item that has just dropped for a user. */
+export interface LootDropResult {
+  collectibleId: string;
+  collectibleName: string;
+  rarity: string;
+  categoryName: string;
+}
+
+interface PendingDropEntry {
+  drop: LootDropResult;
+  expiresAt: number;
+}
+
+// In-memory pending-drop cache: userId → pending drop.
+// Entries expire after PENDING_DROP_TTL_MS milliseconds.
+// A user can only have one unclaimed pending drop at a time.
+const pendingDrops = new Map<string, PendingDropEntry>();
+
+/** How long (ms) a pending drop remains claimable before it expires. */
+const PENDING_DROP_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+/** Sum of all rarity weights — used to normalise the random roll. */
+const TOTAL_RARITY_WEIGHT = 100;
+
+/** Rarity tiers with weighted probabilities (must sum to TOTAL_RARITY_WEIGHT). */
+const RARITY_WEIGHTS: Array<{ rarity: string; weight: number }> = [
+  { rarity: 'common', weight: 70 },
+  { rarity: 'rare',   weight: 25 },
+  { rarity: 'epic',   weight: 5  },
+];
+
+// Guard: validate at module load time that the weights are correctly configured.
+// This catches misconfiguration immediately rather than letting the drop engine
+// silently produce skewed probabilities.
+{
+  const actualSum = RARITY_WEIGHTS.reduce((acc, r) => acc + r.weight, 0);
+  if (actualSum !== TOTAL_RARITY_WEIGHT) {
+    throw new Error(
+      `RARITY_WEIGHTS sum is ${actualSum} but must equal TOTAL_RARITY_WEIGHT (${TOTAL_RARITY_WEIGHT})`
+    );
+  }
+}
+
+/**
+ * Base drop probability per 50 XP earned.
+ * 25% chance at 50 XP, 50% at 100 XP, capped at MAX_DROP_CHANCE.
+ */
+const BASE_DROP_RATE_PER_50_XP = 0.25;
+/** Maximum drop probability regardless of XP earned. */
+const MAX_DROP_CHANCE = 0.75;
+/** XP amount used as the scaling unit for drop probability. */
+const XP_SCALE_FACTOR = 50;
+
+/** Evict entries whose TTL has elapsed. Called before any cache write. */
+function purgeExpiredDrops(): void {
+  const now = Date.now();
+  for (const [uid, entry] of pendingDrops) {
+    if (entry.expiresAt < now) pendingDrops.delete(uid);
+  }
+}
+
+/** Pick a rarity tier using weighted random selection. */
+function selectWeightedRarity(): string {
+  const roll = Math.random() * TOTAL_RARITY_WEIGHT;
+  let cumulative = 0;
+  for (const { rarity, weight } of RARITY_WEIGHTS) {
+    cumulative += weight;
+    if (roll < cumulative) return rarity;
+  }
+  return 'common'; // unreachable if weights sum to TOTAL_RARITY_WEIGHT, but required as fallback
+}
+
+/**
+ * Rolls for a loot drop based on XP gained.  If a drop occurs and no
+ * unclaimed drop is already pending for the user, the result is stored in
+ * the in-memory cache and returned.  Returns null when:
+ *   - the RNG dice miss the drop threshold,
+ *   - there are no active collectibles in the database, or
+ *   - the user already has an unclaimed pending drop.
+ */
+function rollLootDrop(userId: string, xpGained: number): LootDropResult | null {
+  purgeExpiredDrops();
+
+  // Prevent overwriting an existing unclaimed drop (anti–ghost-drop guard)
+  if (pendingDrops.has(userId)) return null;
+
+  // Probability check: chance scales linearly with XP, capped at MAX_DROP_CHANCE
+  const dropChance = Math.min(MAX_DROP_CHANCE, (xpGained / XP_SCALE_FACTOR) * BASE_DROP_RATE_PER_50_XP);
+  if (Math.random() >= dropChance) return null;
+
+  const rarity = selectWeightedRarity();
+
+  // Pick a random collectible of the rolled rarity (not archived)
+  const candidates = db.prepare(`
+    SELECT c.id, c.name, ic.name AS category_name
+    FROM collectibles c
+    JOIN item_categories ic ON ic.id = c.category_id
+    WHERE c.rarity = ? AND c.archived = 0 AND ic.archived = 0
+  `).all(rarity) as Array<{ id: string; name: string; category_name: string }>;
+
+  let pick: { id: string; name: string; category_name: string } | undefined;
+
+  if (candidates.length > 0) {
+    pick = candidates[Math.floor(Math.random() * candidates.length)];
+  } else {
+    // Fallback: any active collectible regardless of rarity
+    pick = db.prepare(`
+      SELECT c.id, c.name, ic.name AS category_name
+      FROM collectibles c
+      JOIN item_categories ic ON ic.id = c.category_id
+      WHERE c.archived = 0 AND ic.archived = 0
+      ORDER BY RANDOM()
+      LIMIT 1
+    `).get() as { id: string; name: string; category_name: string } | undefined;
+  }
+
+  if (!pick) return null;
+
+  const result: LootDropResult = {
+    collectibleId: pick.id,
+    collectibleName: pick.name,
+    rarity,
+    categoryName: pick.category_name,
+  };
+
+  pendingDrops.set(userId, { drop: result, expiresAt: Date.now() + PENDING_DROP_TTL_MS });
+  return result;
+}
+
+/**
+ * Atomically removes the pending drop from the in-memory cache and returns
+ * it so the caller can persist it to user_inventory.  Returns null if the
+ * user has no pending drop or it has expired.
+ */
+export function claimPendingDrop(userId: string): LootDropResult | null {
+  const entry = pendingDrops.get(userId);
+  if (!entry) return null;
+  if (entry.expiresAt < Date.now()) {
+    pendingDrops.delete(userId);
+    return null;
+  }
+  pendingDrops.delete(userId);
+  return entry.drop;
+}
+
+/**
+ * Returns the user's current pending drop without consuming it.
+ * Returns null if none exists or it has expired.
+ */
+export function getPendingDrop(userId: string): LootDropResult | null {
+  const entry = pendingDrops.get(userId);
+  if (!entry) return null;
+  if (entry.expiresAt < Date.now()) {
+    pendingDrops.delete(userId);
+    return null;
+  }
+  return entry.drop;
+}
 
 // ---------------------------------------------------------------------------
 // XP / Level maths
@@ -64,7 +228,7 @@ export function getXpEventValue(key: string): number {
 export function awardEventXp(
   userId: string,
   eventKey: string,
-): { skill_name: string; xp: number; level: number } | null {
+): { skill_name: string; xp: number; level: number; drop: LootDropResult | null } | null {
   const xpAmount = getXpEventValue(eventKey);
   if (xpAmount <= 0) return null;
 
@@ -91,7 +255,8 @@ export function awardEventXp(
     ).run(userId, SKILL, newXp, newLevel);
   }
 
-  return { skill_name: SKILL, xp: newXp, level: newLevel };
+  const drop = rollLootDrop(userId, xpAmount);
+  return { skill_name: SKILL, xp: newXp, level: newLevel, drop };
 }
 
 // ---------------------------------------------------------------------------
@@ -138,7 +303,7 @@ export function awardTaskXp(
   userId: string,
   typeId: string,
   xpMultiplier: number = 1.0,
-): { skill_name: string; xp: number; level: number } | null {
+): { skill_name: string; xp: number; level: number; drop: LootDropResult | null } | null {
   const user = db.prepare(
     'SELECT gamification_enabled FROM users WHERE id = ?'
   ).get(userId) as { gamification_enabled: number } | undefined;
@@ -180,7 +345,8 @@ export function awardTaskXp(
     ).run(userId, skillName, newXp, newLevel);
   }
 
-  return { skill_name: skillName, xp: newXp, level: newLevel };
+  const drop = rollLootDrop(userId, awardXp);
+  return { skill_name: skillName, xp: newXp, level: newLevel, drop };
 }
 
 // ---------------------------------------------------------------------------

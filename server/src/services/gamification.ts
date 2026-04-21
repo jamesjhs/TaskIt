@@ -46,6 +46,18 @@ const RARITY_WEIGHTS: Array<{ rarity: string; weight: number }> = [
   { rarity: 'epic',   weight: 5  },
 ];
 
+// Guard: validate at module load time that the weights are correctly configured.
+// This catches misconfiguration immediately rather than letting the drop engine
+// silently produce skewed probabilities.
+{
+  const actualSum = RARITY_WEIGHTS.reduce((acc, r) => acc + r.weight, 0);
+  if (actualSum !== TOTAL_RARITY_WEIGHT) {
+    throw new Error(
+      `RARITY_WEIGHTS sum is ${actualSum} but must equal TOTAL_RARITY_WEIGHT (${TOTAL_RARITY_WEIGHT})`
+    );
+  }
+}
+
 /**
  * Base drop probability per 50 XP earned.
  * 25% chance at 50 XP, 50% at 100 XP, capped at MAX_DROP_CHANCE.

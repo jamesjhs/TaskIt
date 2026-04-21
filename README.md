@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.8.3** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.8.4** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -104,6 +104,12 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.8.4
+
+- **🕹️ Hat Trick & Lucky Draw arcade cards reinstated** — `streak_3` (Hat Trick 🎩) and `streak_7` (Lucky Draw 🍀) are back in the arcade catalogue with their own game IDs (`hat_trick`, `lucky_draw`), distinct from the four already-developed games.
+- **🐛 Whac-a-Bug difficulty increase** — system-error penalty doubled (−5 → −10 points), starting timer reduced by 5 seconds (60 s → 55 s), and spawn rate now ramps up linearly by 5 % every 30 seconds of play, adding a sustained challenge curve.
+- **Version bump** — server, README, and technical reference updated to 1.8.4.
 
 ### v1.8.3
 

@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version:** 1.8.3  
+**Version:** 1.8.4  
 **Author:** J Rowson  
 **Generated:** 2026-04-21
 
@@ -1650,8 +1650,8 @@ Task-completion XP goes to the skill matching the task type name via `awardTaskX
 | `type_explorer` | Type Explorer | Complete tasks across 5 different types | *(in development)* |
 | `skill_level_5` | Specialist | Reach level 5 in any skill | *(in development)* |
 | `skill_level_10` | Master of the Craft | Reach level 10 in any skill | *(in development)* |
-| `streak_3` | Hat Trick | Recurring task streak of 3 | *(in development)* |
-| `streak_7` | Lucky Streak | Recurring task streak of 7 | *(in development)* |
+| `streak_3` | Hat Trick | Recurring task streak of 3 | Hat Trick *(in development)* |
+| `streak_7` | Lucky Streak | Recurring task streak of 7 | Lucky Draw *(in development)* |
 | `streak_30` | Unstoppable | Recurring task streak of 30 | *(in development)* |
 
 Games are assigned to achievements in earliest-unlock order: Hangman, Wordsearch, Whac-a-Bug, Code Breaker unlock at the 1st, 2nd, 3rd, and 4th achievements respectively.  

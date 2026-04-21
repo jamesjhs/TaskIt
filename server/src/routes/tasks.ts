@@ -165,6 +165,21 @@ router.post('/', (req: Request, res: Response): void => {
     return;
   }
 
+  if (typeof title !== 'string' || title.trim().length === 0 || title.length > 255) {
+    res.status(400).json({ error: 'title must be between 1 and 255 characters' });
+    return;
+  }
+
+  if (details !== undefined && details !== null && (typeof details !== 'string' || details.length > 10000)) {
+    res.status(400).json({ error: 'details must not exceed 10000 characters' });
+    return;
+  }
+
+  if (Array.isArray(assigneeIds) && assigneeIds.length > 100) {
+    res.status(400).json({ error: 'assigneeIds must not contain more than 100 entries' });
+    return;
+  }
+
   if ((recurInterval !== undefined && recurInterval !== null) || (recurUnit !== undefined && recurUnit !== null)) {
     const interval = recurInterval != null ? parseInt(String(recurInterval), 10) : NaN;
     if (!Number.isInteger(interval) || interval < 1 || interval > 365) {
@@ -311,6 +326,21 @@ router.patch('/:id', (req: Request, res: Response): void => {
   // Validate status if provided
   if (status !== undefined && !ALLOWED_STATUSES.has(status as string)) {
     res.status(400).json({ error: 'Invalid status value' });
+    return;
+  }
+
+  if (title !== undefined && (typeof title !== 'string' || title.trim().length === 0 || title.length > 255)) {
+    res.status(400).json({ error: 'title must be between 1 and 255 characters' });
+    return;
+  }
+
+  if (details !== undefined && details !== null && (typeof details !== 'string' || details.length > 10000)) {
+    res.status(400).json({ error: 'details must not exceed 10000 characters' });
+    return;
+  }
+
+  if (Array.isArray(assigneeIds) && assigneeIds.length > 100) {
+    res.status(400).json({ error: 'assigneeIds must not contain more than 100 entries' });
     return;
   }
 
@@ -873,6 +903,11 @@ router.post('/:id/notes', (req: Request, res: Response): void => {
 
   if (!note || typeof note !== 'string' || !note.trim()) {
     res.status(400).json({ error: 'note is required' });
+    return;
+  }
+
+  if (note.length > 5000) {
+    res.status(400).json({ error: 'note must not exceed 5000 characters' });
     return;
   }
 

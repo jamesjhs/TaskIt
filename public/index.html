@@ -3292,7 +3292,7 @@ function renderGamificationProfile(profile, streaks) {
         ? escHtml(dateStr)
         : (isAdmin ? '\uD83D\uDEE0\uFE0F Admin preview' : '\uD83D\uDD12 Locked');
       // Show the game title on every card that has an associated game so users
-      // know what they are working toward, whether locked or unlocked.
+      // know what they are working towards, whether locked or unlocked.
       const gameLabel = gameEntry ? `<div class="gamif-ach-game">\uD83C\uDFAE ${escHtml(gameEntry.title)}</div>` : '';
       return `
         <div class="gamif-ach ${unlocked ? 'gamif-ach-unlocked' + playableClass : (isAdmin ? 'gamif-ach-admin-preview' + playableClass : 'gamif-ach-locked')}" title="${escHtml(a.description)}"${dataAttr}>

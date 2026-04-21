@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.8.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.8.4** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -104,6 +104,22 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.8.4
+
+- **🕹️ Hat Trick & Lucky Draw arcade cards reinstated** — `streak_3` (Hat Trick 🎩) and `streak_7` (Lucky Draw 🍀) are back in the arcade catalogue with their own game IDs (`hat_trick`, `lucky_draw`), distinct from the four already-developed games.
+- **🐛 Whac-a-Bug difficulty increase** — system-error penalty doubled (−5 → −10 points), starting timer reduced by 5 seconds (60 s → 55 s), and spawn rate now ramps up linearly by 5 % every 30 seconds of play, adding a sustained challenge curve.
+- **Version bump** — server, README, and technical reference updated to 1.8.4.
+
+### v1.8.3
+
+- **🎮 Arcade game assignment fix** — Whac-a-Bug and Code Breaker are now assigned to the 3rd and 4th earliest achievements (`task_50` and `task_100`) respectively, so all four developed games unlock in order: Hangman → Wordsearch → Whac-a-Bug → Code Breaker. Previously Whac-a-Bug and Code Breaker were erroneously attached to streak achievements that most users reach much later, meaning early achievers found undeveloped games.
+- **🏷️ Game name on achievement cards** — each achievement card that has an associated arcade game now shows the game title in small italic text beneath the description, so users can see what they are working toward before they unlock it.
+- **Version bump** — server, README, and technical reference updated to 1.8.3.
+
+### v1.8.2
+
+- **Version bump** — server and technical reference updated to 1.8.2.
 
 ### v1.8.1
 

@@ -2,7 +2,7 @@
  * TaskIt! Arcade — Stage 2 Mini-Game: Whac-A-Bug
  * ================================================
  * GameId : 'whac_a_bug'
- * Badge  : streak_3 (🐛 Whac-A-Bug)
+ * Badge  : task_50 (🐛 Whac-A-Bug)
  *
  * Self-contained IIFE — no globals are exported.
  *
@@ -11,12 +11,13 @@
  * Responds to 'arcade:addTime' to inject extra seconds (token economy).
  *
  * Mechanics:
- *   • 4×4 grid of bug holes.  60-second base timer.
+ *   • 4×4 grid of bug holes.  55-second base timer.
  *   • Regular bugs (🐛) appear for ~1.8 s — clicking awards +1 point.
  *   • Golden bugs (✨) appear less often — clicking awards +3 points
  *     and adds 5 bonus seconds to the timer.
- *   • System errors (💀) appear occasionally — clicking deducts 5 points.
+ *   • System errors (💀) appear occasionally — clicking deducts 10 points.
  *   • Bugs that are not clicked in time simply disappear.
+ *   • Spawn rate ramps up linearly: +5 % speed every 30 seconds of play.
  *
  * CSS classes are defined in app.css under the .wab-* namespace.
  */
@@ -28,7 +29,7 @@
   /** Total cells in the 4×4 grid. */
   const GRID_SIZE = 16;
   /** Base game duration in seconds. */
-  const BASE_DURATION = 60;
+  const BASE_DURATION = 55;
 
   /**
    * Bug type definitions.
@@ -42,12 +43,12 @@
   const BUG_TYPES = [
     { id: 'bug',    weight: 70, duration: 1800, emoji: '\uD83D\uDC1B', points:  1, bonusTime: 0, cssClass: 'wab-cell--bug'    },
     { id: 'golden', weight: 20, duration: 1400, emoji: '\u2728',       points:  3, bonusTime: 5, cssClass: 'wab-cell--golden' },
-    { id: 'error',  weight: 10, duration: 2200, emoji: '\uD83D\uDC80', points: -5, bonusTime: 0, cssClass: 'wab-cell--error'  },
+    { id: 'error',  weight: 10, duration: 2200, emoji: '\uD83D\uDC80', points: -10, bonusTime: 0, cssClass: 'wab-cell--error'  },
   ];
 
   const TOTAL_WEIGHT = BUG_TYPES.reduce(function (s, b) { return s + b.weight; }, 0);
 
-  /** Minimum ms between two consecutive spawns. */
+  /** Minimum ms between two consecutive spawns (base rate). */
   const SPAWN_INTERVAL_MS = 700;
 
   // ── Game state ────────────────────────────────────────────────────────────
@@ -60,6 +61,10 @@
   let _active = false;
   /** Whether the round has ended. */
   let _over = false;
+  /** Elapsed seconds since the game started (used for speed ramping). */
+  let _elapsedSeconds = 0;
+  /** Current speed multiplier; increases by 5 % every 30 elapsed seconds. */
+  let _speedMultiplier = 1.0;
 
   /**
    * Per-cell state.  Index corresponds to the DOM cell index (0–15).
@@ -90,10 +95,12 @@
 
   /** Reset and start a fresh game. */
   function startGame() {
-    _score    = 0;
-    _timeLeft = BASE_DURATION;
-    _active   = true;
-    _over     = false;
+    _score          = 0;
+    _timeLeft       = BASE_DURATION;
+    _active         = true;
+    _over           = false;
+    _elapsedSeconds = 0;
+    _speedMultiplier = 1.0;
     _cells.forEach(function (c) { c.bugType = null; c.timeoutId = null; });
     render();
     startTimers();
@@ -117,21 +124,41 @@
     });
   }
 
-  /** Start the countdown and spawn scheduler. */
-  function startTimers() {
-    // 1-second countdown
-    _countdownInterval = setInterval(function () {
-      if (!_active) return;
-      _timeLeft--;
-      updateHud();
-      if (_timeLeft <= 0) endGame();
-    }, 1000);
-
-    // Spawn a bug on a random empty cell every SPAWN_INTERVAL_MS
+  /**
+   * (Re-)starts the spawn scheduler at the current speed multiplier.
+   * Called on game start and every time the multiplier changes.
+   */
+  function restartSpawnInterval() {
+    if (_spawnInterval !== null) {
+      clearInterval(_spawnInterval);
+      _spawnInterval = null;
+    }
+    var intervalMs = SPAWN_INTERVAL_MS / _speedMultiplier;
     _spawnInterval = setInterval(function () {
       if (!_active || _over) return;
       spawnBug();
-    }, SPAWN_INTERVAL_MS);
+    }, intervalMs);
+  }
+
+  /** Start the countdown and spawn scheduler. */
+  function startTimers() {
+    // 1-second countdown with linear speed ramp
+    _countdownInterval = setInterval(function () {
+      if (!_active) return;
+      _timeLeft--;
+      _elapsedSeconds++;
+      updateHud();
+      if (_timeLeft <= 0) { endGame(); return; }
+
+      // Recalculate speed multiplier: +5 % per 30 elapsed seconds
+      var newMultiplier = 1.0 + 0.05 * Math.floor(_elapsedSeconds / 30);
+      if (newMultiplier !== _speedMultiplier) {
+        _speedMultiplier = newMultiplier;
+        restartSpawnInterval();
+      }
+    }, 1000);
+
+    restartSpawnInterval();
   }
 
   // ── Spawn logic ────────────────────────────────────────────────────────────

@@ -152,13 +152,13 @@ router.get('/', (req: Request, res: Response): void => {
     const subtaskRows = db.prepare(`
       SELECT task_id,
         COUNT(*) AS subtask_total,
-        SUM(completed) AS subtask_done
+        COALESCE(SUM(completed), 0) AS subtask_done
       FROM task_subtasks
       WHERE task_id IN (${placeholders})
       GROUP BY task_id
     `).all(...taskIds) as Array<{ task_id: string; subtask_total: number; subtask_done: number }>;
     for (const r of subtaskRows) {
-      subtaskMap[r.task_id] = { subtask_total: r.subtask_total, subtask_done: r.subtask_done ?? 0 };
+      subtaskMap[r.task_id] = { subtask_total: r.subtask_total, subtask_done: r.subtask_done };
     }
   }
 

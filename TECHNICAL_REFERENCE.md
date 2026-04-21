@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version:** 1.8.2  
+**Version:** 1.8.3  
 **Author:** J Rowson  
 **Generated:** 2026-04-21
 
@@ -1417,7 +1417,7 @@ The entire application UI and all client-side logic is contained in a single HTM
 #### Arcade
 | Function | Description |
 |---|---|
-| `openArcade(badgeKey)` | Opens arcade modal; renders game based on badge key (hangman, wordsearch, code-breaker, or whac-a-bug); calls `POST /api/gamification/arcade/spend-token` before launching |
+| `openArcade(badgeKey)` | Opens arcade modal; renders game based on badge key (hangman → `first_task`, wordsearch → `task_10`, whac-a-bug → `task_50`, code-breaker → `task_100`); calls `POST /api/gamification/arcade/spend-token` before launching |
 | `closeArcade()` | Hides arcade modal |
 
 ---
@@ -1638,21 +1638,24 @@ Task-completion XP goes to the skill matching the task type name via `awardTaskX
 
 ### 14.2 Achievements Catalogue
 
-| Key | Name | Condition |
-|---|---|---|
-| `first_task` | First Steps | Complete 1 task |
-| `task_10` | Getting Started | Complete 10 tasks |
-| `task_50` | On a Roll | Complete 50 tasks |
-| `task_100` | Centurion | Complete 100 tasks |
-| `task_500` | Task Master | Complete 500 tasks |
-| `detail_oriented` | Detail Oriented | Add 50 progress notes |
-| `early_bird` | Early Bird | Complete 10 tasks before due date |
-| `type_explorer` | Type Explorer | Complete tasks across 5 different types |
-| `skill_level_5` | Specialist | Reach level 5 in any skill |
-| `skill_level_10` | Master of the Craft | Reach level 10 in any skill |
-| `streak_3` | Hat Trick | Recurring task streak of 3 |
-| `streak_7` | Lucky Streak | Recurring task streak of 7 |
-| `streak_30` | Unstoppable | Recurring task streak of 30 |
+| Key | Name | Condition | Arcade Game |
+|---|---|---|---|
+| `first_task` | First Steps | Complete 1 task | Hangman |
+| `task_10` | Getting Started | Complete 10 tasks | Wordsearch |
+| `task_50` | On a Roll | Complete 50 tasks | Whac-a-Bug |
+| `task_100` | Centurion | Complete 100 tasks | Code Breaker |
+| `task_500` | Task Master | Complete 500 tasks | *(in development)* |
+| `detail_oriented` | Detail Oriented | Add 50 progress notes | *(in development)* |
+| `early_bird` | Early Bird | Complete 10 tasks before due date | *(in development)* |
+| `type_explorer` | Type Explorer | Complete tasks across 5 different types | *(in development)* |
+| `skill_level_5` | Specialist | Reach level 5 in any skill | *(in development)* |
+| `skill_level_10` | Master of the Craft | Reach level 10 in any skill | *(in development)* |
+| `streak_3` | Hat Trick | Recurring task streak of 3 | *(in development)* |
+| `streak_7` | Lucky Streak | Recurring task streak of 7 | *(in development)* |
+| `streak_30` | Unstoppable | Recurring task streak of 30 | *(in development)* |
+
+Games are assigned to achievements in earliest-unlock order: Hangman, Wordsearch, Whac-a-Bug, Code Breaker unlock at the 1st, 2nd, 3rd, and 4th achievements respectively.  
+Each achievement card displays the associated game title so users know what they are working toward.
 
 Achievement IDs are identical to their keys (deterministic across restarts).  
 Checking is triggered by: task completion, note creation, gamification opt-in.

@@ -3267,7 +3267,7 @@ function renderGamificationProfile(profile, streaks) {
 
   // Achievements
   // Rebuild the set of keys the current user is allowed to open in the arcade.
-  // Admins get all 13 keys so they can test every game without having to earn it.
+  // Admins get all registered keys so they can test every game without having to earn it.
   const isAdmin = currentUser && currentUser.role === 'admin';
   unlockedArcadeKeys.clear();
   if (isAdmin) {
@@ -3283,18 +3283,23 @@ function renderGamificationProfile(profile, streaks) {
       const unlocked = !!a.unlockedAt;
       const dateStr = unlocked ? new Date(a.unlockedAt).toLocaleDateString(userLocale()) : '';
       // For admins every badge with a registered game is playable (for testing).
-      const hasGame = ARCADE_GAMES && ARCADE_GAMES[a.key] && (unlocked || isAdmin);
+      const gameEntry = ARCADE_GAMES && ARCADE_GAMES[a.key];
+      const hasGame = gameEntry && (unlocked || isAdmin);
       const playableClass = hasGame ? ' arcade-playable' : '';
       // Use data attribute + event delegation — avoids inline JS and single-quote injection.
       const dataAttr = hasGame ? ` data-arcade-key="${escHtml(a.key)}" role="button" tabindex="0"` : '';
       const dateLabel = unlocked
         ? escHtml(dateStr)
         : (isAdmin ? '\uD83D\uDEE0\uFE0F Admin preview' : '\uD83D\uDD12 Locked');
+      // Show the game title on every card that has an associated game so users
+      // know what they are working toward, whether locked or unlocked.
+      const gameLabel = gameEntry ? `<div class="gamif-ach-game">\uD83C\uDFAE ${escHtml(gameEntry.title)}</div>` : '';
       return `
         <div class="gamif-ach ${unlocked ? 'gamif-ach-unlocked' + playableClass : (isAdmin ? 'gamif-ach-admin-preview' + playableClass : 'gamif-ach-locked')}" title="${escHtml(a.description)}"${dataAttr}>
           <span class="gamif-ach-icon">${icon}</span>
           <div class="gamif-ach-name">${escHtml(a.name)}</div>
           <div class="gamif-ach-desc">${escHtml(a.description)}</div>
+          ${gameLabel}
           <div class="gamif-ach-date">${dateLabel}</div>
           ${hasGame ? '<div class="gamif-ach-play-hint">🕹️ Play</div>' : ''}
         </div>`;
@@ -4649,18 +4654,16 @@ const TOKEN_TIME_EXTENSION_SECONDS = 30;
  * that Stage 2 game modules will use to boot the correct mini-game.
  */
 const ARCADE_GAMES = {
-  first_task:      { title: 'Productivity Hangman', icon: '🥇', subtitle: 'Guess the word — don\u2019t lose your head!',       gameId: 'hangman'    },
-  task_10:         { title: 'Job Search',            icon: '🚀', subtitle: 'Find all six TaskIt! tools hidden in the grid!',    gameId: 'wordsearch' },
-  task_50:         { title: 'On a Roll',          icon: '🔥', subtitle: 'Keep the combo alive!',                gameId: 'roll'   },
-  task_100:        { title: 'Century Clash',      icon: '⚔️', subtitle: 'Defeat 100 enemies to claim glory!',  gameId: 'clash'  },
+  first_task:      { title: 'Productivity Hangman', icon: '🥇', subtitle: 'Guess the word — don\u2019t lose your head!',        gameId: 'hangman'      },
+  task_10:         { title: 'Job Search',            icon: '🚀', subtitle: 'Find all six TaskIt! tools hidden in the grid!',     gameId: 'wordsearch'   },
+  task_50:         { title: 'Whac-A-Bug',            icon: '\uD83D\uDC1B', subtitle: 'Squash the bugs before they crash the system!',  gameId: 'whac_a_bug'   },
+  task_100:        { title: 'Code Breaker',          icon: '\uD83D\uDD10', subtitle: 'Crack the secret 4-colour code in 10 attempts!', gameId: 'code_breaker' },
   task_500:        { title: 'Legendary Quest',    icon: '👑', subtitle: 'Conquer the leaderboard!',             gameId: 'legend' },
   detail_oriented: { title: 'Memory Matrix',      icon: '📝', subtitle: 'Match every task-card pair!',          gameId: 'memory' },
   early_bird:      { title: 'Early Bird Dash',    icon: '🐦', subtitle: 'Flap your way past the deadlines!',   gameId: 'bird'   },
   type_explorer:   { title: "Explorer's Maze",    icon: '🗺️', subtitle: 'Navigate through the task maze!',     gameId: 'maze'   },
   skill_level_5:   { title: 'Bullseye!',          icon: '🎯', subtitle: 'Hit every target with precision!',    gameId: 'target' },
   skill_level_10:  { title: 'Quiz Master',        icon: '🎓', subtitle: 'Test your TaskIt! knowledge!',         gameId: 'quiz'   },
-  streak_3:        { title: 'Whac-A-Bug',    icon: '\uD83D\uDC1B', subtitle: 'Squash the bugs before they crash the system!',  gameId: 'whac_a_bug'   },
-  streak_7:        { title: 'Code Breaker',  icon: '\uD83D\uDD10', subtitle: 'Crack the secret 4-colour code in 10 attempts!', gameId: 'code_breaker' },
   streak_30:       { title: 'Unstoppable Train',  icon: '🚂', subtitle: 'Keep the train running — no stops!', gameId: 'train'  },
 };
 
@@ -4670,8 +4673,8 @@ const ARCADE_GAMES = {
  * Access rules:
  *   • Regular users: only keys present in `unlockedArcadeKeys` (populated
  *     from the server-fetched gamification profile after authentication).
- *   • Site administrators: all 13 keys, regardless of earned status, so they
- *     can test every game without needing to earn the badge first.
+ *   • Site administrators: all registered keys, regardless of earned status,
+ *     so they can test every game without needing to earn the badge first.
  *
  * Includes a Time Budget pre-game check: if the user has consumed all of
  * their daily play allowance the game frame shows a locked message instead

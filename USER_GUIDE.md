@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.8.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.8.2** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -39,7 +39,7 @@ There are two ways to log in:
 4. To break the task into steps, click the **▶ Add Sub-tasks** toggle (directly below the Group field) and enter each step (see [Sub-tasks](#sub-tasks) below).
 5. To add free-text **Notes**, click the **▶ Notes** toggle to expand the notes field. When editing a task that already has notes, the field opens automatically.
 6. Set a **due date** if needed (defaults to midnight today).
-7. To make the task repeat automatically, tick **Repeat Task** and choose the interval (e.g. every 2 weeks). When a recurring task is marked complete, a new copy is created for the next due date.
+7. To make the task repeat automatically, tick **Repeat Task** and choose the interval (e.g. every 2 weeks). When a recurring task is marked complete, a new copy is created for the next due date — including all of its sub-tasks (checklist items), reset and ready to be completed again.
 8. Click **Save Task**.
 
 Due dates default to **midnight on today's date** — handy for quick captures!
@@ -387,4 +387,4 @@ Tap the **⭐ Progress** tab in the bottom navigation. You can also enable or di
 
 ---
 
-*TaskIt! v1.8.1 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*TaskIt! v1.8.2 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*

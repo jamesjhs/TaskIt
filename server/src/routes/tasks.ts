@@ -55,6 +55,20 @@ function computeNextDue(dueDateMs: number, interval: number, unit: string): numb
   return d.getTime();
 }
 
+// Copies all subtasks from one task to another with completion state reset,
+// preserving title and sort order. Used when spawning the next recurrence.
+function copySubtasksToNewTask(fromTaskId: string, toTaskId: string, now: number): void {
+  const subtasks = db.prepare(
+    'SELECT title, sort_order FROM task_subtasks WHERE task_id = ? ORDER BY sort_order ASC, created_at ASC'
+  ).all(fromTaskId) as Array<{ title: string; sort_order: number }>;
+  const insertSubtask = db.prepare(
+    'INSERT INTO task_subtasks (id, task_id, title, completed, sort_order, created_at) VALUES (?, ?, ?, 0, ?, ?)'
+  );
+  for (const s of subtasks) {
+    insertSubtask.run(randomUUID(), toTaskId, s.title, s.sort_order, now);
+  }
+}
+
 router.use(authMiddleware);
 
 router.get('/', (req: Request, res: Response): void => {
@@ -596,6 +610,10 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
           insertAssignee.run(newId, a.user_id);
         }
 
+        // Copy subtasks to the new occurrence with completion state reset so the
+        // user can complete them fresh in the next recurrence.
+        copySubtasksToNewTask(taskId, newId, now);
+
         // Archive the completed parent so only the fresh occurrence appears in the active list
         db.prepare('UPDATE tasks SET archived = 1, updated_at = ? WHERE id = ?').run(now, taskId);
       });
@@ -856,6 +874,10 @@ router.delete('/:id', (req: Request, res: Response): void => {
       for (const a of assignees) {
         insertAssignee.run(newId, a.user_id);
       }
+
+      // Copy subtasks to the new occurrence with completion state reset so the
+      // user can complete them fresh in the next recurrence.
+      copySubtasksToNewTask(taskId, newId, now2);
 
       db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(taskId);
       db.prepare('DELETE FROM task_notes WHERE task_id = ?').run(taskId);

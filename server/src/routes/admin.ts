@@ -477,4 +477,92 @@ router.delete('/collectibles/:id', (req: Request, res: Response): void => {
   res.status(204).send();
 });
 
+// ─── Bulk Seed ─────────────────────────────────────────────────────────────────
+
+/**
+ * POST /api/admin/collectibles/seed
+ * Bulk-creates categories and collectibles from a JSON payload.
+ *
+ * Body: an array of category objects:
+ * [
+ *   {
+ *     "name": "Category Name",
+ *     "items": [
+ *       { "name": "Item Name", "description": "Optional description", "rarity": "common|rare|epic" }
+ *     ]
+ *   }
+ * ]
+ *
+ * Categories that already exist (same name, case-insensitive) are reused.
+ * Items that already exist (same name + category, case-insensitive) are skipped.
+ * Returns a summary: { categoriesCreated, categoriesReused, itemsCreated, itemsSkipped }.
+ */
+router.post('/collectibles/seed', (req: Request, res: Response): void => {
+  const payload = req.body;
+
+  if (!Array.isArray(payload) || payload.length === 0) {
+    res.status(400).json({ error: 'Body must be a non-empty array of category objects' });
+    return;
+  }
+
+  let categoriesCreated = 0;
+  let categoriesReused  = 0;
+  let itemsCreated      = 0;
+  let itemsSkipped      = 0;
+
+  const now = Date.now();
+
+  const seedTx = db.transaction(() => {
+    for (const cat of payload) {
+      if (!cat.name || typeof cat.name !== 'string' || !cat.name.trim()) continue;
+      const catName = cat.name.trim();
+
+      // Check for an existing (non-archived) category with this name (case-insensitive)
+      let existing = db.prepare(
+        'SELECT id FROM item_categories WHERE LOWER(name) = LOWER(?) AND archived = 0'
+      ).get(catName) as { id: string } | undefined;
+
+      let catId: string;
+      if (existing) {
+        catId = existing.id;
+        categoriesReused++;
+      } else {
+        catId = randomUUID();
+        db.prepare(
+          'INSERT INTO item_categories (id, name, archived, created_at) VALUES (?, ?, 0, ?)'
+        ).run(catId, catName, now);
+        categoriesCreated++;
+      }
+
+      if (!Array.isArray(cat.items)) continue;
+
+      for (const item of cat.items) {
+        if (!item.name || typeof item.name !== 'string' || !item.name.trim()) continue;
+        const itemName = item.name.trim();
+        const rarity   = (item.rarity || 'common').toLowerCase();
+        if (!ALLOWED_RARITIES.has(rarity)) continue;
+
+        // Skip if an item with the same name already exists in this category
+        const dup = db.prepare(
+          'SELECT id FROM collectibles WHERE LOWER(name) = LOWER(?) AND category_id = ? AND archived = 0'
+        ).get(itemName, catId);
+        if (dup) {
+          itemsSkipped++;
+          continue;
+        }
+
+        const itemId = randomUUID();
+        db.prepare(
+          'INSERT INTO collectibles (id, name, description, category_id, rarity, archived, created_at) VALUES (?, ?, ?, ?, ?, 0, ?)'
+        ).run(itemId, itemName, item.description?.trim() || null, catId, rarity, now);
+        itemsCreated++;
+      }
+    }
+  });
+
+  seedTx();
+
+  res.status(201).json({ categoriesCreated, categoriesReused, itemsCreated, itemsSkipped });
+});
+
 export default router;

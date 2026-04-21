@@ -99,13 +99,13 @@
   <section class="lp-hero">
     <div style="position:relative;z-index:1">
       <div class="lp-hero-eyebrow"><span class="lp-hero-eyebrow-dot"></span>🎮 Gamified Task Management · Free &amp; Open Source</div>
-      <h1>Task It.<br><span>Level Up Every Day.</span></h1>
+      <h1>Task It!<br><span>Level Up Every Day.</span></h1>
       <p class="lp-hero-sub">TaskIt! turns everyday tasks into progress you can see — earn XP, unlock achievements, and build streaks as you tackle life, work, and everything in between. On any device, anywhere.</p>
       <div class="lp-hero-ctas">
         <button onclick="goToAuth('register')" class="lp-btn-hero-primary">🚀 Get Started Free</button>
         <button onclick="goToAuth('login')" class="lp-btn-hero-outline">Sign In</button>
       </div>
-      <p class="lp-hero-note">No credit card required &nbsp;·&nbsp; Install as an app on any device &nbsp;·&nbsp; Gamification optional</p>
+      <p class="lp-hero-note">Install as an app on any device &nbsp;·&nbsp; Gamification optional</p>
     </div>
   </section>
 
@@ -120,7 +120,7 @@
       <div class="lp-stat-label">Built-in gamification</div>
     </div>
     <div class="lp-stat-item">
-      <div class="lp-stat-num">PWA</div>
+      <div class="lp-stat-num">App-based</div>
       <div class="lp-stat-label">Install on any device</div>
     </div>
     <div class="lp-stat-item">
@@ -836,7 +836,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.5.2</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
+      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.6.1</span> &nbsp;·&nbsp; &copy; J Rowson 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>
@@ -1097,6 +1097,7 @@
       <button onclick="showAdminTab('reports')" id="adminTabReports" class="tab-btn">Reports</button>
       <button onclick="showAdminTab('feedback')" id="adminTabFeedback" class="tab-btn">Feedback</button>
       <button onclick="showAdminTab('xpevents')" id="adminTabXpevents" class="tab-btn">XP Events</button>
+      <button onclick="showAdminTab('collectibles')" id="adminTabCollectibles" class="tab-btn">🎒 Items</button>
     </div>
     <div id="adminSmtpTab">
       <div class="card">
@@ -1172,6 +1173,86 @@
         <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Configure how much XP each action awards. Changes take effect immediately for all users.</p>
         <div id="adminXpEventsList"><div class="loading">Loading…</div></div>
       </div>
+    </div>
+
+    <!-- ===== COLLECTIBLES ADMIN TAB ===== -->
+    <div id="adminCollectiblesTab" class="hidden">
+
+      <!-- Categories -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <p class="card-title" style="margin:0">📁 Categories</p>
+          <button onclick="loadCollectiblesAdmin()" class="btn btn-sm btn-secondary">Refresh</button>
+        </div>
+        <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Group collectibles into named collections. Deleting a category soft-archives it and hides it from drop rolls.</p>
+        <!-- Add category -->
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <input id="newCatName" type="text" placeholder="New category name…" class="input" style="flex:1;font-size:.9rem" maxlength="80" />
+          <button onclick="adminCreateCategory()" class="btn btn-primary btn-sm" style="white-space:nowrap">+ Add</button>
+        </div>
+        <div id="adminCatList"><div class="loading">Loading…</div></div>
+      </div>
+
+      <!-- Items -->
+      <div class="card" style="margin-bottom:16px">
+        <p class="card-title">🎁 Collectible Items</p>
+        <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Create, edit or delete individual items. Each item belongs to a category and has a rarity tier.</p>
+        <!-- Add / Edit form -->
+        <div id="collectibleForm" style="background:#f5f3ff;border-radius:10px;padding:14px;margin-bottom:14px">
+          <p id="collectibleFormTitle" style="font-size:.88rem;font-weight:700;color:#374151;margin-bottom:10px">New Item</p>
+          <input type="hidden" id="collectibleEditId" value="" />
+          <div class="form-group">
+            <label>Name</label>
+            <input id="collectibleName" type="text" class="input" placeholder="e.g. Golden Compass" maxlength="100" />
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <input id="collectibleDesc" type="text" class="input" placeholder="Short flavour text (optional)" maxlength="255" />
+          </div>
+          <div class="admin-field-row">
+            <div class="form-group">
+              <label>Category</label>
+              <select id="collectibleCatId" class="select"></select>
+            </div>
+            <div class="form-group">
+              <label>Rarity</label>
+              <select id="collectibleRarity" class="select">
+                <option value="common">Common</option>
+                <option value="rare">Rare</option>
+                <option value="epic">Epic</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button onclick="adminSaveCollectible()" class="btn btn-primary btn-sm" style="flex:1">Save Item</button>
+            <button onclick="adminClearCollectibleForm()" class="btn btn-secondary btn-sm">Clear</button>
+          </div>
+        </div>
+        <div id="adminItemList"><div class="loading">Loading…</div></div>
+      </div>
+
+      <!-- Bulk Seed -->
+      <div class="card">
+        <p class="card-title">🌱 Bulk Seed</p>
+        <p style="font-size:.82rem;color:#6b7280;margin-bottom:10px">Paste a JSON array to create multiple categories and items at once. Existing entries (matched by name) are skipped without error.</p>
+        <details style="margin-bottom:10px">
+          <summary style="font-size:.82rem;font-weight:600;color:#374151;cursor:pointer;padding:4px 0">Format reference</summary>
+          <pre style="font-size:.75rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px;overflow-x:auto;margin-top:8px;line-height:1.5">[
+  {
+    "name": "Space Explorer",
+    "items": [
+      { "name": "Rocket Badge",   "description": "For the stars.",  "rarity": "common" },
+      { "name": "Nebula Crystal", "description": "Rare cosmic gem.", "rarity": "rare"   },
+      { "name": "Black Hole Key", "description": "Legendary find.", "rarity": "epic"   }
+    ]
+  }
+]</pre>
+        </details>
+        <textarea id="seedPayloadInput" class="textarea" rows="8" placeholder="Paste JSON array here…" style="font-family:monospace;font-size:.8rem"></textarea>
+        <button onclick="adminSeedCollectibles()" class="btn btn-primary btn-full" style="margin-top:10px">🌱 Run Seed</button>
+        <div id="seedResult" class="hidden" style="margin-top:10px;font-size:.85rem;color:#374151;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px"></div>
+      </div>
+
     </div>
   </div>
 
@@ -3451,7 +3532,7 @@ async function loadAdminStats() {
 }
 
 function showAdminTab(tab) {
-  ['smtp', 'locked', 'reports', 'feedback', 'xpevents'].forEach(t => {
+  ['smtp', 'locked', 'reports', 'feedback', 'xpevents', 'collectibles'].forEach(t => {
     document.getElementById('admin' + t.charAt(0).toUpperCase() + t.slice(1) + 'Tab').classList.toggle('hidden', t !== tab);
     const btn = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
     btn.classList.toggle('active', t === tab);
@@ -3460,6 +3541,7 @@ function showAdminTab(tab) {
   if (tab === 'reports') loadUserReports();
   if (tab === 'feedback') loadAdminFeedback();
   if (tab === 'xpevents') loadXpEvents();
+  if (tab === 'collectibles') loadCollectiblesAdmin();
 }
 
 async function loadAdminPage() {
@@ -3626,6 +3708,227 @@ async function saveXpEvent(key) {
     await api('PATCH', '/admin/xp-events/' + encodeURIComponent(key), { xp_value, enabled: enabledEl.checked });
     toast('XP event saved!');
   } catch (err) { toast(err.message, 'error'); }
+}
+
+// ========== Admin Collectibles ==========
+
+/** In-memory cache of categories, reloaded on each tab visit. */
+let _adminCats = [];
+
+/**
+ * Loads (or reloads) both the category list and the items list in the
+ * Collectibles admin tab.  Also refreshes the category <select> in the
+ * item add/edit form.
+ */
+async function loadCollectiblesAdmin() {
+  await Promise.all([loadAdminCategories(), loadAdminItems()]);
+}
+
+async function loadAdminCategories() {
+  const listEl = document.getElementById('adminCatList');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="loading">Loading\u2026</div>';
+  try {
+    _adminCats = await api('GET', '/admin/collectible-categories');
+    // Populate category dropdown in the item form
+    const sel = document.getElementById('collectibleCatId');
+    if (sel) {
+      const current = sel.value;
+      sel.innerHTML = _adminCats.length
+        ? _adminCats.map(c => `<option value="${escHtml(c.id)}">${escHtml(c.name)}</option>`).join('')
+        : '<option value="">— No categories yet —</option>';
+      // Re-select previously selected value if still present
+      if (current && _adminCats.some(c => c.id === current)) sel.value = current;
+    }
+    if (!_adminCats.length) {
+      listEl.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">No categories yet.</p>';
+      return;
+    }
+    listEl.innerHTML = _adminCats.map(c => `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f5f9">
+        <span style="flex:1;font-size:.9rem;color:#374151;font-weight:600">${escHtml(c.name)}</span>
+        <button onclick="adminRenameCategory('${escHtml(c.id)}')" class="btn btn-sm btn-outline" style="flex-shrink:0">Rename</button>
+        <button onclick="adminDeleteCategory('${escHtml(c.id)}', '${escHtml(c.name)}')" class="btn btn-sm btn-danger" style="flex-shrink:0">Delete</button>
+      </div>`).join('');
+  } catch (err) {
+    listEl.innerHTML = `<div class="loading" style="color:#dc2626">${escHtml(err.message)}</div>`;
+  }
+}
+
+async function adminCreateCategory() {
+  const input = document.getElementById('newCatName');
+  const name = input ? input.value.trim() : '';
+  if (!name) { toast('Please enter a category name', 'error'); return; }
+  try {
+    await api('POST', '/admin/collectible-categories', { name });
+    input.value = '';
+    toast('Category created!');
+    await loadCollectiblesAdmin();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function adminRenameCategory(id) {
+  const cat = _adminCats.find(c => c.id === id);
+  const current = cat ? cat.name : '';
+  const newName = window.prompt('Rename category:', current);
+  if (!newName || !newName.trim()) return;
+  try {
+    await api('PATCH', '/admin/collectible-categories/' + id, { name: newName.trim() });
+    toast('Category renamed!');
+    await loadCollectiblesAdmin();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function adminDeleteCategory(id, name) {
+  if (!window.confirm('Delete category "' + name + '"? This will also hide all items in it from future drops.')) return;
+  try {
+    await api('DELETE', '/admin/collectible-categories/' + id);
+    toast('Category deleted.');
+    await loadCollectiblesAdmin();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function loadAdminItems() {
+  const listEl = document.getElementById('adminItemList');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="loading">Loading\u2026</div>';
+  try {
+    const items = await api('GET', '/admin/collectibles');
+    if (!items.length) {
+      listEl.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">No items yet. Add one above or use Bulk Seed.</p>';
+      return;
+    }
+
+    // Group by category for a readable layout
+    const byCategory = new Map();
+    for (const item of items) {
+      if (!byCategory.has(item.category_id)) {
+        byCategory.set(item.category_id, { name: item.category_name, items: [] });
+      }
+      byCategory.get(item.category_id).items.push(item);
+    }
+
+    const RARITY_COLOURS = { common: '#475569', rare: '#5b21b6', epic: '#7e22ce' };
+    const html = [];
+    for (const [, cat] of byCategory) {
+      html.push(
+        '<p style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;margin:12px 0 6px">' +
+        escHtml(cat.name) + '</p>'
+      );
+      for (const item of cat.items) {
+        const rarityColor = RARITY_COLOURS[item.rarity] || '#475569';
+        html.push(`
+          <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f5f9">
+            <div>
+              <span style="font-size:.9rem;font-weight:600;color:#374151">${escHtml(item.name)}</span>
+              <span style="font-size:.75rem;font-weight:700;color:${rarityColor};margin-left:6px">${escHtml(item.rarity)}</span>
+              ${item.description ? `<p style="font-size:.78rem;color:#9ca3af;margin:1px 0 0">${escHtml(item.description)}</p>` : ''}
+            </div>
+            <button onclick="adminEditCollectible('${escHtml(item.id)}')" class="btn btn-sm btn-outline" style="white-space:nowrap">Edit</button>
+            <button onclick="adminDeleteCollectible('${escHtml(item.id)}', '${escHtml(item.name)}')" class="btn btn-sm btn-danger" style="white-space:nowrap">Delete</button>
+          </div>`);
+      }
+    }
+    listEl.innerHTML = html.join('');
+  } catch (err) {
+    listEl.innerHTML = `<div class="loading" style="color:#dc2626">${escHtml(err.message)}</div>`;
+  }
+}
+
+/** Populates the item form with an existing item's data for editing. */
+async function adminEditCollectible(id) {
+  try {
+    const items = await api('GET', '/admin/collectibles');
+    const item = items.find(i => i.id === id);
+    if (!item) { toast('Item not found', 'error'); return; }
+
+    document.getElementById('collectibleEditId').value = item.id;
+    document.getElementById('collectibleName').value   = item.name;
+    document.getElementById('collectibleDesc').value   = item.description || '';
+    document.getElementById('collectibleRarity').value = item.rarity;
+
+    // Ensure categories are loaded, then select the right one
+    if (!_adminCats.length) await loadAdminCategories();
+    document.getElementById('collectibleCatId').value  = item.category_id;
+
+    document.getElementById('collectibleFormTitle').textContent = 'Edit Item — ' + item.name;
+    // Scroll form into view
+    document.getElementById('collectibleForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+/** Clears the item add/edit form back to 'New Item' mode. */
+function adminClearCollectibleForm() {
+  document.getElementById('collectibleEditId').value = '';
+  document.getElementById('collectibleName').value   = '';
+  document.getElementById('collectibleDesc').value   = '';
+  document.getElementById('collectibleRarity').value = 'common';
+  document.getElementById('collectibleFormTitle').textContent = 'New Item';
+}
+
+/** Saves (creates or updates) a collectible from the form. */
+async function adminSaveCollectible() {
+  const editId      = document.getElementById('collectibleEditId').value.trim();
+  const name        = document.getElementById('collectibleName').value.trim();
+  const description = document.getElementById('collectibleDesc').value.trim();
+  const categoryId  = document.getElementById('collectibleCatId').value;
+  const rarity      = document.getElementById('collectibleRarity').value;
+
+  if (!name) { toast('Item name is required', 'error'); return; }
+  if (!categoryId) { toast('Please select a category', 'error'); return; }
+
+  try {
+    if (editId) {
+      await api('PATCH', '/admin/collectibles/' + editId, { name, description: description || null, categoryId, rarity });
+      toast('Item updated!');
+    } else {
+      await api('POST', '/admin/collectibles', { name, description: description || null, categoryId, rarity });
+      toast('Item created!');
+    }
+    adminClearCollectibleForm();
+    await loadAdminItems();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function adminDeleteCollectible(id, name) {
+  if (!window.confirm('Delete "' + name + '"? It will no longer appear in future drops.')) return;
+  try {
+    await api('DELETE', '/admin/collectibles/' + id);
+    toast('Item deleted.');
+    await loadAdminItems();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+/** Parses the textarea JSON and POSTs to the seed endpoint. */
+async function adminSeedCollectibles() {
+  const raw = (document.getElementById('seedPayloadInput').value || '').trim();
+  if (!raw) { toast('Please paste JSON into the text area first', 'error'); return; }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    toast('Invalid JSON — please check your input', 'error');
+    return;
+  }
+
+  const resultEl = document.getElementById('seedResult');
+  resultEl.classList.add('hidden');
+
+  try {
+    const data = await api('POST', '/admin/collectibles/seed', parsed);
+    resultEl.innerHTML =
+      '✅ Seed complete — ' +
+      data.categoriesCreated + ' categories created, ' +
+      data.categoriesReused  + ' reused, ' +
+      data.itemsCreated      + ' items created, ' +
+      data.itemsSkipped      + ' skipped (already existed).';
+    resultEl.classList.remove('hidden');
+    toast('Seed successful!');
+    await loadCollectiblesAdmin();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
 }
 
 // ========== Notifications ==========

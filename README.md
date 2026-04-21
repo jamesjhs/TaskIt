@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.3.2** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.6.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -104,12 +104,18 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 
 ## Changelog
 
-### v1.3.2
+### v1.6.1
 
-- **🤝 Friends system** — users can connect with each other outside of groups for cross-group XP competition. Three ways to add a friend: share your personal **invite link / QR code** (valid 7 days), use a direct **username + friend key** lookup, or send the link to someone new to TaskIt!. Friends are shown on the Progress tab in a dedicated leaderboard.
-- **🏆 Leaderboards** — group members ranked by total XP are shown directly in the Group Members modal (lazy-loaded). The Progress tab also shows per-group leaderboards and a friends leaderboard.
-- **🔑 Persistent login ("Remember me")** — a *Remember me* checkbox on the login screen keeps the session alive in `localStorage` for 30 days. Without it the session is stored in `sessionStorage` only and clears when the browser tab closes (7-day JWT).
-- **Version bump** — server, README, user guides updated to 1.3.2.
+- **🎒 Collectibles & Loot Drop system** — completing tasks can now reward a random collectible item. A **Loot Drop Modal** appears after task completion if a drop is rolled, showing the item name, rarity (Common / Rare / Epic), category, and description. Players choose to **Keep** the item (adds it permanently to their inventory) or **Recycle** it for a small XP bonus. High-rarity items prompt a confirmation before recycling.
+- **📦 My Collection view** — a new *🎒 My Collection* section on the Progress tab shows the full catalogue grouped by category. Owned items display in colour; unowned catalogue entries appear as greyed-out silhouettes so players can see what they have yet to collect. Each category is collapsible and scales gracefully to large catalogues.
+- **⚙️ Admin collectibles management** — a new **🎒 Items** tab in the Admin Panel gives site administrators full CRUD control over:
+  - **Categories** — create, rename, and soft-delete item categories.
+  - **Items** — create (with name, optional description, category, and rarity), inline-edit, and soft-delete collectible items.
+  - **Bulk Seed** — paste a structured JSON array to create multiple categories and items in one step. Existing entries (matched by name) are skipped without error, making re-seeding safe.
+- **🌱 `POST /api/admin/collectibles/seed`** — new bulk-seed endpoint consumed by the admin UI. Returns a detailed summary (categories created / reused, items created / skipped).
+- **🗂️ `GET /api/gamification/catalogue`** — public (authenticated) endpoint that returns the full active catalogue, used to render unowned silhouette placeholders in the player-facing Collection view.
+- **♻️ `POST /api/gamification/inventory/recycle`** — endpoint to discard a pending drop in exchange for a configurable `recycle_drop` XP event (15 XP by default, adjustable in Admin → XP Events).
+- **Version bump** — server, README, user guides, and technical reference updated to 1.6.1.
 
 ### v1.3.1
 

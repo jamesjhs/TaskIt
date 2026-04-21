@@ -27,7 +27,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
 
   const token = authHeader.slice(7);
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as AuthPayload;
+    const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as AuthPayload;
 
     // Re-verify the user still exists and is not currently locked.
     // This ensures that deleted, locked, or password-changed accounts cannot

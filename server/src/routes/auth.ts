@@ -135,7 +135,8 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as UserRow | undefined;
+  const normalizedLoginEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(normalizedLoginEmail) as UserRow | undefined;
 
   // Check if account is locked
   if (user && user.locked_until && user.locked_until > Date.now()) {
@@ -233,7 +234,7 @@ router.post('/verify-otp', (req: Request, res: Response): void => {
   const token = jwt.sign(
     { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale },
     JWT_SECRET,
-    { expiresIn: tokenExpiry }
+    { algorithm: 'HS256', expiresIn: tokenExpiry }
   );
   res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale }, rememberMe: !!rememberMe });
 });
@@ -248,7 +249,8 @@ router.post('/magic-link', async (req: Request, res: Response): Promise<void> =>
     return;
   }
 
-  const user = db.prepare('SELECT id, email FROM users WHERE email = ?').get(email) as
+  const normalizedMagicEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const user = db.prepare('SELECT id, email FROM users WHERE email = ?').get(normalizedMagicEmail) as
     | { id: string; email: string }
     | undefined;
 
@@ -321,7 +323,7 @@ router.get('/magic-link/verify', (req: Request, res: Response): void => {
   const jwtToken = jwt.sign(
     { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale },
     JWT_SECRET,
-    { expiresIn: tokenExpiry }
+    { algorithm: 'HS256', expiresIn: tokenExpiry }
   );
 
   res.json({ token: jwtToken, user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale }, rememberMe: rememberMe === 'true' });
@@ -339,7 +341,8 @@ router.post('/forgot-password', async (req: Request, res: Response): Promise<voi
     return;
   }
 
-  const user = db.prepare('SELECT id, email FROM users WHERE email = ?').get(email) as
+  const normalizedResetEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const user = db.prepare('SELECT id, email FROM users WHERE email = ?').get(normalizedResetEmail) as
     | { id: string; email: string }
     | undefined;
 

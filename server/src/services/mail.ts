@@ -3,6 +3,16 @@ import db from '../db';
 
 const DEFAULT_FROM = process.env.SMTP_DEFAULT_FROM || 'noreply@taskit.jahosi.co.uk';
 
+/** Escape special HTML characters to prevent injection in HTML email bodies. */
+function escHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 interface SmtpSettings {
   host: string;
   port: number;
@@ -49,7 +59,7 @@ export async function sendMagicLink(to: string, token: string, baseUrl: string, 
     to,
     subject,
     text: `${intro}\n\n${link}\n\nIf you did not request this, you can safely ignore this email.`,
-    html: `<p>${intro}</p><p><a href="${link}">${link}</a></p><p>If you did not request this, you can safely ignore this email.</p>`,
+    html: `<p>${intro}</p><p><a href="${escHtml(link)}">${escHtml(link)}</a></p><p>If you did not request this, you can safely ignore this email.</p>`,
   });
 }
 
@@ -86,7 +96,7 @@ export async function sendGroupInvite(to: string, groupName: string, inviteUrl: 
 
   const inviterLabel = inviterName ? `${inviterName} has` : 'You have been';
   const subject = `${inviterLabel} invited you to join "${groupName}" on TaskIt!`;
-  const intro = `${inviterLabel} invited you to join the group <strong>${groupName}</strong> on TaskIt!.`;
+  const intro = `${escHtml(inviterLabel)} invited you to join the group <strong>${escHtml(groupName)}</strong> on TaskIt!.`;
   const body = `Click the link below to accept the invitation and join the group (link expires in 7 days):`;
 
   await transporter.sendMail({
@@ -94,7 +104,7 @@ export async function sendGroupInvite(to: string, groupName: string, inviteUrl: 
     to,
     subject,
     text: `${inviterLabel} invited you to join "${groupName}" on TaskIt!.\n\n${body}\n\n${inviteUrl}\n\nIf you did not expect this invitation, you can safely ignore this email.`,
-    html: `<p>${intro}</p><p>${body}</p><p><a href="${inviteUrl}">${inviteUrl}</a></p><p>If you did not expect this invitation, you can safely ignore this email.</p>`,
+    html: `<p>${intro}</p><p>${body}</p><p><a href="${escHtml(inviteUrl)}">${escHtml(inviteUrl)}</a></p><p>If you did not expect this invitation, you can safely ignore this email.</p>`,
   });
 }
 
@@ -115,7 +125,7 @@ export async function sendPasswordReset(to: string, token: string, baseUrl: stri
     to,
     subject: 'Reset your TaskIt! password',
     text: `Click the link below to reset your TaskIt! password (expires in 15 minutes):\n\n${link}\n\nIf you did not request a password reset, you can safely ignore this email.`,
-    html: `<p>Click the link below to reset your TaskIt! password (expires in 15 minutes):</p><p><a href="${link}">${link}</a></p><p>If you did not request a password reset, you can safely ignore this email.</p>`,
+    html: `<p>Click the link below to reset your TaskIt! password (expires in 15 minutes):</p><p><a href="${escHtml(link)}">${escHtml(link)}</a></p><p>If you did not request a password reset, you can safely ignore this email.</p>`,
   });
 }
 
@@ -136,7 +146,7 @@ export async function sendTaskReminder(to: string, task: { title: string; due_da
     ? `The task "${task.title}" was due on ${dueStr} and has not been completed.`
     : `This is a reminder that the task "${task.title}" is due on ${dueStr}.`;
   const bodyHtml = isOverdue
-    ? `<p>The task <strong>${task.title}</strong> was due on <strong>${dueStr}</strong> and has not been completed.</p>`
-    : `<p>This is a reminder that the task <strong>${task.title}</strong> is due on <strong>${dueStr}</strong>.</p>`;
+    ? `<p>The task <strong>${escHtml(task.title)}</strong> was due on <strong>${escHtml(dueStr)}</strong> and has not been completed.</p>`
+    : `<p>This is a reminder that the task <strong>${escHtml(task.title)}</strong> is due on <strong>${escHtml(dueStr)}</strong>.</p>`;
   await transporter.sendMail({ from, to, subject, text: bodyText, html: bodyHtml });
 }

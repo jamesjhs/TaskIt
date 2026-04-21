@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.6.2** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.7.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -103,6 +103,17 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.7.0
+
+- **🔒 Security hardening** — comprehensive security audit and remediation:
+  - JWT algorithm explicitly locked to `HS256` in both `jwt.verify` (auth middleware) and all `jwt.sign` calls, preventing algorithm-confusion attacks.
+  - Email inputs in login, magic-link, and forgot-password endpoints now normalized (trimmed and lowercased) before DB lookup, matching registration behaviour and eliminating case-sensitive lookup failures.
+  - HTML email templates now HTML-escape all user-controlled content (task titles, group names, inviter usernames, URLs) to prevent HTML-injection in email clients.
+  - `express.json()` body-size limit set to 50 KB to mitigate memory-exhaustion DoS attacks.
+  - Input length caps added: task title ≤ 255 chars, task details ≤ 10 000 chars, task note ≤ 5 000 chars, report reason ≤ 1 000 chars, group name ≤ 200 chars, task-type name ≤ 100 chars, admin reply ≤ 5 000 chars.
+  - `assigneeIds` array capped at 100 entries per request to prevent oversized `IN (…)` queries.
+- **Version bump** — server, README, user guides, and technical reference updated to 1.7.0.
 
 ### v1.6.2
 

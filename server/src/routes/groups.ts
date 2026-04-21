@@ -100,6 +100,10 @@ router.post('/', (req: Request, res: Response): void => {
 
   // Display name is optional — falls back to the invite word pair
   const trimmedName = name && typeof name === 'string' ? name.trim() : '';
+  if (trimmedName.length > 200) {
+    res.status(400).json({ error: 'Group name must not exceed 200 characters' });
+    return;
+  }
   const groupName = trimmedName || inviteName;
 
   const sharedKey = generateSharedKey();
@@ -432,6 +436,11 @@ router.patch('/:id/name', (req: Request, res: Response): void => {
 
   if (!name || typeof name !== 'string' || !name.trim()) {
     res.status(400).json({ error: 'name is required' });
+    return;
+  }
+
+  if (name.trim().length > 200) {
+    res.status(400).json({ error: 'Group name must not exceed 200 characters' });
     return;
   }
 

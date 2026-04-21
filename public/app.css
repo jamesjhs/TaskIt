@@ -544,6 +544,33 @@ a:hover { text-decoration: underline; }
 .admin-field-row { display: flex; gap: 12px; }
 .admin-field-row .form-group { flex: 1; }
 
+/* Admin collapsible cards */
+.admin-collapsible { padding: 0; }
+.admin-collapsible > .admin-collapsible-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1a1a2e;
+  user-select: none;
+  gap: 8px;
+}
+.admin-collapsible > .admin-collapsible-summary::-webkit-details-marker { display: none; }
+.admin-collapsible > .admin-collapsible-summary::before {
+  content: '▶';
+  font-size: .7rem;
+  color: #9ca3af;
+  transition: transform .2s;
+  flex-shrink: 0;
+  order: -1;
+}
+.admin-collapsible[open] > .admin-collapsible-summary::before { transform: rotate(90deg); }
+.admin-collapsible > div { padding: 0 16px 16px; }
+
 /* Toast */
 .toast-container {
   position: fixed;

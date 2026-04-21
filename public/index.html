@@ -1094,11 +1094,8 @@
     <div class="tab-group" style="margin-bottom:20px">
       <button onclick="showAdminTab('smtp')" id="adminTabSmtp" class="tab-btn active">SMTP</button>
       <button onclick="showAdminTab('users')" id="adminTabUsers" class="tab-btn">👥 Users</button>
-      <button onclick="showAdminTab('locked')" id="adminTabLocked" class="tab-btn">Locked</button>
-      <button onclick="showAdminTab('reports')" id="adminTabReports" class="tab-btn">Reports</button>
       <button onclick="showAdminTab('feedback')" id="adminTabFeedback" class="tab-btn">Feedback</button>
-      <button onclick="showAdminTab('xpevents')" id="adminTabXpevents" class="tab-btn">XP Events</button>
-      <button onclick="showAdminTab('collectibles')" id="adminTabCollectibles" class="tab-btn">🎒 Items</button>
+      <button onclick="showAdminTab('gamify')" id="adminTabGamify" class="tab-btn">🎮 Gamify</button>
     </div>
     <div id="adminSmtpTab">
       <div class="card">
@@ -1140,52 +1137,57 @@
     </div>
     <!-- ===== USERS ADMIN TAB ===== -->
     <div id="adminUsersTab" class="hidden">
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <p class="card-title" style="margin:0">👥 User Management</p>
-          <button onclick="loadUsersPanel()" class="btn btn-sm btn-secondary">Refresh</button>
+      <!-- User Management card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+        <summary class="admin-collapsible-summary">
+          <span>👥 User Management</span>
+          <button onclick="event.preventDefault();event.stopPropagation();loadUsersPanel()" class="btn btn-sm btn-secondary">Refresh</button>
+        </summary>
+        <div style="padding-top:12px">
+          <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">
+            Manage roles, unlock locked accounts, and review reports — all in one place.
+            The <strong>original site administrator</strong> cannot be demoted.
+          </p>
+          <!-- Search -->
+          <div style="margin-bottom:12px">
+            <input id="userSearchInput" type="search" placeholder="Search by username or email…" class="input"
+              oninput="filterUsersList()" style="font-size:.9rem" />
+          </div>
+          <!-- Filter chips -->
+          <div class="filter-chips" style="margin-bottom:16px" id="userFilterChips">
+            <button class="chip active" onclick="setUserFilter('all')" id="userChipAll">All</button>
+            <button class="chip" onclick="setUserFilter('admins')" id="userChipAdmins">Admins</button>
+            <button class="chip" onclick="setUserFilter('locked')" id="userChipLocked">🔒 Locked</button>
+            <button class="chip" onclick="setUserFilter('reported')" id="userChipReported">⚠️ Reported</button>
+          </div>
+          <div id="adminUsersList"><div class="loading">Loading…</div></div>
         </div>
-        <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">
-          Manage roles, unlock locked accounts, and review reports — all in one place.
-          The <strong>original site administrator</strong> cannot be demoted.
-        </p>
+      </details>
 
-        <!-- Search -->
-        <div style="margin-bottom:12px">
-          <input id="userSearchInput" type="search" placeholder="Search by username or email…" class="input"
-            oninput="filterUsersList()" style="font-size:.9rem" />
+      <!-- Locked Accounts card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px">
+        <summary class="admin-collapsible-summary">
+          <span>🔒 Locked Accounts</span>
+          <button onclick="event.preventDefault();event.stopPropagation();loadLockedAccounts()" class="btn btn-sm btn-secondary">Refresh</button>
+        </summary>
+        <div style="padding-top:12px">
+          <div id="lockedAccountsList"><div class="loading">Loading…</div></div>
         </div>
+      </details>
 
-        <!-- Filter chips -->
-        <div class="filter-chips" style="margin-bottom:16px" id="userFilterChips">
-          <button class="chip active" onclick="setUserFilter('all')" id="userChipAll">All</button>
-          <button class="chip" onclick="setUserFilter('admins')" id="userChipAdmins">Admins</button>
-          <button class="chip" onclick="setUserFilter('locked')" id="userChipLocked">🔒 Locked</button>
-          <button class="chip" onclick="setUserFilter('reported')" id="userChipReported">⚠️ Reported</button>
+      <!-- User Reports card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px">
+        <summary class="admin-collapsible-summary">
+          <span>⚠️ User Reports</span>
+          <button onclick="event.preventDefault();event.stopPropagation();loadUserReports()" class="btn btn-sm btn-secondary">Refresh</button>
+        </summary>
+        <div style="padding-top:12px">
+          <div id="userReportsList"><div class="loading">Loading…</div></div>
         </div>
-
-        <div id="adminUsersList"><div class="loading">Loading…</div></div>
-      </div>
+      </details>
     </div>
 
-    <div id="adminLockedTab" class="hidden">
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <p class="card-title" style="margin:0">Locked Accounts</p>
-          <button onclick="loadLockedAccounts()" class="btn btn-sm btn-secondary">Refresh</button>
-        </div>
-        <div id="lockedAccountsList"><div class="loading">Loading…</div></div>
-      </div>
-    </div>
-    <div id="adminReportsTab" class="hidden">
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <p class="card-title" style="margin:0">User Reports</p>
-          <button onclick="loadUserReports()" class="btn btn-sm btn-secondary">Refresh</button>
-        </div>
-        <div id="userReportsList"><div class="loading">Loading…</div></div>
-      </div>
-    </div>
+    <!-- ===== FEEDBACK ADMIN TAB ===== -->
     <div id="adminFeedbackTab" class="hidden">
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -1195,80 +1197,89 @@
         <div id="adminFeedbackList"><div class="loading">Loading…</div></div>
       </div>
     </div>
-    <div id="adminXpeventsTab" class="hidden">
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <p class="card-title" style="margin:0">XP Events</p>
-          <button onclick="loadXpEvents()" class="btn btn-sm btn-secondary">Refresh</button>
-        </div>
-        <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Configure how much XP each action awards. Changes take effect immediately for all users.</p>
-        <div id="adminXpEventsList"><div class="loading">Loading…</div></div>
-      </div>
-    </div>
 
-    <!-- ===== COLLECTIBLES ADMIN TAB ===== -->
-    <div id="adminCollectiblesTab" class="hidden">
+    <!-- ===== GAMIFY ADMIN TAB ===== -->
+    <div id="adminGamifyTab" class="hidden">
 
-      <!-- Categories -->
-      <div class="card" style="margin-bottom:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <p class="card-title" style="margin:0">📁 Categories</p>
-          <button onclick="loadCollectiblesAdmin()" class="btn btn-sm btn-secondary">Refresh</button>
+      <!-- XP Events card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+        <summary class="admin-collapsible-summary">
+          <span>⚡ XP Events</span>
+          <button onclick="event.preventDefault();event.stopPropagation();loadXpEvents()" class="btn btn-sm btn-secondary">Refresh</button>
+        </summary>
+        <div style="padding-top:12px">
+          <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Configure how much XP each action awards. Changes take effect immediately for all users.</p>
+          <div id="adminXpEventsList"><div class="loading">Loading…</div></div>
         </div>
-        <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Group collectibles into named collections. Deleting a category soft-archives it and hides it from drop rolls.</p>
-        <!-- Add category -->
-        <div style="display:flex;gap:8px;margin-bottom:14px">
-          <input id="newCatName" type="text" placeholder="New category name…" class="input" style="flex:1;font-size:.9rem" maxlength="80" />
-          <button onclick="adminCreateCategory()" class="btn btn-primary btn-sm" style="white-space:nowrap">+ Add</button>
-        </div>
-        <div id="adminCatList"><div class="loading">Loading…</div></div>
-      </div>
+      </details>
 
-      <!-- Items -->
-      <div class="card" style="margin-bottom:16px">
-        <p class="card-title">🎁 Collectible Items</p>
-        <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Create, edit or delete individual items. Each item belongs to a category and has a rarity tier.</p>
-        <!-- Add / Edit form -->
-        <div id="collectibleForm" style="background:#f5f3ff;border-radius:10px;padding:14px;margin-bottom:14px">
-          <p id="collectibleFormTitle" style="font-size:.88rem;font-weight:700;color:#374151;margin-bottom:10px">New Item</p>
-          <input type="hidden" id="collectibleEditId" value="" />
-          <div class="form-group">
-            <label>Name</label>
-            <input id="collectibleName" type="text" class="input" placeholder="e.g. Golden Compass" maxlength="100" />
+      <!-- Categories card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+        <summary class="admin-collapsible-summary">
+          <span>📁 Collectible Categories</span>
+          <button onclick="event.preventDefault();event.stopPropagation();loadCollectiblesAdmin()" class="btn btn-sm btn-secondary">Refresh</button>
+        </summary>
+        <div style="padding-top:12px">
+          <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Group collectibles into named collections. Deleting a category soft-archives it and hides it from drop rolls.</p>
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <input id="newCatName" type="text" placeholder="New category name…" class="input" style="flex:1;font-size:.9rem" maxlength="80" />
+            <button onclick="adminCreateCategory()" class="btn btn-primary btn-sm" style="white-space:nowrap">+ Add</button>
           </div>
-          <div class="form-group">
-            <label>Description</label>
-            <input id="collectibleDesc" type="text" class="input" placeholder="Short flavour text (optional)" maxlength="255" />
-          </div>
-          <div class="admin-field-row">
+          <div id="adminCatList"><div class="loading">Loading…</div></div>
+        </div>
+      </details>
+
+      <!-- Collectible Items card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+        <summary class="admin-collapsible-summary">
+          <span>🎁 Collectible Items</span>
+        </summary>
+        <div style="padding-top:12px">
+          <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Create, edit or delete individual items. Each item belongs to a category and has a rarity tier.</p>
+          <div id="collectibleForm" style="background:#f5f3ff;border-radius:10px;padding:14px;margin-bottom:14px">
+            <p id="collectibleFormTitle" style="font-size:.88rem;font-weight:700;color:#374151;margin-bottom:10px">New Item</p>
+            <input type="hidden" id="collectibleEditId" value="" />
             <div class="form-group">
-              <label>Category</label>
-              <select id="collectibleCatId" class="select"></select>
+              <label>Name</label>
+              <input id="collectibleName" type="text" class="input" placeholder="e.g. Golden Compass" maxlength="100" />
             </div>
             <div class="form-group">
-              <label>Rarity</label>
-              <select id="collectibleRarity" class="select">
-                <option value="common">Common</option>
-                <option value="rare">Rare</option>
-                <option value="epic">Epic</option>
-              </select>
+              <label>Description</label>
+              <input id="collectibleDesc" type="text" class="input" placeholder="Short flavour text (optional)" maxlength="255" />
+            </div>
+            <div class="admin-field-row">
+              <div class="form-group">
+                <label>Category</label>
+                <select id="collectibleCatId" class="select"></select>
+              </div>
+              <div class="form-group">
+                <label>Rarity</label>
+                <select id="collectibleRarity" class="select">
+                  <option value="common">Common</option>
+                  <option value="rare">Rare</option>
+                  <option value="epic">Epic</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button onclick="adminSaveCollectible()" class="btn btn-primary btn-sm" style="flex:1">Save Item</button>
+              <button onclick="adminClearCollectibleForm()" class="btn btn-secondary btn-sm">Clear</button>
             </div>
           </div>
-          <div style="display:flex;gap:8px">
-            <button onclick="adminSaveCollectible()" class="btn btn-primary btn-sm" style="flex:1">Save Item</button>
-            <button onclick="adminClearCollectibleForm()" class="btn btn-secondary btn-sm">Clear</button>
-          </div>
+          <div id="adminItemList"><div class="loading">Loading…</div></div>
         </div>
-        <div id="adminItemList"><div class="loading">Loading…</div></div>
-      </div>
+      </details>
 
-      <!-- Bulk Seed -->
-      <div class="card">
-        <p class="card-title">🌱 Bulk Seed</p>
-        <p style="font-size:.82rem;color:#6b7280;margin-bottom:10px">Paste a JSON array to create multiple categories and items at once. Existing entries (matched by name) are skipped without error.</p>
-        <details style="margin-bottom:10px">
-          <summary style="font-size:.82rem;font-weight:600;color:#374151;cursor:pointer;padding:4px 0">Format reference</summary>
-          <pre style="font-size:.75rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px;overflow-x:auto;margin-top:8px;line-height:1.5">[
+      <!-- Bulk Seed card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px">
+        <summary class="admin-collapsible-summary">
+          <span>🌱 Bulk Seed</span>
+        </summary>
+        <div style="padding-top:12px">
+          <p style="font-size:.82rem;color:#6b7280;margin-bottom:10px">Paste a JSON array to create multiple categories and items at once. Existing entries (matched by name) are skipped without error.</p>
+          <details style="margin-bottom:10px">
+            <summary style="font-size:.82rem;font-weight:600;color:#374151;cursor:pointer;padding:4px 0">Format reference</summary>
+            <pre style="font-size:.75rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px;overflow-x:auto;margin-top:8px;line-height:1.5">[
   {
     "name": "Space Explorer",
     "items": [
@@ -1278,11 +1289,12 @@
     ]
   }
 ]</pre>
-        </details>
-        <textarea id="seedPayloadInput" class="textarea" rows="8" placeholder="Paste JSON array here…" style="font-family:monospace;font-size:.8rem"></textarea>
-        <button onclick="adminSeedCollectibles()" class="btn btn-primary btn-full" style="margin-top:10px">🌱 Run Seed</button>
-        <div id="seedResult" class="hidden" style="margin-top:10px;font-size:.85rem;color:#374151;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px"></div>
-      </div>
+          </details>
+          <textarea id="seedPayloadInput" class="textarea" rows="8" placeholder="Paste JSON array here…" style="font-family:monospace;font-size:.8rem"></textarea>
+          <button onclick="adminSeedCollectibles()" class="btn btn-primary btn-full" style="margin-top:10px">🌱 Run Seed</button>
+          <div id="seedResult" class="hidden" style="margin-top:10px;font-size:.85rem;color:#374151;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px"></div>
+        </div>
+      </details>
 
     </div>
   </div>
@@ -3610,17 +3622,14 @@ async function loadAdminStats() {
 }
 
 function showAdminTab(tab) {
-  ['smtp', 'users', 'locked', 'reports', 'feedback', 'xpevents', 'collectibles'].forEach(t => {
+  ['smtp', 'users', 'feedback', 'gamify'].forEach(t => {
     document.getElementById('admin' + t.charAt(0).toUpperCase() + t.slice(1) + 'Tab').classList.toggle('hidden', t !== tab);
     const btn = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
     btn.classList.toggle('active', t === tab);
   });
-  if (tab === 'users') loadUsersPanel();
-  if (tab === 'locked') loadLockedAccounts();
-  if (tab === 'reports') loadUserReports();
+  if (tab === 'users') { loadUsersPanel(); loadLockedAccounts(); loadUserReports(); }
   if (tab === 'feedback') loadAdminFeedback();
-  if (tab === 'xpevents') loadXpEvents();
-  if (tab === 'collectibles') loadCollectiblesAdmin();
+  if (tab === 'gamify') { loadXpEvents(); loadCollectiblesAdmin(); }
 }
 
 async function loadAdminPage() {

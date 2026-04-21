@@ -1512,13 +1512,30 @@
             <option value="">Personal (no group)</option>
           </select>
         </div>
+        <!-- Sub-tasks section — sits directly below Group -->
         <div class="form-group">
-          <label>Assign To</label>
-          <div id="assigneeContainer" style="font-size:.9rem;color:#9ca3af;font-style:italic">Select a group to see members</div>
+          <button type="button" class="subtask-add-toggle" onclick="toggleSubtaskPanel()" id="subtaskToggleBtn" aria-expanded="false" aria-controls="subtaskFormPanel">
+            <span id="subtaskToggleIcon">▶</span> Add Sub-tasks
+          </button>
+          <div id="subtaskFormPanel" class="hidden" style="margin-top:10px">
+            <div id="subtaskFormList"></div>
+            <button type="button" class="subtask-add-item-btn" onclick="addSubtaskFormRow()">+ Add item</button>
+            <p style="font-size:.75rem;color:#9ca3af;margin-top:6px">Sub-tasks let you break this task into individual steps. Each can be ticked off separately.</p>
+          </div>
         </div>
+        <!-- Assign To — hidden until a group is selected -->
+        <div id="assigneeRow" class="form-group hidden">
+          <label>Assign To</label>
+          <div id="assigneeContainer"></div>
+        </div>
+        <!-- Notes — collapsible, collapsed by default -->
         <div class="form-group">
-          <label>Notes</label>
-          <textarea id="taskDetails" rows="3" placeholder="Optional notes…" class="textarea"></textarea>
+          <button type="button" class="subtask-add-toggle" onclick="toggleNotesPanel()" id="notesToggleBtn" aria-expanded="false" aria-controls="notesPanel">
+            <span id="notesToggleIcon">▶</span> Notes
+          </button>
+          <div id="notesPanel" class="hidden" style="margin-top:8px">
+            <textarea id="taskDetails" rows="3" placeholder="Optional notes…" class="textarea"></textarea>
+          </div>
         </div>
         <div class="form-group">
           <label>Due Date</label>
@@ -1578,17 +1595,6 @@
               <td style="text-align:center"><input type="checkbox" id="notifyPopupOnday" style="width:16px;height:16px;accent-color:#7c3aed" /></td>
             </tr>
           </table>
-        </div>
-        <!-- Sub-tasks section -->
-        <div class="form-group" style="border-top:1px solid #e5e7eb;margin-top:8px;padding-top:12px">
-          <button type="button" class="subtask-add-toggle" onclick="toggleSubtaskPanel()" id="subtaskToggleBtn" aria-expanded="false" aria-controls="subtaskFormPanel">
-            <span id="subtaskToggleIcon">▶</span> Add Sub-tasks
-          </button>
-          <div id="subtaskFormPanel" class="hidden" style="margin-top:10px">
-            <div id="subtaskFormList"></div>
-            <button type="button" class="subtask-add-item-btn" onclick="addSubtaskFormRow()">+ Add item</button>
-            <p style="font-size:.75rem;color:#9ca3af;margin-top:6px">Sub-tasks let you break this task into individual steps. Each can be ticked off separately.</p>
-          </div>
         </div>
       </form>
     </div>
@@ -2645,6 +2651,9 @@ function openTaskModal(task = null) {
     editId.value = task.id;
     document.getElementById('taskTitle').value = task.title || '';
     document.getElementById('taskDetails').value = task.details || '';
+    // Auto-expand notes panel when editing a task that already has notes
+    const hasNotes = !!(task.details && task.details.trim());
+    setNotesPanel(hasNotes);
     typeSelect.value = task.type_id || '';
     groupSelect.value = task.group_id || '';
     document.getElementById('taskStatusRow').classList.remove('hidden');
@@ -2676,6 +2685,7 @@ function openTaskModal(task = null) {
     editId.value = '';
     document.getElementById('taskTitle').value = '';
     document.getElementById('taskDetails').value = '';
+    setNotesPanel(false);
     const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
     const iso = new Date(midnight.getTime() - midnight.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     document.getElementById('taskDueDate').value = iso;
@@ -2692,7 +2702,8 @@ function openTaskModal(task = null) {
     document.getElementById('notifyPopupOnday').checked = false;
     document.getElementById('taskXpMultiplier').value = '1.0';
     document.getElementById('taskXpMultiplierRow').classList.add('hidden');
-    document.getElementById('assigneeContainer').innerHTML = '<span style="font-size:.9rem;color:#9ca3af;font-style:italic">Select a group to see members</span>';
+    document.getElementById('assigneeRow').classList.add('hidden');
+    document.getElementById('assigneeContainer').innerHTML = '';
   }
   document.getElementById('taskModal').classList.remove('hidden');
 }
@@ -2702,12 +2713,14 @@ function closeTaskModal() { resetSubtaskPanel(); document.getElementById('taskMo
 async function loadGroupMembersForTask(selectedIds = []) {
   const groupId = document.getElementById('taskGroup').value;
   const container = document.getElementById('assigneeContainer');
+  const assigneeRow = document.getElementById('assigneeRow');
   const xpMultiplierRow = document.getElementById('taskXpMultiplierRow');
   if (!groupId) {
-    container.innerHTML = '<span style="font-size:.9rem;color:#9ca3af;font-style:italic">Select a group to see members</span>';
+    if (assigneeRow) assigneeRow.classList.add('hidden');
     if (xpMultiplierRow) xpMultiplierRow.classList.add('hidden');
     return;
   }
+  if (assigneeRow) assigneeRow.classList.remove('hidden');
   // Show/hide XP multiplier field based on whether the group has gamification enhancements
   const selectedGroup = groups.find(g => g.id === groupId);
   const gamifEnhanced = !!(selectedGroup && selectedGroup.gamification_enhanced);
@@ -2922,6 +2935,23 @@ function resetSubtaskPanel() {
   if (btn) { btn.setAttribute('aria-expanded', 'false'); }
   const icon = document.getElementById('subtaskToggleIcon');
   if (icon) icon.textContent = '▶';
+}
+
+function setNotesPanel(open) {
+  const panel = document.getElementById('notesPanel');
+  const btn = document.getElementById('notesToggleBtn');
+  const icon = document.getElementById('notesToggleIcon');
+  if (!panel) return;
+  panel.classList.toggle('hidden', !open);
+  if (btn) btn.setAttribute('aria-expanded', String(open));
+  if (icon) icon.textContent = open ? '▼' : '▶';
+}
+
+function toggleNotesPanel() {
+  const panel = document.getElementById('notesPanel');
+  const isHidden = panel.classList.contains('hidden');
+  setNotesPanel(isHidden);
+  if (isHidden) document.getElementById('taskDetails').focus();
 }
 
 async function createPendingSubtasks(taskId) {

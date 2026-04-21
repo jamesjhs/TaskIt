@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version:** 1.8.0  
+**Version:** 1.8.1  
 **Author:** J Rowson  
 **Generated:** 2026-04-21
 

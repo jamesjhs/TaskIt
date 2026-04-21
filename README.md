@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.8.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.8.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -104,6 +104,11 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.8.1
+
+- **🖱️ Task form UX polish** — "Add Sub-tasks" panel moved to directly below the Group field for a more natural top-down workflow. "Assign To" is now hidden until a group is selected (no more placeholder text cluttering the form). Notes field is now collapsed by default behind a toggle, keeping the form compact; it auto-expands when editing a task that already has notes.
+- **Version bump** — server, README, user guides, and technical reference updated to 1.8.1.
 
 ### v1.8.0
 

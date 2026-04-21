@@ -1,6 +1,6 @@
 # TaskIt! – How-To Manual
 
-**Version 1.8.0**  
+**Version 1.8.1**  
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---

@@ -502,6 +502,31 @@ The Freeze is consumed automatically, the streak is preserved, and the ❄️ is
 - For magic links, ensure SMTP is configured; use password login as a fallback
 - For password login, check your email for the two-factor authentication code
 
+**I can't receive the verification email or 2FA code (SMTP not yet configured)**  
+Use the `activate-admin.js` emergency script to bypass email entirely and get a
+one-time login link printed straight to your terminal:
+
+```bash
+node server/activate-admin.js
+```
+
+This will locate your admin account, mark it as verified, clear any lockout, and
+print a one-time login URL that is valid for 15 minutes.  Paste the URL into your
+browser to sign in, then configure SMTP via **Admin → SMTP Settings**.
+
+Options:
+
+| Flag | Description |
+|------|-------------|
+| `--email <address>` | Target a specific account. Defaults to the first admin user. |
+| `--base-url <url>` | Base URL of your instance (e.g. `https://taskit.example.com`). Defaults to the `BASE_URL` env var, or `http://localhost:3000`. |
+
+Example:
+
+```bash
+node server/activate-admin.js --email admin@example.com --base-url https://taskit.example.com
+```
+
 **Tasks are not showing**  
 - Check the filter bar — filters like *Show Archived*, *Assigned to Me*, or *Show Group Tasks* can hide tasks
 - Ensure you are a member of the group the task belongs to

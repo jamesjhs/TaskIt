@@ -367,6 +367,9 @@ addCol('group_members', 'xp_share', 'INTEGER NOT NULL DEFAULT 1');
 addCol('tasks', 'original_due_date', 'INTEGER');
 // Anti-farming: set to 1 once XP has been claimed for this task to prevent re-awarding
 addCol('tasks', 'xp_claimed', 'INTEGER NOT NULL DEFAULT 0');
+// Arcade: token economy and digital-wellbeing daily play limit
+addCol('users', 'arcade_tokens', 'INTEGER NOT NULL DEFAULT 0');
+addCol('users', 'daily_play_minutes', 'INTEGER NOT NULL DEFAULT 15');
 // Backfill: generate a friend_key for any user that doesn't have one yet
 {
   const missingKey = db.prepare("SELECT id FROM users WHERE friend_key IS NULL OR friend_key = ''").all() as Array<{ id: string }>;

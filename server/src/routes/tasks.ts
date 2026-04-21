@@ -9,6 +9,7 @@ import {
   consumeFreezeCredit,
   computeNewStreakValues,
   awardEventXp,
+  LootDropResult,
 } from '../services/gamification';
 
 const router = Router();
@@ -495,6 +496,8 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
   // Track whether a freeze was consumed (needed for the gamification block below)
   let freezeConsumed = false;
+  // Loot drop result from this task completion (null when XP is not awarded)
+  let lootDrop: LootDropResult | null = null;
 
   // If task is completed and has recurrence, spawn the next occurrence and archive the parent
   if (status === 'complete') {
@@ -560,7 +563,8 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
       if (completedTask) {
         if (shouldAwardXp) {
-          awardTaskXp(userId, completedTask.type_id, completedTask.xp_multiplier ?? 1.0);
+          const xpResult = awardTaskXp(userId, completedTask.type_id, completedTask.xp_multiplier ?? 1.0);
+          if (xpResult) lootDrop = xpResult.drop;
           awardFreezeCredit(userId);
         }
         // Deduct the freeze credit whenever a freeze was used, even if XP was not
@@ -583,7 +587,9 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
     WHERE t.id = ?
   `).get(taskId) as Record<string, unknown>;
 
-  res.json({ ...updated, archived: updated.archived === 1 });
+  const statusResponsePayload: Record<string, unknown> = { ...updated, archived: updated.archived === 1 };
+  if (lootDrop) statusResponsePayload.drop = lootDrop;
+  res.json(statusResponsePayload);
 });
 
 router.patch('/:id/defer', (req: Request, res: Response): void => {

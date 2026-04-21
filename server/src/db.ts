@@ -265,6 +265,36 @@ db.exec(`
     enabled INTEGER NOT NULL DEFAULT 1,
     updated_at INTEGER NOT NULL DEFAULT 0
   );
+
+  -- Collectibles: admin-managed item categories
+  CREATE TABLE IF NOT EXISTS item_categories (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    archived INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL
+  );
+
+  -- Collectibles: master catalogue of droppable items
+  CREATE TABLE IF NOT EXISTS collectibles (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    category_id TEXT NOT NULL,
+    rarity TEXT NOT NULL,
+    archived INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (category_id) REFERENCES item_categories(id)
+  );
+
+  -- Collectibles: junction table of items owned by each user
+  CREATE TABLE IF NOT EXISTS user_inventory (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    collectible_id TEXT NOT NULL,
+    acquired_at INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (collectible_id) REFERENCES collectibles(id)
+  );
 `);
 
 // Runtime migrations — add columns if they don't exist yet

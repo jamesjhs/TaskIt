@@ -1274,6 +1274,11 @@
           </div>
           <div id="gamifFriendsLeaderboard"></div>
         </div>
+        <!-- Collectibles Inventory -->
+        <p class="detail-section-title" style="margin-top:16px">🎒 My Collection</p>
+        <div id="gamifInventoryList">
+          <p style="font-size:.85rem;color:#9ca3af;font-style:italic">Complete tasks and keep loot drops to build your collection.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -1318,6 +1323,28 @@
       </p>
       <button onclick="handleGamifOptInYes()" class="btn btn-primary btn-full" style="margin-bottom:10px">🚀 Enable Gamification</button>
       <button onclick="handleGamifOptInNo()" class="btn btn-secondary btn-full">Maybe Later</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LOOT-DROP MODAL ===== -->
+<div id="lootDropModal" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-body">
+      <span id="lootDropIcon" class="loot-drop-icon">🎁</span>
+      <h2 class="modal-title" style="margin-bottom:6px">✨ Item Dropped!</h2>
+      <p style="font-size:.8rem;color:#7c3aed;font-weight:600;margin-bottom:10px">You earned a collectible from your task</p>
+      <div class="loot-drop-name" id="lootDropName">—</div>
+      <div class="loot-drop-category">
+        <span id="lootDropCategory" style="margin-right:6px">—</span>
+        <span id="lootDropRarityBadge" class="badge">common</span>
+      </div>
+      <div class="loot-drop-desc" id="lootDropDesc"></div>
+      <p style="font-size:.75rem;color:#9ca3af;margin-bottom:4px">What would you like to do with it?</p>
+    </div>
+    <div class="modal-footer">
+      <button onclick="keepDrop()" class="btn btn-primary" style="flex:1">🎒 Keep</button>
+      <button onclick="recycleDrop()" class="btn btn-secondary" style="flex:1">♻️ Recycle (+XP)</button>
     </div>
   </div>
 </div>
@@ -2650,6 +2677,10 @@ async function quickStatus(status) {
       openDetail(updated); loadTasks(); toast('Status updated!');
       if (status === 'complete' && gamificationEnabled) loadGamificationProfile();
     }
+    // If a loot drop was included in the response, show the modal
+    if (status === 'complete' && updated && updated.drop) {
+      openLootDropModal(updated.drop);
+    }
   } catch (err) { toast(err.message, 'error'); }
 }
 
@@ -2755,6 +2786,7 @@ async function loadGamificationProfile() {
       loadGroupLeaderboards();
       loadFriendsLeaderboard();
       loadFriendMyKey();
+      loadInventory();
     }
 
     // My Tasks strip
@@ -4002,6 +4034,188 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 });
+
+// ========== Loot Drop Modal ==========
+
+/** Rarity emojis used inside the loot-drop modal */
+const RARITY_ICONS = { common: '🟢', rare: '💜', epic: '✨' };
+
+/**
+ * Rarity thresholds that trigger the "are you sure?" confirmation before recycling.
+ * Only epic items require confirmation today, but adding 'rare' here in future is trivial.
+ */
+const RECYCLE_CONFIRM_RARITIES = new Set(['epic']);
+
+/** The drop object currently shown in the modal (null when modal is closed). */
+let _pendingDrop = null;
+
+/**
+ * Populates and opens the loot-drop modal.
+ * Called from quickStatus() whenever the server response contains a `.drop` field.
+ *
+ * @param {Object} drop - LootDropResult from the server:
+ *   { collectibleId, collectibleName, rarity, categoryName, description }
+ */
+function openLootDropModal(drop) {
+  if (!drop || !drop.collectibleId) return;
+  _pendingDrop = drop;
+
+  const rarity   = (drop.rarity || 'common').toLowerCase();
+  const rarityIcon = RARITY_ICONS[rarity] || '🎁';
+  const rarityClass = 'badge badge-rarity-' + rarity;
+
+  document.getElementById('lootDropIcon').textContent    = rarityIcon;
+  document.getElementById('lootDropName').textContent    = drop.collectibleName || 'Unknown Item';
+  document.getElementById('lootDropCategory').textContent = drop.categoryName  || '';
+  document.getElementById('lootDropDesc').textContent    = drop.description    || '';
+
+  const rarityEl = document.getElementById('lootDropRarityBadge');
+  rarityEl.className = rarityClass;
+  rarityEl.textContent = rarity.charAt(0).toUpperCase() + rarity.slice(1);
+
+  document.getElementById('lootDropModal').classList.remove('hidden');
+}
+
+/** Closes the loot-drop modal and clears the pending drop reference. */
+function closeLootDropModal() {
+  _pendingDrop = null;
+  document.getElementById('lootDropModal').classList.add('hidden');
+}
+
+/**
+ * "Keep" button handler — claims the pending drop via the backend and adds it
+ * to the user's permanent inventory.
+ */
+async function keepDrop() {
+  if (!_pendingDrop) return;
+  const name = _pendingDrop.collectibleName || 'item';
+  closeLootDropModal();
+  try {
+    await api('POST', '/gamification/inventory/claim');
+    toast('🎒 ' + escHtml(name) + ' added to your collection!');
+    loadInventory();
+  } catch (err) {
+    toast(err.message || 'Failed to claim item', 'error');
+  }
+}
+
+/**
+ * "Recycle" button handler — discards the pending drop in exchange for a small
+ * XP bonus.  Epic (and future high-rarity) items require an explicit browser
+ * confirmation before proceeding.
+ */
+async function recycleDrop() {
+  if (!_pendingDrop) return;
+  const rarity = (_pendingDrop.rarity || 'common').toLowerCase();
+  const name   = _pendingDrop.collectibleName || 'item';
+
+  if (RECYCLE_CONFIRM_RARITIES.has(rarity)) {
+    const confirmed = window.confirm(
+      'Are you sure you want to recycle "' + name + '"? ' +
+      'This is an epic item. You will receive a small XP bonus instead.'
+    );
+    if (!confirmed) return;
+  }
+
+  closeLootDropModal();
+  try {
+    const data = await api('POST', '/gamification/inventory/recycle');
+    toast('♻️ Recycled for ' + (data && data.xpAwarded ? data.xpAwarded + ' XP' : 'a bonus') + '!');
+    if (gamificationEnabled) loadGamificationProfile();
+  } catch (err) {
+    toast(err.message || 'Failed to recycle item', 'error');
+  }
+}
+
+// ========== Collectibles Inventory ==========
+
+/** Rarity icon map for inventory items (mirrors RARITY_ICONS) */
+const COLLECTIBLE_RARITY_ICONS = { common: '🟢', rare: '💜', epic: '✨' };
+
+/**
+ * Fetches the user's inventory and the full active collectibles catalogue,
+ * then renders both grouped by category.  Owned items appear in colour;
+ * unowned (catalogue) items appear as greyed-out silhouettes.
+ *
+ * Designed to handle categories with dozens of items gracefully — each
+ * category is a separate collapsible <details> block so the page stays
+ * scannable however large the catalogue grows.
+ */
+async function loadInventory() {
+  const container = document.getElementById('gamifInventoryList');
+  if (!container) return;
+
+  container.innerHTML = '<p style="font-size:.85rem;color:#9ca3af">Loading collection…</p>';
+
+  try {
+    // Fetch owned inventory and full catalogue in parallel
+    const [inventory, catalogue] = await Promise.all([
+      api('GET', '/gamification/inventory').catch(() => []),
+      api('GET', '/gamification/catalogue').catch(() => []),
+    ]);
+
+    // Build a lookup: collectible_id → count of owned copies
+    const ownedCounts = {};
+    if (Array.isArray(inventory)) {
+      for (const entry of inventory) {
+        const cid = entry.collectible_id;
+        ownedCounts[cid] = (ownedCounts[cid] || 0) + 1;
+      }
+    }
+
+    if (!Array.isArray(catalogue) || catalogue.length === 0) {
+      container.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">No collectibles available yet — check back after completing some tasks!</p>';
+      return;
+    }
+
+    // Group catalogue items by category
+    const categoryMap = new Map(); // categoryId → { name, items[] }
+    for (const item of catalogue) {
+      if (!categoryMap.has(item.category_id)) {
+        categoryMap.set(item.category_id, { name: item.category_name, items: [] });
+      }
+      categoryMap.get(item.category_id).items.push(item);
+    }
+
+    const html = [];
+    for (const [, cat] of categoryMap) {
+      const ownedInCat = cat.items.filter(i => ownedCounts[i.id] > 0).length;
+      const totalInCat = cat.items.length;
+
+      const itemsHtml = cat.items.map(item => {
+        const count   = ownedCounts[item.id] || 0;
+        const rarity  = (item.rarity || 'common').toLowerCase();
+        const icon    = COLLECTIBLE_RARITY_ICONS[rarity] || '🎁';
+        const classes = [
+          'gamif-inv-item',
+          count > 0 ? ('owned' + (rarity === 'epic' ? ' epic' : '')) : 'unowned',
+        ].join(' ');
+        const countLabel = count > 1 ? ('<div class="gamif-inv-item-count">×' + count + '</div>') : '';
+        return (
+          '<div class="' + classes + '" title="' + escHtml(item.name) + ' (' + escHtml(item.description || '') + ')">' +
+            '<span class="gamif-inv-item-icon">' + icon + '</span>' +
+            '<div class="gamif-inv-item-name">' + escHtml(item.name) + '</div>' +
+            countLabel +
+          '</div>'
+        );
+      }).join('');
+
+      html.push(
+        '<details class="gamif-inv-category" open>' +
+          '<summary class="gamif-inv-category-title" style="cursor:pointer;list-style:none">' +
+            escHtml(cat.name) +
+            ' <span style="font-size:.7rem;color:#a1a1aa;font-weight:400">(' + ownedInCat + '/' + totalInCat + ')</span>' +
+          '</summary>' +
+          '<div class="gamif-inv-grid" style="margin-top:8px">' + itemsHtml + '</div>' +
+        '</details>'
+      );
+    }
+
+    container.innerHTML = html.join('') || '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">Your collection is empty — keep completing tasks!</p>';
+  } catch (err) {
+    container.innerHTML = '<p style="font-size:.85rem;color:#ef4444">Failed to load collection.</p>';
+  }
+}
 </script>
 
 <!-- ===== TASKIT! ARCADE OVERLAY (Stage 1) ===== -->

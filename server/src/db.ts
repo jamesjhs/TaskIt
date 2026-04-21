@@ -482,6 +482,7 @@ if (countRow.cnt === 0) {
     { key: 'send_app_invite',   name: 'Send App Invite',     description: 'Award XP when a user generates a friend invite link.',     xp_value: 15  },
     { key: 'send_group_invite', name: 'Send Group Invite',   description: 'Award XP when a user sends or generates a group invite.',  xp_value: 15  },
     { key: 'complete_task',     name: 'Complete Task',       description: 'Base XP awarded per task completion (before multiplier).', xp_value: 50  },
+    { key: 'recycle_drop',     name: 'Recycle Drop',        description: 'Consolation XP awarded when a user recycles a pending loot drop.', xp_value: 15 },
   ];
   for (const e of defaultXpEvents) {
     insertXpEvent.run(e.key, e.name, e.description, e.xp_value, now);

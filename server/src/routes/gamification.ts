@@ -9,6 +9,7 @@ import {
   applyStreakFreeze,
   claimPendingDrop,
   getPendingDrop,
+  awardEventXp,
 } from '../services/gamification';
 
 const router = Router();
@@ -166,6 +167,24 @@ router.post('/streaks/:taskId/freeze', (req: Request, res: Response): void => {
   res.json({ message: 'Freeze applied', streaks, freezeCredits: profile.freezeCredits });
 });
 
+/**
+ * GET /api/gamification/catalogue
+ * Returns the full catalogue of active (non-archived) collectibles with their
+ * category details.  Available to any authenticated user so the frontend can
+ * render unowned silhouette placeholders.
+ */
+router.get('/catalogue', (_req: Request, res: Response): void => {
+  const rows = db.prepare(`
+    SELECT c.id, c.name, c.description, c.rarity,
+           ic.id AS category_id, ic.name AS category_name
+    FROM collectibles c
+    JOIN item_categories ic ON ic.id = c.category_id
+    WHERE c.archived = 0 AND ic.archived = 0
+    ORDER BY ic.name ASC, c.rarity ASC, c.name ASC
+  `).all();
+  res.json(rows);
+});
+
 // ─── User Inventory ───────────────────────────────────────────────────────────
 
 /**
@@ -246,6 +265,33 @@ router.post('/inventory/claim', (req: Request, res: Response): void => {
   }
 
   res.status(201).json(saved);
+});
+
+/**
+ * POST /api/gamification/inventory/recycle
+ * Discards the authenticated user's pending loot drop (if any) and awards a
+ * small XP consolation bonus via the 'recycle_drop' XP event key.
+ * Returns 404 if no pending drop exists or it has expired.
+ */
+router.post('/inventory/recycle', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+
+  const pending = getPendingDrop(userId);
+  if (!pending) {
+    res.status(404).json({ error: 'No pending drop to recycle' });
+    return;
+  }
+
+  // Consume (discard) the pending drop from the cache
+  claimPendingDrop(userId);
+
+  // Award a consolation XP bonus (event key configured via /api/admin/xp-events)
+  const xpResult = awardEventXp(userId, 'recycle_drop');
+
+  res.json({
+    message: 'Drop recycled',
+    xpAwarded: xpResult ? xpResult.xp : null,
+  });
 });
 
 export default router;

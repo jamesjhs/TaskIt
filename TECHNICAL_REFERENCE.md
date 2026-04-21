@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version:** 1.6.1  
+**Version:** 1.6.2  
 **Author:** J Rowson  
 **Generated:** 2026-04-21
 
@@ -129,7 +129,9 @@ TaskIt/
 │       ├── version.js          # Fetches /api/version and populates .page-version elements
 │       ├── qrcode.js           # QR code generator library
 │       ├── game-hangman.js     # Hangman arcade mini-game (arcade unlock feature)
-│       └── game-wordsearch.js  # Wordsearch arcade mini-game
+│       ├── game-wordsearch.js  # Wordsearch arcade mini-game
+│       ├── game-code-breaker.js # Code Breaker arcade mini-game
+│       └── game-whac-a-bug.js  # Whac-a-Bug arcade mini-game
 │   └── icons/                  # PWA icons (72×72 to 512×512 PNG)
 │
 ├── android/                    # Android WebView wrapper app (Gradle/Kotlin)
@@ -293,6 +295,8 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `gamification_enabled` | INTEGER NOT NULL DEFAULT 0 | Opt-in gamification flag (migration) |
 | `freeze_credits` | INTEGER NOT NULL DEFAULT 0 | Streak-freeze currency (migration) |
 | `friend_key` | TEXT | CamelCase two-word pair e.g. `BraveOcean` (migration) |
+| `arcade_tokens` | INTEGER NOT NULL DEFAULT 0 | Arcade Token balance — spendable to play mini-games (migration) |
+| `daily_play_minutes` | INTEGER NOT NULL DEFAULT 15 | Digital-wellbeing daily arcade play limit in minutes (1–180) (migration) |
 
 #### `groups`
 | Column | Type | Notes |
@@ -357,6 +361,8 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `streak_longest` | INTEGER NOT NULL DEFAULT 0 | All-time best streak for this recurrence chain (migration) |
 | `streak_frozen` | INTEGER NOT NULL DEFAULT 0 | 1 = Freeze credit applied, absorbs next miss (migration) |
 | `xp_multiplier` | REAL NOT NULL DEFAULT 1.0 | XP award multiplier (group gamification-enhanced only) (migration) |
+| `original_due_date` | INTEGER | Immutable snapshot of the due date set at task creation — used for anti-farming XP guard (migration) |
+| `xp_claimed` | INTEGER NOT NULL DEFAULT 0 | 1 once XP has been awarded for this task; prevents re-award on edits (migration) |
 
 #### `task_assignees`
 | Column | Type | Notes |
@@ -480,6 +486,42 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `enabled` | INTEGER NOT NULL DEFAULT 1 | 0 = disabled, events award 0 XP |
 | `updated_at` | INTEGER NOT NULL DEFAULT 0 | Unix ms of last admin update |
 
+#### `item_categories`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | UUID |
+| `name` | TEXT NOT NULL | Display name for the category (e.g. `Animals`, `Vehicles`) |
+| `archived` | INTEGER NOT NULL DEFAULT 0 | Soft-delete flag — archived categories and their items are hidden from players |
+| `created_at` | INTEGER NOT NULL | Unix ms |
+
+#### `collectibles`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | UUID |
+| `name` | TEXT NOT NULL | Display name of the collectible item |
+| `description` | TEXT | Optional flavour text |
+| `category_id` | TEXT NOT NULL | FK → item_categories.id |
+| `rarity` | TEXT NOT NULL | One of: `common`, `rare`, `epic` |
+| `archived` | INTEGER NOT NULL DEFAULT 0 | Soft-delete flag — archived items are excluded from loot drops and the catalogue |
+| `created_at` | INTEGER NOT NULL | Unix ms |
+
+**Drop probability by rarity:**
+| Rarity | Weight | Effective chance* |
+|---|---|---|
+| `common` | 70 | 70% of drops |
+| `rare` | 25 | 25% of drops |
+| `epic` | 5 | 5% of drops |
+
+*Once a drop is rolled (see §14 Loot Drop Engine), the rarity tier is chosen with these weights.
+
+#### `user_inventory`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | UUID |
+| `user_id` | TEXT NOT NULL | FK → users.id |
+| `collectible_id` | TEXT NOT NULL | FK → collectibles.id |
+| `acquired_at` | INTEGER NOT NULL | Unix ms when the item was claimed |
+
 ---
 
 ### 4.5 Communication & Messaging Tables
@@ -553,6 +595,8 @@ These `ALTER TABLE … ADD COLUMN` statements run on every server start but only
 | `users` | `gamification_enabled` | `INTEGER NOT NULL DEFAULT 0` |
 | `users` | `freeze_credits` | `INTEGER NOT NULL DEFAULT 0` |
 | `users` | `friend_key` | `TEXT` |
+| `users` | `arcade_tokens` | `INTEGER NOT NULL DEFAULT 0` |
+| `users` | `daily_play_minutes` | `INTEGER NOT NULL DEFAULT 15` |
 | `tasks` | `due_date` | `INTEGER` |
 | `tasks` | `recur_interval` | `INTEGER` |
 | `tasks` | `recur_unit` | `TEXT` |
@@ -570,6 +614,8 @@ These `ALTER TABLE … ADD COLUMN` statements run on every server start but only
 | `tasks` | `streak_longest` | `INTEGER NOT NULL DEFAULT 0` |
 | `tasks` | `streak_frozen` | `INTEGER NOT NULL DEFAULT 0` |
 | `tasks` | `xp_multiplier` | `REAL NOT NULL DEFAULT 1.0` |
+| `tasks` | `original_due_date` | `INTEGER` |
+| `tasks` | `xp_claimed` | `INTEGER NOT NULL DEFAULT 0` |
 | `groups` | `invite_name` | `TEXT NOT NULL DEFAULT ''` |
 | `groups` | `gamification_enhanced` | `INTEGER NOT NULL DEFAULT 0` |
 | `group_members` | `xp_share` | `INTEGER NOT NULL DEFAULT 1` |
@@ -727,6 +773,12 @@ Attached to `req.user` by `authMiddleware`.
 | `GET` | `/api/gamification/leaderboard/group/:groupId` | JWT | authed | Group XP leaderboard |
 | `GET` | `/api/gamification/leaderboard/friends` | JWT | authed | Friends XP leaderboard |
 | `POST` | `/api/gamification/streaks/:taskId/freeze` | JWT | authed | Apply streak freeze |
+| `GET` | `/api/gamification/catalogue` | JWT | authed | Full active collectibles catalogue |
+| `GET` | `/api/gamification/inventory` | JWT | authed | Authenticated user's owned collectible inventory |
+| `POST` | `/api/gamification/inventory/claim` | JWT | authed | Claim pending loot drop → persisted to inventory |
+| `POST` | `/api/gamification/inventory/recycle` | JWT | authed | Discard pending drop for XP consolation bonus |
+| `PATCH` | `/api/gamification/arcade/daily-limit` | JWT | authed | Set daily arcade play limit (minutes) |
+| `POST` | `/api/gamification/arcade/spend-token` | JWT | authed | Atomically deduct 1 arcade token |
 | `GET` | `/api/friends` | JWT | authed | List friends |
 | `DELETE` | `/api/friends/:friendId` | JWT | authed | Remove friend |
 | `GET` | `/api/friends/my-key` | JWT | authed | Get own friend key |
@@ -749,6 +801,15 @@ Attached to `req.user` by `authMiddleware`.
 | `POST` | `/api/admin/feedback/:id/reply` | JWT+Admin | authed | Reply to feedback (creates user_alert) |
 | `GET` | `/api/admin/xp-events` | JWT+Admin | authed | List XP event catalogue |
 | `PATCH` | `/api/admin/xp-events/:key` | JWT+Admin | authed | Update XP event value/enabled |
+| `GET` | `/api/admin/collectible-categories` | JWT+Admin | authed | List active collectible categories |
+| `POST` | `/api/admin/collectible-categories` | JWT+Admin | authed | Create collectible category |
+| `PATCH` | `/api/admin/collectible-categories/:id` | JWT+Admin | authed | Rename collectible category |
+| `DELETE` | `/api/admin/collectible-categories/:id` | JWT+Admin | authed | Soft-delete collectible category |
+| `GET` | `/api/admin/collectibles` | JWT+Admin | authed | List active collectible items |
+| `POST` | `/api/admin/collectibles` | JWT+Admin | authed | Create collectible item |
+| `PATCH` | `/api/admin/collectibles/:id` | JWT+Admin | authed | Update collectible item fields |
+| `DELETE` | `/api/admin/collectibles/:id` | JWT+Admin | authed | Soft-delete collectible item |
+| `POST` | `/api/admin/collectibles/seed` | JWT+Admin | authed | Bulk-seed categories and items from JSON |
 
 ---
 
@@ -887,6 +948,12 @@ Three handlers:
 | `GET /leaderboard/group/:groupId` | Aggregated XP by group member |
 | `GET /leaderboard/friends` | Aggregated XP for user + friends |
 | `POST /streaks/:taskId/freeze` | Calls `applyStreakFreeze(userId, taskId)` |
+| `GET /catalogue` | Returns all active (non-archived) collectibles joined with category; no ownership filter — used to render unowned silhouettes |
+| `GET /inventory` | Returns full `user_inventory` joined with collectible and category details, ordered by `acquired_at DESC` |
+| `POST /inventory/claim` | Calls `getPendingDrop()` (non-destructive check), validates collectible still active, then atomically `claimPendingDrop()` + INSERT `user_inventory`; 404 if no pending drop; 410 if dropped item was archived |
+| `POST /inventory/recycle` | Calls `getPendingDrop()`, consumes it via `claimPendingDrop()`, awards `recycle_drop` XP via `awardEventXp()`; 404 if no pending drop |
+| `PATCH /arcade/daily-limit` | Validates `minutes` is integer 1–180; UPDATE `users.daily_play_minutes` |
+| `POST /arcade/spend-token` | Atomic DB transaction: `UPDATE users SET arcade_tokens = arcade_tokens - 1 WHERE id = ? AND arcade_tokens > 0`; returns new balance; 400 if no tokens |
 
 ---
 
@@ -908,14 +975,22 @@ Three handlers:
 
 Requires both `authMiddleware` + `adminMiddleware`.
 
+**Local helpers:**
+| Name | Type | Description |
+|---|---|---|
+| `getOriginalAdminId()` | function | Lazily resolves (and caches) the founding admin user ID — prefers `ADMIN_EMAIL` match, falls back to earliest `created_at` |
+| `isOriginalAdmin(userId)` | function | Returns `true` if userId matches the founding admin (who cannot be demoted) |
+| `_originalAdminId` | `string \| null \| undefined` | Module-level cache; `undefined` = not yet resolved |
+| `ALLOWED_RARITIES` | Set | `{ 'common', 'rare', 'epic' }` — validated on collectible create/update |
+
 | Handler | Description |
 |---|---|
 | `GET /smtp` | Returns SMTP settings (omits `pass`) |
 | `PUT /smtp` | Updates SMTP settings (empty pass = keep existing) |
-| `GET /users` | All users ordered by `created_at` |
+| `GET /users` | All users ordered by `created_at`; response includes `is_locked`, `open_reports`, `is_original_admin` |
 | `GET /locked` | Users with `locked_until > now` |
 | `POST /users/:id/unlock` | Clears `failed_logins` and `locked_until` |
-| `PUT /users/:id/role` | Changes role to `'admin'` or `'user'` (cannot self-change) |
+| `PUT /users/:id/role` | Changes role to `'admin'` or `'user'` (cannot self-change; original admin cannot be demoted) |
 | `GET /reports` | All user reports with reporter/reported names |
 | `PUT /reports/:id/resolve` | Marks report resolved |
 | `GET /stats` | Returns `{ totalUsers, activeToday, totalTasks, tasksToday }` |
@@ -925,6 +1000,15 @@ Requires both `authMiddleware` + `adminMiddleware`.
 | `POST /feedback/:id/reply` | Creates `user_alerts` row for the submitter |
 | `GET /xp-events` | Lists all XP events |
 | `PATCH /xp-events/:key` | Updates `xp_value` and/or `enabled` |
+| `GET /collectible-categories` | Lists non-archived `item_categories` ordered by name |
+| `POST /collectible-categories` | Creates a new `item_categories` row; 201 with new row |
+| `PATCH /collectible-categories/:id` | Renames a category; 404 if not found or archived |
+| `DELETE /collectible-categories/:id` | Soft-deletes (sets `archived=1`); 204 No Content |
+| `GET /collectibles` | Lists non-archived collectibles joined with category; ordered by category then name |
+| `POST /collectibles` | Creates a new collectible (name, categoryId, rarity required; description optional); validates rarity and category; 201 |
+| `PATCH /collectibles/:id` | Partial update of name/description/categoryId/rarity; validates all provided fields |
+| `DELETE /collectibles/:id` | Soft-deletes collectible (`archived=1`); 204 No Content |
+| `POST /collectibles/seed` | Bulk-seed: accepts JSON array of `{ name, items: [{ name, description?, rarity }] }`; existing entries (matched by name) are skipped; returns `{ categoriesCreated, categoriesReused, itemsCreated, itemsSkipped }` |
 
 ---
 
@@ -951,6 +1035,9 @@ All public functions:
 | `applyStreakFreeze(userId, taskId)` | `(string, string) → string \| null` | Atomic deduct credit + set `streak_frozen=1`; returns error string or null |
 | `getStreaksForUser(userId)` | `(string) → StreakRow[]` | Returns active recurring tasks with streak data |
 | `resetOverdueStreaks()` | `() → void` | Called by scheduler hourly; handles frozen and unfrozen overdue tasks |
+| `rollLootDrop(userId, xpGained)` | `(string, number) → LootDropResult \| null` | **(private)** Rolls for a loot drop based on XP gained; stores result in `pendingDrops` cache; returns null if RNG misses, no active collectibles, or user already has an unclaimed drop |
+| `claimPendingDrop(userId)` | `(string) → LootDropResult \| null` | Atomically removes and returns the pending drop from the in-memory cache; returns null if none or expired |
+| `getPendingDrop(userId)` | `(string) → LootDropResult \| null` | Non-destructively peeks at the pending drop; returns null if none or expired |
 
 **`GamificationProfile` interface:**
 ```typescript
@@ -965,6 +1052,26 @@ interface GamificationProfile {
   }>;
 }
 ```
+
+**`LootDropResult` interface:**
+```typescript
+interface LootDropResult {
+  collectibleId: string;
+  collectibleName: string;
+  rarity: string;      // 'common' | 'rare' | 'epic'
+  categoryName: string;
+}
+```
+
+**Loot Drop Engine constants:**
+| Constant | Value | Description |
+|---|---|---|
+| `PENDING_DROP_TTL_MS` | `600 000` (10 min) | How long a pending drop stays claimable before it expires |
+| `BASE_DROP_RATE_PER_50_XP` | `0.25` | 25% drop chance per 50 XP earned |
+| `MAX_DROP_CHANCE` | `0.75` | Drop probability cap (75%) |
+| `XP_SCALE_FACTOR` | `50` | XP unit used to scale drop probability |
+| `TOTAL_RARITY_WEIGHT` | `100` | Sum of all `RARITY_WEIGHTS` entries |
+| `RARITY_WEIGHTS` | `[common:70, rare:25, epic:5]` | Weighted rarity distribution |
 
 **`TITLE_TIERS` constant:**
 | minLevel | prefix |
@@ -1256,17 +1363,17 @@ The entire application UI and all client-side logic is contained in a single HTM
 | Function | Description |
 |---|---|
 | `loadAdminStats()` | GET `/api/admin/stats`; updates stat counters |
-| `showAdminTab(tab)` | Switches admin sub-tabs (smtp, users, reports, etc.) |
+| `showAdminTab(tab)` | Switches admin sub-tabs (`smtp`, `users`, `gamify`, `feedback`) |
 | `loadAdminPage()` | Loads all admin data sections |
 | `handleSmtpSave(e)` | PUT `/api/admin/smtp` |
-| `loadLockedAccounts()` | GET `/api/admin/locked` |
+| `loadLockedAccounts()` | GET `/api/admin/locked` — results rendered inline within the Users tab |
 | `unlockAccount(userId)` | POST `/api/admin/users/:id/unlock` |
-| `loadUserReports()` | GET `/api/admin/reports` |
+| `loadUserReports()` | GET `/api/admin/reports` — results rendered inline within the Users tab |
 | `resolveReport(reportId)` | PUT `/api/admin/reports/:id/resolve` |
 | `loadAdminFeedback()` | GET `/api/admin/feedback` |
 | `setFeedbackStatus(id, status)` | PATCH `/api/admin/feedback/:id/status` |
 | `sendFeedbackReply(id)` | POST `/api/admin/feedback/:id/reply` |
-| `loadXpEvents()` | GET `/api/admin/xp-events` |
+| `loadXpEvents()` | GET `/api/admin/xp-events` — rendered in Gamify tab |
 | `saveXpEvent(key)` | PATCH `/api/admin/xp-events/:key` |
 
 #### Profile / Settings
@@ -1292,7 +1399,7 @@ The entire application UI and all client-side logic is contained in a single HTM
 #### Arcade
 | Function | Description |
 |---|---|
-| `openArcade(badgeKey)` | Opens arcade modal; renders game based on badge key |
+| `openArcade(badgeKey)` | Opens arcade modal; renders game based on badge key (hangman, wordsearch, code-breaker, or whac-a-bug); calls `POST /api/gamification/arcade/spend-token` before launching |
 | `closeArcade()` | Hides arcade modal |
 
 ---
@@ -1435,6 +1542,8 @@ Expiry: 7 days (normal) or 30 days (`rememberMe = true`).
 | `qrcode.js` | Third-party QR code generator library — exposes global `QRCode` constructor |
 | `game-hangman.js` | Hangman mini-game implementation (loaded lazily when arcade is opened with a hangman badge) |
 | `game-wordsearch.js` | Word search mini-game implementation (loaded lazily for wordsearch badge) |
+| `game-code-breaker.js` | Code Breaker mini-game — number-guessing puzzle with colour-coded hints (loaded lazily for code-breaker badge) |
+| `game-whac-a-bug.js` | Whac-a-Bug mini-game — timed reaction game; tap bugs before they disappear (loaded lazily for whac-a-bug badge) |
 
 ---
 
@@ -1497,6 +1606,7 @@ These are stored in `xp_events` and admin-configurable:
 | `send_app_invite` | 15 | Awarded when a friend invite link is generated |
 | `send_group_invite` | 15 | Awarded when a group invite is sent |
 | `complete_task` | 50 | Base XP per task completion (before multiplier) |
+| `recycle_drop` | 15 | Awarded when the user recycles (discards) a pending loot drop |
 
 All event XP goes to the `'Activity'` skill via `awardEventXp()`.  
 Task-completion XP goes to the skill matching the task type name via `awardTaskXp()`.
@@ -1838,4 +1948,4 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.6.1*
+*End of Technical Reference Manual — TaskIt! v1.6.2*

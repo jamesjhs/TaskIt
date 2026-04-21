@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.6.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.6.2** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -103,6 +103,17 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.6.2
+
+- **🕹️ Arcade Token Economy** — a new token-based system gates access to the arcade mini-games. Users spend **Arcade Tokens** (earned through task completions and gamification events) to play. A configurable **daily play limit** (default 15 minutes, up to 180) adds a digital-wellbeing guardrail per user.
+- **🎮 Two new arcade games** — **Code Breaker** (`game-code-breaker.js`) and **Whac-a-Bug** (`game-whac-a-bug.js`) join Hangman and Wordsearch in the arcade. All four games are loaded lazily when their corresponding badge is unlocked.
+- **⚙️ New arcade endpoints** — `PATCH /api/gamification/arcade/daily-limit` (set daily play allowance) and `POST /api/gamification/arcade/spend-token` (atomic token deduction with race-condition guard).
+- **🗂️ Collectible inventory API** — `GET /api/gamification/inventory` returns the authenticated user's full owned-item list with item and category details.
+- **✅ `POST /api/gamification/inventory/claim`** — consumes a pending loot drop from the in-memory cache and persists it to `user_inventory` in an atomic transaction.
+- **🛡️ Anti-farming improvements** — new `tasks.original_due_date` column records the deadline set at task creation; `tasks.xp_claimed` flag prevents XP being re-awarded on task edits. Both columns are added as runtime migrations.
+- **🔧 Admin panel consolidation** — the Locked Accounts and User Reports sub-tabs have been merged into a single **Users** tab (each user row now shows lock status and open report count inline). A new **Gamify** tab consolidates XP Events configuration and the Collectibles CRUD panel into one place, replacing two separate tabs.
+- **Version bump** — server, README, user guides, and technical reference updated to 1.6.2.
 
 ### v1.6.1
 
@@ -247,23 +258,42 @@ Open `http://localhost:3000` after starting the server. No separate build step n
 | GET    | /api/gamification/achievements             | Full achievement catalogue with unlock status            |
 | GET    | /api/gamification/streaks                  | Streak data for all accessible recurring tasks           |
 | POST   | /api/gamification/streaks/:taskId/freeze   | Spend 1 freeze credit to protect a streak               |
+| GET    | /api/gamification/catalogue                | Full active collectibles catalogue (authenticated)       |
+| GET    | /api/gamification/inventory                | Authenticated user's owned collectible inventory         |
+| POST   | /api/gamification/inventory/claim          | Claim a pending loot drop → persisted to inventory       |
+| POST   | /api/gamification/inventory/recycle        | Discard pending drop for a small XP consolation bonus    |
+| GET    | /api/gamification/leaderboard/group/:groupId | Group XP leaderboard (members with gamification on)    |
+| GET    | /api/gamification/leaderboard/friends      | Friends XP leaderboard                                   |
+| PATCH  | /api/gamification/arcade/daily-limit       | Set daily arcade play limit in minutes (1–180)           |
+| POST   | /api/gamification/arcade/spend-token       | Atomically deduct 1 arcade token from balance            |
 
 ### Admin
-| Method | Path                          | Description                          |
-|--------|-------------------------------|--------------------------------------|
-| GET    | /api/admin/smtp               | Get SMTP settings                    |
-| PUT    | /api/admin/smtp               | Update SMTP settings                 |
-| GET    | /api/admin/users              | List all users                       |
-| GET    | /api/admin/locked             | List locked accounts                 |
-| POST   | /api/admin/users/:id/unlock   | Unlock account                       |
-| PUT    | /api/admin/users/:id/role     | Change user role                     |
-| GET    | /api/admin/reports            | List user reports                    |
-| PUT    | /api/admin/reports/:id/resolve| Resolve a user report                |
-| GET    | /api/admin/stats              | Stats dashboard                      |
-| GET    | /api/admin/feedback           | List feedback messages               |
-| PUT    | /api/admin/feedback/:id/read  | Mark feedback as read                |
-| PATCH  | /api/admin/feedback/:id/status| Update feedback status               |
-| POST   | /api/admin/feedback/:id/reply | Send in-app reply to user            |
+| Method | Path                                     | Description                          |
+|--------|------------------------------------------|--------------------------------------|
+| GET    | /api/admin/smtp                          | Get SMTP settings                    |
+| PUT    | /api/admin/smtp                          | Update SMTP settings                 |
+| GET    | /api/admin/users                         | List all users (includes lock status and open report count) |
+| GET    | /api/admin/locked                        | List locked accounts                 |
+| POST   | /api/admin/users/:id/unlock              | Unlock account                       |
+| PUT    | /api/admin/users/:id/role                | Change user role                     |
+| GET    | /api/admin/reports                       | List user reports                    |
+| PUT    | /api/admin/reports/:id/resolve           | Resolve a user report                |
+| GET    | /api/admin/stats                         | Stats dashboard                      |
+| GET    | /api/admin/feedback                      | List feedback messages               |
+| PUT    | /api/admin/feedback/:id/read             | Mark feedback as read                |
+| PATCH  | /api/admin/feedback/:id/status           | Update feedback status               |
+| POST   | /api/admin/feedback/:id/reply            | Send in-app reply to user            |
+| GET    | /api/admin/xp-events                     | List XP event catalogue              |
+| PATCH  | /api/admin/xp-events/:key                | Update XP event value/enabled        |
+| GET    | /api/admin/collectible-categories        | List active collectible categories   |
+| POST   | /api/admin/collectible-categories        | Create collectible category          |
+| PATCH  | /api/admin/collectible-categories/:id    | Rename collectible category          |
+| DELETE | /api/admin/collectible-categories/:id    | Soft-delete collectible category     |
+| GET    | /api/admin/collectibles                  | List active collectibles             |
+| POST   | /api/admin/collectibles                  | Create collectible item              |
+| PATCH  | /api/admin/collectibles/:id              | Update collectible item              |
+| DELETE | /api/admin/collectibles/:id              | Soft-delete collectible item         |
+| POST   | /api/admin/collectibles/seed             | Bulk-seed categories and items       |
 
 ### Calendar
 | Method | Path                        | Description                             |

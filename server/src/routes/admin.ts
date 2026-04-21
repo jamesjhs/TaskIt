@@ -59,14 +59,32 @@ router.put('/smtp', (req: Request, res: Response): void => {
 // The "original admin" is the user matched by ADMIN_EMAIL (if configured) OR
 // the first-ever registered user (lowest created_at across all users).
 // This user can never be demoted via the admin panel.
-function isOriginalAdmin(userId: string): boolean {
+//
+// The result is computed lazily and then cached — the founding admin never
+// changes, so a one-time lookup is sufficient for the lifetime of the process.
+let _originalAdminId: string | null | undefined = undefined; // undefined = not yet resolved
+
+function getOriginalAdminId(): string | null {
+  if (_originalAdminId !== undefined) return _originalAdminId;
+
+  // Prefer the explicitly configured ADMIN_EMAIL
   if (ADMIN_EMAIL) {
-    const row = db.prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1').get(ADMIN_EMAIL) as { id: string } | undefined;
-    if (row && row.id === userId) return true;
+    const row = db.prepare('SELECT id FROM users WHERE email = ? COLLATE NOCASE LIMIT 1').get(ADMIN_EMAIL) as { id: string } | undefined;
+    if (row) {
+      _originalAdminId = row.id;
+      return _originalAdminId;
+    }
   }
-  // Always protect the very first registered user regardless of ADMIN_EMAIL setting
+
+  // Fall back to the first-ever registered user
   const first = db.prepare('SELECT id FROM users ORDER BY created_at ASC LIMIT 1').get() as { id: string } | undefined;
-  return !!first && first.id === userId;
+  _originalAdminId = first ? first.id : null;
+  return _originalAdminId;
+}
+
+function isOriginalAdmin(userId: string): boolean {
+  const oid = getOriginalAdminId();
+  return oid !== null && oid === userId;
 }
 
 // ─── Users ────────────────────────────────────────────────────────────────────

@@ -3672,7 +3672,7 @@ function renderUsersList() {
       : `<span class="badge badge-gray" style="font-size:.72rem">user</span>`;
 
     const originalBadge = u.is_original_admin
-      ? `<span class="badge badge-purple" style="font-size:.72rem;background:#f5f3ff;color:#7c3aed;border:1px solid #c4b5fd" title="Original site administrator — cannot be demoted">⭐ original</span>`
+      ? `<span class="badge badge-purple" style="font-size:.72rem;background:#f5f3ff;color:#7c3aed;border:1px solid #c4b5fd" title="Original site administrator — cannot be demoted" aria-label="Original site administrator — cannot be demoted">⭐ original</span>`
       : '';
 
     const lockedBadge = u.is_locked

@@ -365,7 +365,12 @@ a:hover { text-decoration: underline; }
   border-radius: 12px;
   padding: 4px;
   margin-bottom: 24px;
+  /* Allow scrolling on narrow screens so tabs never overflow off-screen */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
 }
+.tab-group::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 .tab-btn {
   flex: 1;
   padding: 10px;
@@ -378,11 +383,22 @@ a:hover { text-decoration: underline; }
   color: #6b7280;
   transition: background .15s, color .15s, box-shadow .15s;
   min-height: 40px;
+  white-space: nowrap; /* never wrap button text mid-word */
 }
 .tab-btn.active {
   background: #fff;
   color: #7c3aed;
   box-shadow: 0 1px 4px rgba(0,0,0,.1);
+}
+
+/* On narrow screens stop stretching tabs to fill full width so their
+   text isn't crushed. The group becomes a scroll container instead. */
+@media (max-width: 540px) {
+  .tab-btn {
+    flex: none;
+    padding: 8px 10px;
+    font-size: .78rem;
+  }
 }
 
 /* Filter chips */
@@ -628,6 +644,24 @@ a:hover { text-decoration: underline; }
 /* Task card urgency / due-soon highlights */
 .task-card-urgent   { background: #fff0f0; }
 .task-card-due-soon { border: 2px solid #dc2626; }
+
+/* Far-future tasks collapsible toggle button */
+.task-far-future-toggle {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  background: #ede9fe;
+  border: 1px dashed #c4b5fd;
+  border-radius: 10px;
+  color: #7c3aed;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  margin: 4px 0 8px;
+  transition: background .15s;
+}
+.task-far-future-toggle:hover { background: #ddd6fe; }
 
 /* Inline new-type row in task modal */
 .new-type-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
@@ -2363,3 +2397,403 @@ body.arcade-open { overflow: hidden; }
   color: #9ca3af;
   margin-top: 2px;
 }
+
+/* =========================================================
+   ARCADE — Token economy & Time Budget UI
+   ========================================================= */
+
+/* Token balance display in the arcade topbar (right column) */
+.arcade-topbar-right {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.arcade-token-display {
+  font-size: .78rem;
+  font-weight: 700;
+  color: #fde68a;
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(253,230,138,.35);
+  border-radius: 20px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+/* Time budget row — shown below title bar when a game is active */
+.arcade-time-budget {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 16px 4px;
+  background: rgba(0,0,0,.2);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  flex-shrink: 0;
+}
+.arcade-time-budget-text {
+  font-size: .76rem;
+  color: #a5b4fc;
+  font-weight: 600;
+}
+.arcade-spend-token-btn {
+  background: rgba(253,230,138,.15);
+  border: 1px solid rgba(253,230,138,.4);
+  color: #fde68a;
+  font-size: .72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
+}
+.arcade-spend-token-btn:hover { background: rgba(253,230,138,.28); }
+.arcade-spend-token-btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* Time-budget locked screen */
+.arcade-time-locked {
+  text-align: center;
+  padding: 28px 20px;
+  animation: arcadeIn .3s ease both;
+}
+.arcade-time-locked-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 12px;
+}
+.arcade-time-locked-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f87171;
+  margin: 0 0 8px;
+}
+.arcade-time-locked-sub {
+  font-size: .82rem;
+  color: #a5b4fc;
+  margin: 0;
+}
+
+/* =========================================================
+   ARCADE — Game 3: Whac-A-Bug
+   ========================================================= */
+
+.wab-root {
+  --wab-text:     #e0e7ff;
+  --wab-accent:   #7c3aed;
+  --wab-surface:  rgba(255,255,255,.08);
+  --wab-border:   rgba(255,255,255,.15);
+  --wab-ok:       #4ade80;
+  --wab-ok-bg:    rgba(22,163,74,.38);
+  --wab-err:      #f87171;
+  --wab-err-bg:   rgba(220,38,38,.32);
+  --wab-gold:     #fbbf24;
+  --wab-gold-bg:  rgba(251,191,36,.28);
+
+  width: 100%;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* HUD row: score + timer */
+.wab-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: var(--wab-surface);
+  border-radius: 8px;
+  border: 1px solid var(--wab-border);
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--wab-text);
+  flex-shrink: 0;
+}
+.wab-timer-danger { color: var(--wab-err); }
+
+/* 4×4 bug grid */
+.wab-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  flex: 1;
+}
+
+/* Individual bug hole */
+.wab-cell {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: var(--wab-surface);
+  border: 1px solid var(--wab-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform .08s, background .1s;
+  position: relative;
+  overflow: hidden;
+}
+.wab-cell:empty::after {
+  content: '';
+  display: block;
+  width: 40%;
+  height: 40%;
+  border-radius: 50%;
+  background: rgba(255,255,255,.05);
+}
+.wab-cell--bug    { background: var(--wab-ok-bg);   border-color: var(--wab-ok);   cursor: pointer; }
+.wab-cell--golden { background: var(--wab-gold-bg); border-color: var(--wab-gold); cursor: pointer; }
+.wab-cell--error  { background: var(--wab-err-bg);  border-color: var(--wab-err);  cursor: pointer; }
+.wab-cell--bug:hover,
+.wab-cell--golden:hover,
+.wab-cell--error:hover   { transform: scale(1.08); }
+.wab-cell--whacked       { animation: wabWhack .2s ease; }
+@keyframes wabWhack {
+  0%   { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* End-state */
+.wab-msg {
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--wab-ok);
+  text-align: center;
+  min-height: 1.4em;
+  margin: 0;
+}
+.wab-replay {
+  display: none;
+  padding: 7px 18px;
+  border-radius: 8px;
+  border: none;
+  background: var(--wab-accent);
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: center;
+  transition: opacity .15s;
+}
+.wab-replay:hover { opacity: .86; }
+
+/* =========================================================
+   ARCADE — Game 4: Code Breaker (Mastermind)
+   ========================================================= */
+
+.cb-root {
+  --cb-text:      #e0e7ff;
+  --cb-text-dim:  rgba(196,181,253,.65);
+  --cb-surface:   rgba(255,255,255,.07);
+  --cb-border:    rgba(255,255,255,.14);
+  --cb-accent:    #7c3aed;
+  --cb-ok:        #4ade80;
+  --cb-err:       #f87171;
+
+  /* Color palette tokens */
+  --cb-red:    #ef4444;
+  --cb-blue:   #3b82f6;
+  --cb-green:  #22c55e;
+  --cb-yellow: #eab308;
+  --cb-orange: #f97316;
+  --cb-purple: #a855f7;
+  --cb-empty:  rgba(255,255,255,.12);
+
+  width: 100%;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Board — scrollable list of guess rows */
+.cb-board {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* One attempt row */
+.cb-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: var(--cb-surface);
+  border: 1px solid var(--cb-border);
+  transition: border-color .15s;
+}
+.cb-row--active {
+  border-color: rgba(196,181,253,.5);
+  background: rgba(196,181,253,.08);
+}
+
+/* Row number label */
+.cb-row-num {
+  font-size: .65rem;
+  font-weight: 700;
+  color: var(--cb-text-dim);
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Four color pegs */
+.cb-pegs {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+}
+.cb-peg {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--cb-empty);
+  border: 2px solid rgba(255,255,255,.18);
+  cursor: pointer;
+  transition: transform .1s, box-shadow .1s;
+  flex-shrink: 0;
+}
+.cb-peg--active:hover { transform: scale(1.12); box-shadow: 0 0 8px currentColor; }
+.cb-peg--red    { background: var(--cb-red);    border-color: var(--cb-red); }
+.cb-peg--blue   { background: var(--cb-blue);   border-color: var(--cb-blue); }
+.cb-peg--green  { background: var(--cb-green);  border-color: var(--cb-green); }
+.cb-peg--yellow { background: var(--cb-yellow); border-color: var(--cb-yellow); }
+.cb-peg--orange { background: var(--cb-orange); border-color: var(--cb-orange); }
+.cb-peg--purple { background: var(--cb-purple); border-color: var(--cb-purple); }
+
+/* 2×2 feedback mini-pegs */
+.cb-feedback {
+  display: grid;
+  grid-template-columns: repeat(2, 10px);
+  grid-template-rows: repeat(2, 10px);
+  gap: 2px;
+  flex-shrink: 0;
+}
+.cb-fb-peg {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.15);
+}
+.cb-fb-peg--black { background: #1f2937; border-color: #9ca3af; }
+.cb-fb-peg--white { background: #f9fafb; border-color: #d1d5db; }
+
+/* Submit button */
+.cb-submit {
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: none;
+  background: var(--cb-accent);
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity .15s;
+  white-space: nowrap;
+}
+.cb-submit:hover { opacity: .86; }
+.cb-submit:disabled { opacity: .35; cursor: not-allowed; }
+
+/* Color palette row */
+.cb-palette {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  background: var(--cb-surface);
+  border: 1px solid var(--cb-border);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.cb-palette-label {
+  font-size: .65rem;
+  color: var(--cb-text-dim);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.cb-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform .1s, box-shadow .1s;
+  flex-shrink: 0;
+}
+.cb-swatch:hover { transform: scale(1.15); }
+.cb-swatch--selected {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.5);
+  transform: scale(1.15);
+}
+
+/* Secret code reveal */
+.cb-secret {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: rgba(220,38,38,.18);
+  border: 1px solid rgba(248,113,113,.3);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.cb-secret-label {
+  font-size: .7rem;
+  color: var(--cb-err);
+  font-weight: 700;
+}
+.cb-secret-pegs { display: flex; gap: 5px; }
+
+/* End message */
+.cb-msg {
+  font-size: .88rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--cb-ok);
+  min-height: 1.3em;
+  flex-shrink: 0;
+}
+.cb-msg--lose { color: var(--cb-err); }
+
+/* Replay button */
+.cb-replay {
+  display: none;
+  padding: 7px 18px;
+  border-radius: 8px;
+  border: none;
+  background: var(--cb-accent);
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: center;
+  flex-shrink: 0;
+  transition: opacity .15s;
+}
+.cb-replay:hover { opacity: .86; }

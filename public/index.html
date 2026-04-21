@@ -1840,6 +1840,13 @@ let gamificationEnabled = false;
 // Keys of achievements whose mini-games the current user may play.
 // Populated from the server-fetched profile; admins receive all 13 keys.
 let unlockedArcadeKeys = new Set();
+// Arcade token balance and daily play limit (minutes); refreshed with the gamification profile.
+let arcadeTokens = 0;
+let arcadeDailyPlayMinutes = 15;
+// Far-future task list collapse state.
+let _farFutureExpanded = false;
+// Last task array passed to renderTasks — used by toggleFarFuture to re-render without a network fetch.
+let _lastRenderInput = [];
 
 // ========== Reminder window constants (must match server/src/services/scheduler.ts) ==========
 const POPUP_WINDOW_7D_MIN_MS  = 6  * 24 * 3600000;
@@ -2419,6 +2426,8 @@ async function loadTasks() {
 
 function renderTasks(tasks) {
   const grid = document.getElementById('taskGrid');
+  // Save for re-renders triggered by toggleFarFuture (avoids a network fetch)
+  _lastRenderInput = tasks;
   let displayTasks = tasks;
   if (!currentFilter.showGroupTasks) {
     displayTasks = tasks.filter(t => !t.group_id);
@@ -2443,7 +2452,19 @@ function renderTasks(tasks) {
     return a.due_date - b.due_date;
   });
 
-  const html = displayTasks.map(t => {
+  // ── Far-future split ────────────────────────────────────────────────────────
+  // Pending (non-complete) tasks due more than 2 weeks from now are collapsed
+  // behind a toggle so the active task list stays focused.
+  const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+  const farThreshold = now + TWO_WEEKS_MS;
+  const mainTasks = displayTasks.filter(
+    t => t.status === 'complete' || !t.due_date || t.due_date <= farThreshold
+  );
+  const farFutureTasks = displayTasks.filter(
+    t => t.status !== 'complete' && t.due_date && t.due_date > farThreshold
+  );
+
+  function buildCard(t) {
     const statusInfo = statusMeta(t.status);
     const overdue = t.due_date && t.due_date < now && t.status !== 'complete';
     const dueSoon = t.due_date && t.status !== 'complete' && t.due_date > now && t.due_date <= now + 24 * 60 * 60 * 1000;
@@ -2463,8 +2484,29 @@ function renderTasks(tasks) {
         ${t.details ? `<p class="task-card-meta" style="margin-top:6px">${escHtml(t.details.length > 80 ? t.details.substring(0, 80) + '\u2026' : t.details)}</p>` : ''}
       </div>
     `;
-  }).join('');
+  }
+
+  let html = mainTasks.map(buildCard).join('');
+
+  if (farFutureTasks.length) {
+    const arrow = _farFutureExpanded ? '\u2227' : '\u2228';
+    const count = farFutureTasks.length;
+    html += `<button class="task-far-future-toggle" onclick="toggleFarFuture()">Tasks due more than two weeks from now (${count}) ${arrow}</button>`;
+    if (_farFutureExpanded) {
+      html += farFutureTasks.map(buildCard).join('');
+    }
+  }
+
   grid.innerHTML = html;
+}
+
+/**
+ * Toggles the visibility of tasks due more than two weeks from now.
+ * Re-renders from the cached task list without a network fetch.
+ */
+function toggleFarFuture() {
+  _farFutureExpanded = !_farFutureExpanded;
+  renderTasks(_lastRenderInput);
 }
 
 function statusMeta(status) {
@@ -2879,6 +2921,11 @@ async function loadGamificationProfile() {
     ]);
     if (!profile) return;
     gamificationEnabled = !!profile.enabled;
+    arcadeTokens = profile.arcadeTokens ?? 0;
+    arcadeDailyPlayMinutes = profile.dailyPlayMinutes ?? 15;
+    // Sync token display if the arcade overlay is currently open
+    const tokenEl = document.getElementById('arcadeTokenDisplay');
+    if (tokenEl) tokenEl.textContent = '\uD83C\uDFDF\uFE0F ' + arcadeTokens;
     toggleEl.checked = gamificationEnabled;
 
     // Progress page — show correct state
@@ -4370,8 +4417,8 @@ const ARCADE_GAMES = {
   type_explorer:   { title: "Explorer's Maze",    icon: '🗺️', subtitle: 'Navigate through the task maze!',     gameId: 'maze'   },
   skill_level_5:   { title: 'Bullseye!',          icon: '🎯', subtitle: 'Hit every target with precision!',    gameId: 'target' },
   skill_level_10:  { title: 'Quiz Master',        icon: '🎓', subtitle: 'Test your TaskIt! knowledge!',         gameId: 'quiz'   },
-  streak_3:        { title: 'Hat Trick',          icon: '🎩', subtitle: 'Pull off three tricks in a row!',     gameId: 'trick'  },
-  streak_7:        { title: 'Lucky Seven',        icon: '🍀', subtitle: 'Spin your luck and win big!',         gameId: 'lucky'  },
+  streak_3:        { title: 'Whac-A-Bug',    icon: '\uD83D\uDC1B', subtitle: 'Squash the bugs before they crash the system!',  gameId: 'whac_a_bug'   },
+  streak_7:        { title: 'Code Breaker',  icon: '\uD83D\uDD10', subtitle: 'Crack the secret 4-colour code in 10 attempts!', gameId: 'code_breaker' },
   streak_30:       { title: 'Unstoppable Train',  icon: '🚂', subtitle: 'Keep the train running — no stops!', gameId: 'train'  },
 };
 
@@ -4383,6 +4430,10 @@ const ARCADE_GAMES = {
  *     from the server-fetched gamification profile after authentication).
  *   • Site administrators: all 13 keys, regardless of earned status, so they
  *     can test every game without needing to earn the badge first.
+ *
+ * Includes a Time Budget pre-game check: if the user has consumed all of
+ * their daily play allowance the game frame shows a locked message instead
+ * of launching the game.  Admins bypass the time budget entirely.
  *
  * Stage 2 game modules listen for the 'arcade:open' CustomEvent on
  * #arcadeOverlay to boot themselves; 'arcade:close' is fired on exit.
@@ -4410,12 +4461,58 @@ function openArcade(badgeKey) {
   overlay.dataset.activeGame   = badgeKey;
   overlay.dataset.activeGameId = game.gameId;
 
-  // Render the coming-soon placeholder; Stage 2 replaces this
+  // ── Time Budget pre-game check ──────────────────────────────────────────
+  // Daily play time is tracked per calendar day in localStorage.
+  const today = new Date().toISOString().slice(0, 10);
+  if (localStorage.getItem('arcadePlayDate') !== today) {
+    localStorage.setItem('arcadePlayDate', today);
+    localStorage.setItem('arcadePlaySeconds', '0');
+  }
+  const playedSeconds  = parseInt(localStorage.getItem('arcadePlaySeconds') || '0', 10);
+  const limitSeconds   = arcadeDailyPlayMinutes * 60;
+  const remainingSeconds = Math.max(0, limitSeconds - playedSeconds);
+
+  // Sync token display
+  const tokenEl = document.getElementById('arcadeTokenDisplay');
+  if (tokenEl) tokenEl.textContent = '\uD83C\uDFDF\uFE0F ' + arcadeTokens;
+
+  // Show overlay with animation
+  overlay.classList.remove('hidden', 'arcade-animating');
+  const forceReflow = overlay.offsetWidth; // intentional: force CSS reflow so .arcade-animating restart is registered
+  overlay.classList.add('arcade-animating');
+  document.body.classList.add('arcade-open');
+
+  // ── Time budget HUD ────────────────────────────────────────────────────
+  arcadeUpdateTimeBudget(remainingSeconds);
+
   const frame = document.getElementById('arcadeGameFrame');
   frame.innerHTML = '';
+
+  // If the daily limit is reached (non-admin), show locked screen
+  if (remainingSeconds <= 0 && !isAdmin) {
+    const lockDiv = document.createElement('div');
+    lockDiv.className = 'arcade-time-locked';
+    const lockIcon = document.createElement('span');
+    lockIcon.className = 'arcade-time-locked-icon';
+    lockIcon.setAttribute('aria-hidden', 'true');
+    lockIcon.textContent = '\u23F1\uFE0F';
+    const lockTitle = document.createElement('p');
+    lockTitle.className = 'arcade-time-locked-title';
+    lockTitle.textContent = 'Arcade Locked';
+    const lockSub = document.createElement('p');
+    lockSub.className = 'arcade-time-locked-sub';
+    lockSub.textContent = 'Complete a task to earn more break time!';
+    lockDiv.appendChild(lockIcon);
+    lockDiv.appendChild(lockTitle);
+    lockDiv.appendChild(lockSub);
+    frame.appendChild(lockDiv);
+    // Game does not start — do not fire arcade:open
+    return;
+  }
+
+  // Render the coming-soon placeholder; Stage 2 replaces this
   const placeholder = document.createElement('div');
   placeholder.className = 'arcade-coming-soon';
-  // textContent prevents any HTML injection from game metadata
   const iconEl = document.createElement('span');
   iconEl.className = 'arcade-coming-soon-icon';
   iconEl.setAttribute('aria-hidden', 'true');
@@ -4425,22 +4522,14 @@ function openArcade(badgeKey) {
   titleEl.textContent = game.title;
   const subEl = document.createElement('p');
   subEl.className = 'arcade-coming-soon-sub';
-  subEl.textContent = 'Mini-game arriving in Stage 2 — watch this space!';
+  subEl.textContent = 'Mini-game arriving in Stage 2 \u2014 watch this space!';
   placeholder.appendChild(iconEl);
   placeholder.appendChild(titleEl);
   placeholder.appendChild(subEl);
   frame.appendChild(placeholder);
 
-  // Show overlay, lock body scroll, and re-trigger the entry animation.
-  // The animation lives on `.arcade-animating`, not on the base class.
-  // We remove it, force a reflow (reading offsetWidth causes the browser to
-  // flush pending style changes and register the removal before the re-add),
-  // then add it back — this guarantees the keyframe animation replays on
-  // every open, not just the first time the overlay becomes visible.
-  overlay.classList.remove('hidden', 'arcade-animating');
-  const forceReflow = overlay.offsetWidth; // intentional: force CSS reflow so .arcade-animating restart is registered
-  overlay.classList.add('arcade-animating');
-  document.body.classList.add('arcade-open');
+  // Start tracking play time: increment once per second while the arcade is open
+  arcadeStartPlayTimer(overlay, limitSeconds, playedSeconds);
 
   // Notify Stage 2 modules
   overlay.dispatchEvent(new CustomEvent('arcade:open', {
@@ -4450,17 +4539,118 @@ function openArcade(badgeKey) {
 }
 
 /**
+ * Updates the time budget row text and the spend-token button state.
+ * @param {number} remainingSeconds
+ */
+function arcadeUpdateTimeBudget(remainingSeconds) {
+  const budgetEl = document.getElementById('arcadeTimeBudget');
+  const textEl   = document.getElementById('arcadeTimeBudgetText');
+  const spendBtn = document.getElementById('arcadeSpendTokenBtn');
+  if (!budgetEl || !textEl) return;
+
+  if (remainingSeconds <= 0) {
+    textEl.textContent = '\u23F1\uFE0F No time remaining today';
+  } else {
+    const m = Math.floor(remainingSeconds / 60);
+    const s = remainingSeconds % 60;
+    textEl.textContent = '\u23F1\uFE0F ' + m + 'm ' + (s < 10 ? '0' : '') + s + 's remaining';
+  }
+  if (spendBtn) spendBtn.disabled = arcadeTokens < 1;
+  budgetEl.classList.remove('hidden');
+}
+
+/** Interval ID for the in-session play timer (cleared on close). */
+let _arcadeTimerInterval = null;
+
+/**
+ * Starts the per-second play timer that accumulates usage in localStorage
+ * and keeps the time-budget HUD updated.  Clears any existing interval first
+ * so there is never more than one timer running at a time.
+ * @param {Element} overlay   The arcade overlay element (used to detect close).
+ * @param {number}  limitSeconds  User's configured daily cap in seconds.
+ * @param {number}  startedAt    Seconds already played at session start.
+ */
+function arcadeStartPlayTimer(overlay, limitSeconds, startedAt) {
+  if (_arcadeTimerInterval !== null) {
+    clearInterval(_arcadeTimerInterval);
+    _arcadeTimerInterval = null;
+  }
+  let elapsed = 0;
+  _arcadeTimerInterval = setInterval(function() {
+    if (overlay.classList.contains('hidden')) {
+      clearInterval(_arcadeTimerInterval);
+      _arcadeTimerInterval = null;
+      return;
+    }
+    elapsed++;
+    const totalPlayed = startedAt + elapsed;
+    localStorage.setItem('arcadePlaySeconds', String(totalPlayed));
+    const remaining = Math.max(0, limitSeconds - totalPlayed);
+    arcadeUpdateTimeBudget(remaining);
+  }, 1000);
+}
+
+/**
+ * Spends 1 Arcade Token to extend the user's daily play budget by 30 seconds.
+ * Calls the backend, updates the local state, and fires `arcade:addTime` on
+ * the overlay so active game modules can extend their own countdown.
+ */
+async function arcadeSpendToken() {
+  const spendBtn = document.getElementById('arcadeSpendTokenBtn');
+  if (spendBtn) spendBtn.disabled = true;
+  try {
+    const data = await api('POST', '/gamification/arcade/spend-token');
+    if (!data) return;
+    arcadeTokens = data.arcadeTokens;
+    const tokenEl = document.getElementById('arcadeTokenDisplay');
+    if (tokenEl) tokenEl.textContent = '\uD83C\uDFDF\uFE0F ' + arcadeTokens;
+
+    // Extend the stored daily budget by 30 s so the HUD updates immediately
+    const today = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem('arcadePlayDate') === today) {
+      const current = parseInt(localStorage.getItem('arcadePlaySeconds') || '0', 10);
+      const extended = Math.max(0, current - 30); // reduce "played" by 30 s
+      localStorage.setItem('arcadePlaySeconds', String(extended));
+    }
+
+    // Notify active game modules to inject 30 s into their own timer
+    const overlay = document.getElementById('arcadeOverlay');
+    if (overlay && !overlay.classList.contains('hidden')) {
+      overlay.dispatchEvent(new CustomEvent('arcade:addTime', {
+        bubbles: false,
+        detail: { seconds: 30 },
+      }));
+    }
+
+    toast('+30 seconds added! \uD83C\uDF89');
+  } catch (err) {
+    toast(err.message || 'Could not spend token', 'error');
+    if (spendBtn) spendBtn.disabled = arcadeTokens < 1;
+  }
+}
+
+/**
  * Closes the Arcade overlay and restores the main app.
  */
 function closeArcade() {
   const overlay = document.getElementById('arcadeOverlay');
   if (!overlay || overlay.classList.contains('hidden')) return;
 
+  // Stop play timer
+  if (_arcadeTimerInterval !== null) {
+    clearInterval(_arcadeTimerInterval);
+    _arcadeTimerInterval = null;
+  }
+
   // Notify Stage 2 modules so they can tear down canvases / timers
   overlay.dispatchEvent(new CustomEvent('arcade:close', {
     bubbles: false,
     detail: { gameId: overlay.dataset.activeGameId },
   }));
+
+  // Hide time budget row until next open
+  const budgetEl = document.getElementById('arcadeTimeBudget');
+  if (budgetEl) budgetEl.classList.add('hidden');
 
   overlay.classList.add('hidden');
   document.body.classList.remove('arcade-open');
@@ -4689,13 +4879,15 @@ async function loadInventory() {
 <div id="arcadeOverlay" class="arcade-overlay hidden"
      role="dialog" aria-modal="true" aria-labelledby="arcadeTitle">
 
-  <!-- Top bar: back button + centred logo + spacer -->
+  <!-- Top bar: back button + centred logo + token balance -->
   <div class="arcade-topbar">
     <button id="arcadeBackBtn" class="arcade-back-btn" aria-label="Close Arcade and return to tasks">
       🔙 Back to Tasks
     </button>
     <div class="arcade-logo">🕹️ TaskIt! Arcade</div>
-    <div class="arcade-topbar-spacer" aria-hidden="true"></div>
+    <div class="arcade-topbar-right">
+      <span id="arcadeTokenDisplay" class="arcade-token-display" aria-label="Arcade token balance">🎟️ 0</span>
+    </div>
   </div>
 
   <!-- Game title / subtitle -->
@@ -4703,6 +4895,14 @@ async function loadInventory() {
     <span id="arcadeGameIcon" class="arcade-game-icon" aria-hidden="true">🏆</span>
     <h2 id="arcadeTitle" class="arcade-game-title">Achievement Game</h2>
     <p id="arcadeGameSubtitle" class="arcade-game-subtitle">Loading…</p>
+  </div>
+
+  <!-- Time budget HUD — shown when a game session is active -->
+  <div id="arcadeTimeBudget" class="arcade-time-budget hidden" aria-live="polite">
+    <span id="arcadeTimeBudgetText" class="arcade-time-budget-text">⏱️ Loading…</span>
+    <button id="arcadeSpendTokenBtn" class="arcade-spend-token-btn" onclick="arcadeSpendToken()" disabled>
+      +30s (1 token)
+    </button>
   </div>
 
   <!-- Game frame — Stage 2 injects canvases / game UIs here -->
@@ -4724,6 +4924,8 @@ async function loadInventory() {
 <!-- 'arcade:close' on #arcadeOverlay and boots / tears down its own game.  -->
 <script src="/js/game-hangman.js"></script>
 <script src="/js/game-wordsearch.js"></script>
+<script src="/js/game-whac-a-bug.js"></script>
+<script src="/js/game-code-breaker.js"></script>
 
 </body>
 </html>

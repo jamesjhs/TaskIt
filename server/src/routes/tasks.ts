@@ -21,6 +21,9 @@ const ALLOWED_RECUR_UNITS = new Set(['days', 'weeks', 'months', 'years']);
 // The system task type that is always sorted to the top of the task list
 const URGENT_TASK_TYPE = 'urgent';
 
+// Anti-farming: tasks completed this many ms after creation earn no XP (non-recurring only)
+const ANTI_FARM_TIMEGATE_MS = 60 * 1000; // 60 seconds
+
 /** Format a UNIX-millisecond timestamp as a YYYY-MM-DD string for audit notes. */
 function formatDueDate(ms: number | null | undefined): string {
   if (ms == null) return '(no date)';
@@ -474,8 +477,8 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
   const now = Date.now();
 
-  // Anti-farming: tasks completed within 60 s of creation (non-recurring only) earn no XP/Loot.
-  const isTimegated = status === 'complete' && (now - task.created_at < 60000) && task.recur_interval === null;
+  // Anti-farming: tasks completed within ANTI_FARM_TIMEGATE_MS of creation (non-recurring only) earn no XP/Loot.
+  const isTimegated = status === 'complete' && (now - task.created_at < ANTI_FARM_TIMEGATE_MS) && task.recur_interval === null;
   // xp_claimed is a one-time flag — once XP has been awarded for this task it must not be re-awarded.
   const shouldAwardXp = status === 'complete' && !isTimegated && task.xp_claimed === 0;
 

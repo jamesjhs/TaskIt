@@ -36,7 +36,10 @@ const pendingDrops = new Map<string, PendingDropEntry>();
 /** How long (ms) a pending drop remains claimable before it expires. */
 const PENDING_DROP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
-/** Rarity tiers with weighted probabilities (must sum to 100). */
+/** Sum of all rarity weights — used to normalise the random roll. */
+const TOTAL_RARITY_WEIGHT = 100;
+
+/** Rarity tiers with weighted probabilities (must sum to TOTAL_RARITY_WEIGHT). */
 const RARITY_WEIGHTS: Array<{ rarity: string; weight: number }> = [
   { rarity: 'common', weight: 70 },
   { rarity: 'rare',   weight: 25 },
@@ -45,9 +48,13 @@ const RARITY_WEIGHTS: Array<{ rarity: string; weight: number }> = [
 
 /**
  * Base drop probability per 50 XP earned.
- * 25% chance at 50 XP, 50% at 100 XP, capped at 75%.
+ * 25% chance at 50 XP, 50% at 100 XP, capped at MAX_DROP_CHANCE.
  */
 const BASE_DROP_RATE_PER_50_XP = 0.25;
+/** Maximum drop probability regardless of XP earned. */
+const MAX_DROP_CHANCE = 0.75;
+/** XP amount used as the scaling unit for drop probability. */
+const XP_SCALE_FACTOR = 50;
 
 /** Evict entries whose TTL has elapsed. Called before any cache write. */
 function purgeExpiredDrops(): void {
@@ -59,13 +66,13 @@ function purgeExpiredDrops(): void {
 
 /** Pick a rarity tier using weighted random selection. */
 function selectWeightedRarity(): string {
-  const roll = Math.random() * 100;
+  const roll = Math.random() * TOTAL_RARITY_WEIGHT;
   let cumulative = 0;
   for (const { rarity, weight } of RARITY_WEIGHTS) {
     cumulative += weight;
     if (roll < cumulative) return rarity;
   }
-  return 'common'; // unreachable if weights sum to 100, but required as fallback
+  return 'common'; // unreachable if weights sum to TOTAL_RARITY_WEIGHT, but required as fallback
 }
 
 /**
@@ -82,8 +89,8 @@ function rollLootDrop(userId: string, xpGained: number): LootDropResult | null {
   // Prevent overwriting an existing unclaimed drop (anti–ghost-drop guard)
   if (pendingDrops.has(userId)) return null;
 
-  // Probability check: chance scales linearly with XP, capped at 75%
-  const dropChance = Math.min(0.75, (xpGained / 50) * BASE_DROP_RATE_PER_50_XP);
+  // Probability check: chance scales linearly with XP, capped at MAX_DROP_CHANCE
+  const dropChance = Math.min(MAX_DROP_CHANCE, (xpGained / XP_SCALE_FACTOR) * BASE_DROP_RATE_PER_50_XP);
   if (Math.random() >= dropChance) return null;
 
   const rarity = selectWeightedRarity();

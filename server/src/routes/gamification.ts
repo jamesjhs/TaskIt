@@ -214,7 +214,7 @@ router.post('/inventory/claim', (req: Request, res: Response): void => {
   if (!collectible) {
     // The item was archived between the drop roll and the claim — cancel the drop
     claimPendingDrop(userId); // remove from cache
-    res.status(410).json({ error: 'The dropped item is no longer available' });
+    res.status(410).json({ error: 'The dropped item was archived and can no longer be claimed' });
     return;
   }
 

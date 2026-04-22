@@ -14,8 +14,11 @@
  *   • 4×4 grid of bug holes.  55-second base timer.
  *   • Regular bugs (🐛) appear for ~1.8 s — clicking awards +1 point.
  *   • Golden bugs (✨) appear less often — clicking awards +3 points
- *     and adds 5 bonus seconds to the timer.
- *   • System errors (💀) appear occasionally — clicking deducts 10 points.
+ *     and adds 5 bonus seconds to the timer.  Their spawn rate slowly
+ *     decreases as the game progresses (−1 weight per 10 elapsed seconds,
+ *     floor of 5).
+ *   • System errors (💀) appear occasionally — clicking deducts 10 points
+ *     AND applies a 5-second time penalty.
  *   • Bugs that are not clicked in time simply disappear.
  *   • Spawn rate ramps up linearly: +5 % speed every 30 seconds of play.
  *
@@ -81,11 +84,20 @@
 
   // ── Weighted-random bug picker ─────────────────────────────────────────────
 
+  /**
+   * Returns a dynamically-weighted bug type.
+   * The golden-bug weight starts at 20 and decreases by 1 for every 10
+   * elapsed seconds, down to a minimum of 5, so golden bugs become rarer
+   * as the game progresses.
+   */
   function pickBugType() {
-    var roll = Math.random() * TOTAL_WEIGHT;
+    var goldenWeight = Math.max(5, BUG_TYPES[1].weight - Math.floor(_elapsedSeconds / 10));
+    var weights = [BUG_TYPES[0].weight, goldenWeight, BUG_TYPES[2].weight];
+    var total   = weights.reduce(function (s, w) { return s + w; }, 0);
+    var roll    = Math.random() * total;
     var cumulative = 0;
     for (var i = 0; i < BUG_TYPES.length; i++) {
-      cumulative += BUG_TYPES[i].weight;
+      cumulative += weights[i];
       if (roll < cumulative) return BUG_TYPES[i];
     }
     return BUG_TYPES[0];
@@ -213,11 +225,16 @@
       cell.timeoutId = null;
     }
 
-    // Award points and bonus time
+    // Award points and bonus time (or apply time penalty for errors)
     _score = Math.max(-999, _score + bugType.points);
     if (bugType.bonusTime > 0) {
       _timeLeft = Math.min(_timeLeft + bugType.bonusTime, 999);
+    } else if (bugType.id === 'error') {
+      _timeLeft = Math.max(0, _timeLeft - 5);
     }
+
+    updateHud();
+    if (_timeLeft <= 0) { endGame(); return; }
 
     // Brief whack animation then hide
     var cellEl = document.getElementById('wab-cell-' + idx);
@@ -227,8 +244,6 @@
     } else {
       hideBug(idx);
     }
-
-    updateHud();
   }
 
   // ── HUD updates ───────────────────────────────────────────────────────────

@@ -1882,7 +1882,7 @@ let gamificationEnabled = false;
 let unlockedArcadeKeys = new Set();
 // Arcade token balance and daily play limit (minutes); refreshed with the gamification profile.
 let arcadeTokens = 0;
-let arcadeDailyPlayMinutes = 15;
+let arcadeDailyPlayMinutes = 10;
 // Far-future task list collapse state.
 let _farFutureExpanded = false;
 // Last task array passed to renderTasks — used by toggleFarFuture to re-render without a network fetch.
@@ -3164,7 +3164,7 @@ async function loadGamificationProfile() {
     if (!profile) return;
     gamificationEnabled = !!profile.enabled;
     arcadeTokens = profile.arcadeTokens ?? 0;
-    arcadeDailyPlayMinutes = profile.dailyPlayMinutes ?? 15;
+    arcadeDailyPlayMinutes = profile.dailyPlayMinutes ?? 10;
     // Sync token display if the arcade overlay is currently open
     const tokenEl = document.getElementById('arcadeTokenDisplay');
     if (tokenEl) tokenEl.textContent = '\uD83C\uDFDF\uFE0F ' + arcadeTokens;

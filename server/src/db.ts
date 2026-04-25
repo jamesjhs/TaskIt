@@ -309,6 +309,18 @@ db.exec(`
     FOREIGN KEY (task_id) REFERENCES tasks(id),
     FOREIGN KEY (completed_by) REFERENCES users(id)
   );
+
+  -- Sporadic Tasks: audit trail for task history and completion tracking
+  CREATE TABLE IF NOT EXISTS task_history (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    action TEXT NOT NULL,
+    details TEXT,
+    timestamp INTEGER NOT NULL,
+    FOREIGN KEY (task_id) REFERENCES tasks(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
 `);
 
 // Runtime migrations — add columns if they don't exist yet
@@ -384,6 +396,9 @@ addCol('tasks', 'xp_claimed', 'INTEGER NOT NULL DEFAULT 0');
 // Arcade: token economy and digital-wellbeing daily play limit
 addCol('users', 'arcade_tokens', 'INTEGER NOT NULL DEFAULT 0');
 addCol('users', 'daily_play_minutes', 'INTEGER NOT NULL DEFAULT 10');
+// Sporadic Tasks: track whether task is sporadic and last completion timestamp
+addCol('tasks', 'is_sporadic', 'INTEGER NOT NULL DEFAULT 0');
+addCol('tasks', 'last_completed_at', 'INTEGER');
 // Backfill: generate a friend_key for any user that doesn't have one yet
 {
   const missingKey = db.prepare("SELECT id FROM users WHERE friend_key IS NULL OR friend_key = ''").all() as Array<{ id: string }>;

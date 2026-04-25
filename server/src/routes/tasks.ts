@@ -10,6 +10,7 @@ import {
   computeNewStreakValues,
   awardEventXp,
   LootDropResult,
+  formatFriendlyTime,
 } from '../services/gamification';
 
 const router = Router();
@@ -1193,6 +1194,180 @@ router.delete('/:id/subtasks/:subId', (req: Request, res: Response): void => {
 
   db.prepare('DELETE FROM task_subtasks WHERE id = ?').run(subId);
   res.status(204).send();
+});
+
+// ─── Sporadic Tasks ───────────────────────────────────────────────────────────
+
+// GET /api/tasks/sporadic — Fetch all sporadic tasks for user
+router.get('/sporadic', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+
+  const tasks = db.prepare(`
+    SELECT t.*, tt.name AS type_name,
+      u.username AS created_by_username,
+      g.name AS group_name
+    FROM tasks t
+    JOIN task_types tt ON tt.id = t.type_id
+    JOIN users u ON u.id = t.created_by
+    LEFT JOIN groups g ON g.id = t.group_id
+    WHERE t.is_sporadic = 1 AND t.archived = 0
+      AND (
+        t.created_by = ?
+        OR (t.group_id IS NOT NULL AND EXISTS (
+          SELECT 1 FROM group_members gm WHERE gm.group_id = t.group_id AND gm.user_id = ?
+        ))
+      )
+    ORDER BY t.last_completed_at ASC NULLS FIRST, t.created_at ASC
+  `).all(userId, userId) as Array<Record<string, unknown>>;
+
+  // Add friendly timestamp for last_completed_at
+  const result = tasks.map((t) => {
+    let lastCompletedFriendly = 'Never';
+    let lastCompletedLabel = 'Never done';
+    if (t.last_completed_at && typeof t.last_completed_at === 'number') {
+      const now = Date.now();
+      const ago = now - t.last_completed_at;
+      lastCompletedFriendly = formatFriendlyTime(ago) + ' ago';
+      lastCompletedLabel = ago > 90 * 24 * 60 * 60 * 1000 ? 'Overdue (90+ days)' : 'Last done: ' + lastCompletedFriendly;
+    }
+    return {
+      ...t,
+      archived: t.archived === 1,
+      is_sporadic: t.is_sporadic === 1,
+      last_completed_friendly: lastCompletedFriendly,
+      last_completed_label: lastCompletedLabel,
+    };
+  });
+
+  res.json(result);
+});
+
+// POST /api/tasks/create-sporadic — Create a new sporadic task
+router.post('/create-sporadic', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const { title, description, groupId, taskTypeId } = req.body;
+
+  if (!title || typeof title !== 'string' || title.trim().length === 0 || title.length > 255) {
+    res.status(400).json({ error: 'title must be between 1 and 255 characters' });
+    return;
+  }
+
+  if (description !== undefined && description !== null && (typeof description !== 'string' || description.length > 10000)) {
+    res.status(400).json({ error: 'description must not exceed 10000 characters' });
+    return;
+  }
+
+  // Determine type_id: use provided taskTypeId or find a default task type
+  let typeId = taskTypeId;
+  if (!typeId) {
+    const defaultType = db.prepare('SELECT id FROM task_types LIMIT 1').get() as { id: string } | undefined;
+    if (!defaultType) {
+      res.status(400).json({ error: 'No task types available' });
+      return;
+    }
+    typeId = defaultType.id;
+  } else {
+    // Verify type exists
+    const typeExists = db.prepare('SELECT 1 FROM task_types WHERE id = ?').get(typeId);
+    if (!typeExists) {
+      res.status(400).json({ error: 'Invalid taskTypeId' });
+      return;
+    }
+  }
+
+  // If groupId provided, verify membership
+  if (groupId) {
+    const member = db.prepare(
+      'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
+    ).get(groupId, userId);
+    if (!member) {
+      res.status(403).json({ error: 'Not a member of the specified group' });
+      return;
+    }
+  }
+
+  const taskId = randomUUID();
+  const now = Date.now();
+
+  db.prepare(`
+    INSERT INTO tasks (
+      id, title, details, type_id, status, created_by, group_id, archived,
+      created_at, updated_at, is_sporadic
+    ) VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, 1)
+  `).run(taskId, title.trim(), description || null, typeId, userId, groupId || null, now, now);
+
+  res.status(201).json({ success: true, taskId });
+});
+
+// PUT /api/tasks/:id/complete-sporadic — Mark a sporadic task complete
+router.put('/:id/complete-sporadic', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const taskId = req.params.id;
+
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
+    | {
+        id: string;
+        is_sporadic: number;
+        created_by: string;
+        group_id: string | null;
+        type_id: string;
+        xp_multiplier: number;
+      }
+    | undefined;
+
+  if (!task) {
+    res.status(404).json({ error: 'Task not found' });
+    return;
+  }
+
+  if (task.is_sporadic !== 1) {
+    res.status(400).json({ error: 'Task is not sporadic' });
+    return;
+  }
+
+  // Allow creator or group member only
+  if (!hasTaskAccess(task, userId)) {
+    res.status(403).json({ error: 'Not authorized' });
+    return;
+  }
+
+  const now = Date.now();
+
+  // Reset status to 'not_started' and update last_completed_at
+  const updateTx = db.transaction(() => {
+    db.prepare(
+      'UPDATE tasks SET status = ?, last_completed_at = ?, updated_at = ?, completed_at = ?, completed_by = ? WHERE id = ?'
+    ).run('not_started', now, now, now, userId, taskId);
+
+    // Log to task_history
+    db.prepare(
+      'INSERT INTO task_history (id, task_id, user_id, action, timestamp) VALUES (?, ?, ?, ?, ?)'
+    ).run(randomUUID(), taskId, userId, 'completed_sporadic', now);
+  });
+
+  updateTx();
+
+  // Award XP and check achievements (same as regular task completion)
+  let lootDrop: LootDropResult | null = null;
+  try {
+    const xpResult = awardTaskXp(userId, task.type_id, task.xp_multiplier ?? 1.0);
+    if (xpResult) lootDrop = xpResult.drop;
+    awardFreezeCredit(userId);
+    checkAndGrantAchievements(userId);
+  } catch (gamErr) {
+    console.error('[gamification] Error processing sporadic task completion:', gamErr);
+  }
+
+  const updated = db.prepare(`
+    SELECT t.*, tt.name AS type_name
+    FROM tasks t
+    JOIN task_types tt ON tt.id = t.type_id
+    WHERE t.id = ?
+  `).get(taskId) as Record<string, unknown>;
+
+  const response: Record<string, unknown> = { ...updated, archived: updated.archived === 1, is_sporadic: updated.is_sporadic === 1 };
+  if (lootDrop) response.drop = lootDrop;
+  res.json(response);
 });
 
 export default router;

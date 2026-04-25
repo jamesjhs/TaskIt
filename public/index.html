@@ -904,6 +904,16 @@
       </div>
     </div>
 
+    <!-- Sporadic Tasks Section -->
+    <section id="sporadic-section" class="sporadic-container" style="display: none;">
+      <div class="sporadic-header">
+        <button id="sporadic-toggle" class="toggle-btn">
+          ▶ Sporadic Tasks (<span id="sporadic-count">0</span>)
+        </button>
+      </div>
+      <div id="sporadic-list" class="sporadic-tasks" style="display: none;"></div>
+    </section>
+
     <div id="taskGrid"><div class="loading">Loading tasks…</div></div>
   </div>
 
@@ -1505,6 +1515,13 @@
             <button type="button" onclick="confirmAddNewType()" class="btn btn-primary btn-sm">Add</button>
             <button type="button" onclick="cancelAddNewType()" class="btn btn-secondary btn-sm">✕</button>
           </div>
+         <div class="form-group">
+           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+             <input type="checkbox" id="taskSporadic" onchange="updateTaskMode()" style="width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0" />
+             <span>Sporadic (maintenance task)</span>
+           </label>
+           <p id="sporadicInfo" style="font-size:.8rem;color:#6b7280;margin:8px 0 0 24px;display:none">This task has no fixed schedule. When completed, it reappears and shows how long ago you last did it. Examples: Haircut, Lawn mowing, Car maintenance</p>
+         </div>
         </div>
         <div class="form-group">
           <label>Group</label>
@@ -2275,7 +2292,10 @@ function showPage(page) {
   // FAB is only shown on the tasks page
   const fab = document.getElementById('fabNewTask');
   if (fab) fab.classList.toggle('hidden', page !== 'tasks');
-  if (page === 'tasks') loadTasks();
+  if (page === 'tasks') {
+    loadSporadicTasks();
+    loadTasks();
+  }
   if (page === 'groups') renderGroups();
   if (page === 'admin') loadAdminPage();
   if (page === 'profile') {
@@ -2559,6 +2579,77 @@ function toggleFarFuture() {
   renderTasks(_lastRenderInput);
 }
 
+// ========== Sporadic Tasks ==========
+async function loadSporadicTasks() {
+  try {
+    const tasks = await api('GET', '/tasks/sporadic');
+    renderSporadicTasks(tasks);
+  } catch (err) {
+    console.error('Failed to load sporadic tasks:', err);
+  }
+}
+
+function renderSporadicTasks(tasks) {
+  const section = document.getElementById('sporadic-section');
+  const list = document.getElementById('sporadic-list');
+  const count = document.getElementById('sporadic-count');
+
+  if (!tasks || tasks.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  count.textContent = tasks.length;
+
+  let html = '';
+  tasks.forEach(task => {
+    const lastDone = task.last_completed_at ? new Date(task.last_completed_at).toLocaleDateString(userLocale()) : 'Never';
+    const isOverdue = task.last_completed_at && (Date.now() - task.last_completed_at) > (90 * 24 * 60 * 60 * 1000);
+    const overdueClass = isOverdue ? 'overdue' : '';
+    const label = task.last_completed_friendly || lastDone;
+    
+    html += `
+      <div class="sporadic-task-card">
+        <div class="sporadic-task-title">${escHtml(task.title)}</div>
+        ${task.details ? `<p style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">${escHtml(task.details)}</p>` : ''}
+        <div class="sporadic-last-done ${overdueClass}">Last done: ${escHtml(label)}</div>
+        <div class="sporadic-actions">
+          <button onclick="completeSporadicTask('${escHtml(task.id)}')" class="sporadic-complete-btn">✓ Done Now</button>
+          <button onclick="openDetailById('${escHtml(task.id)}')" class="btn btn-outline btn-sm" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Edit</button>
+        </div>
+      </div>
+    `;
+  });
+
+  list.innerHTML = html;
+  list.style.display = 'block';
+}
+
+async function completeSporadicTask(taskId) {
+  try {
+    const response = await api('PUT', `/tasks/${taskId}/complete-sporadic`, {});
+    toast('✓ Task completed! Last done timestamp updated.');
+    loadSporadicTasks();
+    loadTasks();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const toggle = document.getElementById('sporadic-toggle');
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      const list = document.getElementById('sporadic-list');
+      list.style.display = list.style.display === 'none' ? 'block' : 'none';
+      toggle.textContent = toggle.textContent.includes('▶') 
+        ? toggle.textContent.replace('▶', '▼') 
+        : toggle.textContent.replace('▼', '▶');
+    });
+  }
+});
+
 function statusMeta(status) {
   switch (status) {
     case 'not_started': return { label: 'Not Started', cls: 'badge-not-started' };
@@ -2742,6 +2833,44 @@ async function loadGroupMembersForTask(selectedIds = []) {
 async function handleTaskSubmit(e) {
   e.preventDefault();
   const editId = document.getElementById('taskEditId').value;
+  const sporadicCheckbox = document.getElementById('taskSporadic');
+  const isSporadic = sporadicCheckbox && sporadicCheckbox.checked;
+  
+  // Handle sporadic task creation
+  if (!editId && isSporadic) {
+    const title = document.getElementById('taskTitle').value.trim();
+    const details = document.getElementById('taskDetails').value.trim() || null;
+    const groupId = document.getElementById('taskGroup').value || null;
+    const typeId = document.getElementById('taskType').value;
+    
+    if (!title) {
+      toast('Task title is required', 'error');
+      return;
+    }
+    if (!typeId) {
+      toast('Task type is required', 'error');
+      return;
+    }
+    
+    try {
+      await api('POST', '/tasks/create-sporadic', {
+        title,
+        description: details,
+        groupId,
+        taskTypeId: typeId,
+      });
+      toast('Sporadic task created!');
+      resetSubtaskPanel();
+      closeTaskModal();
+      loadSporadicTasks();
+      loadTasks();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+    return;
+  }
+  
+  // Handle regular task creation/editing
   const assigneeIds = Array.from(document.querySelectorAll('.assignee-check:checked')).map(el => el.value);
   const body = {
     title: document.getElementById('taskTitle').value.trim(),
@@ -4635,6 +4764,28 @@ async function saveRecurChange() {
 function toggleRecurFields() {
   const enabled = document.getElementById('taskRecurEnabled').checked;
   document.getElementById('taskRecurFields').classList.toggle('hidden', !enabled);
+}
+
+function updateTaskMode() {
+  const sporadic = document.getElementById('taskSporadic').checked;
+  const dueDateField = document.getElementById('taskDueDate').parentElement;
+  const recurField = document.getElementById('taskRecurEnabled').parentElement;
+  const sporadicInfo = document.getElementById('sporadicInfo');
+  
+  if (sporadic) {
+    // Hide due date and recurrence when sporadic
+    dueDateField.classList.add('hidden');
+    recurField.classList.add('hidden');
+    document.getElementById('taskRecurFields').classList.add('hidden');
+    document.getElementById('taskRecurEnabled').checked = false;
+    // Show sporadic info
+    if (sporadicInfo) sporadicInfo.style.display = 'block';
+  } else {
+    // Show all fields for regular tasks
+    dueDateField.classList.remove('hidden');
+    recurField.classList.remove('hidden');
+    if (sporadicInfo) sporadicInfo.style.display = 'none';
+  }
 }
 
 // ========== Service Worker ==========

@@ -1,6 +1,4 @@
-name: "Deep Dive Analysis & Documentation"
-
-on:
+name: "Deep Dive Analysis & Documentation"on:
   workflow_dispatch:
     inputs:
       analysis_focus:
@@ -11,7 +9,6 @@ on:
         description: "Create PR with documentation updates"
         type: boolean
         default: true
-
 jobs:
   deep-dive-analysis:
     runs-on: ubuntu-latest
@@ -20,41 +17,30 @@ jobs:
       security-events: write
       pull-requests: write
       issues: write
-
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       # 1. CHECKOUT
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      # 2. SETUP ENVIRONMENT
+          fetch-depth: 0      # 2. SETUP ENVIRONMENT
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
+          cache: "npm"      - name: Install dependencies
         run: |
           cd server 2>/dev/null || true
           npm ci 2>/dev/null || true
-        continue-on-error: true
-
-      # 3. SECURITY DEEP DIVE
+        continue-on-error: true      # 3. SECURITY DEEP DIVE
       - name: Security Analysis - Deep Dive
         id: security-analysis
         run: |
           cat > /tmp/security-analysis.js << 'EOF'
           const fs = require('fs');
           const path = require('path');
-          const { execSync } = require('child_process');
-
-          console.log('\n' + '='.repeat(70));
+          const { execSync } = require('child_process');          console.log('\n' + '='.repeat(70));
           console.log('🔒 SECURITY DEEP DIVE ANALYSIS');
-          console.log('='.repeat(70));
-
-          let findings = [];
-
-          // 1. CVE Audit
+          console.log('='.repeat(70));          let findings = [];          // 1. CVE Audit
           console.log('\n📦 Dependency Vulnerability Scan...');
           try {
             const auditOutput = execSync('cd server && npm audit --json 2>/dev/null || echo "{}"', { encoding: 'utf8' });
@@ -74,7 +60,8 @@ jobs:
           console.log('\n🔑 Secret Detection...');
           try {
             execSync('pip install detect-secrets -q');
-            const secretsOutput = execSync('detect-secrets scan --all-files server/src/ 2>&1 || true', { encoding: 'utf8' });
+            const secretsOutput = execSync('detect-secrets scan --all-files server/src/ 2>&1 || true', { encoding: 'utf8
+8' });
             if (!secretsOutput.includes('No secrets detected')) {
               findings.push('⚠️  Potential secrets found - review detect-secrets output');
               console.log('   Potential secrets detected in source code');
@@ -195,7 +182,7 @@ jobs:
           try {
             const pkgJson = JSON.parse(fs.readFileSync('server/package.json', 'utf8'));
             const criticalDeps = ['express', 'bcryptjs', 'jsonwebtoken', 'sqlite3'];
-            const found = criticalDeps.filter(d => 
+            const found = criticalDeps.filter(d =>
               pkgJson.dependencies?.[d] || pkgJson.devDependencies?.[d]
             );
             console.log(`   ${found.length}/${criticalDeps.length} critical deps present`);
@@ -350,7 +337,7 @@ jobs:
           ## 🔒 Security Analysis
 
           - [x] Dependency vulnerability scan
-          - [x] Secret detection  
+          - [x] Secret detection
           - [x] Authentication & encryption patterns
           - [x] HTTP security headers
           - [x] Database query safety (SQL injection prevention)
@@ -414,7 +401,7 @@ jobs:
         run: |
           cat > /tmp/update-docs.sh << 'EOF'
           #!/bin/bash
-          
+
           echo "📝 Updating documentation..."
 
           # Create/update SECURITY.md
@@ -482,7 +469,7 @@ jobs:
           CONTRIB_EOF
           fi
 
-          # Create/update ARCHITECTURE.md if missing  
+          # Create/update ARCHITECTURE.md if missing
           if [ ! -f ARCHITECTURE.md ]; then
             cat > ARCHITECTURE.md << 'ARCH_EOF'
           # Architecture Overview
@@ -549,7 +536,7 @@ jobs:
         if: ${{ github.event.inputs.create_pr == 'true' && always() }}
         uses: peter-evans/create-pull-request@v5
         with:
-          commit-message: "docs: update security, architecture, and contribution guidelines from deep-dive analysis"
+          commit-message: "docs: update security, architecture, and contribution guidelines from deep-dive analysis"    
           title: "docs: deep-dive analysis updates"
           body: |
             This PR contains documentation updates from the Deep Dive Analysis workflow.
@@ -587,3 +574,7 @@ jobs:
           echo ""
           echo "📊 Reports available as artifacts"
           echo ""
+
+___BEGIN___COMMAND_DONE_MARKER___0
+
+

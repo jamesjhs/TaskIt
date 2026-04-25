@@ -265,6 +265,31 @@ router.post('/', (req: Request, res: Response): void => {
     resolvedMultiplier = parsed;
   }
 
+  // Get user's default notification preferences
+  const userNotifPrefs = db.prepare('SELECT notification_preferences FROM users WHERE id = ?').get(userId) as
+    | { notification_preferences: string }
+    | undefined;
+  let defaultPrefs = {
+    email: { notify_7day: false, notify_1day: true, notify_onday: false },
+    popup: { notify_7day: false, notify_1day: false, notify_onday: false },
+  };
+  if (userNotifPrefs) {
+    try {
+      defaultPrefs = JSON.parse(userNotifPrefs.notification_preferences);
+    } catch (e) {
+      console.error('[tasks/create] Failed to parse notification_preferences:', e);
+    }
+  }
+
+  // Use provided values or fall back to user's defaults
+  const finalNotifyEmail = notifyEmail !== undefined && notifyEmail !== null ? (notifyEmail === false || notifyEmail === 0 ? 0 : 1) : 1;
+  const finalNotify7day = notify7day !== undefined && notify7day !== null ? (notify7day === false || notify7day === 0 ? 0 : 1) : (defaultPrefs.email.notify_7day ? 1 : 0);
+  const finalNotify1day = notify1day !== undefined && notify1day !== null ? (notify1day === false || notify1day === 0 ? 0 : 1) : (defaultPrefs.email.notify_1day ? 1 : 0);
+  const finalNotifyOnday = notifyOnday !== undefined && notifyOnday !== null ? (notifyOnday === false || notifyOnday === 0 ? 0 : 1) : (defaultPrefs.email.notify_onday ? 1 : 0);
+  const finalNotifyPopup7day = notifyPopup7day !== undefined && notifyPopup7day !== null ? (notifyPopup7day === false || notifyPopup7day === 0 ? 0 : 1) : (defaultPrefs.popup.notify_7day ? 1 : 0);
+  const finalNotifyPopup1day = notifyPopup1day !== undefined && notifyPopup1day !== null ? (notifyPopup1day === false || notifyPopup1day === 0 ? 0 : 1) : (defaultPrefs.popup.notify_1day ? 1 : 0);
+  const finalNotifyPopupOnday = notifyPopupOnday !== undefined && notifyPopupOnday !== null ? (notifyPopupOnday === false || notifyPopupOnday === 0 ? 0 : 1) : (defaultPrefs.popup.notify_onday ? 1 : 0);
+
   const id = randomUUID();
   const now = Date.now();
 
@@ -275,13 +300,13 @@ router.post('/', (req: Request, res: Response): void => {
     dueDate || null,
     recurInterval ? parseInt(String(recurInterval), 10) : null,
     recurUnit || null,
-    notifyEmail === false || notifyEmail === 0 ? 0 : 1,
-    notify7day === false || notify7day === 0 ? 0 : 1,
-    notify1day === false || notify1day === 0 ? 0 : 1,
-    notifyOnday === false || notifyOnday === 0 ? 0 : 1,
-    notifyPopup7day === false || notifyPopup7day === 0 ? 0 : 1,
-    notifyPopup1day === false || notifyPopup1day === 0 ? 0 : 1,
-    notifyPopupOnday === false || notifyPopupOnday === 0 ? 0 : 1,
+    finalNotifyEmail,
+    finalNotify7day,
+    finalNotify1day,
+    finalNotifyOnday,
+    finalNotifyPopup7day,
+    finalNotifyPopup1day,
+    finalNotifyPopupOnday,
     resolvedMultiplier);
 
   // Award create_task XP (non-critical)

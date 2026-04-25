@@ -399,6 +399,8 @@ addCol('users', 'daily_play_minutes', 'INTEGER NOT NULL DEFAULT 10');
 // Sporadic Tasks: track whether task is sporadic and last completion timestamp
 addCol('tasks', 'is_sporadic', 'INTEGER NOT NULL DEFAULT 0');
 addCol('tasks', 'last_completed_at', 'INTEGER');
+// User notification preferences: JSON string with default reminder options
+addCol('users', 'notification_preferences', `TEXT NOT NULL DEFAULT '{"email":{"notify_7day":false,"notify_1day":true,"notify_onday":false},"popup":{"notify_7day":false,"notify_1day":false,"notify_onday":false}}'`);
 // Backfill: generate a friend_key for any user that doesn't have one yet
 {
   const missingKey = db.prepare("SELECT id FROM users WHERE friend_key IS NULL OR friend_key = ''").all() as Array<{ id: string }>;

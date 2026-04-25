@@ -1515,13 +1515,6 @@
             <button type="button" onclick="confirmAddNewType()" class="btn btn-primary btn-sm">Add</button>
             <button type="button" onclick="cancelAddNewType()" class="btn btn-secondary btn-sm">✕</button>
           </div>
-         <div class="form-group">
-           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-             <input type="checkbox" id="taskSporadic" onchange="updateTaskMode()" style="width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0" />
-             <span>Sporadic (maintenance task)</span>
-           </label>
-           <p id="sporadicInfo" style="font-size:.8rem;color:#6b7280;margin:8px 0 0 24px;display:none">This task has no fixed schedule. When completed, it reappears and shows how long ago you last did it. Examples: Haircut, Lawn mowing, Car maintenance</p>
-         </div>
         </div>
         <div class="form-group">
           <label>Group</label>
@@ -1565,6 +1558,13 @@
             <option value="started">Started</option>
             <option value="complete">Complete</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="taskSporadic" onchange="updateTaskMode()" style="width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0" />
+            <span>Sporadic (maintenance task)</span>
+          </label>
+          <p id="sporadicInfo" style="font-size:.8rem;color:#6b7280;margin:8px 0 0 24px;display:none">This task has no fixed schedule. When completed, it reappears and shows how long ago you last did it. Examples: Haircut, Lawn mowing, Car maintenance</p>
         </div>
         <div class="form-group">
           <label>

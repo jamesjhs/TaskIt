@@ -3269,6 +3269,7 @@ async function deleteCurrentTask() {
     await api('DELETE', '/tasks/' + currentDetailTask.id);
     closeDetailModal();
     loadTasks();
+    loadSporadicTasks();
     toast(isRecurring ? 'Occurrence deleted — next recurrence scheduled' : 'Task deleted');
   } catch (err) { toast(err.message, 'error'); }
 }

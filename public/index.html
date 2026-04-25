@@ -2615,7 +2615,7 @@ function renderSporadicTasks(tasks) {
         ${task.details ? `<p style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">${escHtml(task.details)}</p>` : ''}
         <div class="sporadic-last-done ${overdueClass}">Last done: ${escHtml(label)}</div>
         <div class="sporadic-actions">
-          <button onclick="completeSporadicTask('${escHtml(task.id)}')" class="sporadic-complete-btn">✓ Done Now</button>
+          <button onclick="completeSporadicTask('${escHtml(task.id)}')" class="sporadic-complete-btn">✓ Mark done</button>
           <button onclick="openDetailById('${escHtml(task.id)}')" class="btn btn-outline btn-sm" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Edit</button>
         </div>
       </div>

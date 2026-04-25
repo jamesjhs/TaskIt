@@ -43,6 +43,11 @@ router.post('/:id/report', (req: Request, res: Response): void => {
     return;
   }
 
+  if (reason !== undefined && reason !== null && (typeof reason !== 'string' || reason.length > 1000)) {
+    res.status(400).json({ error: 'reason must not exceed 1000 characters' });
+    return;
+  }
+
   const reported = db.prepare('SELECT id FROM users WHERE id = ?').get(reportedId);
   if (!reported) {
     res.status(404).json({ error: 'User not found' });

@@ -1512,13 +1512,30 @@
             <option value="">Personal (no group)</option>
           </select>
         </div>
+        <!-- Sub-tasks section — sits directly below Group -->
         <div class="form-group">
-          <label>Assign To</label>
-          <div id="assigneeContainer" style="font-size:.9rem;color:#9ca3af;font-style:italic">Select a group to see members</div>
+          <button type="button" class="subtask-add-toggle" onclick="toggleSubtaskPanel()" id="subtaskToggleBtn" aria-expanded="false" aria-controls="subtaskFormPanel">
+            <span id="subtaskToggleIcon">▶</span> Add Sub-tasks
+          </button>
+          <div id="subtaskFormPanel" class="hidden" style="margin-top:10px">
+            <div id="subtaskFormList"></div>
+            <button type="button" class="subtask-add-item-btn" onclick="addSubtaskFormRow()">+ Add item</button>
+            <p style="font-size:.75rem;color:#9ca3af;margin-top:6px">Sub-tasks let you break this task into individual steps. Each can be ticked off separately.</p>
+          </div>
         </div>
+        <!-- Assign To — hidden until a group is selected -->
+        <div id="assigneeRow" class="form-group hidden">
+          <label>Assign To</label>
+          <div id="assigneeContainer"></div>
+        </div>
+        <!-- Notes — collapsible, collapsed by default -->
         <div class="form-group">
-          <label>Notes</label>
-          <textarea id="taskDetails" rows="3" placeholder="Optional notes…" class="textarea"></textarea>
+          <button type="button" class="subtask-add-toggle" onclick="toggleNotesPanel()" id="notesToggleBtn" aria-expanded="false" aria-controls="notesPanel">
+            <span id="notesToggleIcon">▶</span> Notes
+          </button>
+          <div id="notesPanel" class="hidden" style="margin-top:8px">
+            <textarea id="taskDetails" rows="3" placeholder="Optional notes…" class="textarea"></textarea>
+          </div>
         </div>
         <div class="form-group">
           <label>Due Date</label>
@@ -1676,6 +1693,17 @@
       <!-- Gamification Streak Panel — shown for recurring tasks when gamification is enabled -->
       <div id="detailStreakSection" class="detail-section hidden">
         <!-- populated by renderStreakInDetail() -->
+      </div>
+      <!-- Sub-tasks checklist section -->
+      <div id="detailSubtaskSection" class="detail-section hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <p class="detail-section-title" style="margin:0">✅ Sub-tasks</p>
+          <span id="detailSubtaskProgress" style="font-size:.78rem;color:#6b7280"></span>
+        </div>
+        <div id="detailSubtaskProgressBar" class="subtask-progress-bar" style="margin-bottom:10px">
+          <div id="detailSubtaskProgressFill" class="subtask-progress-bar-fill" style="width:0%"></div>
+        </div>
+        <div id="detailSubtaskList"></div>
       </div>
       <div class="detail-section">
         <p class="detail-section-title">Change Status</p>
@@ -1854,7 +1882,7 @@ let gamificationEnabled = false;
 let unlockedArcadeKeys = new Set();
 // Arcade token balance and daily play limit (minutes); refreshed with the gamification profile.
 let arcadeTokens = 0;
-let arcadeDailyPlayMinutes = 15;
+let arcadeDailyPlayMinutes = 10;
 // Far-future task list collapse state.
 let _farFutureExpanded = false;
 // Last task array passed to renderTasks — used by toggleFarFuture to re-render without a network fetch.
@@ -2482,6 +2510,15 @@ function renderTasks(tasks) {
     const dueSoon = t.due_date && t.status !== 'complete' && t.due_date > now && t.due_date <= now + 24 * 60 * 60 * 1000;
     const isUrgent = (t.type_name || '').toLowerCase() === 'urgent';
     const cardClass = dueSoon ? 'task-card task-card-due-soon' : (isUrgent ? 'task-card task-card-urgent' : 'task-card');
+    const hasSubtasks = t.subtask_total > 0;
+    const subtaskPct = hasSubtasks ? Math.round((t.subtask_done / t.subtask_total) * 100) : 0;
+    const subtaskBar = hasSubtasks ? `
+      <div class="subtask-card-meta">
+        <span>&#x2705; ${t.subtask_done}/${t.subtask_total} steps</span>
+      </div>
+      <div class="subtask-progress-bar">
+        <div class="subtask-progress-bar-fill" style="width:${subtaskPct}%"></div>
+      </div>` : '';
     return `
       <div onclick="openDetailById('${escHtml(t.id)}')" class="${cardClass}">
         <div class="task-card-title${t.group_id ? ' task-card-title-group' : ''}">${escHtml(t.title)}</div>
@@ -2494,6 +2531,7 @@ function renderTasks(tasks) {
         ${t.assignees && t.assignees.length ? `<p class="task-card-meta">\ud83d\udc64 ${t.assignees.map(a => escHtml(a.username)).join(', ')}</p>` : ''}
         ${t.due_date ? `<p class="task-card-meta ${overdue ? 'due-overdue' : ''}">\ud83d\udcc5 ${fmtDate(t.due_date)}</p>` : ''}
         ${t.details ? `<p class="task-card-meta" style="margin-top:6px">${escHtml(t.details.length > 80 ? t.details.substring(0, 80) + '\u2026' : t.details)}</p>` : ''}
+        ${subtaskBar}
       </div>
     `;
   }
@@ -2588,6 +2626,7 @@ function applyFilters() {
 
 // ========== Task Modal ==========
 function openTaskModal(task = null) {
+  resetSubtaskPanel();
   const typeSelect = document.getElementById('taskType');
   typeSelect.innerHTML = '<option value="">Select type\u2026</option>';
   taskTypes.forEach(t => {
@@ -2612,6 +2651,9 @@ function openTaskModal(task = null) {
     editId.value = task.id;
     document.getElementById('taskTitle').value = task.title || '';
     document.getElementById('taskDetails').value = task.details || '';
+    // Auto-expand notes panel when editing a task that already has notes
+    const hasNotes = !!(task.details && task.details.trim());
+    setNotesPanel(hasNotes);
     typeSelect.value = task.type_id || '';
     groupSelect.value = task.group_id || '';
     document.getElementById('taskStatusRow').classList.remove('hidden');
@@ -2643,6 +2685,7 @@ function openTaskModal(task = null) {
     editId.value = '';
     document.getElementById('taskTitle').value = '';
     document.getElementById('taskDetails').value = '';
+    setNotesPanel(false);
     const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
     const iso = new Date(midnight.getTime() - midnight.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     document.getElementById('taskDueDate').value = iso;
@@ -2659,22 +2702,25 @@ function openTaskModal(task = null) {
     document.getElementById('notifyPopupOnday').checked = false;
     document.getElementById('taskXpMultiplier').value = '1.0';
     document.getElementById('taskXpMultiplierRow').classList.add('hidden');
-    document.getElementById('assigneeContainer').innerHTML = '<span style="font-size:.9rem;color:#9ca3af;font-style:italic">Select a group to see members</span>';
+    document.getElementById('assigneeRow').classList.add('hidden');
+    document.getElementById('assigneeContainer').innerHTML = '';
   }
   document.getElementById('taskModal').classList.remove('hidden');
 }
 
-function closeTaskModal() { document.getElementById('taskModal').classList.add('hidden'); }
+function closeTaskModal() { resetSubtaskPanel(); document.getElementById('taskModal').classList.add('hidden'); }
 
 async function loadGroupMembersForTask(selectedIds = []) {
   const groupId = document.getElementById('taskGroup').value;
   const container = document.getElementById('assigneeContainer');
+  const assigneeRow = document.getElementById('assigneeRow');
   const xpMultiplierRow = document.getElementById('taskXpMultiplierRow');
   if (!groupId) {
-    container.innerHTML = '<span style="font-size:.9rem;color:#9ca3af;font-style:italic">Select a group to see members</span>';
+    if (assigneeRow) assigneeRow.classList.add('hidden');
     if (xpMultiplierRow) xpMultiplierRow.classList.add('hidden');
     return;
   }
+  if (assigneeRow) assigneeRow.classList.remove('hidden');
   // Show/hide XP multiplier field based on whether the group has gamification enhancements
   const selectedGroup = groups.find(g => g.id === groupId);
   const gamifEnhanced = !!(selectedGroup && selectedGroup.gamification_enhanced);
@@ -2731,8 +2777,15 @@ async function handleTaskSubmit(e) {
   body.notifyPopup1day  = document.getElementById('notifyPopup1day').checked;
   body.notifyPopupOnday = document.getElementById('notifyPopupOnday').checked;
   try {
-    if (editId) { await api('PATCH', '/tasks/' + editId, body); toast('Task updated!'); }
-    else { await api('POST', '/tasks', body); toast('Task created!'); }
+    if (editId) {
+      await api('PATCH', '/tasks/' + editId, body);
+      toast('Task updated!');
+    } else {
+      const created = await api('POST', '/tasks', body);
+      if (created && created.id) await createPendingSubtasks(created.id);
+      toast('Task created!');
+    }
+    resetSubtaskPanel();
     closeTaskModal(); loadTasks();
   } catch (err) { toast(err.message, 'error'); }
 }
@@ -2784,6 +2837,7 @@ function openDetail(task) {
   document.getElementById('detailDeleteBtn').classList.toggle('hidden', !canDelete);
   document.getElementById('taskDetailModal').classList.remove('hidden');
   loadTaskNotes(task.id);
+  loadSubtasks(task.id);
   renderStreakInDetail(task);
 }
 
@@ -2826,6 +2880,182 @@ function closeDetailModal() {
   document.getElementById('taskDetailModal').classList.add('hidden');
   document.getElementById('deferSection').classList.add('hidden');
   currentDetailTask = null;
+}
+
+// ========== Sub-tasks ==========
+
+// State: list of pending sub-tasks to create (for the task creation modal)
+let _pendingSubtasks = [];
+
+function toggleSubtaskPanel() {
+  const panel = document.getElementById('subtaskFormPanel');
+  const btn = document.getElementById('subtaskToggleBtn');
+  const icon = document.getElementById('subtaskToggleIcon');
+  const isHidden = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !isHidden);
+  btn.setAttribute('aria-expanded', String(isHidden));
+  icon.textContent = isHidden ? '▼' : '▶';
+  if (isHidden && _pendingSubtasks.length === 0) addSubtaskFormRow();
+}
+
+function addSubtaskFormRow(value = '') {
+  const list = document.getElementById('subtaskFormList');
+  const idx = _pendingSubtasks.length;
+  _pendingSubtasks.push(value);
+  const row = document.createElement('div');
+  row.className = 'subtask-form-row';
+  row.dataset.idx = idx;
+  row.innerHTML = `
+    <input type="text" class="subtask-form-input" maxlength="255" placeholder="Sub-task description…"
+      value="${escHtml(value)}"
+      oninput="_pendingSubtasks[${idx}] = this.value"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();addSubtaskFormRow();}" />
+    <button type="button" class="subtask-form-remove" onclick="removeSubtaskFormRow(${idx})" title="Remove">✕</button>
+  `;
+  list.appendChild(row);
+  row.querySelector('input').focus();
+}
+
+function removeSubtaskFormRow(idx) {
+  _pendingSubtasks[idx] = null; // mark as removed
+  const list = document.getElementById('subtaskFormList');
+  const rows = list.querySelectorAll('.subtask-form-row');
+  for (const r of rows) {
+    if (parseInt(r.dataset.idx, 10) === idx) { r.remove(); break; }
+  }
+}
+
+function resetSubtaskPanel() {
+  _pendingSubtasks = [];
+  const list = document.getElementById('subtaskFormList');
+  if (list) list.innerHTML = '';
+  const panel = document.getElementById('subtaskFormPanel');
+  if (panel) panel.classList.add('hidden');
+  const btn = document.getElementById('subtaskToggleBtn');
+  if (btn) { btn.setAttribute('aria-expanded', 'false'); }
+  const icon = document.getElementById('subtaskToggleIcon');
+  if (icon) icon.textContent = '▶';
+}
+
+function setNotesPanel(open) {
+  const panel = document.getElementById('notesPanel');
+  const btn = document.getElementById('notesToggleBtn');
+  const icon = document.getElementById('notesToggleIcon');
+  if (!panel) return;
+  panel.classList.toggle('hidden', !open);
+  if (btn) btn.setAttribute('aria-expanded', String(open));
+  if (icon) icon.textContent = open ? '▼' : '▶';
+}
+
+function toggleNotesPanel() {
+  const panel = document.getElementById('notesPanel');
+  const isHidden = panel.classList.contains('hidden');
+  setNotesPanel(isHidden);
+  if (isHidden) document.getElementById('taskDetails').focus();
+}
+
+async function createPendingSubtasks(taskId) {
+  const titles = _pendingSubtasks.filter(t => t && t.trim());
+  for (const title of titles) {
+    try {
+      await api('POST', '/tasks/' + taskId + '/subtasks', { title });
+    } catch (err) {
+      console.error('[subtasks] Failed to create subtask:', err);
+    }
+  }
+}
+
+// Load and render subtasks in the detail modal
+async function loadSubtasks(taskId) {
+  const section = document.getElementById('detailSubtaskSection');
+  const listEl = document.getElementById('detailSubtaskList');
+  if (!section || !listEl) return;
+
+  try {
+    const subtasks = await api('GET', '/tasks/' + taskId + '/subtasks');
+    if (!subtasks || subtasks.length === 0) {
+      section.classList.add('hidden');
+      return;
+    }
+    section.classList.remove('hidden');
+    renderSubtaskList(subtasks);
+  } catch {
+    section.classList.add('hidden');
+  }
+}
+
+function renderSubtaskList(subtasks) {
+  const listEl = document.getElementById('detailSubtaskList');
+  const progressEl = document.getElementById('detailSubtaskProgress');
+  const fillEl = document.getElementById('detailSubtaskProgressFill');
+  if (!listEl) return;
+
+  const total = subtasks.length;
+  const done = subtasks.filter(s => s.completed).length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  if (progressEl) progressEl.textContent = `${done} of ${total} completed`;
+  if (fillEl) fillEl.style.width = pct + '%';
+
+  const task = currentDetailTask;
+  const canEdit = task && ((currentUser && task.created_by === currentUser.id) ||
+    task.group_role === 'admin' || task.group_role === 'member' ||
+    (task.assignees && task.assignees.some(a => a.id === (currentUser && currentUser.id))));
+  const isComplete = task && task.status === 'complete';
+
+  listEl.innerHTML = subtasks.map(s => `
+    <div class="subtask-checklist-item" id="subtask-row-${escHtml(s.id)}">
+      <input type="checkbox" class="subtask-check" ${s.completed ? 'checked' : ''}
+        ${isComplete ? 'disabled' : ''}
+        onchange="toggleSubtask('${escHtml(s.id)}', this.checked)"
+        aria-label="${escHtml(s.title)}" />
+      <span class="subtask-label ${s.completed ? 'subtask-label-done' : ''}">${escHtml(s.title)}</span>
+      ${canEdit && !isComplete ? `<button class="subtask-delete-btn" onclick="deleteSubtask('${escHtml(s.id)}')" title="Remove sub-task" aria-label="Delete sub-task">✕</button>` : ''}
+    </div>
+  `).join('');
+}
+
+async function toggleSubtask(subId, checked) {
+  if (!currentDetailTask) return;
+  try {
+    const result = await api('PATCH', '/tasks/' + currentDetailTask.id + '/subtasks/' + subId, { completed: checked });
+    // Update the task in local state in case status changed (e.g. started)
+    if (result && result.task) {
+      const updatedTask = result.task;
+      currentDetailTask = { ...currentDetailTask, status: updatedTask.status };
+      tasksMap.set(updatedTask.id, updatedTask);
+      // Refresh the status badge in the detail modal
+      const statusBadge = document.getElementById('detailStatusBadge');
+      if (statusBadge) {
+        const si = statusMeta(updatedTask.status);
+        statusBadge.textContent = si.label;
+        statusBadge.className = 'badge ' + si.cls;
+      }
+    }
+    if (result && result.awardedXp && gamificationEnabled) {
+      loadGamificationProfile();
+    }
+    await loadSubtasks(currentDetailTask.id);
+    loadTasks();
+  } catch (err) {
+    toast(err.message, 'error');
+    // Revert the checkbox on error
+    const row = document.getElementById('subtask-row-' + subId);
+    if (row) {
+      const cb = row.querySelector('.subtask-check');
+      if (cb) cb.checked = !checked;
+    }
+  }
+}
+
+async function deleteSubtask(subId) {
+  if (!currentDetailTask) return;
+  if (!confirm('Remove this sub-task?')) return;
+  try {
+    await api('DELETE', '/tasks/' + currentDetailTask.id + '/subtasks/' + subId);
+    await loadSubtasks(currentDetailTask.id);
+    loadTasks();
+  } catch (err) { toast(err.message, 'error'); }
 }
 
 async function quickStatus(status) {
@@ -2934,7 +3164,7 @@ async function loadGamificationProfile() {
     if (!profile) return;
     gamificationEnabled = !!profile.enabled;
     arcadeTokens = profile.arcadeTokens ?? 0;
-    arcadeDailyPlayMinutes = profile.dailyPlayMinutes ?? 15;
+    arcadeDailyPlayMinutes = profile.dailyPlayMinutes ?? 10;
     // Sync token display if the arcade overlay is currently open
     const tokenEl = document.getElementById('arcadeTokenDisplay');
     if (tokenEl) tokenEl.textContent = '\uD83C\uDFDF\uFE0F ' + arcadeTokens;
@@ -3037,7 +3267,7 @@ function renderGamificationProfile(profile, streaks) {
 
   // Achievements
   // Rebuild the set of keys the current user is allowed to open in the arcade.
-  // Admins get all 13 keys so they can test every game without having to earn it.
+  // Admins get all registered keys so they can test every game without having to earn it.
   const isAdmin = currentUser && currentUser.role === 'admin';
   unlockedArcadeKeys.clear();
   if (isAdmin) {
@@ -3053,18 +3283,23 @@ function renderGamificationProfile(profile, streaks) {
       const unlocked = !!a.unlockedAt;
       const dateStr = unlocked ? new Date(a.unlockedAt).toLocaleDateString(userLocale()) : '';
       // For admins every badge with a registered game is playable (for testing).
-      const hasGame = ARCADE_GAMES && ARCADE_GAMES[a.key] && (unlocked || isAdmin);
+      const gameEntry = ARCADE_GAMES && ARCADE_GAMES[a.key];
+      const hasGame = gameEntry && (unlocked || isAdmin);
       const playableClass = hasGame ? ' arcade-playable' : '';
       // Use data attribute + event delegation — avoids inline JS and single-quote injection.
       const dataAttr = hasGame ? ` data-arcade-key="${escHtml(a.key)}" role="button" tabindex="0"` : '';
       const dateLabel = unlocked
         ? escHtml(dateStr)
         : (isAdmin ? '\uD83D\uDEE0\uFE0F Admin preview' : '\uD83D\uDD12 Locked');
+      // Show the game title on every card that has an associated game so users
+      // know what they are working towards, whether locked or unlocked.
+      const gameLabel = gameEntry ? `<div class="gamif-ach-game">\uD83C\uDFAE ${escHtml(gameEntry.title)}</div>` : '';
       return `
         <div class="gamif-ach ${unlocked ? 'gamif-ach-unlocked' + playableClass : (isAdmin ? 'gamif-ach-admin-preview' + playableClass : 'gamif-ach-locked')}" title="${escHtml(a.description)}"${dataAttr}>
           <span class="gamif-ach-icon">${icon}</span>
           <div class="gamif-ach-name">${escHtml(a.name)}</div>
           <div class="gamif-ach-desc">${escHtml(a.description)}</div>
+          ${gameLabel}
           <div class="gamif-ach-date">${dateLabel}</div>
           ${hasGame ? '<div class="gamif-ach-play-hint">🕹️ Play</div>' : ''}
         </div>`;
@@ -4419,19 +4654,19 @@ const TOKEN_TIME_EXTENSION_SECONDS = 30;
  * that Stage 2 game modules will use to boot the correct mini-game.
  */
 const ARCADE_GAMES = {
-  first_task:      { title: 'Productivity Hangman', icon: '🥇', subtitle: 'Guess the word — don\u2019t lose your head!',       gameId: 'hangman'    },
-  task_10:         { title: 'Job Search',            icon: '🚀', subtitle: 'Find all six TaskIt! tools hidden in the grid!',    gameId: 'wordsearch' },
-  task_50:         { title: 'On a Roll',          icon: '🔥', subtitle: 'Keep the combo alive!',                gameId: 'roll'   },
-  task_100:        { title: 'Century Clash',      icon: '⚔️', subtitle: 'Defeat 100 enemies to claim glory!',  gameId: 'clash'  },
-  task_500:        { title: 'Legendary Quest',    icon: '👑', subtitle: 'Conquer the leaderboard!',             gameId: 'legend' },
-  detail_oriented: { title: 'Memory Matrix',      icon: '📝', subtitle: 'Match every task-card pair!',          gameId: 'memory' },
-  early_bird:      { title: 'Early Bird Dash',    icon: '🐦', subtitle: 'Flap your way past the deadlines!',   gameId: 'bird'   },
-  type_explorer:   { title: "Explorer's Maze",    icon: '🗺️', subtitle: 'Navigate through the task maze!',     gameId: 'maze'   },
-  skill_level_5:   { title: 'Bullseye!',          icon: '🎯', subtitle: 'Hit every target with precision!',    gameId: 'target' },
-  skill_level_10:  { title: 'Quiz Master',        icon: '🎓', subtitle: 'Test your TaskIt! knowledge!',         gameId: 'quiz'   },
-  streak_3:        { title: 'Whac-A-Bug',    icon: '\uD83D\uDC1B', subtitle: 'Squash the bugs before they crash the system!',  gameId: 'whac_a_bug'   },
-  streak_7:        { title: 'Code Breaker',  icon: '\uD83D\uDD10', subtitle: 'Crack the secret 4-colour code in 10 attempts!', gameId: 'code_breaker' },
-  streak_30:       { title: 'Unstoppable Train',  icon: '🚂', subtitle: 'Keep the train running — no stops!', gameId: 'train'  },
+  first_task:      { title: 'Productivity Hangman', icon: '🥇', subtitle: 'Guess the word — don\u2019t lose your head!',        gameId: 'hangman'      },
+  task_10:         { title: 'Job Search',            icon: '🚀', subtitle: 'Find all six TaskIt! tools hidden in the grid!',     gameId: 'wordsearch'   },
+  task_50:         { title: 'Whac-A-Bug',            icon: '\uD83D\uDC1B', subtitle: 'Squash the bugs before they crash the system!',  gameId: 'whac_a_bug'   },
+  task_100:        { title: 'Code Breaker',          icon: '\uD83D\uDD10', subtitle: 'Crack the secret 4-colour code in 10 attempts!', gameId: 'code_breaker' },
+  task_500:        { title: 'Legendary Quest',    icon: '👑', subtitle: 'Conquer the leaderboard!',             gameId: 'legend'     },
+  detail_oriented: { title: 'Memory Matrix',      icon: '📝', subtitle: 'Match every task-card pair!',          gameId: 'memory'     },
+  early_bird:      { title: 'Early Bird Dash',    icon: '🐦', subtitle: 'Flap your way past the deadlines!',   gameId: 'bird'       },
+  type_explorer:   { title: "Explorer's Maze",    icon: '🗺️', subtitle: 'Navigate through the task maze!',     gameId: 'maze'       },
+  skill_level_5:   { title: 'Bullseye!',          icon: '🎯', subtitle: 'Hit every target with precision!',    gameId: 'target'     },
+  skill_level_10:  { title: 'Quiz Master',        icon: '🎓', subtitle: 'Test your TaskIt! knowledge!',         gameId: 'quiz'       },
+  streak_3:        { title: 'Hat Trick',          icon: '\uD83C\uDFA9', subtitle: 'Follow the hat \u2014 can you find the ball?',       gameId: 'hat_trick'  },
+  streak_7:        { title: 'Lucky Draw',         icon: '\uD83C\uDF40', subtitle: 'Roll the dice and chase the lucky streak!',          gameId: 'lucky_draw' },
+  streak_30:       { title: 'Unstoppable Train',  icon: '🚂', subtitle: 'Keep the train running — no stops!', gameId: 'train'      },
 };
 
 /**
@@ -4440,8 +4675,8 @@ const ARCADE_GAMES = {
  * Access rules:
  *   • Regular users: only keys present in `unlockedArcadeKeys` (populated
  *     from the server-fetched gamification profile after authentication).
- *   • Site administrators: all 13 keys, regardless of earned status, so they
- *     can test every game without needing to earn the badge first.
+ *   • Site administrators: all registered keys, regardless of earned status,
+ *     so they can test every game without needing to earn the badge first.
  *
  * Includes a Time Budget pre-game check: if the user has consumed all of
  * their daily play allowance the game frame shows a locked message instead

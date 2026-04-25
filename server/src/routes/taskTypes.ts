@@ -36,6 +36,11 @@ router.post('/', (req: Request, res: Response): void => {
     return;
   }
 
+  if (String(name).trim().length > 100) {
+    res.status(400).json({ error: 'name must not exceed 100 characters' });
+    return;
+  }
+
   if (groupId) {
     const member = db.prepare(
       'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'

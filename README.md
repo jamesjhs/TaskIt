@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.6.2** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.8.4** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -13,6 +13,7 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - Account lockout protection
 - Create and manage tasks with types, notes, and status tracking
 - Task statuses: Not Started → Started → Complete
+- **Sub-tasks** — break any task into individual checklist steps; tick each off one at a time, with a progress bar on the task card and detail modal; completing a sub-task automatically sets the parent task to "Started", and each sub-task completion earns a small configurable XP reward
 - Recurring tasks — automatically create the next occurrence when complete
 - Task deferral — reschedule due date from the detail panel
 - Custom task types per user and per group
@@ -103,6 +104,44 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.8.4
+
+- **🕹️ Hat Trick & Lucky Draw arcade cards reinstated** — `streak_3` (Hat Trick 🎩) and `streak_7` (Lucky Draw 🍀) are back in the arcade catalogue with their own game IDs (`hat_trick`, `lucky_draw`), distinct from the four already-developed games.
+- **🐛 Whac-a-Bug difficulty increase** — system-error penalty doubled (−5 → −10 points), starting timer reduced by 5 seconds (60 s → 55 s), and spawn rate now ramps up linearly by 5 % every 30 seconds of play, adding a sustained challenge curve.
+- **Version bump** — server, README, and technical reference updated to 1.8.4.
+
+### v1.8.3
+
+- **🎮 Arcade game assignment fix** — Whac-a-Bug and Code Breaker are now assigned to the 3rd and 4th earliest achievements (`task_50` and `task_100`) respectively, so all four developed games unlock in order: Hangman → Wordsearch → Whac-a-Bug → Code Breaker. Previously Whac-a-Bug and Code Breaker were erroneously attached to streak achievements that most users reach much later, meaning early achievers found undeveloped games.
+- **🏷️ Game name on achievement cards** — each achievement card that has an associated arcade game now shows the game title in small italic text beneath the description, so users can see what they are working toward before they unlock it.
+- **Version bump** — server, README, and technical reference updated to 1.8.3.
+
+### v1.8.2
+
+- **Version bump** — server and technical reference updated to 1.8.2.
+
+### v1.8.1
+
+- **🖱️ Task form UX polish** — "Add Sub-tasks" panel moved to directly below the Group field for a more natural top-down workflow. "Assign To" is now hidden until a group is selected (no more placeholder text cluttering the form). Notes field is now collapsed by default behind a toggle, keeping the form compact; it auto-expands when editing a task that already has notes.
+- **Version bump** — server, README, user guides, and technical reference updated to 1.8.1.
+
+### v1.8.0
+
+- **✅ Sub-tasks** — tasks can now be broken down into individual checklist steps. When creating a task, expand the "Add Sub-tasks" panel to add as many steps as needed (up to 50 per task). Each sub-task can be ticked off independently from the task detail modal. A progress bar (and step count) appears on both the task card and the detail modal. Ticking any sub-task automatically sets the parent task status to "Started". Completing the final sub-task (or clicking Complete) finalises the task through the normal flow.
+- **⭐ Sub-task XP** — each sub-task tick earns a small configurable XP reward (`complete_subtask` event, default 5 XP). Admins can adjust this in the XP Events section of the admin panel.
+- **Version bump** — server, README, user guides, and technical reference updated to 1.8.0.
+
+### v1.7.0
+
+- **🔒 Security hardening** — comprehensive security audit and remediation:
+  - JWT algorithm explicitly locked to `HS256` in both `jwt.verify` (auth middleware) and all `jwt.sign` calls, preventing algorithm-confusion attacks.
+  - Email inputs in login, magic-link, and forgot-password endpoints now normalized (trimmed and lowercased) before DB lookup, matching registration behaviour and eliminating case-sensitive lookup failures.
+  - HTML email templates now HTML-escape all user-controlled content (task titles, group names, inviter usernames, URLs) to prevent HTML-injection in email clients.
+  - `express.json()` body-size limit set to 50 KB to mitigate memory-exhaustion DoS attacks.
+  - Input length caps added: task title ≤ 255 chars, task details ≤ 10 000 chars, task note ≤ 5 000 chars, report reason ≤ 1 000 chars, group name ≤ 200 chars, task-type name ≤ 100 chars, admin reply ≤ 5 000 chars.
+  - `assigneeIds` array capped at 100 entries per request to prevent oversized `IN (…)` queries.
+- **Version bump** — server, README, user guides, and technical reference updated to 1.7.0.
 
 ### v1.6.2
 

@@ -295,6 +295,20 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (collectible_id) REFERENCES collectibles(id)
   );
+
+  -- Sub-tasks: individual checklist items that belong to a parent task
+  CREATE TABLE IF NOT EXISTS task_subtasks (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    completed INTEGER NOT NULL DEFAULT 0,
+    completed_by TEXT,
+    completed_at INTEGER,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (task_id) REFERENCES tasks(id),
+    FOREIGN KEY (completed_by) REFERENCES users(id)
+  );
 `);
 
 // Runtime migrations — add columns if they don't exist yet
@@ -369,7 +383,7 @@ addCol('tasks', 'original_due_date', 'INTEGER');
 addCol('tasks', 'xp_claimed', 'INTEGER NOT NULL DEFAULT 0');
 // Arcade: token economy and digital-wellbeing daily play limit
 addCol('users', 'arcade_tokens', 'INTEGER NOT NULL DEFAULT 0');
-addCol('users', 'daily_play_minutes', 'INTEGER NOT NULL DEFAULT 15');
+addCol('users', 'daily_play_minutes', 'INTEGER NOT NULL DEFAULT 10');
 // Backfill: generate a friend_key for any user that doesn't have one yet
 {
   const missingKey = db.prepare("SELECT id FROM users WHERE friend_key IS NULL OR friend_key = ''").all() as Array<{ id: string }>;
@@ -485,7 +499,8 @@ if (countRow.cnt === 0) {
     { key: 'send_app_invite',   name: 'Send App Invite',     description: 'Award XP when a user generates a friend invite link.',     xp_value: 15  },
     { key: 'send_group_invite', name: 'Send Group Invite',   description: 'Award XP when a user sends or generates a group invite.',  xp_value: 15  },
     { key: 'complete_task',     name: 'Complete Task',       description: 'Base XP awarded per task completion (before multiplier).', xp_value: 50  },
-    { key: 'recycle_drop',     name: 'Recycle Drop',        description: 'Consolation XP awarded when a user recycles a pending loot drop.', xp_value: 15 },
+    { key: 'recycle_drop',      name: 'Recycle Drop',        description: 'Consolation XP awarded when a user recycles a pending loot drop.', xp_value: 15 },
+    { key: 'complete_subtask',  name: 'Complete Sub-task',   description: 'XP awarded each time a sub-task checklist item is ticked off.',     xp_value: 5  },
   ];
   for (const e of defaultXpEvents) {
     insertXpEvent.run(e.key, e.name, e.description, e.xp_value, now);

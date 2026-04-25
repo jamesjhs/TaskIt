@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version:** 1.6.2  
+**Version:** 1.8.4  
 **Author:** J Rowson  
 **Generated:** 2026-04-21
 
@@ -556,6 +556,18 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `note` | TEXT NOT NULL | Free text progress note |
 | `created_at` | INTEGER NOT NULL | Unix ms |
 
+#### `task_subtasks`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | UUID |
+| `task_id` | TEXT NOT NULL | FK → tasks.id |
+| `title` | TEXT NOT NULL | Sub-task description, max 255 chars |
+| `completed` | INTEGER NOT NULL DEFAULT 0 | 0 = pending, 1 = done |
+| `completed_by` | TEXT | FK → users.id; NULL until ticked |
+| `completed_at` | INTEGER | Unix ms; NULL until ticked |
+| `sort_order` | INTEGER NOT NULL DEFAULT 0 | Ascending display order |
+| `created_at` | INTEGER NOT NULL | Unix ms |
+
 #### `feedback_messages`
 | Column | Type | Notes |
 |---|---|---|
@@ -735,6 +747,10 @@ Attached to `req.user` by `authMiddleware`.
 | `DELETE` | `/api/tasks/:id` | JWT | authed | Delete task (spawns next recurrence if recurring) |
 | `GET` | `/api/tasks/:id/notes` | JWT | authed | List task notes |
 | `POST` | `/api/tasks/:id/notes` | JWT | authed | Add progress note |
+| `GET` | `/api/tasks/:id/subtasks` | JWT | authed | List sub-tasks for a task |
+| `POST` | `/api/tasks/:id/subtasks` | JWT | authed | Create a sub-task |
+| `PATCH` | `/api/tasks/:id/subtasks/:subId` | JWT | authed | Update sub-task (title and/or completed); sets parent to 'started' on first tick; awards XP |
+| `DELETE` | `/api/tasks/:id/subtasks/:subId` | JWT | authed | Delete a sub-task |
 | `GET` | `/api/groups` | JWT | authed | List user's groups |
 | `POST` | `/api/groups` | JWT | authed | Create group |
 | `GET` | `/api/groups/invite/:token` | None | authed | Look up invite info |
@@ -1310,9 +1326,9 @@ The entire application UI and all client-side logic is contained in a single HTM
 | `updateFilterBadge()` | Updates active-filter count badge |
 | `setFilter(key, value)` | Updates `currentFilter` and calls `loadTasks()` |
 | `applyFilters()` | Reads all filter form controls into `currentFilter` and calls `loadTasks()` |
-| `openTaskModal(task?)` | Opens create (null) or edit (task) modal; populates form fields |
+| `openTaskModal(task?)` | Opens create (null) or edit (task) modal; populates form fields; collapses Notes panel (auto-expands if task has existing notes); hides assignee row |
 | `closeTaskModal()` | Hides task modal |
-| `loadGroupMembersForTask(selectedIds?)` | Populates assignee checkboxes for selected group |
+| `loadGroupMembersForTask(selectedIds?)` | Populates assignee checkboxes for selected group; shows/hides `assigneeRow` depending on whether a group is selected |
 | `handleTaskSubmit(e)` | POST or PATCH `/api/tasks[/:id]`; builds request body including all notification flags |
 | `openDetailById(id)` | Looks up task in `tasksMap` and calls `openDetail()` |
 | `openDetail(task)` | Renders task detail modal |
@@ -1332,6 +1348,8 @@ The entire application UI and all client-side logic is contained in a single HTM
 | `toggleRecurChangeForm()` | Shows/hides recurrence-change UI |
 | `saveRecurChange()` | PATCH recurrence fields |
 | `toggleRecurFields()` | Shows/hides recur interval/unit fields based on checkbox |
+| `setNotesPanel(open)` | Opens or closes the collapsible Notes panel; updates `aria-expanded` and toggle icon |
+| `toggleNotesPanel()` | Toggles the Notes panel open/closed; focuses the textarea when opening |
 
 #### Gamification
 | Function | Description |
@@ -1399,7 +1417,7 @@ The entire application UI and all client-side logic is contained in a single HTM
 #### Arcade
 | Function | Description |
 |---|---|
-| `openArcade(badgeKey)` | Opens arcade modal; renders game based on badge key (hangman, wordsearch, code-breaker, or whac-a-bug); calls `POST /api/gamification/arcade/spend-token` before launching |
+| `openArcade(badgeKey)` | Opens arcade modal; renders game based on badge key (hangman → `first_task`, wordsearch → `task_10`, whac-a-bug → `task_50`, code-breaker → `task_100`); calls `POST /api/gamification/arcade/spend-token` before launching |
 | `closeArcade()` | Hides arcade modal |
 
 ---
@@ -1442,7 +1460,11 @@ The entire application UI and all client-side logic is contained in a single HTM
 | `taskRecurEnabled` | checkbox | Enable recurrence checkbox |
 | `taskXpMultiplierRow` | div | XP multiplier row (group-only) |
 | `taskXpMultiplier` | input | XP multiplier value |
-| `assigneeContainer` | div | Assignee checkboxes container |
+| `assigneeRow` | div | "Assign To" form row — hidden until a group is selected |
+| `assigneeContainer` | div | Assignee checkboxes container (inside `assigneeRow`) |
+| `notesToggleBtn` | button | Notes collapsible toggle button |
+| `notesToggleIcon` | span | Arrow icon inside notes toggle (▶ / ▼) |
+| `notesPanel` | div | Collapsible notes panel (hidden by default; auto-expanded when editing a task with existing notes) |
 | `loginForm` | form | Login form |
 | `registerForm` | form | Register form |
 | `loginEmail` | input | Login email |
@@ -1607,6 +1629,7 @@ These are stored in `xp_events` and admin-configurable:
 | `send_group_invite` | 15 | Awarded when a group invite is sent |
 | `complete_task` | 50 | Base XP per task completion (before multiplier) |
 | `recycle_drop` | 15 | Awarded when the user recycles (discards) a pending loot drop |
+| `complete_subtask` | 5 | Awarded each time a sub-task checklist item is ticked off |
 
 All event XP goes to the `'Activity'` skill via `awardEventXp()`.  
 Task-completion XP goes to the skill matching the task type name via `awardTaskXp()`.
@@ -1615,21 +1638,24 @@ Task-completion XP goes to the skill matching the task type name via `awardTaskX
 
 ### 14.2 Achievements Catalogue
 
-| Key | Name | Condition |
-|---|---|---|
-| `first_task` | First Steps | Complete 1 task |
-| `task_10` | Getting Started | Complete 10 tasks |
-| `task_50` | On a Roll | Complete 50 tasks |
-| `task_100` | Centurion | Complete 100 tasks |
-| `task_500` | Task Master | Complete 500 tasks |
-| `detail_oriented` | Detail Oriented | Add 50 progress notes |
-| `early_bird` | Early Bird | Complete 10 tasks before due date |
-| `type_explorer` | Type Explorer | Complete tasks across 5 different types |
-| `skill_level_5` | Specialist | Reach level 5 in any skill |
-| `skill_level_10` | Master of the Craft | Reach level 10 in any skill |
-| `streak_3` | Hat Trick | Recurring task streak of 3 |
-| `streak_7` | Lucky Streak | Recurring task streak of 7 |
-| `streak_30` | Unstoppable | Recurring task streak of 30 |
+| Key | Name | Condition | Arcade Game |
+|---|---|---|---|
+| `first_task` | First Steps | Complete 1 task | Hangman |
+| `task_10` | Getting Started | Complete 10 tasks | Wordsearch |
+| `task_50` | On a Roll | Complete 50 tasks | Whac-a-Bug |
+| `task_100` | Centurion | Complete 100 tasks | Code Breaker |
+| `task_500` | Task Master | Complete 500 tasks | *(in development)* |
+| `detail_oriented` | Detail Oriented | Add 50 progress notes | *(in development)* |
+| `early_bird` | Early Bird | Complete 10 tasks before due date | *(in development)* |
+| `type_explorer` | Type Explorer | Complete tasks across 5 different types | *(in development)* |
+| `skill_level_5` | Specialist | Reach level 5 in any skill | *(in development)* |
+| `skill_level_10` | Master of the Craft | Reach level 10 in any skill | *(in development)* |
+| `streak_3` | Hat Trick | Recurring task streak of 3 | Hat Trick *(in development)* |
+| `streak_7` | Lucky Streak | Recurring task streak of 7 | Lucky Draw *(in development)* |
+| `streak_30` | Unstoppable | Recurring task streak of 30 | *(in development)* |
+
+Games are assigned to achievements in earliest-unlock order: Hangman, Wordsearch, Whac-a-Bug, Code Breaker unlock at the 1st, 2nd, 3rd, and 4th achievements respectively.  
+Each achievement card displays the associated game title so users know what they are working toward.
 
 Achievement IDs are identical to their keys (deterministic across restarts).  
 Checking is triggered by: task completion, note creation, gamification opt-in.
@@ -1727,10 +1753,11 @@ When a recurring task is completed (`PATCH /:id/status` with `status='complete'`
    - `streak_frozen = 0`
    - Same `xp_multiplier`
 3. All assignees from the completed task are copied to the new task.
-4. The **original task** is archived (`archived = 1`).
-5. This is done in a single `db.transaction()`.
+4. All **sub-tasks** from the completed task are copied to the new task with `completed = 0`, `completed_by = NULL`, `completed_at = NULL` — so the checklist is ready to be worked through again in the next recurrence.
+5. The **original task** is archived (`archived = 1`).
+6. This is done in a single `db.transaction()`.
 
-When a recurring task is **deleted** (by creator or group admin), the same spawn logic runs first (preserving the schedule), then the original row is deleted.
+When a recurring task is **deleted** (by creator or group admin), the same spawn logic runs first (copying assignees and sub-tasks to the new occurrence with reset completion state, then preserving the schedule), then the original row is deleted.
 
 The `PATCH /:id/fast-forward` endpoint advances the due date by one interval **without** completing the task — useful for skipping an occurrence while preserving the task's active status. It also clears `task_reminders_sent` for the task so reminders re-fire against the new date.
 
@@ -1948,4 +1975,4 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.6.2*
+*End of Technical Reference Manual — TaskIt! v1.7.0*

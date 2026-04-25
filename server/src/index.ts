@@ -124,7 +124,7 @@ app.use(helmet({
     },
   },
 }));
-app.use(express.json());
+app.use(express.json({ limit: '50kb' }));
 
 // ─── Health-check endpoint (exempt from auth and rate limiting) ──────────────
 app.get('/readyz', (_req, res) => {

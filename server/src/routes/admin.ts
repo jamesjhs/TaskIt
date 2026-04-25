@@ -252,6 +252,11 @@ router.post('/feedback/:id/reply', (req: Request, res: Response): void => {
     return;
   }
 
+  if (message.length > 5000) {
+    res.status(400).json({ error: 'message must not exceed 5000 characters' });
+    return;
+  }
+
   const fb = db.prepare('SELECT id, user_id FROM feedback_messages WHERE id = ?').get(fbId) as
     | { id: string; user_id: string }
     | undefined;

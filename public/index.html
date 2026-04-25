@@ -2594,6 +2594,11 @@ function renderSporadicTasks(tasks) {
   const list = document.getElementById('sporadic-list');
   const count = document.getElementById('sporadic-count');
 
+  if (!section || !list || !count) {
+    console.warn('Sporadic tasks elements not found in DOM');
+    return;
+  }
+
   if (!tasks || tasks.length === 0) {
     section.style.display = 'none';
     return;

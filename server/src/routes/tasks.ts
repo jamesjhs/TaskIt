@@ -363,7 +363,8 @@ router.get('/sporadic', (req: Request, res: Response): void => {
     if (t.last_completed_at && typeof t.last_completed_at === 'number') {
       const now = Date.now();
       const ago = now - t.last_completed_at;
-      lastCompletedFriendly = formatFriendlyTime(ago) + ' ago';
+      const friendlyTime = formatFriendlyTime(ago);
+      lastCompletedFriendly = friendlyTime === 'just now' ? 'just now' : friendlyTime + ' ago';
       lastCompletedLabel = ago > 90 * 24 * 60 * 60 * 1000 ? 'Overdue (90+ days)' : 'Last done: ' + lastCompletedFriendly;
     }
     return {

@@ -255,4 +255,67 @@ router.post('/me/ics-token/rotate', (req: Request, res: Response): void => {
   res.json({ token });
 });
 
+// GET /api/users/me/notification-preferences — get user's default reminder preferences
+router.get('/me/notification-preferences', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const user = db.prepare('SELECT notification_preferences FROM users WHERE id = ?').get(userId) as
+    | { notification_preferences: string }
+    | undefined;
+
+  if (!user) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  let prefs = {
+    email: { notify_7day: false, notify_1day: true, notify_onday: false },
+    popup: { notify_7day: false, notify_1day: false, notify_onday: false },
+  };
+
+  try {
+    prefs = JSON.parse(user.notification_preferences);
+  } catch (e) {
+    console.error('[users/notification-preferences] Failed to parse preferences:', e);
+  }
+
+  res.json(prefs);
+});
+
+// PATCH /api/users/me/notification-preferences — update user's default reminder preferences
+router.patch('/me/notification-preferences', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const { email, popup } = req.body;
+
+  // Validate structure
+  if (!email || typeof email !== 'object' || !popup || typeof popup !== 'object') {
+    res.status(400).json({ error: 'email and popup objects are required' });
+    return;
+  }
+
+  const emailKeys = ['notify_7day', 'notify_1day', 'notify_onday'];
+  const popupKeys = ['notify_7day', 'notify_1day', 'notify_onday'];
+
+  for (const key of emailKeys) {
+    if (typeof email[key] !== 'boolean') {
+      res.status(400).json({ error: `email.${key} must be a boolean` });
+      return;
+    }
+  }
+
+  for (const key of popupKeys) {
+    if (typeof popup[key] !== 'boolean') {
+      res.status(400).json({ error: `popup.${key} must be a boolean` });
+      return;
+    }
+  }
+
+  const prefs = { email, popup };
+  db.prepare('UPDATE users SET notification_preferences = ? WHERE id = ?').run(
+    JSON.stringify(prefs),
+    userId
+  );
+
+  res.json({ message: 'Notification preferences updated', prefs });
+});
+
 export default router;

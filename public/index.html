@@ -1041,6 +1041,50 @@
       <button onclick="rotateIcsToken()" class="btn btn-outline btn-sm" style="font-size:.8rem">🔄 Regenerate Link</button>
     </div>
 
+    <!-- Notification Preferences -->
+    <div class="card" style="margin-top:16px">
+      <p class="card-title">🔔 Notification Preferences</p>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Choose when you want to receive email and popup reminders for your tasks.</p>
+      
+      <div style="margin-bottom:16px">
+        <p style="font-weight:600;color:#1a1a2e;margin-bottom:10px;font-size:.95rem">📧 Email Reminders</p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:.9rem">
+            <input type="checkbox" id="notifEmail7day" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0" />
+            <span>7 days before</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.9rem">
+            <input type="checkbox" id="notifEmail1day" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0" />
+            <span>1 day before</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.9rem">
+            <input type="checkbox" id="notifEmailOnday" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0" />
+            <span>On the day</span>
+          </label>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #e5e7eb">
+        <p style="font-weight:600;color:#1a1a2e;margin-bottom:10px;font-size:.95rem">🖥️ Popup Reminders (Browser)</p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:.9rem">
+            <input type="checkbox" id="notifPopup7day" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0" />
+            <span>7 days before</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.9rem">
+            <input type="checkbox" id="notifPopup1day" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0" />
+            <span>1 day before</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.9rem">
+            <input type="checkbox" id="notifPopupOnday" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0" />
+            <span>On the day</span>
+          </label>
+        </div>
+      </div>
+
+      <button onclick="saveNotificationPreferences()" class="btn btn-primary btn-full">Save Preferences</button>
+    </div>
+
     <!-- Gamification -->
     <div class="card" style="margin-top:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -1567,9 +1611,9 @@
           <p id="sporadicInfo" style="font-size:.8rem;color:#6b7280;margin:8px 0 0 24px;display:none">This task has no fixed schedule. When completed, it reappears and shows how long ago you last did it. Examples: Haircut, Lawn mowing, Car maintenance</p>
         </div>
         <div class="form-group">
-          <label>
-            <input type="checkbox" id="taskRecurEnabled" onchange="toggleRecurFields()" style="width:16px;height:16px;accent-color:#7c3aed;vertical-align:middle;margin-right:6px" />
-            Repeat Task
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="taskRecurEnabled" onchange="toggleRecurFields()" style="width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0" />
+            <span>Repeat Task</span>
           </label>
         </div>
         <div id="taskRecurFields" class="hidden" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
@@ -2301,6 +2345,7 @@ function showPage(page) {
   if (page === 'profile') {
     loadIcsLink();
     loadGamificationProfile();
+    loadNotificationPreferences();
   }
   if (page === 'progress') loadGamificationProfile();
 }
@@ -2790,12 +2835,8 @@ function openTaskModal(task = null) {
     document.getElementById('taskRecurFields').classList.add('hidden');
     document.getElementById('taskRecurInterval').value = '1';
     document.getElementById('taskRecurUnit').value = 'weeks';
-    document.getElementById('notifyEmail7day').checked = true;
-    document.getElementById('notifyEmail1day').checked = true;
-    document.getElementById('notifyEmailOnday').checked = true;
-    document.getElementById('notifyPopup7day').checked = false;
-    document.getElementById('notifyPopup1day').checked = false;
-    document.getElementById('notifyPopupOnday').checked = false;
+    // Apply user's default notification preferences for new task
+    applyUserNotificationDefaults();
     document.getElementById('taskXpMultiplier').value = '1.0';
     document.getElementById('taskXpMultiplierRow').classList.add('hidden');
     document.getElementById('assigneeRow').classList.add('hidden');
@@ -4732,6 +4773,65 @@ async function rotateIcsToken() {
     document.getElementById('icsLinkInput').value = url;
     toast('Calendar link regenerated!');
   } catch (err) { toast(err.message, 'error'); }
+}
+
+// Load notification preferences when profile page is shown
+async function loadNotificationPreferences() {
+  try {
+    const prefs = await api('GET', '/users/me/notification-preferences');
+    document.getElementById('notifEmail7day').checked = !!prefs.email?.notify_7day;
+    document.getElementById('notifEmail1day').checked = !!prefs.email?.notify_1day;
+    document.getElementById('notifEmailOnday').checked = !!prefs.email?.notify_onday;
+    document.getElementById('notifPopup7day').checked = !!prefs.popup?.notify_7day;
+    document.getElementById('notifPopup1day').checked = !!prefs.popup?.notify_1day;
+    document.getElementById('notifPopupOnday').checked = !!prefs.popup?.notify_onday;
+  } catch (err) {
+    console.error('Failed to load notification preferences:', err);
+  }
+}
+
+// Save notification preferences
+async function saveNotificationPreferences() {
+  try {
+    const prefs = {
+      email: {
+        notify_7day: document.getElementById('notifEmail7day').checked,
+        notify_1day: document.getElementById('notifEmail1day').checked,
+        notify_onday: document.getElementById('notifEmailOnday').checked,
+      },
+      popup: {
+        notify_7day: document.getElementById('notifPopup7day').checked,
+        notify_1day: document.getElementById('notifPopup1day').checked,
+        notify_onday: document.getElementById('notifPopupOnday').checked,
+      },
+    };
+    await api('PATCH', '/users/me/notification-preferences', prefs);
+    toast('Notification preferences saved!');
+  } catch (err) {
+    toast('Failed to save preferences: ' + err.message, 'error');
+  }
+}
+
+// Apply user's default notification preferences to the task modal form
+async function applyUserNotificationDefaults() {
+  try {
+    const prefs = await api('GET', '/users/me/notification-preferences');
+    document.getElementById('notifyEmail7day').checked = !!prefs.email?.notify_7day;
+    document.getElementById('notifyEmail1day').checked = !!prefs.email?.notify_1day;
+    document.getElementById('notifyEmailOnday').checked = !!prefs.email?.notify_onday;
+    document.getElementById('notifyPopup7day').checked = !!prefs.popup?.notify_7day;
+    document.getElementById('notifyPopup1day').checked = !!prefs.popup?.notify_1day;
+    document.getElementById('notifyPopupOnday').checked = !!prefs.popup?.notify_onday;
+  } catch (err) {
+    // Fallback to reasonable defaults if API call fails
+    console.error('Failed to load notification defaults:', err);
+    document.getElementById('notifyEmail7day').checked = false;
+    document.getElementById('notifyEmail1day').checked = true;
+    document.getElementById('notifyEmailOnday').checked = false;
+    document.getElementById('notifyPopup7day').checked = false;
+    document.getElementById('notifyPopup1day').checked = false;
+    document.getElementById('notifyPopupOnday').checked = false;
+  }
 }
 
 // ========== Task Recurrence ==========

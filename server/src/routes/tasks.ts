@@ -993,7 +993,11 @@ router.patch('/:id/archive', (req: Request, res: Response): void => {
   const taskId = req.params.id;
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string; group_id: string | null; archived: number }
+    | { id: string; created_by: string; group_id: string | null; archived: number;
+        title: string; details: string | null; type_id: string; due_date: number | null;
+        recur_interval: number | null; recur_unit: string | null;
+        notify_email: number; notify_7day: number; notify_1day: number; notify_onday: number;
+        notify_popup_7day: number; notify_popup_1day: number; notify_popup_onday: number; }
     | undefined;
 
   if (!task) {
@@ -1006,10 +1010,44 @@ router.patch('/:id/archive', (req: Request, res: Response): void => {
     return;
   }
 
+  const now = Date.now();
   const newArchived = task.archived === 0 ? 1 : 0;
-  db.prepare('UPDATE tasks SET archived = ?, updated_at = ? WHERE id = ?').run(
-    newArchived, Date.now(), taskId
-  );
+
+  // If archiving a recurring task, spawn the next occurrence before archiving
+  if (newArchived === 1 && task.recur_interval && task.recur_unit) {
+    const baseDue = task.due_date != null ? task.due_date : now;
+    const nextDue = computeNextDue(baseDue, task.recur_interval, task.recur_unit);
+    const newId = randomUUID();
+
+    const spawnAndArchive = db.transaction(() => {
+      db.prepare(`
+        INSERT INTO tasks (id, title, details, type_id, status, created_by, group_id, archived, created_at, updated_at, due_date, original_due_date, recur_interval, recur_unit, notify_email, notify_7day, notify_1day, notify_onday, notify_popup_7day, notify_popup_1day, notify_popup_onday)
+        VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(newId, task.title, task.details, task.type_id, task.created_by,
+        task.group_id, now, now, nextDue, nextDue, task.recur_interval, task.recur_unit,
+        task.notify_email, task.notify_7day, task.notify_1day, task.notify_onday,
+        task.notify_popup_7day, task.notify_popup_1day, task.notify_popup_onday);
+
+      const assignees = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(taskId) as Array<{ user_id: string }>;
+      const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
+      for (const a of assignees) {
+        insertAssignee.run(newId, a.user_id);
+      }
+
+      copySubtasksToNewTask(taskId, newId, now);
+
+      db.prepare('UPDATE tasks SET archived = ?, updated_at = ? WHERE id = ?').run(
+        newArchived, now, taskId
+      );
+    });
+
+    spawnAndArchive();
+  } else {
+    // Non-recurring or unarchiving: just update the archived flag
+    db.prepare('UPDATE tasks SET archived = ?, updated_at = ? WHERE id = ?').run(
+      newArchived, now, taskId
+    );
+  }
 
   const updated = db.prepare(`
     SELECT t.*, tt.name AS type_name

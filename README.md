@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.8.4** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.8.6** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -384,3 +384,25 @@ node server/encrypt-db.js /path/to/taskit.db /path/to/taskit-encrypted.db
 
 User passwords are **never stored in plaintext**. They are hashed using **bcrypt** (cost factor 10) before being stored. The database encryption provides an additional layer of protection for all other personal data.
 
+---
+
+## Release Notes
+
+### Version 1.8.6 (2026-04-26)
+
+**GDPR Compliance & Security:**
+- **Removed email addresses from admin user lists** – Admin endpoints (`GET /api/admin/users` and `GET /api/admin/locked`) no longer expose users' email addresses, ensuring better privacy compliance with GDPR data minimization principles. Admins can still manage accounts but cannot view personal email data through the admin panel.
+
+**Backend:**
+- Server version bumped to 1.10.2
+
+### Version 1.8.5 (2026-04-26)
+
+**Bug Fixes:**
+- **Fixed recurring task spawning on archive** – Recurring tasks now correctly spawn their next occurrence when archived, matching the behavior of completion and deletion. Previously, archiving a recurring task would only hide it without creating the next scheduled instance, breaking the recurrence schedule.
+
+**Visual Improvements:**
+- **Standardized dropdown arrow styling** – The "Tasks due more than two weeks from now" dropdown arrow now uses consistent styling (`▶` / `▼`) matching other dropdown features throughout the UI, improving visual coherence.
+
+**Backend:**
+- Server version bumped to 1.10.1

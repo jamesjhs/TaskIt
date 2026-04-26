@@ -2604,7 +2604,7 @@ function renderTasks(tasks) {
   let html = mainTasks.map(buildCard).join('');
 
   if (farFutureTasks.length) {
-    const arrow = _farFutureExpanded ? '\u2227' : '\u2228';
+    const arrow = _farFutureExpanded ? '▼' : '▶';
     const count = farFutureTasks.length;
     html += `<button class="task-far-future-toggle" onclick="toggleFarFuture()">Tasks due more than two weeks from now (${count}) ${arrow}</button>`;
     if (_farFutureExpanded) {

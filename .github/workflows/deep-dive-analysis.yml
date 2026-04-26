@@ -20,8 +20,7 @@ jobs:
       security-events: write
       pull-requests: write
       issues: write
-      
-     env:
+    env:
        FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:

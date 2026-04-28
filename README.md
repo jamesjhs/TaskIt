@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.10.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.11.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -106,6 +106,11 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.11.0
+
+- **🐛 Push notification fix** — the reminder scheduler now correctly respects the per-task browser popup notification flags (`notify_popup_7day`, `notify_popup_1day`, `notify_popup_onday`). Previously, push notifications were sent for every task that had email notifications enabled, ignoring whether browser push was actually toggled on for that window. Additionally, tasks with browser push enabled but email disabled will now receive push reminders as intended.
+- **Version bump** — server, README, user guide, how-to, and technical reference updated to 1.11.0.
 
 ### v1.10.0
 

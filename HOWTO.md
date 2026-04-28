@@ -1,6 +1,6 @@
 # TaskIt! – How-To Manual
 
-**Version 1.9.0**  
+**Version 1.11.0**  
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -116,6 +116,9 @@ Create a `.env` file inside the `server/` directory. A template is provided at `
 | `SMTP_USER`        | *(none)*                       | SMTP authentication username                             |
 | `SMTP_PASS`        | *(none)*                       | SMTP authentication password                             |
 | `SMTP_FROM`        | *(SMTP_USER)*                  | "From" address for outgoing emails                       |
+| `VAPID_PUBLIC_KEY` | *(none — push disabled)*       | VAPID public key for browser push notifications          |
+| `VAPID_PRIVATE_KEY` | *(none — push disabled)*      | VAPID private key for browser push notifications         |
+| `VAPID_SUBJECT`    | `mailto:admin@<BASE_URL host>` | Contact URI embedded in push requests (mailto or https)  |
 
 **Example `.env`:**
 
@@ -130,6 +133,10 @@ SMTP_SECURE=false
 SMTP_USER=noreply@example.com
 SMTP_PASS=your-smtp-password
 SMTP_FROM=TaskIt! <noreply@example.com>
+# Optional: browser push notifications (VAPID)
+VAPID_PUBLIC_KEY=your-vapid-public-key
+VAPID_PRIVATE_KEY=your-vapid-private-key
+VAPID_SUBJECT=mailto:admin@example.com
 ```
 
 > **Security note:** Always set a strong, unique `JWT_SECRET` before deploying to production.
@@ -423,7 +430,42 @@ When SMTP is configured and enabled, TaskIt! automatically sends reminder emails
 | 1-day reminder | Sent when the deadline is 22–50 hours away |
 | On-day reminder | Sent on the day the task is due (0–25 hours before) |
 
-Each reminder is sent only **once** per task. Reminders are checked every hour.
+Each reminder is sent only **once** per task per timing window. Reminders are checked every hour.
+
+---
+
+## Browser Push Notifications
+
+TaskIt! supports out-of-app browser push notifications using the [Web Push](https://web.dev/notifications/) standard. Push notifications require **VAPID keys** configured on the server and notification permission granted in the browser.
+
+### Generating VAPID keys
+
+Run the following once and store the output in your `.env`:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Set the three variables in `server/.env`:
+
+```env
+VAPID_PUBLIC_KEY=<paste public key>
+VAPID_PRIVATE_KEY=<paste private key>
+VAPID_SUBJECT=mailto:admin@example.com   # or https://your-domain
+```
+
+Restart the server. When push is configured, the `/api/push/vapid-public-key` endpoint returns the public key so the frontend can subscribe.
+
+### How it works
+
+1. On login the browser requests **notification permission**. If granted, the service worker registers a push subscription and sends it to `/api/push/subscribe`.
+2. Each hour, the scheduler checks for tasks with upcoming deadlines. For each task it evaluates two delivery channels independently:
+   - **Email** — sent when the task's email master switch and per-window checkbox are enabled.
+   - **Push** — sent when the task's per-window push checkbox is enabled (regardless of email settings).
+3. Once any notification (email or push) is delivered for a given task and timing window, that window is marked as done and won't repeat.
+4. Stale push subscriptions (browser returned HTTP 410/404) are automatically removed from the database.
+
+> **Note:** Push notifications are delivered to the browser even when the TaskIt! tab is closed, as long as the browser itself is running and the service worker is active.
 
 ---
 
@@ -545,4 +587,4 @@ The Freeze is consumed automatically, the streak is preserved, and the ❄️ is
 
 ---
 
-*TaskIt! v1.9.0 – Copyright J Rowson 2026 | jahosi.co.uk*
+*TaskIt! v1.11.0 – Copyright J Rowson 2026 | jahosi.co.uk*

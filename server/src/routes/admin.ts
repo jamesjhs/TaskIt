@@ -1,9 +1,54 @@
 import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
 import { authMiddleware } from '../middleware/auth';
 import { adminMiddleware } from '../middleware/admin';
 import db from '../db';
 import { ADMIN_EMAIL } from '../config';
+
+/** Absolute path to the server-side PNG icons directory. */
+const COLLECTABLES_DIR = path.resolve(__dirname, '..', '..', '..', 'public', 'collectables');
+
+/**
+ * Validates that an icon filename is safe to store and serve.
+ *
+ * Accepts two formats:
+ *  - Flat file:      `photo.png`   (alphanumerics, hyphens, underscores, .png extension)
+ *  - Subfolder file: `avian-friends/photo.png`  (one level of kebab-case subfolder only)
+ *
+ * Rules applied to both formats:
+ *  - Must be a non-empty string
+ *  - Must end with `.png` (case-insensitive)
+ *  - Must not contain `..` or backslashes
+ *  - The resolved path must be strictly inside the collectables directory
+ *  - The file must actually exist
+ *
+ * Returns the normalised path on success, or null on failure.
+ */
+function validateIconFilename(raw: unknown): string | null {
+  if (!raw || typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (trimmed.includes('..') || trimmed.includes('\\')) return null;
+
+  const parts = trimmed.split('/');
+  if (parts.length === 1) {
+    // Flat file: must match safe filename pattern
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_\-]*\.png$/i.test(parts[0])) return null;
+  } else if (parts.length === 2) {
+    // One subfolder level: subfolder must be kebab-case, filename must be safe
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(parts[0])) return null;
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_\-]*\.png$/i.test(parts[1])) return null;
+  } else {
+    return null;
+  }
+
+  // Verify the resolved path is strictly inside the collectables directory
+  const resolved = path.join(COLLECTABLES_DIR, ...parts);
+  if (!resolved.startsWith(COLLECTABLES_DIR + path.sep)) return null;
+  if (!fs.existsSync(resolved)) return null;
+  return trimmed;
+}
 
 const router = Router();
 
@@ -407,10 +452,58 @@ router.delete('/collectible-categories/:id', (req: Request, res: Response): void
 
 // ─── Collectibles ─────────────────────────────────────────────────────────────
 
+// GET /api/admin/collectibles/server-icons — list available PNG files in public/collectables/
+// Optional query param: ?subfolder=<kebab-case-name>
+// When provided, lists PNGs from public/collectables/<subfolder>/ and returns them as
+// "<subfolder>/<filename>" so the caller can store the relative path directly.
+router.get('/collectibles/server-icons', (req: Request, res: Response): void => {
+  try {
+    // Ensure the root directory exists; if not, return an empty list gracefully
+    if (!fs.existsSync(COLLECTABLES_DIR)) {
+      res.json([]);
+      return;
+    }
+
+    const rawSubfolder = req.query.subfolder;
+    if (rawSubfolder !== undefined) {
+      // Validate subfolder: kebab-case slug only, no traversal
+      const subfolder = typeof rawSubfolder === 'string' ? rawSubfolder.trim() : '';
+      if (!subfolder || !/^[a-z0-9][a-z0-9-]*$/.test(subfolder) || subfolder.includes('..')) {
+        res.status(400).json({ error: 'subfolder must be a non-empty kebab-case slug' });
+        return;
+      }
+      const subdir = path.join(COLLECTABLES_DIR, subfolder);
+      // Must still be inside COLLECTABLES_DIR
+      if (!subdir.startsWith(COLLECTABLES_DIR + path.sep)) {
+        res.status(400).json({ error: 'Invalid subfolder' });
+        return;
+      }
+      if (!fs.existsSync(subdir)) {
+        // Subfolder does not exist yet — return empty list (admin can create it manually)
+        res.json([]);
+        return;
+      }
+      const entries = fs.readdirSync(subdir);
+      const pngs = entries
+        .filter(f => /^[a-zA-Z0-9][a-zA-Z0-9_\-]*\.png$/i.test(f) && !f.includes('..'))
+        .map(f => `${subfolder}/${f}`);
+      res.json(pngs);
+      return;
+    }
+
+    // No subfolder — list flat PNGs in the root collectables directory
+    const entries = fs.readdirSync(COLLECTABLES_DIR);
+    const pngs = entries.filter(f => /^[a-zA-Z0-9][a-zA-Z0-9_\-]*\.png$/i.test(f) && !f.includes('..'));
+    res.json(pngs);
+  } catch {
+    res.status(500).json({ error: 'Could not read server icon directory' });
+  }
+});
+
 // GET /api/admin/collectibles — list active collectibles with their category
 router.get('/collectibles', (_req: Request, res: Response): void => {
   const rows = db.prepare(`
-    SELECT c.id, c.name, c.description, c.rarity, c.archived, c.created_at,
+    SELECT c.id, c.name, c.description, c.rarity, c.icon_filename, c.archived, c.created_at,
            ic.id AS category_id, ic.name AS category_name
     FROM collectibles c
     JOIN item_categories ic ON ic.id = c.category_id
@@ -422,7 +515,7 @@ router.get('/collectibles', (_req: Request, res: Response): void => {
 
 // POST /api/admin/collectibles — create a new collectible
 router.post('/collectibles', (req: Request, res: Response): void => {
-  const { name, description, categoryId, rarity } = req.body;
+  const { name, description, categoryId, rarity, iconFilename } = req.body;
 
   if (!name || typeof name !== 'string' || !name.trim()) {
     res.status(400).json({ error: 'name is required' });
@@ -437,6 +530,16 @@ router.post('/collectibles', (req: Request, res: Response): void => {
     return;
   }
 
+  // Validate optional icon filename if provided
+  let safeIconFilename: string | null = null;
+  if (iconFilename !== undefined && iconFilename !== null && iconFilename !== '') {
+    safeIconFilename = validateIconFilename(iconFilename);
+    if (safeIconFilename === null) {
+      res.status(400).json({ error: 'iconFilename must be a valid .png filename present in the server collectables directory' });
+      return;
+    }
+  }
+
   const cat = db.prepare(
     'SELECT id FROM item_categories WHERE id = ? AND archived = 0'
   ).get(categoryId);
@@ -449,12 +552,12 @@ router.post('/collectibles', (req: Request, res: Response): void => {
   const now = Date.now();
 
   db.prepare(`
-    INSERT INTO collectibles (id, name, description, category_id, rarity, archived, created_at)
-    VALUES (?, ?, ?, ?, ?, 0, ?)
-  `).run(id, name.trim(), description?.trim() || null, categoryId, rarity, now);
+    INSERT INTO collectibles (id, name, description, category_id, rarity, icon_filename, archived, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, 0, ?)
+  `).run(id, name.trim(), description?.trim() || null, categoryId, rarity, safeIconFilename, now);
 
   const created = db.prepare(`
-    SELECT c.id, c.name, c.description, c.rarity, c.created_at,
+    SELECT c.id, c.name, c.description, c.rarity, c.icon_filename, c.created_at,
            ic.id AS category_id, ic.name AS category_name
     FROM collectibles c
     JOIN item_categories ic ON ic.id = c.category_id
@@ -466,7 +569,7 @@ router.post('/collectibles', (req: Request, res: Response): void => {
 // PATCH /api/admin/collectibles/:id — update collectible fields
 router.patch('/collectibles/:id', (req: Request, res: Response): void => {
   const itemId = req.params.id;
-  const { name, description, categoryId, rarity } = req.body;
+  const { name, description, categoryId, rarity, iconFilename } = req.body;
 
   const item = db.prepare(
     'SELECT id FROM collectibles WHERE id = ? AND archived = 0'
@@ -514,8 +617,24 @@ router.patch('/collectibles/:id', (req: Request, res: Response): void => {
     vals.push(rarity);
   }
 
+  // iconFilename: null/empty string clears the icon; a non-empty string is validated
+  if (iconFilename !== undefined) {
+    if (iconFilename === null || iconFilename === '') {
+      setClauses.push('icon_filename = ?');
+      vals.push(null);
+    } else {
+      const safe = validateIconFilename(iconFilename);
+      if (safe === null) {
+        res.status(400).json({ error: 'iconFilename must be a valid .png filename present in the server collectables directory' });
+        return;
+      }
+      setClauses.push('icon_filename = ?');
+      vals.push(safe);
+    }
+  }
+
   if (setClauses.length === 0) {
-    res.status(400).json({ error: 'No valid fields to update (name, description, categoryId, rarity)' });
+    res.status(400).json({ error: 'No valid fields to update (name, description, categoryId, rarity, iconFilename)' });
     return;
   }
 
@@ -523,7 +642,7 @@ router.patch('/collectibles/:id', (req: Request, res: Response): void => {
   db.prepare(`UPDATE collectibles SET ${setClauses.join(', ')} WHERE id = ?`).run(...vals);
 
   const updated = db.prepare(`
-    SELECT c.id, c.name, c.description, c.rarity, c.created_at,
+    SELECT c.id, c.name, c.description, c.rarity, c.icon_filename, c.created_at,
            ic.id AS category_id, ic.name AS category_name
     FROM collectibles c
     JOIN item_categories ic ON ic.id = c.category_id

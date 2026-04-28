@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.8.6** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.9.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -104,6 +104,11 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.9.0
+
+- **🖼️ Collectible item icons** — administrators can now assign a custom PNG artwork to any collectible item. Place transparent PNG files in the `public/collectables/` directory on the server, then use the new **Browse** button in the Collectible Items admin panel to pick a file from a server-side list. The selected icon replaces the rarity emoji in both the loot-drop pop-up alert and the user's Collections page. Items without a custom icon continue to use the existing coloured emoji fallback. The server validates all filenames strictly (alphanumeric, hyphens, underscores, `.png` extension only) to prevent path traversal attacks.
+- **Version bump** — server, README, user guides, and technical reference updated to 1.9.0.
 
 ### v1.8.4
 

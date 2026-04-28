@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.8.6** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.9.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -226,6 +226,7 @@ System administrators see an extra **Admin** menu item. From here you can:
 - **Locked Accounts** – view and unlock accounts blocked after too many failed login attempts
 - **User Reports** – review reports submitted by users and mark them as resolved
 - **Feedback** – read feedback messages submitted by users, update their status (Not Started / In Progress / Completed / Archived), and send an in-app reply
+- **Collectible Items → Icon** – each collectible item can now have a custom PNG artwork. Place `.png` files (transparent background recommended) inside the `public/collectables/` folder on the server, then click **Browse** next to the **Icon** field when creating or editing an item. A dropdown will appear listing all available images; select one to see a live preview before saving. Items without a custom icon continue to display the coloured rarity emoji.
 
 ---
 
@@ -323,6 +324,7 @@ Completing tasks doesn't just earn XP — it can also reward a random **collecti
 
 Each time you mark a task **Complete**, the server may roll a loot drop for you (the more XP the task awards, the higher the chance). If a drop is rolled, a **Loot Drop Modal** appears immediately after you complete the task. It shows:
 
+- The item's artwork (a custom PNG icon if your administrator has assigned one, or the rarity emoji otherwise)
 - The item's name and description
 - Its **rarity tier**: Common 🟢, Rare 💜, or Epic ✨
 - Its category (e.g. *Space Explorer*, *Kitchen Hero*)
@@ -340,7 +342,7 @@ You have a short window (10 minutes) to decide — after that the pending drop e
 
 Open the **⭐ Progress** tab and scroll to the **🎒 My Collection** section at the bottom. Here you can:
 
-- See every item you own, grouped by category, displayed in full colour.
+- See every item you own, grouped by category, displayed in full colour — with custom artwork where available.
 - Browse the complete catalogue — items you haven't collected yet appear as greyed-out silhouettes so you can track your progress.
 - See duplicate counts (×2, ×3, etc.) if you've collected the same item more than once.
 
@@ -387,4 +389,4 @@ Tap the **⭐ Progress** tab in the bottom navigation. You can also enable or di
 
 ---
 
-*TaskIt! v1.8.2 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*TaskIt! v1.9.0 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*

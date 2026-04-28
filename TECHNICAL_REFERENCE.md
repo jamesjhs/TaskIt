@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version:** 1.8.6  
+**Version:** 1.9.0  
 **Author:** J Rowson  
 **Generated:** 2026-04-21
 
@@ -502,6 +502,7 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `description` | TEXT | Optional flavour text |
 | `category_id` | TEXT NOT NULL | FK → item_categories.id |
 | `rarity` | TEXT NOT NULL | One of: `common`, `rare`, `epic` |
+| `icon_filename` | TEXT | Optional filename of a PNG in `public/collectables/` that replaces the rarity emoji in the UI. Only bare filenames are stored; validated server-side to prevent path traversal. |
 | `archived` | INTEGER NOT NULL DEFAULT 0 | Soft-delete flag — archived items are excluded from loot drops and the catalogue |
 | `created_at` | INTEGER NOT NULL | Unix ms |
 
@@ -821,11 +822,12 @@ Attached to `req.user` by `authMiddleware`.
 | `POST` | `/api/admin/collectible-categories` | JWT+Admin | authed | Create collectible category |
 | `PATCH` | `/api/admin/collectible-categories/:id` | JWT+Admin | authed | Rename collectible category |
 | `DELETE` | `/api/admin/collectible-categories/:id` | JWT+Admin | authed | Soft-delete collectible category |
-| `GET` | `/api/admin/collectibles` | JWT+Admin | authed | List active collectible items |
-| `POST` | `/api/admin/collectibles` | JWT+Admin | authed | Create collectible item |
-| `PATCH` | `/api/admin/collectibles/:id` | JWT+Admin | authed | Update collectible item fields |
+| `GET` | `/api/admin/collectibles` | JWT+Admin | authed | List active collectible items (includes `icon_filename`) |
+| `POST` | `/api/admin/collectibles` | JWT+Admin | authed | Create collectible item (optional `iconFilename` field) |
+| `PATCH` | `/api/admin/collectibles/:id` | JWT+Admin | authed | Update collectible item fields (optional `iconFilename`; `null`/`""` clears icon) |
 | `DELETE` | `/api/admin/collectibles/:id` | JWT+Admin | authed | Soft-delete collectible item |
 | `POST` | `/api/admin/collectibles/seed` | JWT+Admin | authed | Bulk-seed categories and items from JSON |
+| `GET` | `/api/admin/collectibles/server-icons` | JWT+Admin | authed | List PNG filenames available in `public/collectables/` for use as item icons |
 
 ---
 
@@ -1020,9 +1022,10 @@ Requires both `authMiddleware` + `adminMiddleware`.
 | `POST /collectible-categories` | Creates a new `item_categories` row; 201 with new row |
 | `PATCH /collectible-categories/:id` | Renames a category; 404 if not found or archived |
 | `DELETE /collectible-categories/:id` | Soft-deletes (sets `archived=1`); 204 No Content |
-| `GET /collectibles` | Lists non-archived collectibles joined with category; ordered by category then name |
-| `POST /collectibles` | Creates a new collectible (name, categoryId, rarity required; description optional); validates rarity and category; 201 |
-| `PATCH /collectibles/:id` | Partial update of name/description/categoryId/rarity; validates all provided fields |
+| `GET /collectibles/server-icons` | Returns array of `.png` filenames available in `public/collectables/` for use as collectible icons |
+| `GET /collectibles` | Lists non-archived collectibles joined with category (includes `icon_filename`); ordered by category then name |
+| `POST /collectibles` | Creates a new collectible (name, categoryId, rarity required; description, iconFilename optional); validates rarity, category, and icon filename; 201 |
+| `PATCH /collectibles/:id` | Partial update of name/description/categoryId/rarity/iconFilename; validates all provided fields; pass `iconFilename: null` or `""` to clear the icon |
 | `DELETE /collectibles/:id` | Soft-deletes collectible (`archived=1`); 204 No Content |
 | `POST /collectibles/seed` | Bulk-seed: accepts JSON array of `{ name, items: [{ name, description?, rarity }] }`; existing entries (matched by name) are skipped; returns `{ categoriesCreated, categoriesReused, itemsCreated, itemsSkipped }` |
 
@@ -1074,8 +1077,9 @@ interface GamificationProfile {
 interface LootDropResult {
   collectibleId: string;
   collectibleName: string;
-  rarity: string;      // 'common' | 'rare' | 'epic'
+  rarity: string;        // 'common' | 'rare' | 'epic'
   categoryName: string;
+  iconFilename: string | null;  // PNG filename from public/collectables/, or null
 }
 ```
 
@@ -1975,4 +1979,4 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.7.0*
+*End of Technical Reference Manual — TaskIt! v1.9.0*

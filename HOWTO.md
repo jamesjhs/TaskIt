@@ -1,6 +1,6 @@
 # TaskIt! – How-To Manual
 
-**Version 1.8.6**  
+**Version 1.9.0**  
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -402,6 +402,15 @@ Review reports submitted by users about other users. Mark reports as resolved on
 **Feedback:**  
 Read feedback messages and feature requests submitted by users. Update the status of each message (Not Started, In Progress, Completed, Archived) and send an in-app reply to the submitter.
 
+**Collectible Items – Custom Icons:**  
+Each collectible item can be given a custom PNG artwork. To make icons available:
+1. Place transparent `.png` files into the `public/collectables/` directory on your server (e.g. `public/collectables/sword.png`).
+2. In the **🎁 Collectible Items** section of the admin panel, click **Browse** next to the **Icon** field when creating or editing an item.
+3. A dropdown will populate with all available PNG filenames. Select one; a small live preview appears below the dropdown.
+4. Save the item. The selected PNG will be shown in place of the rarity emoji in the loot-drop alert and the user's My Collection page.
+
+Only bare `.png` filenames (alphanumeric, hyphens, underscores) are accepted — path separators and directory traversal sequences are rejected by the server. Pass an empty icon or select `— No icon —` to revert to the rarity emoji.
+
 ---
 
 ## Email Reminders
@@ -536,4 +545,4 @@ The Freeze is consumed automatically, the streak is preserved, and the ❄️ is
 
 ---
 
-*TaskIt! v1.1.0 – Copyright J Rowson 2026 | jahosi.co.uk*
+*TaskIt! v1.9.0 – Copyright J Rowson 2026 | jahosi.co.uk*

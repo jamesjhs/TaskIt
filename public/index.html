@@ -1315,6 +1315,20 @@
                 </select>
               </div>
             </div>
+            <div class="form-group">
+              <label>Icon <span style="font-weight:400;color:#9ca3af;font-size:.78rem">(optional PNG from server)</span></label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <select id="collectibleIconSelect" class="select" style="flex:1" onchange="adminPreviewCollectibleIcon()">
+                  <option value="">— No icon (use rarity emoji) —</option>
+                </select>
+                <button type="button" onclick="adminLoadServerIcons()" class="btn btn-sm btn-secondary" style="white-space:nowrap">Browse</button>
+              </div>
+              <div id="collectibleIconPreview" style="margin-top:8px;display:none;align-items:center;gap:8px">
+                <img id="collectibleIconPreviewImg" src="" alt="Icon preview" style="width:40px;height:40px;object-fit:contain;border-radius:6px;border:1px solid #e5e7eb;background:#f9fafb" onerror="this.parentElement.style.display='none'" />
+                <span id="collectibleIconPreviewName" style="font-size:.8rem;color:#6b7280"></span>
+                <button type="button" onclick="adminClearCollectibleIcon()" class="btn btn-sm btn-danger" style="padding:2px 8px;font-size:.75rem">✕ Remove</button>
+              </div>
+            </div>
             <div style="display:flex;gap:8px">
               <button onclick="adminSaveCollectible()" class="btn btn-primary btn-sm" style="flex:1">Save Item</button>
               <button onclick="adminClearCollectibleForm()" class="btn btn-secondary btn-sm">Clear</button>
@@ -4448,8 +4462,12 @@ async function loadAdminItems() {
       );
       for (const item of cat.items) {
         const rarityColor = RARITY_COLOURS[item.rarity] || '#475569';
+        const iconHtml = item.icon_filename
+          ? `<img src="/collectables/${encodeURIComponent(item.icon_filename)}" alt="" style="width:28px;height:28px;object-fit:contain;border-radius:4px;border:1px solid #e5e7eb;background:#f9fafb;flex-shrink:0" onerror="this.style.display='none'" />`
+          : '';
         html.push(`
-          <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f5f9">
+          <div style="display:grid;grid-template-columns:${item.icon_filename ? '28px ' : ''}1fr auto auto;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f5f9">
+            ${iconHtml}
             <div>
               <span style="font-size:.9rem;font-weight:600;color:#374151">${escHtml(item.name)}</span>
               <span style="font-size:.75rem;font-weight:700;color:${rarityColor};margin-left:6px">${escHtml(item.rarity)}</span>
@@ -4482,6 +4500,36 @@ async function adminEditCollectible(id) {
     if (!_adminCats.length) await loadAdminCategories();
     document.getElementById('collectibleCatId').value  = item.category_id;
 
+    // Populate the icon dropdown and select the current icon
+    const iconSel = document.getElementById('collectibleIconSelect');
+    if (iconSel && item.icon_filename) {
+      // Load icons if the list is empty (only has the placeholder option)
+      if (iconSel.options.length <= 1) {
+        try {
+          const icons = await api('GET', '/admin/collectibles/server-icons');
+          iconSel.innerHTML = '<option value="">— No icon (use rarity emoji) —</option>';
+          for (const f of (Array.isArray(icons) ? icons : [])) {
+            const opt = document.createElement('option');
+            opt.value = f;
+            opt.textContent = f;
+            iconSel.appendChild(opt);
+          }
+        } catch { /* icons not critical — fall through */ }
+      }
+      // Add the saved icon as an option if it's not already listed (e.g. file was removed)
+      if (![...iconSel.options].some(o => o.value === item.icon_filename)) {
+        const opt = document.createElement('option');
+        opt.value = item.icon_filename;
+        opt.textContent = item.icon_filename + ' (saved)';
+        iconSel.appendChild(opt);
+      }
+      iconSel.value = item.icon_filename;
+      adminUpdateIconPreview(item.icon_filename);
+    } else if (iconSel) {
+      iconSel.value = '';
+      adminUpdateIconPreview('');
+    }
+
     document.getElementById('collectibleFormTitle').textContent = 'Edit Item — ' + item.name;
     // Scroll form into view
     document.getElementById('collectibleForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -4495,6 +4543,69 @@ function adminClearCollectibleForm() {
   document.getElementById('collectibleDesc').value   = '';
   document.getElementById('collectibleRarity').value = 'common';
   document.getElementById('collectibleFormTitle').textContent = 'New Item';
+  // Reset icon picker
+  const iconSel = document.getElementById('collectibleIconSelect');
+  if (iconSel) iconSel.value = '';
+  adminUpdateIconPreview('');
+}
+
+/** Clears just the icon selection without touching other form fields. */
+function adminClearCollectibleIcon() {
+  const iconSel = document.getElementById('collectibleIconSelect');
+  if (iconSel) iconSel.value = '';
+  adminUpdateIconPreview('');
+}
+
+/** Updates the icon preview area based on the current select value. */
+function adminUpdateIconPreview(filename) {
+  const previewEl = document.getElementById('collectibleIconPreview');
+  const imgEl     = document.getElementById('collectibleIconPreviewImg');
+  const nameEl    = document.getElementById('collectibleIconPreviewName');
+  if (!previewEl || !imgEl || !nameEl) return;
+  if (filename) {
+    imgEl.src = '/collectables/' + encodeURIComponent(filename);
+    nameEl.textContent = filename;
+    previewEl.style.display = 'flex';
+  } else {
+    imgEl.src = '';
+    nameEl.textContent = '';
+    previewEl.style.display = 'none';
+  }
+}
+
+/** Called when the icon select value changes — updates the preview. */
+function adminPreviewCollectibleIcon() {
+  const iconSel = document.getElementById('collectibleIconSelect');
+  adminUpdateIconPreview(iconSel ? iconSel.value : '');
+}
+
+/**
+ * Loads the list of available server PNG icons into the icon select dropdown.
+ * Shows a toast if the directory has no PNGs or the request fails.
+ */
+async function adminLoadServerIcons() {
+  const iconSel = document.getElementById('collectibleIconSelect');
+  if (!iconSel) return;
+  try {
+    const icons = await api('GET', '/admin/collectibles/server-icons');
+    const current = iconSel.value;
+    iconSel.innerHTML = '<option value="">— No icon (use rarity emoji) —</option>';
+    if (!Array.isArray(icons) || icons.length === 0) {
+      toast('No PNG icons found in the server collectables folder', 'error');
+      return;
+    }
+    for (const f of icons) {
+      const opt = document.createElement('option');
+      opt.value = f;
+      opt.textContent = f;
+      iconSel.appendChild(opt);
+    }
+    // Re-select the previously chosen icon if it's still in the list
+    if (current && icons.includes(current)) iconSel.value = current;
+    toast(icons.length + ' icon' + (icons.length === 1 ? '' : 's') + ' loaded');
+  } catch (err) {
+    toast('Failed to load server icons: ' + (err.message || 'Unknown error'), 'error');
+  }
 }
 
 /** Saves (creates or updates) a collectible from the form. */
@@ -4504,16 +4615,18 @@ async function adminSaveCollectible() {
   const description = document.getElementById('collectibleDesc').value.trim();
   const categoryId  = document.getElementById('collectibleCatId').value;
   const rarity      = document.getElementById('collectibleRarity').value;
+  const iconSel     = document.getElementById('collectibleIconSelect');
+  const iconFilename = iconSel ? (iconSel.value || null) : null;
 
   if (!name) { toast('Item name is required', 'error'); return; }
   if (!categoryId) { toast('Please select a category', 'error'); return; }
 
   try {
     if (editId) {
-      await api('PATCH', '/admin/collectibles/' + editId, { name, description: description || null, categoryId, rarity });
+      await api('PATCH', '/admin/collectibles/' + editId, { name, description: description || null, categoryId, rarity, iconFilename });
       toast('Item updated!');
     } else {
-      await api('POST', '/admin/collectibles', { name, description: description || null, categoryId, rarity });
+      await api('POST', '/admin/collectibles', { name, description: description || null, categoryId, rarity, iconFilename });
       toast('Item created!');
     }
     adminClearCollectibleForm();
@@ -5225,7 +5338,14 @@ function openLootDropModal(drop) {
   const rarityIcon = RARITY_ICONS[rarity] || '🎁';
   const rarityClass = 'badge badge-rarity-' + rarity;
 
-  document.getElementById('lootDropIcon').textContent    = rarityIcon;
+  // Show PNG icon if available, otherwise fall back to rarity emoji
+  const iconEl = document.getElementById('lootDropIcon');
+  if (drop.iconFilename) {
+    iconEl.innerHTML = `<img src="/collectables/${encodeURIComponent(drop.iconFilename)}" alt="${escHtml(drop.collectibleName || '')}" style="width:56px;height:56px;object-fit:contain" onerror="this.parentElement.textContent='${rarityIcon}'" />`;
+  } else {
+    iconEl.textContent = rarityIcon;
+  }
+
   document.getElementById('lootDropName').textContent    = drop.collectibleName || 'Unknown Item';
   document.getElementById('lootDropCategory').textContent = drop.categoryName  || '';
   document.getElementById('lootDropDesc').textContent    = drop.description    || '';
@@ -5241,6 +5361,8 @@ function openLootDropModal(drop) {
 function closeLootDropModal() {
   _pendingDrop = null;
   document.getElementById('lootDropModal').classList.add('hidden');
+  // Reset icon to default state for next use
+  document.getElementById('lootDropIcon').textContent = '🎁';
 }
 
 /**
@@ -5346,7 +5468,11 @@ async function loadInventory() {
       const itemsHtml = cat.items.map(item => {
         const count   = ownedCounts[item.id] || 0;
         const rarity  = (item.rarity || 'common').toLowerCase();
-        const icon    = COLLECTIBLE_RARITY_ICONS[rarity] || '🎁';
+        const emojiIcon = COLLECTIBLE_RARITY_ICONS[rarity] || '🎁';
+        // Use PNG icon when available, falling back to the rarity emoji
+        const iconContent = item.icon_filename
+          ? `<img src="/collectables/${encodeURIComponent(item.icon_filename)}" alt="" style="width:1.5rem;height:1.5rem;object-fit:contain" onerror="this.replaceWith(document.createTextNode('${emojiIcon}'))" />`
+          : emojiIcon;
         const classes = [
           'gamif-inv-item',
           count > 0 ? ('owned' + (rarity === 'epic' ? ' epic' : '')) : 'unowned',
@@ -5354,7 +5480,7 @@ async function loadInventory() {
         const countLabel = count > 1 ? ('<div class="gamif-inv-item-count">×' + count + '</div>') : '';
         return (
           '<div class="' + classes + '" title="' + escHtml(item.name) + ' (' + escHtml(item.description || '') + ')">' +
-            '<span class="gamif-inv-item-icon">' + icon + '</span>' +
+            '<span class="gamif-inv-item-icon">' + iconContent + '</span>' +
             '<div class="gamif-inv-item-name">' + escHtml(item.name) + '</div>' +
             countLabel +
           '</div>'

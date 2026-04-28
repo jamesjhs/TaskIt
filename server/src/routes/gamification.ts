@@ -175,7 +175,7 @@ router.post('/streaks/:taskId/freeze', (req: Request, res: Response): void => {
  */
 router.get('/catalogue', (_req: Request, res: Response): void => {
   const rows = db.prepare(`
-    SELECT c.id, c.name, c.description, c.rarity,
+    SELECT c.id, c.name, c.description, c.rarity, c.icon_filename,
            ic.id AS category_id, ic.name AS category_name
     FROM collectibles c
     JOIN item_categories ic ON ic.id = c.category_id
@@ -198,7 +198,7 @@ router.get('/inventory', (req: Request, res: Response): void => {
   const rows = db.prepare(`
     SELECT ui.id, ui.acquired_at,
            c.id AS collectible_id, c.name AS collectible_name,
-           c.description, c.rarity,
+           c.description, c.rarity, c.icon_filename,
            ic.id AS category_id, ic.name AS category_name
     FROM user_inventory ui
     JOIN collectibles c ON c.id = ui.collectible_id

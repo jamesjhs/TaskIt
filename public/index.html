@@ -2808,7 +2808,7 @@ function renderLongTermGoals(goals) {
         ${goal.details ? `<p style="font-size:0.9rem;color:#666;margin-bottom:0.5rem">${escHtml(goal.details)}</p>` : ''}
         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${groupBadge}${typeBadge}${xpBadge}</div>
         <div class="sporadic-actions">
-          <button onclick="openSetDeadlineModal('${escHtml(goal.id)}', ${JSON.stringify(escHtml(goal.title))})" class="btn btn-primary btn-sm" style="padding:0.5rem 1rem;font-size:0.9rem">📅 Set Deadline</button>
+          <button onclick="openSetDeadlineModal('${escHtml(goal.id)}')" class="btn btn-primary btn-sm" style="padding:0.5rem 1rem;font-size:0.9rem">📅 Set Deadline</button>
           <button onclick="openDetailById('${escHtml(goal.id)}')" class="btn btn-outline btn-sm" style="padding:0.5rem 1rem;font-size:0.9rem">Edit</button>
         </div>
       </div>
@@ -2825,7 +2825,7 @@ function openNewGoalModal() {
   if (ltgCheck) { ltgCheck.checked = true; updateTaskMode(); }
 }
 
-function openSetDeadlineModal(goalId, goalTitle) {
+function openSetDeadlineModal(goalId) {
   document.getElementById('setDeadlineGoalId').value = goalId;
   const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
   const iso = new Date(midnight.getTime() - midnight.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -3171,7 +3171,10 @@ async function handleTaskSubmit(e) {
 }
 
 // ========== Task Detail ==========
-function openDetailById(id) { const task = tasksMap.get(id) || goalsMap.get(id) || sporadicMap.get(id); if (task) openDetail(task); }
+function openDetailById(id) {
+  const task = tasksMap.get(id) || goalsMap.get(id) || sporadicMap.get(id);
+  if (task) { openDetail(task); } else { console.warn('openDetailById: task not found for id', id); }
+}
 
 function openDetail(task) {
   currentDetailTask = task;

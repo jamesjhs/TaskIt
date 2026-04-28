@@ -581,15 +581,17 @@ router.post('/create-long-term-goal', (req: Request, res: Response): void => {
     return;
   }
 
-  // Determine type_id: use provided taskTypeId or find a default task type
+  // Determine type_id: use provided taskTypeId or require caller to provide one
   let typeId = taskTypeId;
   if (!typeId) {
-    const defaultType = db.prepare('SELECT id FROM task_types LIMIT 1').get() as { id: string } | undefined;
-    if (!defaultType) {
+    // Fall back to the 'Personal' type, or any type if Personal doesn't exist
+    const personalType = db.prepare("SELECT id FROM task_types WHERE LOWER(name) = 'personal' LIMIT 1").get() as { id: string } | undefined;
+    const fallbackType = personalType || (db.prepare('SELECT id FROM task_types ORDER BY created_at ASC LIMIT 1').get() as { id: string } | undefined);
+    if (!fallbackType) {
       res.status(400).json({ error: 'No task types available' });
       return;
     }
-    typeId = defaultType.id;
+    typeId = fallbackType.id;
   } else {
     const typeExists = db.prepare('SELECT 1 FROM task_types WHERE id = ?').get(typeId);
     if (!typeExists) {

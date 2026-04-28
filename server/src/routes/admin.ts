@@ -27,9 +27,9 @@ function validateIconFilename(raw: unknown): string | null {
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_\-]*\.png$/i.test(trimmed)) return null;
   // Double-check no path separators slipped through
   if (trimmed.includes('/') || trimmed.includes('\\') || trimmed.includes('..')) return null;
-  // Verify the file actually exists on disk (prevents storing invalid references)
+  // Verify the resolved path is strictly inside the collectables directory
   const resolved = path.join(COLLECTABLES_DIR, trimmed);
-  if (!resolved.startsWith(COLLECTABLES_DIR + path.sep) && resolved !== COLLECTABLES_DIR) return null;
+  if (!resolved.startsWith(COLLECTABLES_DIR + path.sep)) return null;
   if (!fs.existsSync(resolved)) return null;
   return trimmed;
 }

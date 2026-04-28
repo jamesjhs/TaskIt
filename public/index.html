@@ -5341,7 +5341,13 @@ function openLootDropModal(drop) {
   // Show PNG icon if available, otherwise fall back to rarity emoji
   const iconEl = document.getElementById('lootDropIcon');
   if (drop.iconFilename) {
-    iconEl.innerHTML = `<img src="/collectables/${encodeURIComponent(drop.iconFilename)}" alt="${escHtml(drop.collectibleName || '')}" style="width:56px;height:56px;object-fit:contain" onerror="this.parentElement.textContent='${rarityIcon}'" />`;
+    const imgEl = document.createElement('img');
+    imgEl.src = '/collectables/' + encodeURIComponent(drop.iconFilename);
+    imgEl.alt = drop.collectibleName || '';
+    imgEl.style.cssText = 'width:56px;height:56px;object-fit:contain';
+    imgEl.addEventListener('error', function() { iconEl.textContent = rarityIcon; }, { once: true });
+    iconEl.textContent = '';
+    iconEl.appendChild(imgEl);
   } else {
     iconEl.textContent = rarityIcon;
   }
@@ -5471,7 +5477,7 @@ async function loadInventory() {
         const emojiIcon = COLLECTIBLE_RARITY_ICONS[rarity] || '🎁';
         // Use PNG icon when available, falling back to the rarity emoji
         const iconContent = item.icon_filename
-          ? `<img src="/collectables/${encodeURIComponent(item.icon_filename)}" alt="" style="width:1.5rem;height:1.5rem;object-fit:contain" onerror="this.replaceWith(document.createTextNode('${emojiIcon}'))" />`
+          ? `<img src="/collectables/${encodeURIComponent(item.icon_filename)}" alt="" style="width:1.5rem;height:1.5rem;object-fit:contain" data-fb="${escHtml(emojiIcon)}" onerror="this.replaceWith(document.createTextNode(this.dataset.fb))" />`
           : emojiIcon;
         const classes = [
           'gamif-inv-item',

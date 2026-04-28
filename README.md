@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.11.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.12.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -106,6 +106,12 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.12.0
+
+- **🐛 Collectible items table layout fix** — the Edit button in the admin Collectible Items table was unexpectedly wide for rows that had a custom icon. The per-row `display:grid` with a variable column count (`28px 1fr auto auto` vs `1fr auto auto`) caused CSS Grid's `auto` track sizing to produce inconsistent button widths. Replaced with `display:flex` so the name column grows (`flex:1;min-width:0`) and buttons remain at their natural content size (`flex-shrink:0`) regardless of whether a row has a custom icon.
+- **🐛 PNG upload "could not read image dimensions" fix** — the admin icon upload used `URL.createObjectURL` to load the selected file into an `<img>` for a client-side dimension check. The resulting `blob:` URL was blocked by the server's Content-Security-Policy `imgSrc` directive (which only allows `'self'` and `data:`), so every upload immediately fired `img.onerror`. Replaced with a single `FileReader.readAsDataURL` pass that produces a CSP-compliant `data:` URL; this same data URL is also reused as the base64 upload payload, eliminating a redundant second file-read.
+- **Version bump** — server, README, user guide, how-to, and technical reference updated to 1.12.0.
 
 ### v1.11.0
 

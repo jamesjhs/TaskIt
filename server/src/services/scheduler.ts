@@ -37,6 +37,11 @@ const REMINDER_WINDOWS: Array<{ type: string; minMs: number; maxMs: number; labe
   { type: 'on_day', minMs: 0,                         maxMs: 25 * 60 * 60 * 1000,     label: 'today'   },
 ];
 
+/**
+ * Send web push notifications for a specific task reminder to all subscribed browsers for a user.
+ * Returns `true` if at least one push notification was successfully delivered — the caller uses
+ * this to decide whether to write the deduplication record in `task_reminders_sent`.
+ */
 async function sendPushNotificationsForUser(userId: string, taskId: string, taskTitle: string, windowLabel: string): Promise<boolean> {
   if (!VAPID.publicKey || !VAPID.privateKey) return false;
 

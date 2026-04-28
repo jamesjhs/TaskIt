@@ -7,7 +7,8 @@ import { VAPID } from '../config';
 const router = Router();
 
 // Base64url characters only; used to validate p256dh / auth keys from the browser.
-const BASE64URL_RE = /^[A-Za-z0-9\-_]+=*$/;
+// At most 2 padding `=` characters are allowed (standard base64 padding).
+const BASE64URL_RE = /^[A-Za-z0-9\-_]+={0,2}$/;
 // p256dh is an uncompressed EC public key (65 bytes) → ~88 chars base64url.
 // auth is a 16-byte random value → ~24 chars base64url.
 // Both limits are generous to accommodate padding variants.
@@ -74,9 +75,9 @@ router.post('/subscribe', (req: Request, res: Response): void => {
 
   if (existing) {
     if (existing.user_id !== userId) {
-      // The endpoint is already registered to another user.  Return 201 so the browser
+      // The endpoint is already registered to another user.  Return 200 so the browser
       // can't infer whether a given endpoint exists, but do not alter ownership.
-      res.status(201).json({ ok: true });
+      res.status(200).json({ ok: true });
       return;
     }
     db.prepare(

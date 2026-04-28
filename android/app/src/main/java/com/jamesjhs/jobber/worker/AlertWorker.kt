@@ -63,7 +63,7 @@ class AlertWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             if (taskResponse.isSuccessful) {
                 val tasks = taskResponse.body() ?: emptyList()
                 val now = System.currentTimeMillis()
-                val today = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date())
+                val today = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date(now))
 
                 // Load previously-fired reminder keys for today.
                 val firedKey = "task_reminders_$today"

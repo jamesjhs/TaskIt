@@ -4866,41 +4866,31 @@ async function adminUploadCollectibleIcon() {
     return;
   }
 
-  // Client-side dimension check
+  // Read the file as a data: URL once — used for both dimension check and base64 upload
+  let base64;
   try {
-    await new Promise(function(resolve, reject) {
-      const img = new Image();
-      const url = URL.createObjectURL(file);
-      img.onload = function() {
-        URL.revokeObjectURL(url);
-        if (img.width >= 40 || img.height >= 40) {
-          reject(new Error('Image must be under 40 \u00d7 40 px (got ' + img.width + '\u00d7' + img.height + ')'));
-        } else {
-          resolve(undefined);
-        }
+    base64 = await new Promise(function(resolve, reject) {
+      const reader = new FileReader();
+      reader.onerror = function() { reject(new Error('Failed to read file')); };
+      reader.onload = function() {
+        const dataUrl = reader.result;
+        const img = new Image();
+        img.onload = function() {
+          if (img.width >= 40 || img.height >= 40) {
+            reject(new Error('Image must be under 40 \u00d7 40 px (got ' + img.width + '\u00d7' + img.height + ')'));
+          } else {
+            resolve(dataUrl.split(',')[1]);
+          }
+        };
+        img.onerror = function() { reject(new Error('Could not read image dimensions')); };
+        img.src = dataUrl;
       };
-      img.onerror = function() { URL.revokeObjectURL(url); reject(new Error('Could not read image dimensions')); };
-      img.src = url;
+      reader.readAsDataURL(file);
     });
   } catch (err) {
     toast(err.message, 'error');
     return;
   }
-
-  // Read file as base64
-  let base64;
-  try {
-    base64 = await new Promise(function(resolve, reject) {
-      const reader = new FileReader();
-      reader.onload  = function() { resolve(reader.result.split(',')[1]); };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  } catch {
-    toast('Failed to read file', 'error');
-    return;
-  }
-
   // Resolve the category name for subfolder derivation
   const cat = (typeof _adminCats !== 'undefined' && Array.isArray(_adminCats))
     ? _adminCats.find(function(c) { return c.id === catId; })

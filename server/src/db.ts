@@ -321,6 +321,20 @@ db.exec(`
     FOREIGN KEY (task_id) REFERENCES tasks(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+
+  -- Web Push: browser push subscriptions (one per browser/device per user)
+  CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    endpoint TEXT NOT NULL,
+    keys_p256dh TEXT NOT NULL,
+    keys_auth TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  CREATE UNIQUE INDEX IF NOT EXISTS push_subscriptions_endpoint_uidx
+    ON push_subscriptions (endpoint);
 `);
 
 // Runtime migrations — add columns if they don't exist yet

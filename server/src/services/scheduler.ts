@@ -1,7 +1,9 @@
 import cron from 'node-cron';
+import webpush from 'web-push';
 import db from '../db';
 import { sendTaskReminder } from './mail';
 import { resetOverdueStreaks } from './gamification';
+import { VAPID, BASE_URL } from '../config';
 
 interface TaskRow {
   id: string;
@@ -19,6 +21,13 @@ interface UserRow {
   email: string;
 }
 
+interface PushSubscriptionRow {
+  id: string;
+  endpoint: string;
+  keys_p256dh: string;
+  keys_auth: string;
+}
+
 // Reminder thresholds: type name → milliseconds before deadline.
 // Windows overlap slightly so that tasks are never missed due to the scheduler
 // running a few minutes late; task_reminders_sent deduplicates actual sends.
@@ -27,6 +36,40 @@ const REMINDER_WINDOWS: Array<{ type: string; minMs: number; maxMs: number; labe
   { type: '1_day',  minMs: 22 * 60 * 60 * 1000,      maxMs: 50 * 60 * 60 * 1000,     label: '1 day'   },
   { type: 'on_day', minMs: 0,                         maxMs: 25 * 60 * 60 * 1000,     label: 'today'   },
 ];
+
+async function sendPushNotificationsForUser(userId: string, taskId: string, taskTitle: string, windowLabel: string): Promise<void> {
+  if (!VAPID.publicKey || !VAPID.privateKey) return;
+
+  const subscriptions = db.prepare(
+    'SELECT id, endpoint, keys_p256dh, keys_auth FROM push_subscriptions WHERE user_id = ?'
+  ).all(userId) as PushSubscriptionRow[];
+
+  const appUrl = BASE_URL || '';
+  const payload = JSON.stringify({
+    title: 'TaskIt! Reminder',
+    body: `"${taskTitle}" is due in ${windowLabel}.`,
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-96x96.png',
+    url: `${appUrl}/?task=${taskId}`,
+  });
+
+  for (const sub of subscriptions) {
+    try {
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.keys_p256dh, auth: sub.keys_auth } },
+        payload
+      );
+    } catch (err: unknown) {
+      const httpStatus = (err as { statusCode?: number }).statusCode;
+      if (httpStatus === 410 || httpStatus === 404) {
+        // Subscription expired or unregistered — remove it.
+        db.prepare('DELETE FROM push_subscriptions WHERE id = ?').run(sub.id);
+      } else {
+        console.error(`[scheduler] Failed to send push notification to subscription ${sub.id}:`, err);
+      }
+    }
+  }
+}
 
 async function sendReminders(): Promise<void> {
   const now = Date.now();
@@ -78,6 +121,8 @@ async function sendReminders(): Promise<void> {
         } catch (err) {
           console.error(`[scheduler] Failed to send reminder to ${user.email}:`, err);
         }
+        // Send web push in parallel with email — failures are handled inside
+        await sendPushNotificationsForUser(userId, task.id, task.title, window.label);
       }
 
       if (anySent) {

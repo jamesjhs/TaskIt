@@ -79,3 +79,60 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
+// ============================================================
+// Push Notifications
+// ============================================================
+
+self.addEventListener('push', event => {
+  let data = { title: 'TaskIt!', body: 'You have a new notification.', icon: '/icons/icon-192x192.png', badge: '/icons/icon-96x96.png', url: '/' };
+  if (event.data) {
+    try { data = { ...data, ...JSON.parse(event.data.text()) }; } catch { /* use defaults */ }
+  }
+
+  // Update the app badge if the Badging API is available.
+  // The badge count is not tracked here; the frontend sets an accurate count
+  // when the app is open. This just ensures a badge is visible when a push arrives.
+  if (self.navigator && 'setAppBadge' in self.navigator) {
+    self.navigator.setAppBadge(1).catch(() => {});
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon,
+      badge: data.badge,
+      data: { url: data.url },
+      // Tag groups notifications by URL so repeated reminders for the same
+      // task replace the previous one rather than stacking in the tray.
+      tag: data.url,
+      renotify: true,
+    })
+  );
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) ? event.notification.data.url : '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      // Focus an existing app tab if one is already open.
+      for (const client of clientList) {
+        const clientUrl = new URL(client.url);
+        const targetUrlParsed = new URL(targetUrl, self.location.origin);
+        if (clientUrl.origin === targetUrlParsed.origin && 'focus' in client) {
+          client.focus();
+          if ('navigate' in client) {
+            client.navigate(targetUrl);
+          }
+          return;
+        }
+      }
+      // Otherwise open a new tab.
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
+  );
+});

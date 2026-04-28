@@ -2,10 +2,11 @@ import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import fs from 'fs';
 import path from 'path';
+import webpush from 'web-push';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import db from './db'; // initialize database
-import { APP_VERSION, BASE_URL, CORS_ORIGIN, JWT_SECRET, PORT } from './config';
+import { APP_VERSION, BASE_URL, CORS_ORIGIN, JWT_SECRET, PORT, VAPID } from './config';
 import { startScheduler } from './services/scheduler';
 
 import authRoutes from './routes/auth';
@@ -16,8 +17,16 @@ import adminRoutes from './routes/admin';
 import userRoutes from './routes/users';
 import gamificationRoutes from './routes/gamification';
 import friendRoutes from './routes/friends';
+import pushRoutes from './routes/push';
 
 const app = express();
+
+// Initialise VAPID details for web-push if keys are configured.
+// If keys are missing, push notifications are silently disabled (the /api/push/vapid-public-key
+// endpoint returns 503 and the frontend falls back to the tab-open Notification API).
+if (VAPID.publicKey && VAPID.privateKey) {
+  webpush.setVapidDetails(VAPID.subject, VAPID.publicKey, VAPID.privateKey);
+}
 
 // Trust the first proxy hop (e.g. nginx/Cloudflare) so that
 // express-rate-limit can correctly read the client IP from X-Forwarded-For
@@ -254,6 +263,7 @@ app.use('/api/admin', authenticatedLimiter, adminRoutes);
 app.use('/api/users', authenticatedLimiter, userRoutes);
 app.use('/api/gamification', authenticatedLimiter, gamificationRoutes);
 app.use('/api/friends', authenticatedLimiter, friendRoutes);
+app.use('/api/push', authenticatedLimiter, pushRoutes);
 
 // Serve sw.js dynamically so its CACHE_NAME always reflects the current app
 // version. The SW's activate handler deletes every cache whose name doesn't

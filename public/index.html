@@ -4463,7 +4463,7 @@ async function loadAdminItems() {
       for (const item of cat.items) {
         const rarityColor = RARITY_COLOURS[item.rarity] || '#475569';
         const iconHtml = item.icon_filename
-          ? `<img src="/collectables/${encodeURIComponent(item.icon_filename)}" alt="" style="width:28px;height:28px;object-fit:contain;border-radius:4px;border:1px solid #e5e7eb;background:#f9fafb;flex-shrink:0" onerror="this.style.display='none'" />`
+          ? `<img src="/collectables/${item.icon_filename.split('/').map(encodeURIComponent).join('/')}" alt="" style="width:28px;height:28px;object-fit:contain;border-radius:4px;border:1px solid #e5e7eb;background:#f9fafb;flex-shrink:0" onerror="this.style.display='none'" />`
           : '';
         html.push(`
           <div style="display:grid;grid-template-columns:${item.icon_filename ? '28px ' : ''}1fr auto auto;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f5f9">
@@ -4563,7 +4563,7 @@ function adminUpdateIconPreview(filename) {
   const nameEl    = document.getElementById('collectibleIconPreviewName');
   if (!previewEl || !imgEl || !nameEl) return;
   if (filename) {
-    imgEl.src = '/collectables/' + encodeURIComponent(filename);
+    imgEl.src = '/collectables/' + filename.split('/').map(encodeURIComponent).join('/');
     nameEl.textContent = filename;
     previewEl.style.display = 'flex';
   } else {
@@ -4581,17 +4581,34 @@ function adminPreviewCollectibleIcon() {
 
 /**
  * Loads the list of available server PNG icons into the icon select dropdown.
+ * When a category is selected its friendly name is slugified (e.g. "Avian Friends" →
+ * "avian-friends") and used as a subfolder under public/collectables/.  If no category
+ * is selected, or the slug is empty, icons are loaded from the root collectables folder.
  * Shows a toast if the directory has no PNGs or the request fails.
  */
 async function adminLoadServerIcons() {
   const iconSel = document.getElementById('collectibleIconSelect');
   if (!iconSel) return;
   try {
-    const icons = await api('GET', '/admin/collectibles/server-icons');
+    // Derive subfolder slug from the currently selected category name
+    const catSel = document.getElementById('collectibleCatId');
+    const catId = catSel ? catSel.value : '';
+    const cat = (typeof _adminCats !== 'undefined' && Array.isArray(_adminCats))
+      ? _adminCats.find(c => c.id === catId)
+      : null;
+    const slug = cat
+      ? cat.name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')
+      : '';
+
+    const url = slug
+      ? '/admin/collectibles/server-icons?subfolder=' + encodeURIComponent(slug)
+      : '/admin/collectibles/server-icons';
+    const icons = await api('GET', url);
     const current = iconSel.value;
     iconSel.innerHTML = '<option value="">— No icon (use rarity emoji) —</option>';
     if (!Array.isArray(icons) || icons.length === 0) {
-      toast('No PNG icons found in the server collectables folder', 'error');
+      const folderNote = slug ? ' in "' + slug + '/"' : '';
+      toast('No PNG icons found' + folderNote + ' — upload some PNGs to that folder on the server', 'error');
       return;
     }
     for (const f of icons) {
@@ -4602,7 +4619,8 @@ async function adminLoadServerIcons() {
     }
     // Re-select the previously chosen icon if it's still in the list
     if (current && icons.includes(current)) iconSel.value = current;
-    toast(icons.length + ' icon' + (icons.length === 1 ? '' : 's') + ' loaded');
+    const folderNote = slug ? ' from "' + slug + '/"' : '';
+    toast(icons.length + ' icon' + (icons.length === 1 ? '' : 's') + ' loaded' + folderNote);
   } catch (err) {
     toast('Failed to load server icons: ' + (err.message || 'Unknown error'), 'error');
   }
@@ -5342,7 +5360,7 @@ function openLootDropModal(drop) {
   const iconEl = document.getElementById('lootDropIcon');
   if (drop.iconFilename) {
     const imgEl = document.createElement('img');
-    imgEl.src = '/collectables/' + encodeURIComponent(drop.iconFilename);
+    imgEl.src = '/collectables/' + drop.iconFilename.split('/').map(encodeURIComponent).join('/');
     imgEl.alt = drop.collectibleName || '';
     imgEl.style.cssText = 'width:56px;height:56px;object-fit:contain';
     imgEl.addEventListener('error', function() { iconEl.textContent = rarityIcon; }, { once: true });
@@ -5477,7 +5495,7 @@ async function loadInventory() {
         const emojiIcon = COLLECTIBLE_RARITY_ICONS[rarity] || '🎁';
         // Use PNG icon when available, falling back to the rarity emoji
         const iconContent = item.icon_filename
-          ? `<img src="/collectables/${encodeURIComponent(item.icon_filename)}" alt="" style="width:1.5rem;height:1.5rem;object-fit:contain" data-fb="${escHtml(emojiIcon)}" onerror="this.replaceWith(document.createTextNode(this.dataset.fb))" />`
+          ? `<img src="/collectables/${item.icon_filename.split('/').map(encodeURIComponent).join('/')}" alt="" style="width:1.5rem;height:1.5rem;object-fit:contain" data-fb="${escHtml(emojiIcon)}" onerror="this.replaceWith(document.createTextNode(this.dataset.fb))" />`
           : emojiIcon;
         const classes = [
           'gamif-inv-item',

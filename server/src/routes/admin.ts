@@ -11,24 +11,40 @@ import { ADMIN_EMAIL } from '../config';
 const COLLECTABLES_DIR = path.resolve(__dirname, '..', '..', '..', 'public', 'collectables');
 
 /**
- * Validates that an icon filename is safe to store and serve:
- *  - Must be a non-empty string
- *  - Must match only safe characters: alphanumerics, hyphens, underscores, dots
- *  - Must end with `.png` (case-insensitive)
- *  - Must not contain any path separator or traversal sequence
- *  - The file must actually exist in the collectables directory
+ * Validates that an icon filename is safe to store and serve.
  *
- * Returns the normalised filename (lowercased extension) on success, or null on failure.
+ * Accepts two formats:
+ *  - Flat file:      `photo.png`   (alphanumerics, hyphens, underscores, .png extension)
+ *  - Subfolder file: `avian-friends/photo.png`  (one level of kebab-case subfolder only)
+ *
+ * Rules applied to both formats:
+ *  - Must be a non-empty string
+ *  - Must end with `.png` (case-insensitive)
+ *  - Must not contain `..` or backslashes
+ *  - The resolved path must be strictly inside the collectables directory
+ *  - The file must actually exist
+ *
+ * Returns the normalised path on success, or null on failure.
  */
 function validateIconFilename(raw: unknown): string | null {
   if (!raw || typeof raw !== 'string') return null;
   const trimmed = raw.trim();
-  // Allow only safe filename characters — no slashes, dots at start, or sequences like '..'
-  if (!/^[a-zA-Z0-9][a-zA-Z0-9_\-]*\.png$/i.test(trimmed)) return null;
-  // Double-check no path separators slipped through
-  if (trimmed.includes('/') || trimmed.includes('\\') || trimmed.includes('..')) return null;
+  if (trimmed.includes('..') || trimmed.includes('\\')) return null;
+
+  const parts = trimmed.split('/');
+  if (parts.length === 1) {
+    // Flat file: must match safe filename pattern
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_\-]*\.png$/i.test(parts[0])) return null;
+  } else if (parts.length === 2) {
+    // One subfolder level: subfolder must be kebab-case, filename must be safe
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(parts[0])) return null;
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_\-]*\.png$/i.test(parts[1])) return null;
+  } else {
+    return null;
+  }
+
   // Verify the resolved path is strictly inside the collectables directory
-  const resolved = path.join(COLLECTABLES_DIR, trimmed);
+  const resolved = path.join(COLLECTABLES_DIR, ...parts);
   if (!resolved.startsWith(COLLECTABLES_DIR + path.sep)) return null;
   if (!fs.existsSync(resolved)) return null;
   return trimmed;
@@ -437,13 +453,45 @@ router.delete('/collectible-categories/:id', (req: Request, res: Response): void
 // ─── Collectibles ─────────────────────────────────────────────────────────────
 
 // GET /api/admin/collectibles/server-icons — list available PNG files in public/collectables/
-router.get('/collectibles/server-icons', (_req: Request, res: Response): void => {
+// Optional query param: ?subfolder=<kebab-case-name>
+// When provided, lists PNGs from public/collectables/<subfolder>/ and returns them as
+// "<subfolder>/<filename>" so the caller can store the relative path directly.
+router.get('/collectibles/server-icons', (req: Request, res: Response): void => {
   try {
-    // Ensure the directory exists; if not, return an empty list gracefully
+    // Ensure the root directory exists; if not, return an empty list gracefully
     if (!fs.existsSync(COLLECTABLES_DIR)) {
       res.json([]);
       return;
     }
+
+    const rawSubfolder = req.query.subfolder;
+    if (rawSubfolder !== undefined) {
+      // Validate subfolder: kebab-case slug only, no traversal
+      const subfolder = typeof rawSubfolder === 'string' ? rawSubfolder.trim() : '';
+      if (!subfolder || !/^[a-z0-9][a-z0-9-]*$/.test(subfolder) || subfolder.includes('..')) {
+        res.status(400).json({ error: 'subfolder must be a non-empty kebab-case slug' });
+        return;
+      }
+      const subdir = path.join(COLLECTABLES_DIR, subfolder);
+      // Must still be inside COLLECTABLES_DIR
+      if (!subdir.startsWith(COLLECTABLES_DIR + path.sep)) {
+        res.status(400).json({ error: 'Invalid subfolder' });
+        return;
+      }
+      if (!fs.existsSync(subdir)) {
+        // Subfolder does not exist yet — return empty list (admin can create it manually)
+        res.json([]);
+        return;
+      }
+      const entries = fs.readdirSync(subdir);
+      const pngs = entries
+        .filter(f => /^[a-zA-Z0-9][a-zA-Z0-9_\-]*\.png$/i.test(f) && !f.includes('..'))
+        .map(f => `${subfolder}/${f}`);
+      res.json(pngs);
+      return;
+    }
+
+    // No subfolder — list flat PNGs in the root collectables directory
     const entries = fs.readdirSync(COLLECTABLES_DIR);
     const pngs = entries.filter(f => /^[a-zA-Z0-9][a-zA-Z0-9_\-]*\.png$/i.test(f) && !f.includes('..'));
     res.json(pngs);

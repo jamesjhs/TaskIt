@@ -212,6 +212,7 @@ router.delete('/me', (req: Request, res: Response): void => {
     db.prepare('DELETE FROM magic_tokens WHERE user_id = ?').run(userId);
     db.prepare('DELETE FROM feedback_messages WHERE user_id = ?').run(userId);
     db.prepare('DELETE FROM user_alerts WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM push_subscriptions WHERE user_id = ?').run(userId);
     db.prepare('DELETE FROM users WHERE id = ?').run(userId);
   });
 

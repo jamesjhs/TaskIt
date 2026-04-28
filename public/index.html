@@ -2293,12 +2293,18 @@ function initApp() {
   loadGamificationProfile().then(() => maybeShowGamifOptIn());
   // Request browser notification permission so popup reminders can fire,
   // then register for background push notifications if supported.
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission().then(perm => {
-      if (perm === 'granted') subscribeToPush();
-    });
-  } else if ('Notification' in window && Notification.permission === 'granted') {
-    subscribeToPush();
+  if ('Notification' in window) {
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') subscribeToPush();
+      });
+    } else if (Notification.permission === 'granted') {
+      subscribeToPush();
+    } else {
+      // Permission is 'denied' — clean up any stale subscription so the scheduler
+      // stops trying to deliver push notifications to this browser.
+      cleanupRevokedPushSubscription();
+    }
   }
 }
 
@@ -4829,7 +4835,29 @@ async function subscribeToPush() {
       endpoint: sub.endpoint,
       keys: { p256dh: sub.keys?.p256dh, auth: sub.keys?.auth },
     });
-  } catch { /* non-critical — silently ignore */ }
+  } catch (err) {
+    // Non-critical path; log for developer visibility but don't surface to the user.
+    console.warn('[push] Failed to register push subscription:', err);
+  }
+}
+
+// When the user has denied notification permission, ensure any stale push subscription
+// is unregistered from the browser and removed from the server so the scheduler stops
+// attempting delivery.
+async function cleanupRevokedPushSubscription() {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (Notification.permission !== 'denied') return;
+    const reg = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_r, rej) => setTimeout(() => rej(new Error('SW timeout')), 2000)),
+    ]);
+    const sub = await reg.pushManager.getSubscription();
+    if (!sub) return;
+    const endpoint = sub.endpoint;
+    await sub.unsubscribe();
+    await api('DELETE', '/push/subscribe', { endpoint }).catch(() => {});
+  } catch { /* best-effort */ }
 }
 
 function urlBase64ToUint8Array(base64String) {
@@ -5082,12 +5110,9 @@ function updateTaskMode() {
 }
 
 // ========== Service Worker ==========
-let _swRegistration = null;
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(reg => {
-      _swRegistration = reg;
-    }).catch(() => {});
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
 }
 

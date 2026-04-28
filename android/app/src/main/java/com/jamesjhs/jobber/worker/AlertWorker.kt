@@ -63,7 +63,7 @@ class AlertWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             if (taskResponse.isSuccessful) {
                 val tasks = taskResponse.body() ?: emptyList()
                 val now = System.currentTimeMillis()
-                val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                val today = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date())
 
                 // Load previously-fired reminder keys for today.
                 val firedKey = "task_reminders_$today"
@@ -85,8 +85,13 @@ class AlertWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
                     }
                 }
 
-                // Persist today's fired set (yesterday's key is automatically abandoned).
-                sharedPrefs.edit().putStringSet(firedKey, firedSet).apply()
+                // Persist today's fired set and prune any keys from previous days.
+                sharedPrefs.edit().apply {
+                    putStringSet(firedKey, firedSet)
+                    sharedPrefs.all.keys
+                        .filter { it.startsWith("task_reminders_") && it != firedKey }
+                        .forEach { remove(it) }
+                }.apply()
             }
         } catch (e: Exception) {
             return Result.retry()

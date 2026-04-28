@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version:** 1.10.0  
+**Version:** 1.11.0  
 **Author:** J Rowson  
 **Generated:** 2026-04-28
 
@@ -246,6 +246,9 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `SMTP_PASS` | string | `''` | SMTP authentication password |
 | `SMTP_FROM` | string | *(SMTP_USER)* | From address for outgoing email |
 | `SMTP_DEFAULT_FROM` | string | `noreply@taskit.jahosi.co.uk` | Fallback `From` when smtp_settings has no `from_addr` |
+| `VAPID_PUBLIC_KEY` | string | `''` | VAPID public key for Web Push. Generate once with `npx web-push generate-vapid-keys`. If empty, push notifications are disabled. |
+| `VAPID_PRIVATE_KEY` | string | `''` | VAPID private key for Web Push. Must match `VAPID_PUBLIC_KEY`. |
+| `VAPID_SUBJECT` | string | `mailto:admin@<BASE_URL host>` | Contact URI embedded in push requests; falls back to `mailto:admin@localhost` when `BASE_URL` is unset. |
 
 **Exported constants from `config.ts`:**
 
@@ -262,6 +265,7 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `BASE_URL` | `string \| null` | `process.env.BASE_URL` (trailing `/` stripped) |
 | `CORS_ORIGIN` | `string \| string[] \| false` | Derived (see above) |
 | `SMTP` | `object` | `{ host, port, secure, user, pass, from }` |
+| `VAPID` | `object` | `{ publicKey, privateKey, subject }` — empty strings when not configured |
 
 ---
 
@@ -593,6 +597,18 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `read_at` | INTEGER | NULL = unread |
 | `created_at` | INTEGER NOT NULL | Unix ms |
 
+#### `push_subscriptions`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | UUID |
+| `user_id` | TEXT NOT NULL | FK → users.id |
+| `endpoint` | TEXT NOT NULL | Push service URL (HTTPS); unique index prevents duplicate registrations |
+| `keys_p256dh` | TEXT NOT NULL | Browser-generated EC public key (base64url) |
+| `keys_auth` | TEXT NOT NULL | Browser-generated auth secret (base64url) |
+| `created_at` | INTEGER NOT NULL | Unix ms |
+
+Stale rows (push service returned 410/404) are deleted automatically by the scheduler when a delivery attempt fails.
+
 ---
 
 ### 4.6 Runtime Migrations (addCol)
@@ -839,6 +855,9 @@ Attached to `req.user` by `authMiddleware`.
 | `DELETE` | `/api/admin/collectibles/:id` | JWT+Admin | authed | Soft-delete collectible item |
 | `POST` | `/api/admin/collectibles/seed` | JWT+Admin | authed | Bulk-seed categories and items from JSON |
 | `GET` | `/api/admin/collectibles/server-icons` | JWT+Admin | authed | List PNG filenames available in `public/collectables/` for use as item icons |
+| `GET` | `/api/push/vapid-public-key` | None | authed | Returns `{ publicKey }` — 503 if VAPID not configured |
+| `POST` | `/api/push/subscribe` | JWT | authed | Upsert a Web Push subscription (endpoint + p256dh + auth keys) |
+| `DELETE` | `/api/push/subscribe` | JWT | authed | Remove a push subscription by endpoint |
 
 ---
 
@@ -1047,6 +1066,25 @@ Requires both `authMiddleware` + `adminMiddleware`.
 
 ---
 
+### 6.9 `routes/push.ts`
+
+Handles Web Push subscription management. VAPID keys must be set in `.env` for push to function.
+
+**Constants:**
+| Name | Value | Description |
+|---|---|---|
+| `BASE64URL_RE` | `/^[A-Za-z0-9\-_]+={0,2}$/` | Validates p256dh and auth key material |
+| `P256DH_MAX_LEN` | `200` | Max chars for the p256dh key |
+| `AUTH_MAX_LEN` | `50` | Max chars for the auth key |
+
+| Handler | Description |
+|---|---|
+| `GET /vapid-public-key` | Public (no auth). Returns `{ publicKey }` if VAPID is configured; 503 otherwise. |
+| `POST /subscribe` | Upsert push subscription. Validates endpoint (must be HTTPS URL) and key format. If the endpoint already belongs to another user, silently returns 200 without altering ownership. Inserts a new row or refreshes keys for an existing row. |
+| `DELETE /subscribe` | Removes the subscription matching the given endpoint for the authenticated user only. |
+
+---
+
 ## 7. Services
 
 ### 7.1 `services/gamification.ts`
@@ -1156,8 +1194,15 @@ Windows overlap intentionally to handle scheduler drift; `task_reminders_sent` d
 **Functions:**
 | Function | Description |
 |---|---|
-| `sendReminders()` | Async; queries tasks in each reminder window, sends emails to creator+assignees, records in `task_reminders_sent` |
+| `sendPushNotificationsForUser(userId, taskId, taskTitle, windowLabel)` | Sends a Web Push payload to all subscriptions for the user; removes stale subscriptions (410/404); returns `true` if at least one delivery succeeded |
+| `sendReminders()` | Async; queries tasks in each reminder window where email or popup notifications are configured; sends email (when `notify_email` and per-window email flag are set) and/or push (when per-window push flag is set) to creator and assignees; records in `task_reminders_sent` |
 | `startScheduler()` | Registers `node-cron` expression `'0 * * * *'` (top of every hour); calls `sendReminders()` and `resetOverdueStreaks()` |
+
+The scheduler resolves both email and push applicability independently per task and per timing window:
+- **Email applicable**: `notify_email = 1` AND the window-specific email flag (e.g. `notify_7day = 1`).
+- **Push applicable**: the window-specific push flag (e.g. `notify_popup_7day = 1`), independent of email settings.
+
+Tasks with any applicable channel are fetched; tasks where neither channel applies for the current window are skipped.
 
 ---
 
@@ -1995,4 +2040,4 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.9.0*
+*End of Technical Reference Manual — TaskIt! v1.11.0*

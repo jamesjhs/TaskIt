@@ -14,6 +14,9 @@ interface TaskRow {
   notify_7day: number;
   notify_1day: number;
   notify_onday: number;
+  notify_popup_7day: number;
+  notify_popup_1day: number;
+  notify_popup_onday: number;
 }
 
 interface UserRow {
@@ -90,14 +93,20 @@ async function sendReminders(): Promise<void> {
 
     const tasks = db.prepare(`
       SELECT t.id, t.title, t.due_date, t.created_by,
-             t.notify_email, t.notify_7day, t.notify_1day, t.notify_onday
+             t.notify_email, t.notify_7day, t.notify_1day, t.notify_onday,
+             t.notify_popup_7day, t.notify_popup_1day, t.notify_popup_onday
       FROM tasks t
       WHERE t.due_date IS NOT NULL
         AND t.due_date > ?
         AND t.due_date <= ?
         AND t.status != 'complete'
         AND t.archived = 0
-        AND t.notify_email = 1
+        AND (
+          t.notify_email = 1
+          OR t.notify_popup_7day = 1
+          OR t.notify_popup_1day = 1
+          OR t.notify_popup_onday = 1
+        )
         AND NOT EXISTS (
           SELECT 1 FROM task_reminders_sent trs
           WHERE trs.task_id = t.id AND trs.reminder_type = ?
@@ -105,10 +114,18 @@ async function sendReminders(): Promise<void> {
     `).all(minDue, maxDue, window.type) as TaskRow[];
 
     for (const task of tasks) {
-      // Respect per-reminder-type flags
-      if (window.type === '7_day'  && !task.notify_7day)  continue;
-      if (window.type === '1_day'  && !task.notify_1day)  continue;
-      if (window.type === 'on_day' && !task.notify_onday) continue;
+      // Determine which delivery channels are applicable for this window
+      const emailApplicable = task.notify_email === 1 && (
+        (window.type === '7_day'  && task.notify_7day === 1) ||
+        (window.type === '1_day'  && task.notify_1day === 1) ||
+        (window.type === 'on_day' && task.notify_onday === 1)
+      );
+      const pushApplicable =
+        (window.type === '7_day'  && task.notify_popup_7day === 1) ||
+        (window.type === '1_day'  && task.notify_popup_1day === 1) ||
+        (window.type === 'on_day' && task.notify_popup_onday === 1);
+
+      if (!emailApplicable && !pushApplicable) continue;
 
       const recipientIds = new Set<string>();
       recipientIds.add(task.created_by);
@@ -125,16 +142,21 @@ async function sendReminders(): Promise<void> {
       for (const userId of recipientIds) {
         const user = db.prepare('SELECT id, email FROM users WHERE id = ?').get(userId) as UserRow | undefined;
         if (!user) continue;
-        try {
-          await sendTaskReminder(user.email, { title: task.title, due_date: task.due_date }, window.label);
-          anyDelivered = true;
-        } catch (err) {
-          console.error(`[scheduler] Failed to send reminder to ${user.email}:`, err);
+        if (emailApplicable) {
+          try {
+            await sendTaskReminder(user.email, { title: task.title, due_date: task.due_date }, window.label);
+            anyDelivered = true;
+          } catch (err) {
+            console.error(`[scheduler] Failed to send reminder to ${user.email}:`, err);
+          }
         }
-        // Send web push; counts toward dedup so a push-only success also prevents
-        // re-running the reminder indefinitely when SMTP is temporarily broken.
-        const pushed = await sendPushNotificationsForUser(userId, task.id, task.title, window.label);
-        if (pushed) anyDelivered = true;
+        // Send web push only when the popup flag is set for this window; counts toward dedup
+        // so a push-only success also prevents re-running the reminder indefinitely when
+        // SMTP is temporarily broken.
+        if (pushApplicable) {
+          const pushed = await sendPushNotificationsForUser(userId, task.id, task.title, window.label);
+          if (pushed) anyDelivered = true;
+        }
       }
 
       if (anyDelivered) {

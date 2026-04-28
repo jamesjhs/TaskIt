@@ -47,3 +47,24 @@ export const SMTP = {
   pass: process.env.SMTP_PASS || '',
   from: process.env.SMTP_FROM || process.env.SMTP_USER || '',
 };
+
+// Web Push (VAPID) configuration.
+// Generate a key pair once with: npx web-push generate-vapid-keys
+// Then set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, and VAPID_SUBJECT in .env.
+const vapidSubjectFallback = (() => {
+  if (process.env.VAPID_SUBJECT) return process.env.VAPID_SUBJECT;
+  if (process.env.BASE_URL) {
+    try {
+      return `mailto:admin@${new URL(process.env.BASE_URL).hostname}`;
+    } catch {
+      // BASE_URL is not a valid URL; fall through to localhost default.
+    }
+  }
+  return 'mailto:admin@localhost';
+})();
+
+export const VAPID = {
+  publicKey: process.env.VAPID_PUBLIC_KEY || '',
+  privateKey: process.env.VAPID_PRIVATE_KEY || '',
+  subject: vapidSubjectFallback,
+};

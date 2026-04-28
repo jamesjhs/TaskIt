@@ -1,8 +1,8 @@
 # TaskIt! — Technical Reference Manual
 
-**Version:** 1.9.0  
+**Version:** 1.10.0  
 **Author:** J Rowson  
-**Generated:** 2026-04-21
+**Generated:** 2026-04-28
 
 ---
 
@@ -363,6 +363,9 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `xp_multiplier` | REAL NOT NULL DEFAULT 1.0 | XP award multiplier (group gamification-enhanced only) (migration) |
 | `original_due_date` | INTEGER | Immutable snapshot of the due date set at task creation — used for anti-farming XP guard (migration) |
 | `xp_claimed` | INTEGER NOT NULL DEFAULT 0 | 1 once XP has been awarded for this task; prevents re-award on edits (migration) |
+| `is_sporadic` | INTEGER NOT NULL DEFAULT 0 | 1 = sporadic (maintenance) task; excluded from active task list ordering (migration) |
+| `last_completed_at` | INTEGER | Epoch ms of the most recent sporadic completion (migration) |
+| `is_long_term_goal` | INTEGER NOT NULL DEFAULT 0 | 1 = long-term goal; excluded from the main active task list until converted (migration) |
 
 #### `task_assignees`
 | Column | Type | Notes |
@@ -629,6 +632,9 @@ These `ALTER TABLE … ADD COLUMN` statements run on every server start but only
 | `tasks` | `xp_multiplier` | `REAL NOT NULL DEFAULT 1.0` |
 | `tasks` | `original_due_date` | `INTEGER` |
 | `tasks` | `xp_claimed` | `INTEGER NOT NULL DEFAULT 0` |
+| `tasks` | `is_sporadic` | `INTEGER NOT NULL DEFAULT 0` |
+| `tasks` | `last_completed_at` | `INTEGER` |
+| `tasks` | `is_long_term_goal` | `INTEGER NOT NULL DEFAULT 0` |
 | `groups` | `invite_name` | `TEXT NOT NULL DEFAULT ''` |
 | `groups` | `gamification_enhanced` | `INTEGER NOT NULL DEFAULT 0` |
 | `group_members` | `xp_share` | `INTEGER NOT NULL DEFAULT 1` |
@@ -738,9 +744,14 @@ Attached to `req.user` by `authMiddleware`.
 | `GET` | `/api/auth/magic-link/verify` | None | auth | Consume magic link → JWT |
 | `POST` | `/api/auth/forgot-password` | None | auth | Request password reset |
 | `POST` | `/api/auth/reset-password` | None | auth | Consume reset token |
-| `GET` | `/api/tasks` | JWT | authed | List tasks (filtered) |
+| `GET` | `/api/tasks` | JWT | authed | List tasks (filtered; excludes sporadic and long-term goals) |
 | `POST` | `/api/tasks` | JWT | authed | Create task |
-| `PATCH` | `/api/tasks/:id` | JWT | authed | Update task fields |
+| `GET` | `/api/tasks/sporadic` | JWT | authed | List sporadic (maintenance) tasks |
+| `POST` | `/api/tasks/create-sporadic` | JWT | authed | Create sporadic task |
+| `PUT` | `/api/tasks/:id/complete-sporadic` | JWT | authed | Mark sporadic task done (resets status, stamps last_completed_at) |
+| `GET` | `/api/tasks/long-term-goals` | JWT | authed | List long-term goals |
+| `POST` | `/api/tasks/create-long-term-goal` | JWT | authed | Create long-term goal |
+| `PATCH` | `/api/tasks/:id` | JWT | authed | Update task fields (supports `isLongTermGoal` to convert goal → task) |
 | `PATCH` | `/api/tasks/:id/status` | JWT | authed | Change task status (triggers gamification on complete) |
 | `PATCH` | `/api/tasks/:id/archive` | JWT | authed | Toggle archive flag |
 | `PATCH` | `/api/tasks/:id/defer` | JWT | authed | Change due date |
@@ -884,9 +895,14 @@ Attached to `req.user` by `authMiddleware`.
 **Route handlers:**
 | Handler | Description |
 |---|---|
-| `GET /` | Lists tasks with filters (groupId, assignedToMe, status, archived, typeId); attaches assignees |
+| `GET /` | Lists tasks with filters (groupId, assignedToMe, status, archived, typeId); excludes `is_sporadic=1` and `is_long_term_goal=1`; attaches assignees |
 | `POST /` | Creates task, awards `create_task` XP, inserts assignees, creates assignment alerts |
-| `PATCH /:id` | Updates any task field; re-validates assignees; preserves completed_at/by sync |
+| `GET /sporadic` | Lists all non-archived sporadic tasks for the user with friendly last-completed timestamps |
+| `POST /create-sporadic` | Creates a sporadic task (`is_sporadic=1`, no due date) |
+| `PUT /:id/complete-sporadic` | Resets sporadic task to `not_started`, stamps `last_completed_at`, awards XP |
+| `GET /long-term-goals` | Lists all non-archived long-term goals for the user |
+| `POST /create-long-term-goal` | Creates a long-term goal (`is_long_term_goal=1`, no due date); supports optional xpMultiplier |
+| `PATCH /:id` | Updates any task field; supports `isLongTermGoal` to clear the flag and convert a goal to a regular task; re-validates assignees; preserves completed_at/by sync |
 | `PATCH /:id/status` | Changes status; on `complete`: spawns next recurrence (if any), awards XP/freeze, checks achievements |
 | `PATCH /:id/defer` | Updates due_date only |
 | `PATCH /:id/fast-forward` | Advances recurring due_date by one interval; clears reminder sent records |

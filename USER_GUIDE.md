@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.9.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.10.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -70,6 +70,44 @@ Click any task card to open the detail panel. From here you can:
 - **Defer** the task — click *Defer* to set a new due date without opening the full edit form
 - **Archive** it to tidy your view (archived tasks can always be brought back)
 - **Delete** it permanently — note that for group tasks, only the task creator or a group admin can delete; other group members can edit all other details but not delete
+
+### Sporadic Tasks
+
+Sporadic tasks are **maintenance tasks with no fixed schedule** — things you do occasionally and want to track, like a haircut, car service, or cleaning the gutters.
+
+**Creating a sporadic task:**
+1. Tap **`+`** to open the New Task form.
+2. Fill in the title, type, and optional group/notes.
+3. Tick the **Sporadic (maintenance task)** checkbox — the due date and recurrence fields hide automatically.
+4. Click **Save Task**.
+
+**How they work:**
+- Sporadic tasks appear in the **Sporadic Tasks** section at the top of the Tasks page, always visible and collapsed by default.
+- The section shows **(0)** when you have no sporadic tasks, so it's always easy to find.
+- Each card shows how long ago the task was last completed (e.g. *3 months ago*) or *Never* if it hasn't been done yet. Cards overdue (90+ days) are highlighted.
+- Tap **✓ Mark done** to record a completion — the card resets and the timer starts again. You earn XP just as you would completing a regular task.
+- Tap **Edit** to update the task details at any time.
+
+### Long-term Goals
+
+Long-term goals are **aspirational items with no immediate deadline** — things you want to do eventually but aren't ready to schedule yet. Think *Learn Spanish*, *Run a half-marathon*, or *Redecorate the living room*.
+
+**Creating a long-term goal:**
+1. Tap **`+`** to open the New Task form, **or** tap **+ Add Goal** in the Long-term Goals section header.
+2. Fill in the title, type, optional group, and notes.
+3. Tick the **Long-term Goal** checkbox — the due date and recurrence fields hide.
+4. If the task is in a group with gamification enhancements enabled, you can set an **XP Multiplier** to boost the reward when the goal is eventually completed.
+5. Click **Save Task**.
+
+**The Long-term Goals section:**
+- Sits at the **bottom of the Tasks page**, collapsed by default, showing **(0)** when empty.
+- Tap the header to expand it and see all your goals.
+- Each goal card shows the title, optional notes, group badge, and XP multiplier (if set).
+
+**Converting a goal to a deadline task:**
+When you're ready to commit to a goal, tap **📅 Set Deadline** on the goal card. A small dialog appears — pick your due date and tap **Convert**. The goal is immediately moved out of the Goals section and into your active task list with the chosen deadline.
+
+You can also open the goal via **Edit**, uncheck *Long-term Goal*, set a due date, and save — this achieves the same result with full editing capabilities.
 
 ### Filtering your task list
 

@@ -87,6 +87,9 @@ router.get('/', (req: Request, res: Response): void => {
   const whereConditions: string[] = [];
   const params: (string | number | null)[] = [];
 
+  // Exclude long-term goals from the main task list (they have their own dedicated section)
+  whereConditions.push('(t.is_long_term_goal IS NULL OR t.is_long_term_goal = 0)');
+
   // User must be the creator OR an assignee OR group member
   whereConditions.push(`(
     t.created_by = ?
@@ -532,6 +535,115 @@ router.put('/:id/complete-sporadic', (req: Request, res: Response): void => {
   res.json(response);
 });
 
+// GET /api/tasks/long-term-goals — Fetch all long-term goals for user
+router.get('/long-term-goals', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+
+  const goals = db.prepare(`
+    SELECT t.*, tt.name AS type_name,
+      u.username AS created_by_username,
+      g.name AS group_name
+    FROM tasks t
+    JOIN task_types tt ON tt.id = t.type_id
+    JOIN users u ON u.id = t.created_by
+    LEFT JOIN groups g ON g.id = t.group_id
+    WHERE t.is_long_term_goal = 1 AND t.archived = 0
+      AND (
+        t.created_by = ?
+        OR (t.group_id IS NOT NULL AND EXISTS (
+          SELECT 1 FROM group_members gm WHERE gm.group_id = t.group_id AND gm.user_id = ?
+        ))
+      )
+    ORDER BY t.created_at ASC
+  `).all(userId, userId) as Array<Record<string, unknown>>;
+
+  const result = goals.map((g) => ({
+    ...g,
+    archived: g.archived === 1,
+    is_long_term_goal: g.is_long_term_goal === 1,
+  }));
+
+  res.json(result);
+});
+
+// POST /api/tasks/create-long-term-goal — Create a new long-term goal
+router.post('/create-long-term-goal', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const { title, description, groupId, taskTypeId, xpMultiplier } = req.body;
+
+  if (!title || typeof title !== 'string' || title.trim().length === 0 || title.length > 255) {
+    res.status(400).json({ error: 'title must be between 1 and 255 characters' });
+    return;
+  }
+
+  if (description !== undefined && description !== null && (typeof description !== 'string' || description.length > 10000)) {
+    res.status(400).json({ error: 'description must not exceed 10000 characters' });
+    return;
+  }
+
+  // Determine type_id: use provided taskTypeId or require caller to provide one
+  let typeId = taskTypeId;
+  if (!typeId) {
+    // Fall back to the 'Personal' type, or any type if Personal doesn't exist
+    const personalType = db.prepare("SELECT id FROM task_types WHERE LOWER(name) = 'personal' LIMIT 1").get() as { id: string } | undefined;
+    const fallbackType = personalType || (db.prepare('SELECT id FROM task_types ORDER BY created_at ASC LIMIT 1').get() as { id: string } | undefined);
+    if (!fallbackType) {
+      res.status(400).json({ error: 'No task types available' });
+      return;
+    }
+    typeId = fallbackType.id;
+  } else {
+    const typeExists = db.prepare('SELECT 1 FROM task_types WHERE id = ?').get(typeId);
+    if (!typeExists) {
+      res.status(400).json({ error: 'Invalid taskTypeId' });
+      return;
+    }
+  }
+
+  // If groupId provided, verify membership
+  if (groupId) {
+    const member = db.prepare(
+      'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
+    ).get(groupId, userId);
+    if (!member) {
+      res.status(403).json({ error: 'Not a member of the specified group' });
+      return;
+    }
+  }
+
+  // Validate xpMultiplier if provided
+  let resolvedMultiplier = 1.0;
+  if (xpMultiplier !== undefined && xpMultiplier !== null) {
+    if (groupId) {
+      const grpRow = db.prepare('SELECT gamification_enhanced FROM groups WHERE id = ?').get(groupId) as
+        | { gamification_enhanced: number }
+        | undefined;
+      if (!grpRow?.gamification_enhanced) {
+        res.status(400).json({ error: 'xpMultiplier can only be set for goals in a group with gamification enhancements enabled' });
+        return;
+      }
+    }
+    const parsed = parseFloat(String(xpMultiplier));
+    if (!Number.isFinite(parsed) || parsed < 0.1 || parsed > 10) {
+      res.status(400).json({ error: 'xpMultiplier must be a number between 0.1 and 10' });
+      return;
+    }
+    resolvedMultiplier = parsed;
+  }
+
+  const goalId = randomUUID();
+  const now = Date.now();
+
+  db.prepare(`
+    INSERT INTO tasks (
+      id, title, details, type_id, status, created_by, group_id, archived,
+      created_at, updated_at, is_long_term_goal, xp_multiplier
+    ) VALUES (?, ?, ?, ?, 'not_started', ?, ?, 0, ?, ?, 1, ?)
+  `).run(goalId, title.trim(), description || null, typeId, userId, groupId || null, now, now, resolvedMultiplier);
+
+  res.status(201).json({ success: true, goalId });
+});
+
 router.patch('/:id', (req: Request, res: Response): void => {
   const userId = req.user!.id;
   const taskId = req.params.id;
@@ -554,7 +666,7 @@ router.patch('/:id', (req: Request, res: Response): void => {
   const { title, details, typeId, status, assigneeIds, dueDate, recurInterval, recurUnit,
           notifyEmail, notify7day, notify1day, notifyOnday,
           notifyPopup7day, notifyPopup1day, notifyPopupOnday,
-          xpMultiplier } = req.body;
+          xpMultiplier, isLongTermGoal } = req.body;
 
   // Validate status if provided
   if (status !== undefined && !ALLOWED_STATUSES.has(status as string)) {
@@ -649,6 +761,7 @@ router.patch('/:id', (req: Request, res: Response): void => {
   if (notifyPopup7day !== undefined) { setClauses.push('notify_popup_7day = ?'); vals.push(notifyPopup7day === false || notifyPopup7day === 0 ? 0 : 1); }
   if (notifyPopup1day !== undefined) { setClauses.push('notify_popup_1day = ?'); vals.push(notifyPopup1day === false || notifyPopup1day === 0 ? 0 : 1); }
   if (notifyPopupOnday !== undefined) { setClauses.push('notify_popup_onday = ?'); vals.push(notifyPopupOnday === false || notifyPopupOnday === 0 ? 0 : 1); }
+  if (isLongTermGoal !== undefined) { setClauses.push('is_long_term_goal = ?'); vals.push(isLongTermGoal ? 1 : 0); }
   setClauses.push('updated_at = ?');
   vals.push(now);
   vals.push(taskId);

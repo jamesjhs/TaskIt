@@ -2970,6 +2970,8 @@ body.arcade-open { overflow: hidden; }
 }
 
 .sporadic-header {
+  display: flex;
+  align-items: center;
   margin-bottom: 12px;
 }
 

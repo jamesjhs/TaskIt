@@ -905,16 +905,27 @@
     </div>
 
     <!-- Sporadic Tasks Section -->
-    <section id="sporadic-section" class="sporadic-container" style="display: none;">
+    <section id="sporadic-section" class="sporadic-container">
       <div class="sporadic-header">
         <button id="sporadic-toggle" class="toggle-btn">
-          ▶ Sporadic Tasks (<span id="sporadic-count">0</span>)
+          <span id="sporadic-arrow">▶</span> Sporadic Tasks (<span id="sporadic-count">0</span>)
         </button>
       </div>
       <div id="sporadic-list" class="sporadic-tasks" style="display: none;"></div>
     </section>
 
     <div id="taskGrid"><div class="loading">Loading tasks…</div></div>
+
+    <!-- Long-term Goals Section -->
+    <section id="goals-section" class="sporadic-container" style="margin-top:16px">
+      <div class="sporadic-header">
+        <button id="goals-toggle" class="toggle-btn">
+          <span id="goals-arrow">▶</span> Long-term Goals (<span id="goals-count">0</span>)
+        </button>
+        <button onclick="openNewGoalModal()" class="btn btn-outline btn-sm" style="margin-left:auto">+ Add Goal</button>
+      </div>
+      <div id="goals-list" class="sporadic-tasks" style="display: none;"></div>
+    </section>
   </div>
 
   <!-- ===== GROUPS PAGE ===== -->
@@ -1619,10 +1630,17 @@
         </div>
         <div class="form-group">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-            <input type="checkbox" id="taskSporadic" onchange="updateTaskMode()" style="width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0" />
+            <input type="checkbox" id="taskSporadic" onchange="onSporadicChange()" style="width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0" />
             <span>Sporadic (maintenance task)</span>
           </label>
           <p id="sporadicInfo" style="font-size:.8rem;color:#6b7280;margin:8px 0 0 24px;display:none">This task has no fixed schedule. When completed, it reappears and shows how long ago you last did it. Examples: Haircut, Lawn mowing, Car maintenance</p>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="taskLongTermGoal" onchange="onLongTermGoalChange()" style="width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0" />
+            <span>Long-term Goal</span>
+          </label>
+          <p id="longTermGoalInfo" style="font-size:.8rem;color:#6b7280;margin:8px 0 0 24px;display:none">An aspirational goal with no immediate deadline. Appears in a dedicated section at the bottom of the task list. You can convert it to a deadline task at any time.</p>
         </div>
         <div class="form-group">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
@@ -1676,6 +1694,25 @@
     <div class="modal-footer">
       <button type="button" onclick="closeTaskModal()" class="btn btn-secondary" style="flex:1">Cancel</button>
       <button type="button" onclick="document.getElementById('taskForm').requestSubmit()" class="btn btn-primary" style="flex:1">Save Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SET DEADLINE MODAL (convert long-term goal) ===== -->
+<div id="setDeadlineModal" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-body">
+      <h2 class="modal-title">Convert to Deadline Task</h2>
+      <p style="font-size:.9rem;color:#6b7280;margin-bottom:16px">Set a due date to move this goal into your active task list.</p>
+      <input type="hidden" id="setDeadlineGoalId" />
+      <div class="form-group">
+        <label>Due Date <span style="color:#dc2626">*</span></label>
+        <input id="setDeadlineDueDate" type="datetime-local" class="input" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" onclick="closeSetDeadlineModal()" class="btn btn-secondary" style="flex:1">Cancel</button>
+      <button type="button" onclick="confirmSetDeadline()" class="btn btn-primary" style="flex:1">Convert</button>
     </div>
   </div>
 </div>
@@ -1948,6 +1985,8 @@ let currentUser = JSON.parse(localStorage.getItem('taskitUser') || sessionStorag
 let taskTypes = [];
 let groups = [];
 let tasksMap = new Map();
+let goalsMap = new Map();
+let sporadicMap = new Map();
 let currentFilter = { status: '', groupId: '', typeId: '', archived: false, assignedToMe: false, showGroupTasks: true };
 let currentDetailTask = null;
 let blockedUserIds = new Set();
@@ -2364,6 +2403,7 @@ function showPage(page) {
   if (page === 'tasks') {
     loadSporadicTasks();
     loadTasks();
+    loadLongTermGoals();
   }
   if (page === 'groups') renderGroups();
   if (page === 'admin') loadAdminPage();
@@ -2669,13 +2709,14 @@ function renderSporadicTasks(tasks) {
     return;
   }
 
+  count.textContent = tasks ? tasks.length : 0;
+
+  sporadicMap = new Map((tasks || []).map(t => [t.id, t]));
+
   if (!tasks || tasks.length === 0) {
-    section.style.display = 'none';
+    list.innerHTML = '';
     return;
   }
-
-  section.style.display = 'block';
-  count.textContent = tasks.length;
 
   let html = '';
   tasks.forEach(task => {
@@ -2698,7 +2739,6 @@ function renderSporadicTasks(tasks) {
   });
 
   list.innerHTML = html;
-  list.style.display = 'block';
 }
 
 async function completeSporadicTask(taskId) {
@@ -2717,13 +2757,116 @@ document.addEventListener('DOMContentLoaded', () => {
   if (toggle) {
     toggle.addEventListener('click', () => {
       const list = document.getElementById('sporadic-list');
-      list.style.display = list.style.display === 'none' ? 'block' : 'none';
-      toggle.textContent = toggle.textContent.includes('▶') 
-        ? toggle.textContent.replace('▶', '▼') 
-        : toggle.textContent.replace('▼', '▶');
+      const arrow = document.getElementById('sporadic-arrow');
+      const isOpen = list.style.display !== 'none';
+      list.style.display = isOpen ? 'none' : 'block';
+      if (arrow) arrow.textContent = isOpen ? '▶' : '▼';
+    });
+  }
+  const goalsToggle = document.getElementById('goals-toggle');
+  if (goalsToggle) {
+    goalsToggle.addEventListener('click', () => {
+      const list = document.getElementById('goals-list');
+      const arrow = document.getElementById('goals-arrow');
+      const isOpen = list.style.display !== 'none';
+      list.style.display = isOpen ? 'none' : 'block';
+      if (arrow) arrow.textContent = isOpen ? '▶' : '▼';
     });
   }
 });
+
+// ========== Long-term Goals ==========
+async function loadLongTermGoals() {
+  try {
+    const goals = await api('GET', '/tasks/long-term-goals');
+    renderLongTermGoals(goals);
+  } catch (err) {
+    console.error('Failed to load long-term goals:', err);
+  }
+}
+
+function renderLongTermGoals(goals) {
+  const list = document.getElementById('goals-list');
+  const count = document.getElementById('goals-count');
+
+  if (!list || !count) {
+    console.warn('Long-term goals elements not found in DOM');
+    return;
+  }
+
+  goalsMap = new Map((goals || []).map(g => [g.id, g]));
+  count.textContent = goals ? goals.length : 0;
+
+  if (!goals || goals.length === 0) {
+    list.innerHTML = '';
+    return;
+  }
+
+  let html = '';
+  goals.forEach(goal => {
+    const groupBadge = goal.group_name
+      ? `<span class="badge badge-blue" style="margin-right:4px">👥 ${escHtml(goal.group_name)}</span>`
+      : '';
+    const typeBadge = goal.type_name
+      ? `<span class="badge badge-blue">${escHtml(goal.type_name)}</span>`
+      : '';
+    const xpBadge = goal.xp_multiplier && goal.xp_multiplier !== 1
+      ? `<span class="badge badge-recur">⭐ ×${goal.xp_multiplier} XP</span>`
+      : '';
+    html += `
+      <div class="sporadic-task-card">
+        <div class="sporadic-task-title">${escHtml(goal.title)}</div>
+        ${goal.details ? `<p style="font-size:0.9rem;color:#666;margin-bottom:0.5rem">${escHtml(goal.details)}</p>` : ''}
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${groupBadge}${typeBadge}${xpBadge}</div>
+        <div class="sporadic-actions">
+          <button onclick="openSetDeadlineModal('${escHtml(goal.id)}')" class="btn btn-primary btn-sm" style="padding:0.5rem 1rem;font-size:0.9rem">📅 Set Deadline</button>
+          <button onclick="openDetailById('${escHtml(goal.id)}')" class="btn btn-outline btn-sm" style="padding:0.5rem 1rem;font-size:0.9rem">Edit</button>
+        </div>
+      </div>
+    `;
+  });
+
+  list.innerHTML = html;
+}
+
+function openNewGoalModal() {
+  openTaskModal();
+  // Pre-check the Long-term Goal checkbox and update UI
+  const ltgCheck = document.getElementById('taskLongTermGoal');
+  if (ltgCheck) { ltgCheck.checked = true; updateTaskMode(); }
+}
+
+function openSetDeadlineModal(goalId) {
+  document.getElementById('setDeadlineGoalId').value = goalId;
+  const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+  const iso = new Date(midnight.getTime() - midnight.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  document.getElementById('setDeadlineDueDate').value = iso;
+  document.getElementById('setDeadlineModal').classList.remove('hidden');
+}
+
+function closeSetDeadlineModal() {
+  document.getElementById('setDeadlineModal').classList.add('hidden');
+  document.getElementById('setDeadlineGoalId').value = '';
+  document.getElementById('setDeadlineDueDate').value = '';
+}
+
+async function confirmSetDeadline() {
+  const goalId = document.getElementById('setDeadlineGoalId').value;
+  const dueDateVal = document.getElementById('setDeadlineDueDate').value;
+  if (!goalId) { toast('No goal selected', 'error'); return; }
+  if (!dueDateVal) { toast('Please select a due date', 'error'); return; }
+  const dueDate = new Date(dueDateVal).getTime();
+  if (isNaN(dueDate)) { toast('Invalid date', 'error'); return; }
+  try {
+    await api('PATCH', '/tasks/' + goalId, { dueDate, isLongTermGoal: false });
+    closeSetDeadlineModal();
+    toast('Goal converted to deadline task!');
+    loadLongTermGoals();
+    loadTasks();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
 
 function statusMeta(status) {
   switch (status) {
@@ -2866,7 +3009,15 @@ function openTaskModal(task = null) {
     document.getElementById('taskXpMultiplierRow').classList.add('hidden');
     document.getElementById('assigneeRow').classList.add('hidden');
     document.getElementById('assigneeContainer').innerHTML = '';
+    const ltgCheck = document.getElementById('taskLongTermGoal');
+    if (ltgCheck) ltgCheck.checked = false;
   }
+  // Reset long-term goal checkbox state when editing
+  const ltgCb = document.getElementById('taskLongTermGoal');
+  if (ltgCb && task) ltgCb.checked = !!(task.is_long_term_goal);
+  const sporadicCb = document.getElementById('taskSporadic');
+  if (sporadicCb && task) sporadicCb.checked = !!(task.is_sporadic);
+  updateTaskMode();
   document.getElementById('taskModal').classList.remove('hidden');
 }
 
@@ -2906,7 +3057,42 @@ async function handleTaskSubmit(e) {
   const editId = document.getElementById('taskEditId').value;
   const sporadicCheckbox = document.getElementById('taskSporadic');
   const isSporadic = sporadicCheckbox && sporadicCheckbox.checked;
-  
+  const ltgCheckbox = document.getElementById('taskLongTermGoal');
+  const isLongTermGoal = ltgCheckbox && ltgCheckbox.checked;
+
+  // Handle long-term goal creation
+  if (!editId && isLongTermGoal) {
+    const title = document.getElementById('taskTitle').value.trim();
+    const details = document.getElementById('taskDetails').value.trim() || null;
+    const groupId = document.getElementById('taskGroup').value || null;
+    const typeId = document.getElementById('taskType').value;
+
+    if (!title) { toast('Goal title is required', 'error'); return; }
+    if (!typeId) { toast('Task type is required', 'error'); return; }
+
+    const xpMultiplierRow = document.getElementById('taskXpMultiplierRow');
+    const xpMultiplier = (xpMultiplierRow && !xpMultiplierRow.classList.contains('hidden'))
+      ? parseFloat(document.getElementById('taskXpMultiplier').value) || 1.0
+      : undefined;
+
+    try {
+      await api('POST', '/tasks/create-long-term-goal', {
+        title,
+        description: details,
+        groupId,
+        taskTypeId: typeId,
+        xpMultiplier,
+      });
+      toast('Long-term goal created!');
+      resetSubtaskPanel();
+      closeTaskModal();
+      loadLongTermGoals();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+    return;
+  }
+
   // Handle sporadic task creation
   if (!editId && isSporadic) {
     const title = document.getElementById('taskTitle').value.trim();
@@ -2976,6 +3162,11 @@ async function handleTaskSubmit(e) {
   body.notifyPopup7day  = document.getElementById('notifyPopup7day').checked;
   body.notifyPopup1day  = document.getElementById('notifyPopup1day').checked;
   body.notifyPopupOnday = document.getElementById('notifyPopupOnday').checked;
+  // Include isLongTermGoal when editing to support conversion
+  if (editId) {
+    const ltgCbEdit = document.getElementById('taskLongTermGoal');
+    body.isLongTermGoal = ltgCbEdit ? ltgCbEdit.checked : false;
+  }
   try {
     if (editId) {
       await api('PATCH', '/tasks/' + editId, body);
@@ -2986,12 +3177,15 @@ async function handleTaskSubmit(e) {
       toast('Task created!');
     }
     resetSubtaskPanel();
-    closeTaskModal(); loadTasks();
+    closeTaskModal(); loadTasks(); loadLongTermGoals();
   } catch (err) { toast(err.message, 'error'); }
 }
 
 // ========== Task Detail ==========
-function openDetailById(id) { const task = tasksMap.get(id); if (task) openDetail(task); }
+function openDetailById(id) {
+  const task = tasksMap.get(id) || goalsMap.get(id) || sporadicMap.get(id);
+  if (task) { openDetail(task); } else { console.warn('openDetailById: task not found for id', id); }
+}
 
 function openDetail(task) {
   currentDetailTask = task;
@@ -3336,6 +3530,7 @@ async function deleteCurrentTask() {
     closeDetailModal();
     loadTasks();
     loadSporadicTasks();
+    loadLongTermGoals();
     toast(isRecurring ? 'Occurrence deleted — next recurrence scheduled' : 'Task deleted');
   } catch (err) { toast(err.message, 'error'); }
 }
@@ -5088,25 +5283,48 @@ function toggleRecurFields() {
 }
 
 function updateTaskMode() {
-  const sporadic = document.getElementById('taskSporadic').checked;
+  const sporadicEl = document.getElementById('taskSporadic');
+  const ltgEl = document.getElementById('taskLongTermGoal');
+  const sporadic = sporadicEl && sporadicEl.checked;
+  const ltg = ltgEl && ltgEl.checked;
   const dueDateField = document.getElementById('taskDueDate').parentElement;
   const recurField = document.getElementById('taskRecurEnabled').parentElement;
   const sporadicInfo = document.getElementById('sporadicInfo');
-  
-  if (sporadic) {
-    // Hide due date and recurrence when sporadic
+  const ltgInfo = document.getElementById('longTermGoalInfo');
+  const isSpecialMode = sporadic || ltg;
+
+  if (isSpecialMode) {
+    // Hide due date and recurrence for sporadic and long-term goal modes
     dueDateField.classList.add('hidden');
     recurField.classList.add('hidden');
     document.getElementById('taskRecurFields').classList.add('hidden');
     document.getElementById('taskRecurEnabled').checked = false;
-    // Show sporadic info
-    if (sporadicInfo) sporadicInfo.style.display = 'block';
   } else {
     // Show all fields for regular tasks
     dueDateField.classList.remove('hidden');
     recurField.classList.remove('hidden');
-    if (sporadicInfo) sporadicInfo.style.display = 'none';
   }
+
+  if (sporadicInfo) sporadicInfo.style.display = sporadic ? 'block' : 'none';
+  if (ltgInfo) ltgInfo.style.display = ltg ? 'block' : 'none';
+}
+
+function onSporadicChange() {
+  const sporadicEl = document.getElementById('taskSporadic');
+  if (sporadicEl && sporadicEl.checked) {
+    const ltgEl = document.getElementById('taskLongTermGoal');
+    if (ltgEl) ltgEl.checked = false;
+  }
+  updateTaskMode();
+}
+
+function onLongTermGoalChange() {
+  const ltgEl = document.getElementById('taskLongTermGoal');
+  if (ltgEl && ltgEl.checked) {
+    const sporadicEl = document.getElementById('taskSporadic');
+    if (sporadicEl) sporadicEl.checked = false;
+  }
+  updateTaskMode();
 }
 
 // ========== Service Worker ==========

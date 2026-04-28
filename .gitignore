@@ -12,8 +12,10 @@ local.properties
 captures/
 .externalNativeBuild/
 .cxx/
+*.png
 *.aab
 *.apk
+public/collectables/
 output-metadata.json
 
 # IntelliJ

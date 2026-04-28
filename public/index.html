@@ -1666,7 +1666,7 @@
           </div>
           <p style="font-size:.75rem;color:#9ca3af;margin-top:4px">Scales the XP awarded when this task is completed. Requires gamification enhancements to be enabled on the group.</p>
         </div>
-        <div class="form-group" style="border-top:1px solid #e5e7eb;margin-top:8px;padding-top:12px">
+        <div id="taskRemindersRow" class="form-group" style="border-top:1px solid #e5e7eb;margin-top:8px;padding-top:12px">
           <label style="font-size:.9rem;font-weight:500;color:#374151;display:block;margin-bottom:8px">Reminders</label>
           <table style="width:100%;font-size:.85rem;border-collapse:collapse">
             <tr>
@@ -1693,7 +1693,7 @@
     </div>
     <div class="modal-footer">
       <button type="button" onclick="closeTaskModal()" class="btn btn-secondary" style="flex:1">Cancel</button>
-      <button type="button" onclick="document.getElementById('taskForm').requestSubmit()" class="btn btn-primary" style="flex:1">Save Task</button>
+      <button type="button" id="taskSaveBtn" onclick="document.getElementById('taskForm').requestSubmit()" class="btn btn-primary" style="flex:1">Save Task</button>
     </div>
   </div>
 </div>
@@ -2820,7 +2820,7 @@ function renderLongTermGoals(goals) {
         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${groupBadge}${typeBadge}${xpBadge}</div>
         <div class="sporadic-actions">
           <button onclick="openSetDeadlineModal('${escHtml(goal.id)}')" class="btn btn-primary btn-sm" style="padding:0.5rem 1rem;font-size:0.9rem">📅 Set Deadline</button>
-          <button onclick="openDetailById('${escHtml(goal.id)}')" class="btn btn-outline btn-sm" style="padding:0.5rem 1rem;font-size:0.9rem">Edit</button>
+          <button onclick="openDetailById('${escHtml(goal.id)}')" class="btn btn-outline btn-sm" style="padding:0.5rem 1rem;font-size:0.9rem">Details</button>
         </div>
       </div>
     `;
@@ -3076,13 +3076,15 @@ async function handleTaskSubmit(e) {
       : undefined;
 
     try {
-      await api('POST', '/tasks/create-long-term-goal', {
+      const result = await api('POST', '/tasks/create-long-term-goal', {
         title,
         description: details,
         groupId,
         taskTypeId: typeId,
         xpMultiplier,
       });
+      // Save any pending sub-tasks to the newly created goal
+      if (result && result.goalId) await createPendingSubtasks(result.goalId);
       toast('Long-term goal created!');
       resetSubtaskPanel();
       closeTaskModal();
@@ -3464,7 +3466,7 @@ async function quickStatus(status) {
       toast('Task complete! Next occurrence created.');
       if (gamificationEnabled) loadGamificationProfile();
     } else {
-      openDetail(updated); loadTasks(); toast('Status updated!');
+      openDetail(updated); loadTasks(); loadLongTermGoals(); toast('Status updated!');
       if (status === 'complete' && gamificationEnabled) loadGamificationProfile();
     }
     // If a loot drop was included in the response, show the modal
@@ -3484,7 +3486,7 @@ async function archiveCurrentTask() {
   try {
     const updated = await api('PATCH', '/tasks/' + currentDetailTask.id + '/archive');
     currentDetailTask = updated; tasksMap.set(updated.id, updated);
-    openDetail(updated); loadTasks();
+    openDetail(updated); loadTasks(); loadLongTermGoals();
     toast(updated.archived ? 'Task archived' : 'Task unarchived');
   } catch (err) { toast(err.message, 'error'); }
 }
@@ -3521,9 +3523,11 @@ async function confirmDefer() {
 async function deleteCurrentTask() {
   if (!currentDetailTask) return;
   const isRecurring = !!(currentDetailTask.recur_interval && currentDetailTask.recur_unit);
+  const isGoal = !!(currentDetailTask.is_long_term_goal);
+  const itemLabel = isGoal ? 'goal' : 'task';
   const msg = isRecurring
     ? 'Delete this occurrence? The next recurrence will be scheduled automatically.\n\nTo stop all future recurrences instead, close this dialog and use "⊘ Cancel Future Recurrences".'
-    : 'Delete this task permanently?';
+    : `Delete this ${itemLabel} permanently?`;
   if (!confirm(msg)) return;
   try {
     await api('DELETE', '/tasks/' + currentDetailTask.id);
@@ -3531,7 +3535,7 @@ async function deleteCurrentTask() {
     loadTasks();
     loadSporadicTasks();
     loadLongTermGoals();
-    toast(isRecurring ? 'Occurrence deleted — next recurrence scheduled' : 'Task deleted');
+    toast(isRecurring ? 'Occurrence deleted — next recurrence scheduled' : `${isGoal ? 'Goal' : 'Task'} deleted`);
   } catch (err) { toast(err.message, 'error'); }
 }
 
@@ -5291,22 +5295,37 @@ function updateTaskMode() {
   const recurField = document.getElementById('taskRecurEnabled').parentElement;
   const sporadicInfo = document.getElementById('sporadicInfo');
   const ltgInfo = document.getElementById('longTermGoalInfo');
+  const remindersRow = document.getElementById('taskRemindersRow');
   const isSpecialMode = sporadic || ltg;
 
   if (isSpecialMode) {
-    // Hide due date and recurrence for sporadic and long-term goal modes
+    // Hide due date, recurrence, and reminders for sporadic and long-term goal modes
     dueDateField.classList.add('hidden');
     recurField.classList.add('hidden');
     document.getElementById('taskRecurFields').classList.add('hidden');
     document.getElementById('taskRecurEnabled').checked = false;
+    if (remindersRow) remindersRow.classList.add('hidden');
   } else {
     // Show all fields for regular tasks
     dueDateField.classList.remove('hidden');
     recurField.classList.remove('hidden');
+    if (remindersRow) remindersRow.classList.remove('hidden');
   }
 
   if (sporadicInfo) sporadicInfo.style.display = sporadic ? 'block' : 'none';
   if (ltgInfo) ltgInfo.style.display = ltg ? 'block' : 'none';
+
+  // Update modal title and save button label to reflect goal vs task mode
+  const isEditing = !!(document.getElementById('taskEditId') && document.getElementById('taskEditId').value);
+  const titleEl = document.getElementById('taskModalTitle');
+  const saveBtn = document.getElementById('taskSaveBtn');
+  if (ltg) {
+    if (titleEl) titleEl.textContent = isEditing ? 'Edit Goal' : 'New Goal';
+    if (saveBtn) saveBtn.textContent = 'Save Goal';
+  } else {
+    if (titleEl) titleEl.textContent = isEditing ? 'Edit Task' : 'New Task';
+    if (saveBtn) saveBtn.textContent = 'Save Task';
+  }
 }
 
 function onSporadicChange() {

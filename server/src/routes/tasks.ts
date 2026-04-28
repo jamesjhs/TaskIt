@@ -557,10 +557,28 @@ router.get('/long-term-goals', (req: Request, res: Response): void => {
     ORDER BY t.created_at ASC
   `).all(userId, userId) as Array<Record<string, unknown>>;
 
+  // Fetch assignees for all goals in a single query
+  const goalIds = goals.map((g) => g.id as string);
+  const assigneesByGoal: Record<string, Array<{ id: string; username: string; email: string }>> = {};
+  if (goalIds.length > 0) {
+    const placeholders = goalIds.map(() => '?').join(',');
+    const assigneeRows = db.prepare(`
+      SELECT ta.task_id, u2.id, u2.username, u2.email
+      FROM task_assignees ta
+      JOIN users u2 ON u2.id = ta.user_id
+      WHERE ta.task_id IN (${placeholders})
+    `).all(...goalIds) as Array<{ task_id: string; id: string; username: string; email: string }>;
+    for (const row of assigneeRows) {
+      if (!assigneesByGoal[row.task_id]) assigneesByGoal[row.task_id] = [];
+      assigneesByGoal[row.task_id].push({ id: row.id, username: row.username, email: row.email });
+    }
+  }
+
   const result = goals.map((g) => ({
     ...g,
     archived: g.archived === 1,
     is_long_term_goal: g.is_long_term_goal === 1,
+    assignees: assigneesByGoal[g.id as string] || [],
   }));
 
   res.json(result);

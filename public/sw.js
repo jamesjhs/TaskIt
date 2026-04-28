@@ -90,13 +90,6 @@ self.addEventListener('push', event => {
     try { data = { ...data, ...JSON.parse(event.data.text()) }; } catch { /* use defaults */ }
   }
 
-  // Update the app badge if the Badging API is available.
-  // The badge count is not tracked here; the frontend sets an accurate count
-  // when the app is open. This just ensures a badge is visible when a push arrives.
-  if (self.navigator && 'setAppBadge' in self.navigator) {
-    self.navigator.setAppBadge(1).catch(() => {});
-  }
-
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,

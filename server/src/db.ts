@@ -403,6 +403,8 @@ addCol('tasks', 'last_completed_at', 'INTEGER');
 addCol('users', 'notification_preferences', `TEXT NOT NULL DEFAULT '{"email":{"notify_7day":false,"notify_1day":true,"notify_onday":false},"popup":{"notify_7day":false,"notify_1day":false,"notify_onday":false}}'`);
 // Collectibles icon: optional filename of a PNG in public/collectables/ that overrides the rarity emoji
 addCol('collectibles', 'icon_filename', 'TEXT');
+// Long-term Goals: aspirational items that live outside the active task list until given a deadline
+addCol('tasks', 'is_long_term_goal', 'INTEGER NOT NULL DEFAULT 0');
 // Backfill: generate a friend_key for any user that doesn't have one yet
 {
   const missingKey = db.prepare("SELECT id FROM users WHERE friend_key IS NULL OR friend_key = ''").all() as Array<{ id: string }>;

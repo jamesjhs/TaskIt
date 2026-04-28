@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.9.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.10.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -35,6 +35,8 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - **Gamification Engine** — opt-in XP system, skill trees, dynamic titles, personal achievements, streak tracking, and freeze mechanic (see below)
 - **Friends & Leaderboards** — connect with other users via invite link, QR code, or username + friend key; compete on XP leaderboards per group and across friends
 - **Persistent login** — optional "Remember me" session storage (30-day JWT in localStorage vs session-only)
+- **Sporadic Tasks** — maintenance tasks with no fixed schedule that reappear after completion and show how long ago they were last done (e.g. Haircut, Car service). Always visible at the top of the task list, collapsed by default
+- **Long-term Goals** — aspirational goals that live in a dedicated collapsible section at the bottom of the task list, outside the active task queue. Support groups, XP multipliers, and notes. Convert any goal to a deadline task with a single tap
 
 ## Gamification Engine
 
@@ -104,6 +106,12 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.10.0
+
+- **📌 Sporadic Tasks always visible** — the Sporadic Tasks section now always appears at the top of the task list, collapsed by default, and displays **(0)** when no sporadic tasks exist rather than being hidden entirely. This gives clearer discoverability and consistent placement.
+- **🎯 Long-term Goals** — a new collapsible **Long-term Goals** section appears at the bottom of the task list. Goals are aspirational items outside the active task queue that support groups, XP multipliers, and notes. Tap **📅 Set Deadline** on any goal card to instantly convert it into a scheduled deadline task. Goals can also be created via the standard *New Task* modal by checking *Long-term Goal*.
+- **Version bump** — server, README, user guide, and technical reference updated to 1.10.0.
 
 ### v1.9.0
 

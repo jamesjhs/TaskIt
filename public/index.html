@@ -1630,14 +1630,14 @@
         </div>
         <div class="form-group">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-            <input type="checkbox" id="taskSporadic" onchange="updateTaskMode()" style="width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0" />
+            <input type="checkbox" id="taskSporadic" onchange="onSporadicChange()" style="width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0" />
             <span>Sporadic (maintenance task)</span>
           </label>
           <p id="sporadicInfo" style="font-size:.8rem;color:#6b7280;margin:8px 0 0 24px;display:none">This task has no fixed schedule. When completed, it reappears and shows how long ago you last did it. Examples: Haircut, Lawn mowing, Car maintenance</p>
         </div>
         <div class="form-group">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-            <input type="checkbox" id="taskLongTermGoal" onchange="updateTaskMode()" style="width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0" />
+            <input type="checkbox" id="taskLongTermGoal" onchange="onLongTermGoalChange()" style="width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0" />
             <span>Long-term Goal</span>
           </label>
           <p id="longTermGoalInfo" style="font-size:.8rem;color:#6b7280;margin:8px 0 0 24px;display:none">An aspirational goal with no immediate deadline. Appears in a dedicated section at the bottom of the task list. You can convert it to a deadline task at any time.</p>
@@ -1986,6 +1986,7 @@ let taskTypes = [];
 let groups = [];
 let tasksMap = new Map();
 let goalsMap = new Map();
+let sporadicMap = new Map();
 let currentFilter = { status: '', groupId: '', typeId: '', archived: false, assignedToMe: false, showGroupTasks: true };
 let currentDetailTask = null;
 let blockedUserIds = new Set();
@@ -2699,6 +2700,8 @@ function renderSporadicTasks(tasks) {
 
   count.textContent = tasks ? tasks.length : 0;
 
+  sporadicMap = new Map((tasks || []).map(t => [t.id, t]));
+
   if (!tasks || tasks.length === 0) {
     list.innerHTML = '';
     return;
@@ -3168,7 +3171,7 @@ async function handleTaskSubmit(e) {
 }
 
 // ========== Task Detail ==========
-function openDetailById(id) { const task = tasksMap.get(id) || goalsMap.get(id); if (task) openDetail(task); }
+function openDetailById(id) { const task = tasksMap.get(id) || goalsMap.get(id) || sporadicMap.get(id); if (task) openDetail(task); }
 
 function openDetail(task) {
   currentDetailTask = task;
@@ -5193,8 +5196,10 @@ function toggleRecurFields() {
 }
 
 function updateTaskMode() {
-  const sporadic = document.getElementById('taskSporadic').checked;
-  const ltg = document.getElementById('taskLongTermGoal') && document.getElementById('taskLongTermGoal').checked;
+  const sporadicEl = document.getElementById('taskSporadic');
+  const ltgEl = document.getElementById('taskLongTermGoal');
+  const sporadic = sporadicEl && sporadicEl.checked;
+  const ltg = ltgEl && ltgEl.checked;
   const dueDateField = document.getElementById('taskDueDate').parentElement;
   const recurField = document.getElementById('taskRecurEnabled').parentElement;
   const sporadicInfo = document.getElementById('sporadicInfo');
@@ -5207,11 +5212,6 @@ function updateTaskMode() {
     recurField.classList.add('hidden');
     document.getElementById('taskRecurFields').classList.add('hidden');
     document.getElementById('taskRecurEnabled').checked = false;
-    // Mutual exclusion: uncheck the other option
-    if (sporadic && ltg) {
-      // The most recently changed one wins; the one that triggered the call wins
-      // Just keep both unchecked except the one that triggered (handled by onchange)
-    }
   } else {
     // Show all fields for regular tasks
     dueDateField.classList.remove('hidden');
@@ -5220,6 +5220,24 @@ function updateTaskMode() {
 
   if (sporadicInfo) sporadicInfo.style.display = sporadic ? 'block' : 'none';
   if (ltgInfo) ltgInfo.style.display = ltg ? 'block' : 'none';
+}
+
+function onSporadicChange() {
+  const sporadicEl = document.getElementById('taskSporadic');
+  if (sporadicEl && sporadicEl.checked) {
+    const ltgEl = document.getElementById('taskLongTermGoal');
+    if (ltgEl) ltgEl.checked = false;
+  }
+  updateTaskMode();
+}
+
+function onLongTermGoalChange() {
+  const ltgEl = document.getElementById('taskLongTermGoal');
+  if (ltgEl && ltgEl.checked) {
+    const sporadicEl = document.getElementById('taskSporadic');
+    if (sporadicEl) sporadicEl.checked = false;
+  }
+  updateTaskMode();
 }
 
 // ========== Service Worker ==========

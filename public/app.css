@@ -1556,6 +1556,9 @@ a:hover { text-decoration: underline; }
 .lp-why-bg {
   background: linear-gradient(160deg, #0f172a 0%, #1e1b4b 60%, #2d1b69 100%);
 }
+.lp-why-bg .lp-section-label   { color: #c4b5fd; }
+.lp-why-bg .lp-section-heading { color: #fff; }
+.lp-why-bg .lp-section-sub     { color: rgba(196,181,253,.82); }
 .lp-why-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));

@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.12.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.12.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -106,6 +106,11 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.12.1
+
+- **🧹 Main task list filtering** — the main task list now excludes all tasks without set due dates (sporadic and maintenance tasks, unscheduled items). Only completed tasks and pending tasks with explicit due dates appear in the main active list. Tasks without due dates remain visible in their dedicated dropdown sections (Sporadic Tasks, Long-term Goals). Updated frontend filtering logic to enforce date requirements.
+- **Version bump** — server, README, user guide, how-to, and technical reference updated to 1.12.1.
 
 ### v1.12.0
 

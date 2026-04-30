@@ -2010,6 +2010,25 @@
   </div>
 </div>
 
+<!-- ===== SPORADIC TASK EDIT LAST DONE MODAL ===== -->
+<div id="editSporadicLastDoneModal" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-body">
+      <h2 class="modal-title">Edit Last Completed</h2>
+      <p style="font-size:.9rem;color:#6b7280;margin-bottom:16px">Update when you last completed this sporadic task.</p>
+      <input type="hidden" id="editSporadicTaskId" />
+      <div class="form-group">
+        <label>Date &amp; Time <span style="color:#dc2626">*</span></label>
+        <input id="editSporadicDateTime" type="datetime-local" class="input" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" onclick="closeEditSporadicLastDoneModal()" class="btn btn-secondary" style="flex:1">Cancel</button>
+      <button type="button" onclick="confirmEditSporadicLastDone()" class="btn btn-primary" style="flex:1">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== OTP MODAL (2FA) ===== -->
 <div id="otpModal" class="modal-overlay hidden">
   <div class="modal-sheet">
@@ -2159,6 +2178,26 @@ const POPUP_WINDOW_1D_MIN_MS  = 22 * 3600000;
 const POPUP_WINDOW_1D_MAX_MS  = 50 * 3600000;
 const POPUP_WINDOW_0D_MIN_MS  = 0;
 const POPUP_WINDOW_0D_MAX_MS  = 25 * 3600000;
+
+// ========== Mobile detection ==========
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+    || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+}
+
+// On mobile, convert datetime-local inputs to date/time pair for better UX with day-of-week info
+function enhanceMobileDatetimePickers() {
+  // Note: The native datetime-local picker on mobile is usually not intuitive as it shows
+  // only a scrollable list of dates without weekday context. We enhance by ensuring the 
+  // input is large enough to be easily tappable and by providing visual feedback.
+  // Most mobile browsers now provide reasonable date/time pickers, so we mainly ensure good styling.
+  const inputs = document.querySelectorAll('input[type="datetime-local"]');
+  inputs.forEach(input => {
+    input.style.fontSize = '16px'; // Prevents zoom-on-focus on iOS
+    input.style.minHeight = '44px'; // Touch-friendly size
+    input.style.minWidth = '100%';
+  });
+}
 
 // ========== Locale-aware date formatting ==========
 function userLocale() { return (currentUser && currentUser.locale) || 'en-GB'; }
@@ -2494,6 +2533,10 @@ function initApp() {
       // stops trying to deliver push notifications to this browser.
       cleanupRevokedPushSubscription();
     }
+  }
+  // On mobile, enhance datetime-local inputs to show calendar view
+  if (isMobileDevice()) {
+    enhanceMobileDatetimePickers();
   }
 }
 
@@ -2882,7 +2925,7 @@ function renderSporadicTasks(tasks) {
         <div class="sporadic-last-done ${overdueClass}">Last done: ${escHtml(label)}</div>
         <div class="sporadic-actions">
           <button onclick="completeSporadicTask('${escHtml(task.id)}')" class="sporadic-complete-btn">✓ Mark done</button>
-          <button onclick="openDetailById('${escHtml(task.id)}')" class="btn btn-outline btn-sm" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Edit</button>
+          <button onclick="openEditSporadicLastDoneModal('${escHtml(task.id)}')" class="btn btn-outline btn-sm" style="padding: 0.5rem 1rem; font-size: 0.9rem;">📅 Edit</button>
         </div>
       </div>
     `;
@@ -2897,6 +2940,47 @@ async function completeSporadicTask(taskId) {
     toast('✓ Task completed! Last done timestamp updated.');
     loadSporadicTasks();
     loadTasks();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function openEditSporadicLastDoneModal(taskId) {
+  const task = sporadicMap.get(taskId);
+  if (!task) { toast('Task not found', 'error'); return; }
+  document.getElementById('editSporadicTaskId').value = taskId;
+  if (task.last_completed_at) {
+    const d = new Date(task.last_completed_at);
+    const pad = n => String(n).padStart(2, '0');
+    const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    document.getElementById('editSporadicDateTime').value = iso;
+  } else {
+    // Default to now if never completed
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    document.getElementById('editSporadicDateTime').value = iso;
+  }
+  document.getElementById('editSporadicLastDoneModal').classList.remove('hidden');
+}
+
+function closeEditSporadicLastDoneModal() {
+  document.getElementById('editSporadicLastDoneModal').classList.add('hidden');
+  document.getElementById('editSporadicTaskId').value = '';
+  document.getElementById('editSporadicDateTime').value = '';
+}
+
+async function confirmEditSporadicLastDone() {
+  const taskId = document.getElementById('editSporadicTaskId').value;
+  const dateTimeVal = document.getElementById('editSporadicDateTime').value;
+  if (!taskId || !dateTimeVal) { toast('Please fill in all fields', 'error'); return; }
+  const lastCompletedAt = new Date(dateTimeVal).getTime();
+  if (isNaN(lastCompletedAt)) { toast('Invalid date/time', 'error'); return; }
+  try {
+    await api('PATCH', `/tasks/${taskId}/sporadic-last-done`, { lastCompletedAt });
+    toast('✓ Last completed time updated!');
+    closeEditSporadicLastDoneModal();
+    loadSporadicTasks();
   } catch (err) {
     toast(err.message, 'error');
   }

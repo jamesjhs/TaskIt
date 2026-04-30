@@ -87,8 +87,9 @@ router.get('/', (req: Request, res: Response): void => {
   const whereConditions: string[] = [];
   const params: (string | number | null)[] = [];
 
-  // Exclude long-term goals from the main task list (they have their own dedicated section)
+  // Exclude long-term goals and sporadic tasks from the main task list (they have their own dedicated sections)
   whereConditions.push('(t.is_long_term_goal IS NULL OR t.is_long_term_goal = 0)');
+  whereConditions.push('(t.is_sporadic IS NULL OR t.is_sporadic = 0)');
 
   // User must be the creator OR an assignee OR group member
   whereConditions.push(`(
@@ -532,6 +533,61 @@ router.put('/:id/complete-sporadic', (req: Request, res: Response): void => {
 
   const response: Record<string, unknown> = { ...updated, archived: updated.archived === 1, is_sporadic: updated.is_sporadic === 1 };
   if (lootDrop) response.drop = lootDrop;
+  res.json(response);
+});
+
+// PATCH /api/tasks/:id/sporadic-last-done — Update last_completed_at for a sporadic task
+router.patch('/:id/sporadic-last-done', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const taskId = req.params.id;
+  const { lastCompletedAt } = req.body;
+
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
+    | {
+        id: string;
+        is_sporadic: number;
+        created_by: string;
+        group_id: string | null;
+      }
+    | undefined;
+
+  if (!task) {
+    res.status(404).json({ error: 'Task not found' });
+    return;
+  }
+
+  if (task.is_sporadic !== 1) {
+    res.status(400).json({ error: 'Task is not sporadic' });
+    return;
+  }
+
+  // Allow creator or group member only
+  if (!hasTaskAccess(task, userId)) {
+    res.status(403).json({ error: 'Not authorized' });
+    return;
+  }
+
+  // Validate lastCompletedAt is a number (milliseconds since epoch)
+  if (typeof lastCompletedAt !== 'number' || lastCompletedAt < 0) {
+    res.status(400).json({ error: 'lastCompletedAt must be a non-negative number (milliseconds)' });
+    return;
+  }
+
+  const now = Date.now();
+
+  // Update the last_completed_at timestamp
+  db.prepare(
+    'UPDATE tasks SET last_completed_at = ?, updated_at = ? WHERE id = ?'
+  ).run(lastCompletedAt, now, taskId);
+
+  const updated = db.prepare(`
+    SELECT t.*, tt.name AS type_name
+    FROM tasks t
+    JOIN task_types tt ON tt.id = t.type_id
+    WHERE t.id = ?
+  `).get(taskId) as Record<string, unknown>;
+
+  const response: Record<string, unknown> = { ...updated, archived: updated.archived === 1, is_sporadic: updated.is_sporadic === 1 };
   res.json(response);
 });
 

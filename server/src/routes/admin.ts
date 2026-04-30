@@ -500,6 +500,103 @@ router.get('/collectibles/server-icons', (req: Request, res: Response): void => 
   }
 });
 
+// POST /api/admin/collectibles/upload-icon — upload a PNG icon for a collectible item
+// Body: { name: string, categoryName: string, base64: string }
+// The file is saved as <category-slug>/<item-slug>.png (or <item-slug>.png at root when no
+// category name is provided).  The PNG must be strictly under 40 × 40 pixels.
+router.post('/collectibles/upload-icon', (req: Request, res: Response): void => {
+  const { name, categoryName, base64 } = req.body as {
+    name?: unknown;
+    categoryName?: unknown;
+    base64?: unknown;
+  };
+
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    res.status(400).json({ error: 'name is required' });
+    return;
+  }
+  if (!base64 || typeof base64 !== 'string') {
+    res.status(400).json({ error: 'base64 image data is required' });
+    return;
+  }
+
+  // Decode base64 → Buffer
+  let buf: Buffer;
+  try {
+    buf = Buffer.from(base64, 'base64');
+  } catch {
+    res.status(400).json({ error: 'Invalid base64 data' });
+    return;
+  }
+
+  // Validate PNG signature (first 8 bytes)
+  const PNG_SIG = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  if (buf.length < 24 || !buf.subarray(0, 8).equals(PNG_SIG)) {
+    res.status(400).json({ error: 'File must be a valid PNG image' });
+    return;
+  }
+
+  // Read image dimensions from the IHDR chunk (bytes 16–19 = width, 20–23 = height)
+  const width  = buf.readUInt32BE(16);
+  const height = buf.readUInt32BE(20);
+  if (width >= 40 || height >= 40) {
+    res.status(400).json({ error: `Image must be under 40 × 40 px (got ${width}×${height})` });
+    return;
+  }
+
+  // Derive a safe filename slug from the item name
+  const nameSlug = (name as string).trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  if (!nameSlug) {
+    res.status(400).json({ error: 'Item name yields an empty filename slug' });
+    return;
+  }
+  const filename = nameSlug + '.png';
+
+  // Derive optional category subfolder slug
+  let destRelative: string;
+  if (categoryName && typeof categoryName === 'string' && (categoryName as string).trim()) {
+    const catSlug = (categoryName as string).trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    if (!catSlug || !/^[a-z0-9][a-z0-9-]*$/.test(catSlug)) {
+      res.status(400).json({ error: 'Category name yields an invalid subfolder slug' });
+      return;
+    }
+    const subdir = path.join(COLLECTABLES_DIR, catSlug);
+    // Path-traversal guard
+    if (!subdir.startsWith(COLLECTABLES_DIR + path.sep)) {
+      res.status(400).json({ error: 'Invalid category subfolder' });
+      return;
+    }
+    if (!fs.existsSync(subdir)) fs.mkdirSync(subdir, { recursive: true });
+    destRelative = catSlug + '/' + filename;
+  } else {
+    destRelative = filename;
+  }
+
+  // Final path-traversal guard before writing
+  const destAbs = path.join(COLLECTABLES_DIR, ...destRelative.split('/'));
+  if (!destAbs.startsWith(COLLECTABLES_DIR + path.sep)) {
+    res.status(400).json({ error: 'Invalid destination path' });
+    return;
+  }
+
+  try {
+    fs.writeFileSync(destAbs, buf);
+    res.status(201).json({ path: destRelative });
+  } catch {
+    res.status(500).json({ error: 'Failed to save icon file' });
+  }
+});
+
 // GET /api/admin/collectibles — list active collectibles with their category
 router.get('/collectibles', (_req: Request, res: Response): void => {
   const rows = db.prepare(`

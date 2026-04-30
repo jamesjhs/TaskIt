@@ -2827,8 +2827,9 @@ function renderTasks(tasks) {
   // behind a toggle so the active task list stays focused.
   const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
   const farThreshold = now + TWO_WEEKS_MS;
+  // Main task list shows completed tasks or pending tasks with set due dates
   const mainTasks = displayTasks.filter(
-    t => t.status === 'complete' || !t.due_date || t.due_date <= farThreshold
+    t => t.status === 'complete' || (t.due_date && t.due_date <= farThreshold)
   );
   const farFutureTasks = displayTasks.filter(
     t => t.status !== 'complete' && t.due_date && t.due_date > farThreshold

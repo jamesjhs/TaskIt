@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version:** 1.11.0  
+**Version:** 1.12.0  
 **Author:** J Rowson  
 **Generated:** 2026-04-28
 
@@ -2040,4 +2040,4 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.11.0*
+*End of Technical Reference Manual — TaskIt! v1.12.0*

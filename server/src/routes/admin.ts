@@ -852,4 +852,44 @@ router.post('/collectibles/seed', (req: Request, res: Response): void => {
   res.status(201).json({ categoriesCreated, categoriesReused, itemsCreated, itemsSkipped });
 });
 
+// ─── Turnstile / CAPTCHA Settings ────────────────────────────────────────────
+
+router.get('/turnstile', (_req: Request, res: Response): void => {
+  const row = db.prepare('SELECT id, site_key, secret_key, enabled, updated_at FROM turnstile_settings WHERE id = 1').get() as Omit<{
+    id: number;
+    site_key: string;
+    secret_key: string;
+    enabled: number;
+    updated_at: number;
+  }, 'secret_key'> | undefined;
+  if (!row) {
+    res.status(404).json({ error: 'Turnstile settings not found' });
+    return;
+  }
+  // Never send the secret key to the client
+  res.json({ id: row.id, site_key: row.site_key, enabled: row.enabled, updated_at: row.updated_at });
+});
+
+router.put('/turnstile', (req: Request, res: Response): void => {
+  const { site_key, secret_key, enabled } = req.body;
+
+  if (typeof site_key !== 'string' || typeof secret_key !== 'string') {
+    res.status(400).json({ error: 'site_key and secret_key must be strings' });
+    return;
+  }
+
+  db.prepare(`
+    UPDATE turnstile_settings
+    SET site_key = ?, secret_key = ?, enabled = ?, updated_at = ?
+    WHERE id = 1
+  `).run(
+    site_key,
+    secret_key,
+    enabled ? 1 : 0,
+    Date.now()
+  );
+
+  res.json({ message: 'Turnstile settings updated' });
+});
+
 export default router;

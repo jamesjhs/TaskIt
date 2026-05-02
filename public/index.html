@@ -64,6 +64,8 @@
   <meta name="apple-mobile-web-app-title" content="TaskIt!" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+  <!-- Cloudflare Turnstile for CAPTCHA security -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
 
@@ -983,6 +985,9 @@
             <option value="id-ID">Indonesian</option>
             <option value="th-TH">Thai</option>
           </select>
+        </div>
+        <div class="form-group" id="turnstileContainer" style="display:none;">
+          <div class="cf-turnstile" data-sitekey="0x4AAAAAADHG9MF8L5deVmZ2" data-theme="light"></div>
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
@@ -2330,6 +2335,39 @@ function showTab(tab) {
   } else {
     loginForm.classList.add('hidden'); registerForm.classList.remove('hidden');
     tabRegisterBtn.classList.add('active'); tabLoginBtn.classList.remove('active');
+    // Initialize Turnstile for register tab
+    initTurnstile();
+  }
+}
+
+async function initTurnstile() {
+  try {
+    const response = await fetch('/api/auth/turnstile');
+    if (!response.ok) return; // Turnstile not configured
+
+    const settings = await response.json();
+    if (!settings.enabled || !settings.site_key) {
+      document.getElementById('turnstileContainer').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('turnstileContainer').style.display = 'block';
+    // Update the data-sitekey attribute
+    const turnstileDiv = document.querySelector('.cf-turnstile');
+    if (turnstileDiv) {
+      turnstileDiv.setAttribute('data-sitekey', settings.site_key);
+      // Reset any existing widget
+      if (window.turnstile && window.turnstile.remove) {
+        window.turnstile.remove();
+      }
+      // Re-render the widget
+      if (window.turnstile && window.turnstile.render) {
+        window.turnstile.render('#turnstileContainer .cf-turnstile');
+      }
+    }
+  } catch (err) {
+    console.debug('[Turnstile] Init error:', err);
+    document.getElementById('turnstileContainer').style.display = 'none';
   }
 }
 
@@ -2342,18 +2380,22 @@ async function handleRegister(e) {
     return;
   }
   try {
+    const turnstileToken = window.turnstile ? window.turnstile.getResponse() : '';
     const data = await api('POST', '/auth/register', {
       username: document.getElementById('regUsername').value,
       email: document.getElementById('regEmail').value,
       password,
       locale: document.getElementById('regLocale').value || 'en-GB',
+      turnstileToken,
     });
     // Registration no longer auto-logs in — user must verify email first
     document.getElementById('registerForm').reset();
+    if (window.turnstile) window.turnstile.reset();
     showTab('login');
     toast(data.message || 'Registration successful! Check your email to verify your account.', 'info');
   } catch (err) {
     toast(err.message, 'error');
+    if (window.turnstile) window.turnstile.reset();
   }
 }
 

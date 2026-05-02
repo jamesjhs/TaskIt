@@ -1807,6 +1807,10 @@
             <span>Sporadic (maintenance task)</span>
           </label>
           <p id="sporadicInfo" style="font-size:.8rem;color:#6b7280;margin:8px 0 0 24px;display:none">This task has no fixed schedule. When completed, it reappears and shows how long ago you last did it. Examples: Haircut, Lawn mowing, Car maintenance</p>
+          <div id="sporadicLastDoneDateField" class="hidden" style="margin-top:12px;margin-left:24px">
+            <label>Last Completed <span style="color:#dc2626">*</span></label>
+            <input id="sporadicLastDoneDateTime" type="datetime-local" class="input" />
+          </div>
         </div>
         <div class="form-group">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
@@ -3086,7 +3090,7 @@ function renderSporadicTasks(tasks) {
         <div class="sporadic-last-done ${overdueClass}">Last done: ${escHtml(label)}</div>
         <div class="sporadic-actions">
           <button onclick="completeSporadicTask('${escHtml(task.id)}')" class="sporadic-complete-btn">✓ Mark done</button>
-          <button onclick="openEditSporadicLastDoneModal('${escHtml(task.id)}')" class="btn btn-outline btn-sm" style="padding: 0.5rem 1rem; font-size: 0.9rem;">📅 Edit</button>
+          <button onclick="openTaskModal(sporadicMap.get('${escHtml(task.id)}'))" class="btn btn-outline btn-sm" style="padding: 0.5rem 1rem; font-size: 0.9rem;">📅 Edit</button>
         </div>
       </div>
     `;
@@ -3387,6 +3391,12 @@ function openTaskModal(task = null) {
     loadGroupMembersForTask(task.assignees ? task.assignees.map(a => a.id) : []);
     // Load existing subtasks for editing
     loadExistingSubtasks(task.id);
+    // Pre-populate last_completed_at for sporadic tasks
+    if (task.is_sporadic && task.last_completed_at) {
+      const d = new Date(task.last_completed_at);
+      const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      document.getElementById('sporadicLastDoneDateTime').value = iso;
+    }
   } else {
     document.getElementById('taskModalTitle').textContent = 'New Task';
     editId.value = '';
@@ -3517,6 +3527,47 @@ async function handleTaskSubmit(e) {
         taskTypeId: typeId,
       });
       toast('Sporadic task created!');
+      resetSubtaskPanel();
+      closeTaskModal();
+      loadSporadicTasks();
+      loadTasks();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+    return;
+  }
+
+  // Handle sporadic task editing
+  if (editId && isSporadic) {
+    const title = document.getElementById('taskTitle').value.trim();
+    const details = document.getElementById('taskDetails').value.trim() || null;
+    const groupId = document.getElementById('taskGroup').value || null;
+    const typeId = document.getElementById('taskType').value;
+    const lastDoneDateTimeVal = document.getElementById('sporadicLastDoneDateTime').value;
+
+    if (!title) {
+      toast('Task title is required', 'error');
+      return;
+    }
+    if (!typeId) {
+      toast('Task type is required', 'error');
+      return;
+    }
+
+    const body = {
+      title,
+      description: details,
+      groupId,
+      taskTypeId: typeId,
+    };
+
+    if (lastDoneDateTimeVal) {
+      body.lastCompletedAt = new Date(lastDoneDateTimeVal).getTime();
+    }
+
+    try {
+      await api('PATCH', '/tasks/' + editId, body);
+      toast('Sporadic task updated!');
       resetSubtaskPanel();
       closeTaskModal();
       loadSporadicTasks();
@@ -5823,7 +5874,9 @@ function updateTaskMode() {
   const sporadicInfo = document.getElementById('sporadicInfo');
   const ltgInfo = document.getElementById('longTermGoalInfo');
   const remindersRow = document.getElementById('taskRemindersRow');
+  const sporadicLastDoneDateField = document.getElementById('sporadicLastDoneDateField');
   const isSpecialMode = sporadic || ltg;
+  const isEditing = !!(document.getElementById('taskEditId') && document.getElementById('taskEditId').value);
 
   if (isSpecialMode) {
     // Hide due date, recurrence, and reminders for sporadic and long-term goal modes
@@ -5841,9 +5894,13 @@ function updateTaskMode() {
 
   if (sporadicInfo) sporadicInfo.style.display = sporadic ? 'block' : 'none';
   if (ltgInfo) ltgInfo.style.display = ltg ? 'block' : 'none';
+  
+  // Show last completed date field only when editing a sporadic task
+  if (sporadicLastDoneDateField) {
+    sporadicLastDoneDateField.classList.toggle('hidden', !(sporadic && isEditing));
+  }
 
   // Update modal title and save button label to reflect goal vs task mode
-  const isEditing = !!(document.getElementById('taskEditId') && document.getElementById('taskEditId').value);
   const titleEl = document.getElementById('taskModalTitle');
   const saveBtn = document.getElementById('taskSaveBtn');
   if (ltg) {

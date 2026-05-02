@@ -740,12 +740,36 @@ router.patch('/:id', (req: Request, res: Response): void => {
   const { title, details, typeId, status, assigneeIds, dueDate, recurInterval, recurUnit,
           notifyEmail, notify7day, notify1day, notifyOnday,
           notifyPopup7day, notifyPopup1day, notifyPopupOnday,
-          xpMultiplier, isLongTermGoal } = req.body;
+          xpMultiplier, isLongTermGoal, groupId, lastCompletedAt } = req.body;
 
   // Validate status if provided
   if (status !== undefined && !ALLOWED_STATUSES.has(status as string)) {
     res.status(400).json({ error: 'Invalid status value' });
     return;
+  }
+
+  // Validate groupId if provided
+  if (groupId !== undefined && groupId !== null) {
+    if (typeof groupId !== 'string') {
+      res.status(400).json({ error: 'groupId must be a string' });
+      return;
+    }
+    // Verify membership
+    const membership = db.prepare(
+      'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
+    ).get(groupId, userId);
+    if (!membership) {
+      res.status(403).json({ error: 'Not a member of the specified group' });
+      return;
+    }
+  }
+
+  // Validate lastCompletedAt if provided
+  if (lastCompletedAt !== undefined && lastCompletedAt !== null) {
+    if (typeof lastCompletedAt !== 'number' || lastCompletedAt < 0) {
+      res.status(400).json({ error: 'lastCompletedAt must be a non-negative number (milliseconds)' });
+      return;
+    }
   }
 
   if (title !== undefined && (typeof title !== 'string' || title.trim().length === 0 || title.length > 255)) {
@@ -835,7 +859,9 @@ router.patch('/:id', (req: Request, res: Response): void => {
   if (notifyPopup7day !== undefined) { setClauses.push('notify_popup_7day = ?'); vals.push(notifyPopup7day === false || notifyPopup7day === 0 ? 0 : 1); }
   if (notifyPopup1day !== undefined) { setClauses.push('notify_popup_1day = ?'); vals.push(notifyPopup1day === false || notifyPopup1day === 0 ? 0 : 1); }
   if (notifyPopupOnday !== undefined) { setClauses.push('notify_popup_onday = ?'); vals.push(notifyPopupOnday === false || notifyPopupOnday === 0 ? 0 : 1); }
-  if (isLongTermGoal !== undefined) { setClauses.push('is_long_term_goal = ?'); vals.push(isLongTermGoal ? 1 : 0); }
+   if (isLongTermGoal !== undefined) { setClauses.push('is_long_term_goal = ?'); vals.push(isLongTermGoal ? 1 : 0); }
+  if (groupId !== undefined) { setClauses.push('group_id = ?'); vals.push(groupId || null); }
+  if (lastCompletedAt !== undefined) { setClauses.push('last_completed_at = ?'); vals.push(lastCompletedAt || null); }
   setClauses.push('updated_at = ?');
   vals.push(now);
   vals.push(taskId);

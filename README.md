@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.13.4** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.14.4** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -13,10 +13,10 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - Account lockout protection
 - Create and manage tasks with types, notes, and status tracking
 - Task statuses: Not Started → Started → Complete
-- **Sub-tasks** — break any task into individual checklist steps; tick each off one at a time, with a progress bar on the task card and detail modal; completing a sub-task automatically sets the parent task to "Started", and each sub-task completion earns a small configurable XP reward
+- **Sub-tasks** — break any task into individual checklist steps; tick each off one at a time, with a progress bar on the task card and detail modal; edit existing sub-task names, add and delete sub-tasks when editing a task; completing a sub-task automatically sets the parent task to "Started", and each sub-task completion earns a small configurable XP reward
 - Recurring tasks — automatically create the next occurrence when complete
 - Task deferral — reschedule due date from the detail panel
-- Custom task types per user and per group
+- Custom task types per user and per group — create, edit, delete, and re-enable archived types; sorted alphabetically across all dropdowns; system automatically resets active tasks to the Routine type when their custom type is deleted
 - Archive and delete tasks
 - Group collaboration with invite word pairs and shared secret keys
 - Email invites and QR code / shareable invite links for groups
@@ -35,7 +35,7 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - **Gamification Engine** — opt-in XP system, skill trees, dynamic titles, personal achievements, streak tracking, and freeze mechanic (see below)
 - **Friends & Leaderboards** — connect with other users via invite link, QR code, or username + friend key; compete on XP leaderboards per group and across friends
 - **Persistent login** — optional "Remember me" session storage (30-day JWT in localStorage vs session-only)
-- **Sporadic Tasks** — maintenance tasks with no fixed schedule that reappear after completion and show how long ago they were last done (e.g. Haircut, Car service). Always visible at the top of the task list, collapsed by default
+- **Sporadic Tasks** — maintenance tasks with no fixed schedule that reappear after completion and show how long ago they were last done in friendly format with dd/mm/yyyy date (e.g. Haircut, Car service). Fully editable like regular tasks: change title, type, group, delete, or archive. Always visible at the top of the task list, collapsed by default
 - **Long-term Goals** — aspirational goals that live in a dedicated collapsible section at the bottom of the task list, outside the active task queue. Support groups, XP multipliers, and notes. Convert any goal to a deadline task with a single tap
 
 ## Gamification Engine

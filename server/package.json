@@ -1,6 +1,6 @@
 {
   "name": "taskit-server",
-  "version": "1.13.4",
+  "version": "1.14.4",
   "description": "TaskIt! task management server",
   "main": "dist/index.js",
   "scripts": {

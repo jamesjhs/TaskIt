@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.13.4** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.14.4** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -53,6 +53,10 @@ Sub-tasks let you split a big task into manageable steps — like turning "Clean
 - Type each step and click **+ Add item** to add more. Press **Enter** to jump to a new row.
 - Remove any row with the **✕** button.
 
+**When editing a task with sub-tasks:**
+- Open the task and scroll to the Sub-tasks section to see existing sub-tasks.
+- Edit existing sub-task names, add new sub-tasks, or delete any sub-task with the **✕** button.
+
 **Inside the task detail:**
 - Every task with sub-tasks shows a **progress bar** on its card, so you can see progress at a glance.
 - Open the task to see the full **✅ Sub-tasks** checklist with a counter (e.g. *2 of 5 complete*).
@@ -84,9 +88,9 @@ Sporadic tasks are **maintenance tasks with no fixed schedule** — things you d
 **How they work:**
 - Sporadic tasks appear in the **Sporadic Tasks** section at the top of the Tasks page, always visible and collapsed by default.
 - The section shows **(0)** when you have no sporadic tasks, so it's always easy to find.
-- Each card shows how long ago the task was last completed (e.g. *3 months ago*) or *Never* if it hasn't been done yet. Cards overdue (90+ days) are highlighted.
+- Each card shows how long ago the task was last completed (e.g. *3 months ago (15/04/2026)*) or *Never* if it hasn't been done yet. Cards overdue (90+ days) are highlighted.
 - Tap **✓ Mark done** to record a completion — the card resets and the timer starts again. You earn XP just as you would completing a regular task.
-- Tap **Edit** to update the task details at any time.
+- Tap **📅 Edit** to update the task — you can change the title, description, task type, group assignment, set a new "Last Completed" date, delete, or archive the sporadic task at any time.
 
 ### Long-term Goals
 
@@ -235,6 +239,16 @@ Subscribe to your TaskIt! tasks in any calendar app (Google Calendar, Apple Cale
 ### Invite to TaskIt!
 
 Share TaskIt! with others — click **Copy Invite Link** to copy a link to your TaskIt! instance that you can send to colleagues or friends.
+
+### 📋 Task Types Management
+
+Manage your custom task types from the **Task Types** card in your Profile:
+
+- **Add a new type** — click **+ Add new type**, enter a name, and click **Create**. Custom types are automatically sorted alphabetically in all task creation dropdowns.
+- **Edit a type** — click **✏️ Edit** next to any type to rename it. TaskIt! prevents duplicate names.
+- **Delete a type** — click **🗑️** to delete a type. Any active (non-archived, non-completed) tasks using that type are automatically reset to the Routine type. Archived or completed tasks retain the original type name for historical reference. If you create a new type with the same name later, it reactivates the archived type.
+
+> 💡 **Pro tip:** System types like "Urgent" and "Routine" cannot be deleted, but custom types give you complete control.
 
 ### 💬 Feedback & Feature Requests
 

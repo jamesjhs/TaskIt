@@ -119,14 +119,15 @@ app.use((req: Request, res: Response, next: NextFunction): void => {
 app.use(helmet({
   // Allow the service worker to load and scripts to run from the same origin.
   // Inline scripts are used by the SPA, so 'unsafe-inline' is kept for scripts.
+  // Cloudflare Turnstile CAPTCHA script is allowed from challenges.cloudflare.com
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://challenges.cloudflare.com"],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", 'data:'],
-      connectSrc: ["'self'"],
+      connectSrc: ["'self'", "https://challenges.cloudflare.com"],
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
       frameSrc: ["'none'"],

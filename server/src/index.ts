@@ -135,6 +135,12 @@ app.use(helmet({
     },
   },
 }));
+
+// Permissions Policy header - allow Turnstile iframe to access features it needs
+app.use((_req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  next();
+});
 app.use(express.json({ limit: '50kb' }));
 
 // ─── Health-check endpoint (exempt from auth and rate limiting) ──────────────

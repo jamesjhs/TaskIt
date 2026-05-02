@@ -1,8 +1,8 @@
 # TaskIt! — Technical Reference Manual
 
-**Version:** 1.12.2  
+**Version 1.13.0**  
 **Author:** J Rowson  
-**Generated:** 2026-04-28
+**Generated:** 2026-05-02
 
 ---
 
@@ -249,6 +249,8 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `VAPID_PUBLIC_KEY` | string | `''` | VAPID public key for Web Push. Generate once with `npx web-push generate-vapid-keys`. If empty, push notifications are disabled. |
 | `VAPID_PRIVATE_KEY` | string | `''` | VAPID private key for Web Push. Must match `VAPID_PUBLIC_KEY`. |
 | `VAPID_SUBJECT` | string | `mailto:admin@<BASE_URL host>` | Contact URI embedded in push requests; falls back to `mailto:admin@localhost` when `BASE_URL` is unset. |
+| `TURNSTILE_SITE_KEY` | string | `''` | Cloudflare Turnstile CAPTCHA site key. Leave unset to disable registration CAPTCHA. |
+| `TURNSTILE_SECRET_KEY` | string | `''` | Cloudflare Turnstile CAPTCHA secret key. Required with `TURNSTILE_SITE_KEY` to enable CAPTCHA verification. |
 
 **Exported constants from `config.ts`:**
 
@@ -266,6 +268,8 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `CORS_ORIGIN` | `string \| string[] \| false` | Derived (see above) |
 | `SMTP` | `object` | `{ host, port, secure, user, pass, from }` |
 | `VAPID` | `object` | `{ publicKey, privateKey, subject }` — empty strings when not configured |
+| `TURNSTILE_SITE_KEY` | `string` | `process.env.TURNSTILE_SITE_KEY` — empty if unset |
+| `TURNSTILE_SECRET_KEY` | `string` | `process.env.TURNSTILE_SECRET_KEY` — empty if unset |
 
 ---
 
@@ -546,6 +550,17 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `from_addr` | TEXT NOT NULL DEFAULT `''` | From address for outbound mail |
 | `enabled` | INTEGER NOT NULL DEFAULT 0 | 0 = mail disabled globally |
 | `updated_at` | INTEGER NOT NULL DEFAULT 0 | Unix ms |
+
+#### `turnstile_settings`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | INTEGER PK | Always 1 (singleton pattern) |
+| `site_key` | TEXT NOT NULL DEFAULT `''` | Cloudflare Turnstile site key for CAPTCHA widget |
+| `secret_key` | TEXT NOT NULL DEFAULT `''` | Cloudflare Turnstile secret key for server-side verification |
+| `enabled` | INTEGER NOT NULL DEFAULT 0 | 0 = CAPTCHA disabled; 1 = enforced on registration |
+| `updated_at` | INTEGER NOT NULL DEFAULT 0 | Unix ms when settings were last modified |
+
+**Note:** The `secret_key` is never exposed to the client. Only `site_key` and `enabled` are returned by the public `/api/auth/turnstile` endpoint. Server-side verification always uses the secret key directly from the database.
 
 #### `task_reminders_sent`
 | Column | Type | Notes |
@@ -890,13 +905,22 @@ Attached to `req.user` by `authMiddleware`.
 **Route handlers:**
 | Handler | Description |
 |---|---|
-| `POST /register` | Creates user (email_verified=0), sends verification magic link, awards `signup` XP |
+| `POST /register` | Creates user (email_verified=0), sends verification magic link, awards `signup` XP. If Turnstile is enabled, validates CAPTCHA token via `verifyTurnstileToken()` before proceeding. |
+| `GET /turnstile` | **Public (no auth required).** Returns `{ site_key, enabled }` for registration form to conditionally display CAPTCHA widget. Secret key never exposed. |
 | `POST /login` | Validates bcrypt hash, tracks failed logins, generates OTP (SHA-256 stored), sends email |
 | `POST /verify-otp` | Timing-safe hash compare, marks OTP used, issues JWT |
 | `POST /magic-link` | Generates `purpose='login'` magic token, sends email (always returns 200) |
 | `GET /magic-link/verify` | Marks token used, sets email_verified=1, issues JWT |
 | `POST /forgot-password` | Generates `purpose='reset'` token, sends email (always returns 200) |
 | `POST /reset-password` | Validates reset token, updates bcrypt hash, clears lockout |
+
+**Turnstile CAPTCHA Integration:**
+| Component | Details |
+|---|---|
+| `verifyTurnstileToken(token)` | Async function that POSTs to Cloudflare API to verify CAPTCHA response. Returns `true` if valid; `false` if invalid/expired/network error. Never throws; logs errors to console. |
+| Token verification | Occurs **before** user creation — failed verification returns 400 `{ error: "CAPTCHA verification failed..." }`. |
+| Disabled CAPTCHA | When `turnstile_settings.enabled=0`, registration accepts requests without token and skips verification. |
+| Database check | On each registration, reads `turnstile_settings` table to check if CAPTCHA is enabled. |
 
 ---
 
@@ -1040,6 +1064,8 @@ Requires both `authMiddleware` + `adminMiddleware`.
 |---|---|
 | `GET /smtp` | Returns SMTP settings (omits `pass`) |
 | `PUT /smtp` | Updates SMTP settings (empty pass = keep existing) |
+| `GET /turnstile` | Returns Turnstile settings (omits `secret_key` for security) |
+| `PUT /turnstile` | Updates Turnstile site key, secret key, and enabled status |
 | `GET /users` | All users ordered by `created_at`; response includes `is_locked`, `open_reports`, `is_original_admin` |
 | `GET /locked` | Users with `locked_until > now` |
 | `POST /users/:id/unlock` | Clears `failed_logins` and `locked_until` |

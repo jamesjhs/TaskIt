@@ -2636,14 +2636,63 @@ async function loadProfileTaskTypes() {
     container.innerHTML = userTypes
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(t => `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:#f3f4f6;border-radius:6px;border:1px solid #e5e7eb">
+        <div id="tt-${t.id}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:#f3f4f6;border-radius:6px;border:1px solid #e5e7eb">
           <span style="font-size:.9rem;color:#1f2937;font-weight:500">${t.name}</span>
-          <button type="button" onclick="deleteProfileTaskType('${t.id}')" class="btn btn-sm btn-secondary" style="padding:4px 8px;font-size:.75rem">Delete</button>
+          <div style="display:flex;gap:6px">
+            <button type="button" onclick="toggleEditTaskType('${t.id}')" class="btn btn-sm btn-secondary" style="padding:4px 8px;font-size:.75rem">Edit</button>
+            <button type="button" onclick="deleteProfileTaskType('${t.id}')" class="btn btn-sm btn-secondary" style="padding:4px 8px;font-size:.75rem">Delete</button>
+          </div>
         </div>
       `).join('');
   } catch (err) {
     toast(err.message, 'error');
     document.getElementById('profileTaskTypesList').innerHTML = '<p style="color:#dc2626">Error loading task types.</p>';
+  }
+}
+
+function toggleEditTaskType(typeId) {
+  const container = document.getElementById(`tt-${typeId}`);
+  if (!container) return;
+  const isEditing = container.classList.contains('editing');
+  if (isEditing) {
+    container.classList.remove('editing');
+  } else {
+    container.classList.add('editing');
+    const nameSpan = container.querySelector('span');
+    const origName = nameSpan.textContent;
+    const editHtml = `
+      <input type="text" id="edit-${typeId}" class="input" value="${origName}" maxlength="80" style="font-size:.9rem;flex:1" />
+      <div style="display:flex;gap:6px">
+        <button type="button" onclick="saveEditTaskType('${typeId}')" class="btn btn-sm btn-primary" style="padding:4px 8px;font-size:.75rem">Save</button>
+        <button type="button" onclick="cancelEditTaskType('${typeId}')" class="btn btn-sm btn-secondary" style="padding:4px 8px;font-size:.75rem">Cancel</button>
+      </div>
+    `;
+    container.innerHTML = editHtml;
+    document.getElementById(`edit-${typeId}`).focus();
+    document.getElementById(`edit-${typeId}`).select();
+  }
+}
+
+async function saveEditTaskType(typeId) {
+  const input = document.getElementById(`edit-${typeId}`);
+  const newName = input.value.trim();
+  if (!newName) { toast('Task type name cannot be empty.', 'error'); return; }
+  if (newName.length > 80) { toast('Task type name is too long (max 80 characters).', 'error'); return; }
+  try {
+    await api('PATCH', `/task-types/${typeId}`, { name: newName });
+    toast('Task type updated!');
+    loadProfileTaskTypes();
+    loadTypes();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function cancelEditTaskType(typeId) {
+  const container = document.getElementById(`tt-${typeId}`);
+  if (container) {
+    container.classList.remove('editing');
+    loadProfileTaskTypes();
   }
 }
 
@@ -2662,7 +2711,7 @@ async function addProfileTaskType() {
 }
 
 async function deleteProfileTaskType(typeId) {
-  const confirmed = window.confirm('Delete this task type? Existing tasks with this type will remain but won\'t be tied to a type anymore.');
+  const confirmed = window.confirm('Delete this task type? Active tasks using this type will automatically be reset to "Routine". Archived and completed tasks will keep showing this type.');
   if (!confirmed) return;
   try {
     await api('DELETE', `/task-types/${typeId}`);

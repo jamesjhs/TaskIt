@@ -2664,6 +2664,7 @@ async function loadTypes() {
     const sel = document.getElementById('filterType');
     if (sel) {
       sel.innerHTML = '<option value="">All Types</option>';
+      taskTypes.sort((a, b) => a.name.localeCompare(b.name));
       taskTypes.forEach(t => {
         const opt = document.createElement('option');
         opt.value = t.id; opt.textContent = t.name + (t.group_id ? ' (group)' : '');
@@ -2692,6 +2693,7 @@ async function confirmAddNewType() {
     // Re-populate type select and select the new type
     const typeSelect = document.getElementById('taskType');
     typeSelect.innerHTML = '<option value="">Select type\u2026</option>';
+    taskTypes.sort((a, b) => a.name.localeCompare(b.name));
     taskTypes.forEach(t => {
       const opt = document.createElement('option');
       opt.value = t.id; opt.textContent = t.name + (t.group_id ? ' (group)' : '');
@@ -3222,7 +3224,8 @@ function openTaskModal(task = null) {
   resetSubtaskPanel();
   const typeSelect = document.getElementById('taskType');
   typeSelect.innerHTML = '<option value="">Select type\u2026</option>';
-  taskTypes.forEach(t => {
+  const sortedTypes = [...taskTypes].sort((a, b) => a.name.localeCompare(b.name));
+  sortedTypes.forEach(t => {
     const opt = document.createElement('option');
     opt.value = t.id; opt.textContent = t.name + (t.group_id ? ' (group)' : '');
     typeSelect.appendChild(opt);

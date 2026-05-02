@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import db from '../db';
-import { BASE_URL, JWT_SECRET, MAX_LOGIN_ATTEMPTS, LOCKOUT_MINUTES, ADMIN_EMAIL } from '../config';
+import { BASE_URL, JWT_SECRET, MAX_LOGIN_ATTEMPTS, LOCKOUT_MINUTES, ADMIN_EMAIL, TURNSTILE_SECRET_KEY } from '../config';
 import { sendMagicLink, sendOTP, sendPasswordReset } from '../services/mail';
 import { ALLOWED_LOCALES } from '../constants';
 import { awardEventXp } from '../services/gamification';
@@ -33,6 +33,33 @@ const MAX_USERNAME_LEN = 50;
 const MAX_EMAIL_LEN = 254; // RFC 5321 maximum
 const MAX_PASSWORD_LEN = 128; // bcrypt silently truncates at 72; we enforce a hard cap
 
+// Verify Turnstile CAPTCHA token with Cloudflare
+async function verifyTurnstileToken(token: string): Promise<boolean> {
+  if (!TURNSTILE_SECRET_KEY || !token) {
+    // If Turnstile is not configured or no token provided, allow (registration not blocked)
+    return true;
+  }
+
+  try {
+    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: TURNSTILE_SECRET_KEY, response: token }),
+    });
+
+    if (!response.ok) {
+      console.error('[Turnstile] Verification endpoint returned', response.status);
+      return false;
+    }
+
+    const data = (await response.json()) as { success: boolean; error_codes?: string[] };
+    return data.success === true;
+  } catch (err) {
+    console.error('[Turnstile] Verification failed:', err);
+    return false;
+  }
+}
+
 interface UserRow {
   id: string;
   username: string;
@@ -48,7 +75,7 @@ interface UserRow {
 // POST /api/auth/register
 // Creates an unverified account and sends an email verification magic link.
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
-  const { username, email, password, locale } = req.body;
+  const { username, email, password, locale, turnstileToken } = req.body;
 
   if (!username || !email || !password) {
     res.status(400).json({ error: 'username, email, and password are required' });
@@ -68,6 +95,20 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
   if (typeof password !== 'string' || password.length < 8 || password.length > MAX_PASSWORD_LEN) {
     res.status(400).json({ error: `Password must be between 8 and ${MAX_PASSWORD_LEN} characters` });
     return;
+  }
+
+  // Check if Turnstile is enabled
+  const turnstileSettings = db.prepare('SELECT enabled FROM turnstile_settings WHERE id = 1').get() as { enabled: number } | undefined;
+  if (turnstileSettings?.enabled) {
+    if (!turnstileToken) {
+      res.status(400).json({ error: 'CAPTCHA verification is required' });
+      return;
+    }
+    const isValid = await verifyTurnstileToken(turnstileToken as string);
+    if (!isValid) {
+      res.status(400).json({ error: 'CAPTCHA verification failed. Please try again.' });
+      return;
+    }
   }
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -400,6 +441,18 @@ router.post('/reset-password', async (req: Request, res: Response): Promise<void
   );
 
   res.json({ message: 'Password has been reset. You can now sign in with your new password.' });
+});
+
+// GET /api/auth/turnstile (public)
+// Returns Turnstile site key and enabled status (no authentication required)
+// Used by frontend during registration to initialize CAPTCHA
+router.get('/turnstile', (_req: Request, res: Response): void => {
+  const row = db.prepare('SELECT site_key, enabled FROM turnstile_settings WHERE id = 1').get() as { site_key: string; enabled: number } | undefined;
+  if (!row) {
+    res.status(404).json({ error: 'Turnstile settings not found' });
+    return;
+  }
+  res.json({ site_key: row.site_key, enabled: row.enabled === 1 });
 });
 
 export default router;

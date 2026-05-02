@@ -117,6 +117,14 @@ db.exec(`
     updated_at INTEGER NOT NULL DEFAULT 0
   );
 
+  CREATE TABLE IF NOT EXISTS turnstile_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    site_key TEXT NOT NULL DEFAULT '',
+    secret_key TEXT NOT NULL DEFAULT '',
+    enabled INTEGER NOT NULL DEFAULT 0,
+    updated_at INTEGER NOT NULL DEFAULT 0
+  );
+
   CREATE TABLE IF NOT EXISTS otp_tokens (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
@@ -460,6 +468,18 @@ if (!smtpRow) {
     process.env.SMTP_PASS || '',
     process.env.SMTP_FROM || process.env.SMTP_USER || '',
     0,
+    Date.now()
+  );
+}
+
+// Ensure turnstile_settings has exactly one row (singleton pattern)
+const turnstileRow = db.prepare('SELECT id FROM turnstile_settings WHERE id = 1').get();
+if (!turnstileRow) {
+  db.prepare(`INSERT INTO turnstile_settings (id, site_key, secret_key, enabled, updated_at)
+    VALUES (1, ?, ?, ?, ?)`).run(
+    process.env.TURNSTILE_SITE_KEY || '',
+    process.env.TURNSTILE_SECRET_KEY || '',
+    process.env.TURNSTILE_SITE_KEY && process.env.TURNSTILE_SECRET_KEY ? 1 : 0,
     Date.now()
   );
 }

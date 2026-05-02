@@ -68,3 +68,7 @@ export const VAPID = {
   privateKey: process.env.VAPID_PRIVATE_KEY || '',
   subject: vapidSubjectFallback,
 };
+
+// Cloudflare Turnstile CAPTCHA configuration (optional, for improved security)
+export const TURNSTILE_SITE_KEY = process.env.TURNSTILE_SITE_KEY || '';
+export const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || '';

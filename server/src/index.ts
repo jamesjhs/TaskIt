@@ -119,20 +119,28 @@ app.use((req: Request, res: Response, next: NextFunction): void => {
 app.use(helmet({
   // Allow the service worker to load and scripts to run from the same origin.
   // Inline scripts are used by the SPA, so 'unsafe-inline' is kept for scripts.
+  // Cloudflare Turnstile CAPTCHA script and iframe are allowed from challenges.cloudflare.com
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://challenges.cloudflare.com"],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", 'data:'],
-      connectSrc: ["'self'"],
+      connectSrc: ["'self'", "https://challenges.cloudflare.com"],
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
-      frameSrc: ["'none'"],
+      frameSrc: ["https://challenges.cloudflare.com"],
+      childSrc: ["https://challenges.cloudflare.com"],
     },
   },
 }));
+
+// Permissions Policy header - allow Turnstile iframe to access features it needs
+app.use((_req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  next();
+});
 app.use(express.json({ limit: '50kb' }));
 
 // ─── Health-check endpoint (exempt from auth and rate limiting) ──────────────

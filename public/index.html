@@ -3273,6 +3273,8 @@ function openTaskModal(task = null) {
     // Pre-populate XP multiplier when editing (show/hide based on group flag happens in loadGroupMembersForTask)
     document.getElementById('taskXpMultiplier').value = task.xp_multiplier != null ? task.xp_multiplier : 1.0;
     loadGroupMembersForTask(task.assignees ? task.assignees.map(a => a.id) : []);
+    // Load existing subtasks for editing
+    loadExistingSubtasks(task.id);
   } else {
     document.getElementById('taskModalTitle').textContent = 'New Task';
     editId.value = '';
@@ -3456,6 +3458,7 @@ async function handleTaskSubmit(e) {
   try {
     if (editId) {
       await api('PATCH', '/tasks/' + editId, body);
+      await createAndDeleteSubtasks(editId);
       toast('Task updated!');
     } else {
       const created = await api('POST', '/tasks', body);
@@ -3564,8 +3567,10 @@ function closeDetailModal() {
 
 // ========== Sub-tasks ==========
 
-// State: list of pending sub-tasks to create (for the task creation modal)
+// State: list of pending sub-tasks (new + modified)
+// Format: { id?: string, title: string } where id indicates existing subtask
 let _pendingSubtasks = [];
+let _existingSubtasksToDelete = new Set();
 
 function toggleSubtaskPanel() {
   const panel = document.getElementById('subtaskFormPanel');
@@ -3578,22 +3583,30 @@ function toggleSubtaskPanel() {
   if (isHidden && _pendingSubtasks.length === 0) addSubtaskFormRow();
 }
 
-function addSubtaskFormRow(value = '') {
+function addSubtaskFormRow(value = '', existingId = null) {
   const list = document.getElementById('subtaskFormList');
   const idx = _pendingSubtasks.length;
-  _pendingSubtasks.push(value);
+  _pendingSubtasks.push({ id: existingId, title: value });
   const row = document.createElement('div');
   row.className = 'subtask-form-row';
   row.dataset.idx = idx;
+  row.dataset.id = existingId || '';
+  
+  const isExisting = !!existingId;
+  const deleteHandler = isExisting 
+    ? `markSubtaskForDeletion('${escHtml(existingId)}', ${idx})`
+    : `removeSubtaskFormRow(${idx})`;
+  
   row.innerHTML = `
     <input type="text" class="subtask-form-input" maxlength="255" placeholder="Sub-task description…"
       value="${escHtml(value)}"
-      oninput="_pendingSubtasks[${idx}] = this.value"
-      onkeydown="if(event.key==='Enter'){event.preventDefault();addSubtaskFormRow();}" />
-    <button type="button" class="subtask-form-remove" onclick="removeSubtaskFormRow(${idx})" title="Remove">✕</button>
+      ${isExisting ? 'disabled' : ''}
+      oninput="_pendingSubtasks[${idx}].title = this.value"
+      onkeydown="if(event.key==='Enter' && !this.disabled){event.preventDefault();addSubtaskFormRow();}" />
+    <button type="button" class="subtask-form-remove" onclick="${deleteHandler}" title="Remove">✕</button>
   `;
   list.appendChild(row);
-  row.querySelector('input').focus();
+  if (!isExisting) row.querySelector('input').focus();
 }
 
 function removeSubtaskFormRow(idx) {
@@ -3605,8 +3618,15 @@ function removeSubtaskFormRow(idx) {
   }
 }
 
+function markSubtaskForDeletion(subtaskId, idx) {
+  if (!confirm('Delete this sub-task?')) return;
+  _existingSubtasksToDelete.add(subtaskId);
+  removeSubtaskFormRow(idx);
+}
+
 function resetSubtaskPanel() {
   _pendingSubtasks = [];
+  _existingSubtasksToDelete.clear();
   const list = document.getElementById('subtaskFormList');
   if (list) list.innerHTML = '';
   const panel = document.getElementById('subtaskFormPanel');
@@ -3634,15 +3654,53 @@ function toggleNotesPanel() {
   if (isHidden) document.getElementById('taskDetails').focus();
 }
 
-async function createPendingSubtasks(taskId) {
-  const titles = _pendingSubtasks.filter(t => t && t.trim());
-  for (const title of titles) {
+async function loadExistingSubtasks(taskId) {
+  try {
+    const subtasks = await api('GET', '/tasks/' + taskId + '/subtasks');
+    _pendingSubtasks = [];
+    _existingSubtasksToDelete.clear();
+    const list = document.getElementById('subtaskFormList');
+    if (list) list.innerHTML = '';
+    
+    if (subtasks && subtasks.length > 0) {
+      for (const st of subtasks) {
+        addSubtaskFormRow(st.title, st.id);
+      }
+      const panel = document.getElementById('subtaskFormPanel');
+      if (panel) panel.classList.remove('hidden');
+      const btn = document.getElementById('subtaskToggleBtn');
+      if (btn) btn.setAttribute('aria-expanded', 'true');
+      const icon = document.getElementById('subtaskToggleIcon');
+      if (icon) icon.textContent = '▼';
+    }
+  } catch (err) {
+    console.error('[subtasks] Failed to load existing subtasks:', err);
+  }
+}
+
+async function createAndDeleteSubtasks(taskId) {
+  // Delete marked subtasks
+  for (const subtaskId of _existingSubtasksToDelete) {
     try {
-      await api('POST', '/tasks/' + taskId + '/subtasks', { title });
+      await api('DELETE', '/tasks/' + taskId + '/subtasks/' + subtaskId);
+    } catch (err) {
+      console.error('[subtasks] Failed to delete subtask:', err);
+    }
+  }
+  
+  // Create new subtasks
+  const newSubtasks = _pendingSubtasks.filter(st => st && !st.id && st.title && st.title.trim());
+  for (const st of newSubtasks) {
+    try {
+      await api('POST', '/tasks/' + taskId + '/subtasks', { title: st.title });
     } catch (err) {
       console.error('[subtasks] Failed to create subtask:', err);
     }
   }
+}
+
+async function createPendingSubtasks(taskId) {
+  await createAndDeleteSubtasks(taskId);
 }
 
 // Load and render subtasks in the detail modal

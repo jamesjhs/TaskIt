@@ -1251,6 +1251,17 @@
       <button onclick="saveNotificationPreferences()" class="btn btn-primary btn-full">Save Preferences</button>
     </div>
 
+    <!-- Task Types Management -->
+    <div class="card" style="margin-top:16px">
+      <p class="card-title">📂 Task Types</p>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Create custom task types to organize and categorize your work. Types appear in all task selection dropdowns throughout the app.</p>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input id="newTaskTypeName" type="text" placeholder="New task type name…" class="input" style="flex:1;font-size:.9rem" maxlength="80" />
+        <button onclick="addProfileTaskType()" class="btn btn-primary btn-sm" style="white-space:nowrap">+ Add</button>
+      </div>
+      <div id="profileTaskTypesList" style="display:flex;flex-direction:column;gap:8px"><div class="loading" style="font-size:.85rem">Loading task types…</div></div>
+    </div>
+
     <!-- Gamification -->
     <div class="card" style="margin-top:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -2613,6 +2624,54 @@ async function submitFeedback() {
   } catch (err) { toast(err.message, 'error'); }
 }
 
+// ========== Task Type Management (Profile) ==========
+async function loadProfileTaskTypes() {
+  try {
+    const userTypes = await api('GET', '/task-types');
+    const container = document.getElementById('profileTaskTypesList');
+    if (!userTypes || userTypes.length === 0) {
+      container.innerHTML = '<p style="font-size:.85rem;color:#9ca3af">No custom task types yet. Create one above!</p>';
+      return;
+    }
+    container.innerHTML = userTypes
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(t => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:#f3f4f6;border-radius:6px;border:1px solid #e5e7eb">
+          <span style="font-size:.9rem;color:#1f2937;font-weight:500">${t.name}</span>
+          <button type="button" onclick="deleteProfileTaskType('${t.id}')" class="btn btn-sm btn-secondary" style="padding:4px 8px;font-size:.75rem">Delete</button>
+        </div>
+      `).join('');
+  } catch (err) {
+    toast(err.message, 'error');
+    document.getElementById('profileTaskTypesList').innerHTML = '<p style="color:#dc2626">Error loading task types.</p>';
+  }
+}
+
+async function addProfileTaskType() {
+  const input = document.getElementById('newTaskTypeName');
+  const name = input.value.trim();
+  if (!name) { toast('Please enter a task type name.', 'error'); return; }
+  if (name.length > 80) { toast('Task type name is too long (max 80 characters).', 'error'); return; }
+  try {
+    await api('POST', '/task-types', { name });
+    toast('Task type created!');
+    input.value = '';
+    loadProfileTaskTypes();
+    loadTypes();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function deleteProfileTaskType(typeId) {
+  const confirmed = window.confirm('Delete this task type? Existing tasks with this type will remain but won\'t be tied to a type anymore.');
+  if (!confirmed) return;
+  try {
+    await api('DELETE', `/task-types/${typeId}`);
+    toast('Task type deleted.');
+    loadProfileTaskTypes();
+    loadTypes();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
 async function confirmDeleteAccount() {
   const confirmed = window.confirm(
     'Are you absolutely sure?\n\nThis will permanently delete your account and ALL your data — tasks, notes, group memberships, and everything else.\n\nThis action CANNOT be undone.'
@@ -2653,6 +2712,7 @@ function showPage(page) {
     loadIcsLink();
     loadGamificationProfile();
     loadNotificationPreferences();
+    loadProfileTaskTypes();
   }
   if (page === 'progress') loadGamificationProfile();
 }

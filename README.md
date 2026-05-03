@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.14.4** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.15.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -11,6 +11,7 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - **Forgot password** — self-service password reset via email link
 - **Change password** — users can update their password from the Profile page
 - Account lockout protection
+- **Streamlined task creation** — tap the `+` floating button to reveal a three-option popup: **New Task**, **Sporadic Task**, or **Long-term Goal**; each opens the creation form pre-configured with only the fields relevant to that task type
 - Create and manage tasks with types, notes, and status tracking
 - Task statuses: Not Started → Started → Complete
 - **Sub-tasks** — break any task into individual checklist steps; tick each off one at a time, with a progress bar on the task card and detail modal; edit existing sub-task names, add and delete sub-tasks when editing a task; completing a sub-task automatically sets the parent task to "Started", and each sub-task completion earns a small configurable XP reward
@@ -25,8 +26,10 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - In-app alerts for overdue and due-soon tasks
 - **Per-task notification preferences** — choose whether to receive email reminders and/or browser popup notifications for each task, with a grid selecting 7-day, 1-day, and on-the-day timing
 - Group member access control — any group member can edit all task fields (title, due date, recurrence, notes, status, defer, archive); only the task creator or a group admin can delete a task
+- **Date-only scheduling** — task due dates are date-only (no time component); all times default to midnight so you never have to think about hours. Native calendar pickers on mobile and desktop for easy date entry
+- **Relative date shortcuts** — on any date field, type a number and choose days/weeks/months and tap "Set" to quickly jump to *n* days/weeks/months from today
 - Calendar integration — private ICS feed for any calendar app
-- Date & time locale preference per user
+- Date locale preference per user
 - User reporting and blocking
 - User feedback submission with in-app admin replies
 - Self-service account deletion (GDPR right to erasure)

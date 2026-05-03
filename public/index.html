@@ -56,7 +56,25 @@
   }
   </script>
 
-  <link rel="stylesheet" href="/app.css" />
+  <!--
+    Critical visibility guard — inline so it applies even if the external CSS file
+    fails to load (e.g. proxy misconfiguration, CDN miss, or network error).
+
+    The SPA relies entirely on the JavaScript pattern:
+      element.classList.add('hidden')    → hide
+      element.classList.remove('hidden') → show
+
+    If the external app.css never arrives, the .hidden rule is absent, every
+    page section is rendered simultaneously, and an unauthenticated visitor can
+    read ALL of the app's HTML structure — including the admin panel (SMTP
+    config, user management, locked accounts, reports, etc.) — as raw unstyled
+    text.  By defining .hidden here, in the document itself, we guarantee the
+    rule is always present regardless of the network or security environment.
+  -->
+  <style>
+    .hidden { display: none !important; }
+  </style>
+  <link rel="stylesheet" href="/app.css" type="text/css" />
   <!-- PWA / installable web app -->
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#7c3aed" />
@@ -1035,7 +1053,6 @@
         <button onclick="setFilter('status','')" id="filterAll" class="chip active">All</button>
         <button onclick="setFilter('status','not_started')" id="filterNotStarted" class="chip">Not Started</button>
         <button onclick="setFilter('status','started')" id="filterStarted" class="chip">Started</button>
-        <button onclick="setFilter('status','complete')" id="filterComplete" class="chip">Complete</button>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <select id="filterGroup" onchange="applyFilters()" class="filter-select">
@@ -1046,7 +1063,7 @@
         </select>
         <label class="toggle-label">
           <input type="checkbox" id="filterArchived" onchange="applyFilters()" />
-          Show Archived
+          Show Completed
         </label>
         <label class="toggle-label">
           <input type="checkbox" id="filterAssignedToMe" onchange="applyFilters()" />
@@ -1660,7 +1677,21 @@
   </div>
 
   <!-- Floating Action Button — New Task (Tasks page only) -->
-  <button id="fabNewTask" onclick="openTaskModal()" class="fab-btn" aria-label="New Task" title="New Task">+</button>
+  <button id="fabNewTask" onclick="toggleFabMenu()" class="fab-btn" aria-label="New Task" title="New Task">+</button>
+
+  <!-- FAB popup menu -->
+  <div id="fabMenuOverlay" class="fab-menu-overlay hidden" onclick="closeFabMenu()"></div>
+  <div id="fabMenu" class="fab-menu hidden" role="menu" aria-label="Create new task">
+    <button onclick="closeFabMenu(true); openTaskModalWithMode('goal')" class="fab-menu-item" role="menuitem" aria-label="Create long-term goal">
+      <span class="fab-menu-icon">🎯</span>Long-term Goal
+    </button>
+    <button onclick="closeFabMenu(true); openTaskModalWithMode('sporadic')" class="fab-menu-item" role="menuitem" aria-label="Create sporadic task">
+      <span class="fab-menu-icon">🔄</span>Sporadic Task
+    </button>
+    <button onclick="closeFabMenu(true); openTaskModalWithMode('task')" class="fab-menu-item" role="menuitem" aria-label="Create new task">
+      <span class="fab-menu-icon">📋</span>New Task
+    </button>
+  </div>
 
   <!-- Bottom Navigation -->
   <nav class="nav-bottom">
@@ -1747,7 +1778,7 @@
         <input type="hidden" id="taskEditId" />
         <div class="form-group">
           <label>Title <span style="color:#dc2626">*</span></label>
-          <input id="taskTitle" type="text" required placeholder="Task title" class="input" />
+          <input id="taskTitle" type="text" required placeholder="Task title" class="input" maxlength="200" />
         </div>
         <div class="form-group">
           <label>Type <span style="color:#dc2626">*</span></label>
@@ -1789,9 +1820,20 @@
             <textarea id="taskDetails" rows="3" placeholder="Optional notes…" class="textarea"></textarea>
           </div>
         </div>
-        <div class="form-group">
-          <label>Due Date</label>
-          <input id="taskDueDate" type="datetime-local" class="input" />
+        <div class="form-group" id="dueDateGroup">
+          <label for="taskDueDate">Due Date</label>
+          <input id="taskDueDate" type="date" class="input" />
+          <div id="dueDateRelativeRow" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px">
+            <span style="font-size:.85rem;color:#6b7280">or in</span>
+            <input id="dueDateRelativeNum" type="number" min="1" max="999" value="1" class="input" style="width:60px;flex-shrink:0;padding:6px 8px" aria-label="Number of time units" />
+            <select id="dueDateRelativeUnit" class="select" style="flex:1;min-width:90px" aria-label="Time unit (days, weeks, or months)">
+              <option value="days">days</option>
+              <option value="weeks" selected>weeks</option>
+              <option value="months">months</option>
+            </select>
+            <span style="font-size:.85rem;color:#6b7280">from now</span>
+            <button type="button" onclick="setRelativeDueDate('taskDueDate','dueDateRelativeNum','dueDateRelativeUnit')" class="btn btn-secondary btn-sm">Set</button>
+          </div>
         </div>
         <div id="taskStatusRow" class="form-group hidden">
           <label>Status</label>
@@ -1801,18 +1843,18 @@
             <option value="complete">Complete</option>
           </select>
         </div>
-        <div class="form-group">
+        <div id="taskSporadicGroup" class="form-group">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
             <input type="checkbox" id="taskSporadic" onchange="onSporadicChange()" style="width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0" />
             <span>Sporadic (maintenance task)</span>
           </label>
           <p id="sporadicInfo" style="font-size:.8rem;color:#6b7280;margin:8px 0 0 24px;display:none">This task has no fixed schedule. When completed, it reappears and shows how long ago you last did it. Examples: Haircut, Lawn mowing, Car maintenance</p>
           <div id="sporadicLastDoneDateField" class="hidden" style="margin-top:12px;margin-left:24px">
-            <label>Last Completed <span style="color:#dc2626">*</span></label>
-            <input id="sporadicLastDoneDateTime" type="datetime-local" class="input" />
+            <label for="sporadicLastDoneDateTime">Last Completed <span style="color:#dc2626">*</span></label>
+            <input id="sporadicLastDoneDateTime" type="date" class="input" />
           </div>
         </div>
-        <div class="form-group">
+        <div id="taskLongTermGoalGroup" class="form-group">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
             <input type="checkbox" id="taskLongTermGoal" onchange="onLongTermGoalChange()" style="width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0" />
             <span>Long-term Goal</span>
@@ -1883,8 +1925,19 @@
       <p style="font-size:.9rem;color:#6b7280;margin-bottom:16px">Set a due date to move this goal into your active task list.</p>
       <input type="hidden" id="setDeadlineGoalId" />
       <div class="form-group">
-        <label>Due Date <span style="color:#dc2626">*</span></label>
-        <input id="setDeadlineDueDate" type="datetime-local" class="input" />
+        <label for="setDeadlineDueDate">Due Date <span style="color:#dc2626">*</span></label>
+        <input id="setDeadlineDueDate" type="date" class="input" />
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px">
+          <span style="font-size:.85rem;color:#6b7280">or in</span>
+          <input id="deadlineRelativeNum" type="number" min="1" max="999" value="1" class="input" style="width:60px;flex-shrink:0;padding:6px 8px" aria-label="Number of time units" />
+          <select id="deadlineRelativeUnit" class="select" style="flex:1;min-width:90px" aria-label="Time unit (days, weeks, or months)">
+            <option value="days">days</option>
+            <option value="weeks">weeks</option>
+            <option value="months">months</option>
+          </select>
+          <span style="font-size:.85rem;color:#6b7280">from now</span>
+          <button type="button" onclick="setRelativeDueDate('setDeadlineDueDate','deadlineRelativeNum','deadlineRelativeUnit')" class="btn btn-secondary btn-sm">Set</button>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -2004,10 +2057,21 @@
       </div>
       <div id="deferSection" class="detail-section hidden">
         <p class="detail-section-title">Defer Task</p>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input id="deferDateInput" type="datetime-local" class="input" style="flex:1" />
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input id="deferDateInput" type="date" class="input" style="flex:1;min-width:140px" aria-label="New due date" />
           <button onclick="confirmDefer()" class="btn btn-primary btn-sm">Set Date</button>
           <button onclick="document.getElementById('deferSection').classList.add('hidden')" class="btn btn-secondary btn-sm">✕</button>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px">
+          <span style="font-size:.85rem;color:#6b7280">or in</span>
+          <input id="deferRelativeNum" type="number" min="1" max="999" value="1" class="input" style="width:60px;flex-shrink:0;padding:6px 8px" aria-label="Number of time units" />
+          <select id="deferRelativeUnit" class="select" style="flex:1;min-width:90px" aria-label="Time unit (days, weeks, or months)">
+            <option value="days">days</option>
+            <option value="weeks">weeks</option>
+            <option value="months">months</option>
+          </select>
+          <span style="font-size:.85rem;color:#6b7280">from now</span>
+          <button type="button" onclick="setRelativeDueDate('deferDateInput','deferRelativeNum','deferRelativeUnit')" class="btn btn-secondary btn-sm">Set</button>
         </div>
       </div>
       <div class="detail-section">
@@ -2030,7 +2094,6 @@
     <div class="modal-footer">
       <button onclick="toggleDeferSection()" class="btn btn-outline btn-sm" style="flex:1">Defer</button>
       <button onclick="editCurrentTask()" class="btn btn-outline btn-sm" style="flex:1">Edit</button>
-      <button onclick="archiveCurrentTask()" class="btn btn-secondary btn-sm" style="flex:1">Archive</button>
       <button id="detailDeleteBtn" onclick="deleteCurrentTask()" class="btn btn-danger btn-sm" style="flex:1">Delete</button>
       <button onclick="closeDetailModal()" class="btn btn-secondary btn-sm">✕</button>
     </div>
@@ -2045,8 +2108,8 @@
       <p style="font-size:.9rem;color:#6b7280;margin-bottom:16px">Update when you last completed this sporadic task.</p>
       <input type="hidden" id="editSporadicTaskId" />
       <div class="form-group">
-        <label>Date &amp; Time <span style="color:#dc2626">*</span></label>
-        <input id="editSporadicDateTime" type="datetime-local" class="input" />
+        <label for="editSporadicDateTime">Date <span style="color:#dc2626">*</span></label>
+        <input id="editSporadicDateTime" type="date" class="input" />
       </div>
     </div>
     <div class="modal-footer">
@@ -2212,17 +2275,13 @@ function isMobileDevice() {
     || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
 }
 
-// On mobile, convert datetime-local inputs to date/time pair for better UX with day-of-week info
+// On mobile, enhance date inputs for better UX
 function enhanceMobileDatetimePickers() {
-  // Note: The native datetime-local picker on mobile is usually not intuitive as it shows
-  // only a scrollable list of dates without weekday context. We enhance by ensuring the 
-  // input is large enough to be easily tappable and by providing visual feedback.
-  // Most mobile browsers now provide reasonable date/time pickers, so we mainly ensure good styling.
-  const inputs = document.querySelectorAll('input[type="datetime-local"]');
-  inputs.forEach(input => {
-    input.style.fontSize = '16px'; // Prevents zoom-on-focus on iOS
-    input.style.minHeight = '44px'; // Touch-friendly size
-    input.style.minWidth = '100%';
+  // Ensure date and text inputs are touch-friendly on mobile
+  // 16px font prevents iOS auto-zoom on focus; 44px min-height aids tapping
+  document.querySelectorAll('input[type="date"], input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, textarea').forEach(el => {
+    if (!el.style.fontSize) el.style.fontSize = '16px';
+    if (!el.style.minHeight) el.style.minHeight = '44px';
   });
 }
 
@@ -2598,7 +2657,7 @@ function initApp() {
       cleanupRevokedPushSubscription();
     }
   }
-  // On mobile, enhance datetime-local inputs to show calendar view
+  // On mobile, enhance date inputs for better touch UX
   if (isMobileDevice()) {
     enhanceMobileDatetimePickers();
   }
@@ -2665,7 +2724,7 @@ function toggleEditTaskType(typeId) {
     const nameSpan = container.querySelector('span');
     const origName = nameSpan.textContent;
     const editHtml = `
-      <input type="text" id="edit-${typeId}" class="input" value="${origName}" maxlength="80" style="font-size:.9rem;flex:1" />
+      <input type="text" id="edit-${typeId}" class="input" value="${escHtml(origName)}" maxlength="80" style="font-size:.9rem;flex:1" />
       <div style="display:flex;gap:6px">
         <button type="button" onclick="saveEditTaskType('${typeId}')" class="btn btn-sm btn-primary" style="padding:4px 8px;font-size:.75rem">Save</button>
         <button type="button" onclick="cancelEditTaskType('${typeId}')" class="btn btn-sm btn-secondary" style="padding:4px 8px;font-size:.75rem">Cancel</button>
@@ -3114,18 +3173,9 @@ function openEditSporadicLastDoneModal(taskId) {
   const task = sporadicMap.get(taskId);
   if (!task) { toast('Task not found', 'error'); return; }
   document.getElementById('editSporadicTaskId').value = taskId;
-  if (task.last_completed_at) {
-    const d = new Date(task.last_completed_at);
-    const pad = n => String(n).padStart(2, '0');
-    const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    document.getElementById('editSporadicDateTime').value = iso;
-  } else {
-    // Default to now if never completed
-    const d = new Date();
-    const pad = n => String(n).padStart(2, '0');
-    const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    document.getElementById('editSporadicDateTime').value = iso;
-  }
+  const pad = n => String(n).padStart(2, '0');
+  const d = task.last_completed_at ? new Date(task.last_completed_at) : new Date();
+  document.getElementById('editSporadicDateTime').value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   document.getElementById('editSporadicLastDoneModal').classList.remove('hidden');
 }
 
@@ -3139,7 +3189,7 @@ async function confirmEditSporadicLastDone() {
   const taskId = document.getElementById('editSporadicTaskId').value;
   const dateTimeVal = document.getElementById('editSporadicDateTime').value;
   if (!taskId || !dateTimeVal) { toast('Please fill in all fields', 'error'); return; }
-  const lastCompletedAt = new Date(dateTimeVal).getTime();
+  const lastCompletedAt = new Date(dateTimeVal + 'T00:00:00').getTime();
   if (isNaN(lastCompletedAt)) { toast('Invalid date/time', 'error'); return; }
   try {
     await api('PATCH', `/tasks/${taskId}/sporadic-last-done`, { lastCompletedAt });
@@ -3237,9 +3287,9 @@ function openNewGoalModal() {
 
 function openSetDeadlineModal(goalId) {
   document.getElementById('setDeadlineGoalId').value = goalId;
-  const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
-  const iso = new Date(midnight.getTime() - midnight.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-  document.getElementById('setDeadlineDueDate').value = iso;
+  const today = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById('setDeadlineDueDate').value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
   document.getElementById('setDeadlineModal').classList.remove('hidden');
 }
 
@@ -3254,7 +3304,7 @@ async function confirmSetDeadline() {
   const dueDateVal = document.getElementById('setDeadlineDueDate').value;
   if (!goalId) { toast('No goal selected', 'error'); return; }
   if (!dueDateVal) { toast('Please select a due date', 'error'); return; }
-  const dueDate = new Date(dueDateVal).getTime();
+  const dueDate = new Date(dueDateVal + 'T00:00:00').getTime();
   if (isNaN(dueDate)) { toast('Invalid date', 'error'); return; }
   try {
     await api('PATCH', '/tasks/' + goalId, { dueDate, isLongTermGoal: false });
@@ -3312,7 +3362,7 @@ function updateFilterBadge() {
 
 function setFilter(key, value) {
   currentFilter[key] = value;
-  const btnMap = { '': 'filterAll', 'not_started': 'filterNotStarted', 'started': 'filterStarted', 'complete': 'filterComplete' };
+  const btnMap = { '': 'filterAll', 'not_started': 'filterNotStarted', 'started': 'filterStarted' };
   Object.entries(btnMap).forEach(([v, id]) => {
     const btn = document.getElementById(id);
     if (!btn) return;
@@ -3330,6 +3380,71 @@ function applyFilters() {
   currentFilter.showGroupTasks = document.getElementById('filterShowGroupTasks').checked;
   updateFilterBadge();
   loadTasks();
+}
+
+// ========== FAB Popup Menu ==========
+var fabCloseTimer = null;
+function openFabMenu() {
+  var menu = document.getElementById('fabMenu');
+  var overlay = document.getElementById('fabMenuOverlay');
+  if (fabCloseTimer) { clearTimeout(fabCloseTimer); fabCloseTimer = null; }
+  menu.classList.remove('fab-menu-closing', 'fab-menu-open');
+  menu.classList.remove('hidden');
+  overlay.classList.remove('hidden');
+  // Double rAF: first rAF fires after the current paint (where display:flex is
+  // committed); second rAF fires after the compositor layer for the element
+  // exists. Adding the animation class only after this prevents Blink
+  // (Chrome Android / Samsung Internet / Edge) from skipping the tween.
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      menu.classList.add('fab-menu-open');
+    });
+  });
+}
+function closeFabMenu(instant) {
+  var menu = document.getElementById('fabMenu');
+  var overlay = document.getElementById('fabMenuOverlay');
+  if (fabCloseTimer) { clearTimeout(fabCloseTimer); fabCloseTimer = null; }
+  if (instant) {
+    menu.classList.remove('fab-menu-open', 'fab-menu-closing');
+    menu.classList.add('hidden');
+    overlay.classList.add('hidden');
+    return;
+  }
+  if (menu.classList.contains('hidden')) return;
+  overlay.classList.add('hidden');
+  menu.classList.remove('fab-menu-open');
+  menu.classList.add('fab-menu-closing');
+  // Hide after longest close animation completes (.1s delay + .18s duration = .28s)
+  fabCloseTimer = setTimeout(function() {
+    menu.classList.remove('fab-menu-closing');
+    menu.classList.add('hidden');
+    fabCloseTimer = null;
+  }, 320);
+}
+function toggleFabMenu() {
+  var menu = document.getElementById('fabMenu');
+  if (menu.classList.contains('hidden') || menu.classList.contains('fab-menu-closing')) {
+    openFabMenu();
+  } else {
+    closeFabMenu();
+  }
+}
+function openTaskModalWithMode(mode) {
+  openTaskModal(null);
+  if (mode === 'sporadic') {
+    document.getElementById('taskSporadic').checked = true;
+    document.getElementById('taskLongTermGoal').checked = false;
+    updateTaskMode();
+  } else if (mode === 'goal') {
+    document.getElementById('taskLongTermGoal').checked = true;
+    document.getElementById('taskSporadic').checked = false;
+    updateTaskMode();
+  } else {
+    document.getElementById('taskSporadic').checked = false;
+    document.getElementById('taskLongTermGoal').checked = false;
+    updateTaskMode();
+  }
 }
 
 // ========== Task Modal ==========
@@ -3383,7 +3498,7 @@ function openTaskModal(task = null) {
     document.getElementById('notifyPopupOnday').checked = task.notify_popup_onday !== 0;
     if (task.due_date) {
       const d = new Date(task.due_date);
-      const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
       document.getElementById('taskDueDate').value = iso;
     } else { document.getElementById('taskDueDate').value = ''; }
     // Pre-populate XP multiplier when editing (show/hide based on group flag happens in loadGroupMembersForTask)
@@ -3394,7 +3509,7 @@ function openTaskModal(task = null) {
     // Pre-populate last_completed_at for sporadic tasks
     if (task.is_sporadic && task.last_completed_at) {
       const d = new Date(task.last_completed_at);
-      const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
       document.getElementById('sporadicLastDoneDateTime').value = iso;
     }
   } else {
@@ -3403,9 +3518,11 @@ function openTaskModal(task = null) {
     document.getElementById('taskTitle').value = '';
     document.getElementById('taskDetails').value = '';
     setNotesPanel(false);
-    const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
-    const iso = new Date(midnight.getTime() - midnight.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    document.getElementById('taskDueDate').value = iso;
+    const pad = n => String(n).padStart(2, '0');
+    const oneWeek = new Date(); oneWeek.setDate(oneWeek.getDate() + 7);
+    document.getElementById('taskDueDate').value = `${oneWeek.getFullYear()}-${pad(oneWeek.getMonth()+1)}-${pad(oneWeek.getDate())}`;
+    document.getElementById('dueDateRelativeNum').value = '1';
+    document.getElementById('dueDateRelativeUnit').value = 'weeks';
     document.getElementById('taskStatusRow').classList.add('hidden');
     document.getElementById('taskRecurEnabled').checked = false;
     document.getElementById('taskRecurFields').classList.add('hidden');
@@ -3419,12 +3536,20 @@ function openTaskModal(task = null) {
     document.getElementById('assigneeContainer').innerHTML = '';
     const ltgCheck = document.getElementById('taskLongTermGoal');
     if (ltgCheck) ltgCheck.checked = false;
+    // Hide sporadic/goal checkboxes for new tasks — mode is selected via the FAB menu
+    document.getElementById('taskSporadicGroup').classList.add('hidden');
+    document.getElementById('taskLongTermGoalGroup').classList.add('hidden');
   }
   // Reset long-term goal checkbox state when editing
   const ltgCb = document.getElementById('taskLongTermGoal');
   if (ltgCb && task) ltgCb.checked = !!(task.is_long_term_goal);
   const sporadicCb = document.getElementById('taskSporadic');
   if (sporadicCb && task) sporadicCb.checked = !!(task.is_sporadic);
+  // Show sporadic/goal checkboxes when editing so the user can change the task type
+  if (task) {
+    document.getElementById('taskSporadicGroup').classList.remove('hidden');
+    document.getElementById('taskLongTermGoalGroup').classList.remove('hidden');
+  }
   updateTaskMode();
   document.getElementById('taskModal').classList.remove('hidden');
 }
@@ -3462,6 +3587,10 @@ async function loadGroupMembersForTask(selectedIds = []) {
 
 async function handleTaskSubmit(e) {
   e.preventDefault();
+  const saveBtn = document.getElementById('taskSaveBtn');
+  const origLabel = saveBtn ? saveBtn.textContent : 'Save Task';
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+  const restoreBtn = () => { if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = origLabel; } };
   const editId = document.getElementById('taskEditId').value;
   const sporadicCheckbox = document.getElementById('taskSporadic');
   const isSporadic = sporadicCheckbox && sporadicCheckbox.checked;
@@ -3475,8 +3604,8 @@ async function handleTaskSubmit(e) {
     const groupId = document.getElementById('taskGroup').value || null;
     const typeId = document.getElementById('taskType').value;
 
-    if (!title) { toast('Goal title is required', 'error'); return; }
-    if (!typeId) { toast('Task type is required', 'error'); return; }
+    if (!title) { toast('Goal title is required', 'error'); restoreBtn(); return; }
+    if (!typeId) { toast('Task type is required', 'error'); restoreBtn(); return; }
 
     const xpMultiplierRow = document.getElementById('taskXpMultiplierRow');
     const xpMultiplier = (xpMultiplierRow && !xpMultiplierRow.classList.contains('hidden'))
@@ -3500,7 +3629,7 @@ async function handleTaskSubmit(e) {
     } catch (err) {
       toast(err.message, 'error');
     }
-    return;
+    restoreBtn(); return;
   }
 
   // Handle sporadic task creation
@@ -3510,14 +3639,8 @@ async function handleTaskSubmit(e) {
     const groupId = document.getElementById('taskGroup').value || null;
     const typeId = document.getElementById('taskType').value;
     
-    if (!title) {
-      toast('Task title is required', 'error');
-      return;
-    }
-    if (!typeId) {
-      toast('Task type is required', 'error');
-      return;
-    }
+    if (!title) { toast('Task title is required', 'error'); restoreBtn(); return; }
+    if (!typeId) { toast('Task type is required', 'error'); restoreBtn(); return; }
     
     try {
       await api('POST', '/tasks/create-sporadic', {
@@ -3534,7 +3657,7 @@ async function handleTaskSubmit(e) {
     } catch (err) {
       toast(err.message, 'error');
     }
-    return;
+    restoreBtn(); return;
   }
 
   // Handle sporadic task editing
@@ -3545,14 +3668,8 @@ async function handleTaskSubmit(e) {
     const typeId = document.getElementById('taskType').value;
     const lastDoneDateTimeVal = document.getElementById('sporadicLastDoneDateTime').value;
 
-    if (!title) {
-      toast('Task title is required', 'error');
-      return;
-    }
-    if (!typeId) {
-      toast('Task type is required', 'error');
-      return;
-    }
+    if (!title) { toast('Task title is required', 'error'); restoreBtn(); return; }
+    if (!typeId) { toast('Task type is required', 'error'); restoreBtn(); return; }
 
     const body = {
       title,
@@ -3562,7 +3679,7 @@ async function handleTaskSubmit(e) {
     };
 
     if (lastDoneDateTimeVal) {
-      body.lastCompletedAt = new Date(lastDoneDateTimeVal).getTime();
+      body.lastCompletedAt = new Date(lastDoneDateTimeVal + 'T00:00:00').getTime();
     }
 
     try {
@@ -3575,7 +3692,7 @@ async function handleTaskSubmit(e) {
     } catch (err) {
       toast(err.message, 'error');
     }
-    return;
+    restoreBtn(); return;
   }
   
   // Handle regular task creation/editing
@@ -3586,7 +3703,7 @@ async function handleTaskSubmit(e) {
     typeId: document.getElementById('taskType').value,
     groupId: document.getElementById('taskGroup').value || null,
     assigneeIds,
-    dueDate: (() => { const v = document.getElementById('taskDueDate').value; return v ? new Date(v).getTime() : null; })(),
+    dueDate: (() => { const v = document.getElementById('taskDueDate').value; return v ? new Date(v + 'T00:00:00').getTime() : null; })(),
   };
   if (editId) body.status = document.getElementById('taskStatus').value;
   const recurEnabled = document.getElementById('taskRecurEnabled').checked;
@@ -3631,6 +3748,7 @@ async function handleTaskSubmit(e) {
     resetSubtaskPanel();
     closeTaskModal(); loadTasks(); loadLongTermGoals();
   } catch (err) { toast(err.message, 'error'); }
+  restoreBtn();
 }
 
 // ========== Task Detail ==========
@@ -3653,7 +3771,7 @@ function openDetail(task) {
   if (task.due_date) {
     const now = Date.now();
     const overdue = task.due_date < now && task.status !== 'complete';
-    dueDateEl.textContent = (overdue ? '\u26a0\ufe0f OVERDUE \u2014 was due: ' : '\ud83d\udcc5 Due: ') + fmtDateTime(task.due_date);
+    dueDateEl.textContent = (overdue ? '\u26a0\ufe0f OVERDUE \u2014 was due: ' : '\ud83d\udcc5 Due: ') + fmtDate(task.due_date);
     dueDateEl.className = overdue ? 'due-overdue' : '';
     dueDateEl.style.fontSize = '.9rem'; dueDateEl.style.marginBottom = '12px';
     dueDateEl.classList.remove('hidden');
@@ -3961,6 +4079,9 @@ async function deleteSubtask(subId) {
 
 async function quickStatus(status) {
   if (!currentDetailTask) return;
+  if (status === 'complete') {
+    if (!confirm('Mark this task as complete? It will be moved out of your active list.')) return;
+  }
   try {
     const wasRecurring = !!(currentDetailTask.recur_interval && currentDetailTask.recur_unit);
     const updated = await api('PATCH', '/tasks/' + currentDetailTask.id + '/status', { status });
@@ -4004,7 +4125,7 @@ function toggleDeferSection() {
     if (currentDetailTask && currentDetailTask.due_date) {
       const d = new Date(currentDetailTask.due_date);
       const pad = n => String(n).padStart(2, '0');
-      inp.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      inp.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
     } else {
       inp.value = '';
     }
@@ -4016,7 +4137,7 @@ async function confirmDefer() {
   if (!currentDetailTask) return;
   const val = document.getElementById('deferDateInput').value;
   if (!val) { toast('Please select a due date', 'error'); return; }
-  const dueDate = new Date(val).getTime();
+  const dueDate = new Date(val + 'T00:00:00').getTime();
   try {
     const updated = await api('PATCH', '/tasks/' + currentDetailTask.id + '/defer', { dueDate });
     currentDetailTask = updated; tasksMap.set(updated.id, updated);
@@ -5864,6 +5985,18 @@ function toggleRecurFields() {
   document.getElementById('taskRecurFields').classList.toggle('hidden', !enabled);
 }
 
+function setRelativeDueDate(dateInputId, numInputId, unitInputId) {
+  const num = parseInt(document.getElementById(numInputId).value, 10) || 1;
+  const unit = document.getElementById(unitInputId).value;
+  const d = new Date();
+  if (unit === 'days') d.setDate(d.getDate() + num);
+  else if (unit === 'weeks') d.setDate(d.getDate() + num * 7);
+  else if (unit === 'months') d.setMonth(d.getMonth() + num);
+  else { toast('Invalid time unit', 'error'); return; }
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById(dateInputId).value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
 function updateTaskMode() {
   const sporadicEl = document.getElementById('taskSporadic');
   const ltgEl = document.getElementById('taskLongTermGoal');
@@ -5878,6 +6011,7 @@ function updateTaskMode() {
   const isSpecialMode = sporadic || ltg;
   const isEditing = !!(document.getElementById('taskEditId') && document.getElementById('taskEditId').value);
 
+  const dueDateRelRow = document.getElementById('dueDateRelativeRow');
   if (isSpecialMode) {
     // Hide due date, recurrence, and reminders for sporadic and long-term goal modes
     dueDateField.classList.add('hidden');
@@ -5885,11 +6019,13 @@ function updateTaskMode() {
     document.getElementById('taskRecurFields').classList.add('hidden');
     document.getElementById('taskRecurEnabled').checked = false;
     if (remindersRow) remindersRow.classList.add('hidden');
+    if (dueDateRelRow) dueDateRelRow.style.display = 'none';
   } else {
     // Show all fields for regular tasks
     dueDateField.classList.remove('hidden');
     recurField.classList.remove('hidden');
     if (remindersRow) remindersRow.classList.remove('hidden');
+    if (dueDateRelRow) dueDateRelRow.style.display = 'flex';
   }
 
   if (sporadicInfo) sporadicInfo.style.display = sporadic ? 'block' : 'none';

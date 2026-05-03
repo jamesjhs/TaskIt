@@ -965,8 +965,11 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
   // When reverting from complete: clear those fields.
   if (status === 'complete') {
     const xpClaimedClause = shouldAwardXp ? ', xp_claimed = 1' : '';
+    // Completing a task also archives it so it disappears from the active list.
+    // Recurring tasks will be re-archived by the spawn-and-archive transaction below;
+    // non-recurring tasks are archived here directly.
     db.prepare(
-      `UPDATE tasks SET status = ?, updated_at = ?, completed_at = ?, completed_by = ?${xpClaimedClause} WHERE id = ?`
+      `UPDATE tasks SET status = ?, archived = 1, updated_at = ?, completed_at = ?, completed_by = ?${xpClaimedClause} WHERE id = ?`
     ).run(status, now, now, userId, taskId);
   } else {
     db.prepare(

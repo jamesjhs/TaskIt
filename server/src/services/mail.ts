@@ -143,6 +143,7 @@ export async function sendTaskReminder(to: string, task: { title: string; due_da
   const transporter = await getTransporter();
   if (!transporter) {
     console.warn('[mail] SMTP not configured or disabled — skipping task reminder email');
+    console.info(`[mail] Task reminder for ${to}: "${task.title}" due ${new Date(task.due_date).toLocaleString()} (label: ${reminderLabel ?? 'upcoming'})`);
     return;
   }
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;

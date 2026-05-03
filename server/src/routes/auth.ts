@@ -35,9 +35,13 @@ const MAX_PASSWORD_LEN = 128; // bcrypt silently truncates at 72; we enforce a h
 
 // Verify Turnstile CAPTCHA token with Cloudflare
 async function verifyTurnstileToken(token: string): Promise<boolean> {
-  if (!TURNSTILE_SECRET_KEY || !token) {
-    // If Turnstile is not configured or no token provided, allow (registration not blocked)
+  if (!TURNSTILE_SECRET_KEY) {
+    // Turnstile secret key not configured — bypass verification entirely
     return true;
+  }
+  if (!token) {
+    // Key is configured but no token was provided — reject
+    return false;
   }
 
   try {
@@ -100,10 +104,6 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
   // Check if Turnstile is enabled
   const turnstileSettings = db.prepare('SELECT enabled FROM turnstile_settings WHERE id = 1').get() as { enabled: number } | undefined;
   if (turnstileSettings?.enabled) {
-    if (!turnstileToken) {
-      res.status(400).json({ error: 'CAPTCHA verification is required' });
-      return;
-    }
     const isValid = await verifyTurnstileToken(turnstileToken as string);
     if (!isValid) {
       res.status(400).json({ error: 'CAPTCHA verification failed. Please try again.' });

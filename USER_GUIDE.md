@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.14.4** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.15.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -33,16 +33,23 @@ There are two ways to log in:
 
 ### Creating a task
 
-1. Go to the **Tasks** page and tap the large **`+`** floating button at the bottom-right of the screen.
-2. Give your task a **title** and choose a **type** (e.g. Urgent, Routine, Hobby). You can also add a custom type by selecting *+ Add new type…* from the dropdown.
-3. Optionally select a **Group**. Once a group is chosen, an **Assign To** section appears — tick the group members you want to assign the task to.
-4. To break the task into steps, click the **▶ Add Sub-tasks** toggle (directly below the Group field) and enter each step (see [Sub-tasks](#sub-tasks) below).
-5. To add free-text **Notes**, click the **▶ Notes** toggle to expand the notes field. When editing a task that already has notes, the field opens automatically.
-6. Set a **due date** if needed (defaults to midnight today).
-7. To make the task repeat automatically, tick **Repeat Task** and choose the interval (e.g. every 2 weeks). When a recurring task is marked complete, a new copy is created for the next due date — including all of its sub-tasks (checklist items), reset and ready to be completed again.
-8. Click **Save Task**.
+1. Go to the **Tasks** page and tap the large **`+`** floating button at the bottom-right of the screen. A small popup appears with three choices:
+   - **📋 New Task** — a regular task with a due date and optional repeat
+   - **🔄 Sporadic Task** — a maintenance task with no fixed schedule (e.g. Haircut, Car service)
+   - **🎯 Long-term Goal** — an aspirational goal with no immediate deadline
+2. Tap the choice that fits. The **Create Task** form opens pre-configured with only the fields relevant to that type.
+3. Give your task a **title** and choose a **type** (e.g. Urgent, Routine, Hobby). You can also add a custom type by selecting *+ Add new type…* from the dropdown.
+4. Optionally select a **Group**. Once a group is chosen, an **Assign To** section appears — tick the group members you want to assign the task to.
+5. To break the task into steps, click the **▶ Add Sub-tasks** toggle (directly below the Group field) and enter each step (see [Sub-tasks](#sub-tasks) below).
+6. To add free-text **Notes**, click the **▶ Notes** toggle to expand the notes field. When editing a task that already has notes, the field opens automatically.
+7. Set a **due date** if needed (defaults to today). Tap the date field to open a calendar picker — on mobile this is a native date picker for easy one-thumb use.
+   - **Shortcut:** Below the date field, use the *"or in X days/weeks/months from now"* helper and tap **Set** to auto-fill the date.
+8. To make the task repeat automatically, tick **Repeat Task** and choose the interval (e.g. every 2 weeks). When a recurring task is marked complete, a new copy is created for the next due date — including all of its sub-tasks (checklist items), reset and ready to be completed again.
+9. Click **Save Task**.
 
-Due dates default to **midnight on today's date** — handy for quick captures!
+> 💡 **No time needed** — TaskIt! doesn't attach a time to tasks. Dates default to midnight on the chosen day, and only the date is shown on task cards.
+
+Due dates default to **today's date** — handy for quick captures!
 
 ### Sub-tasks
 
@@ -71,7 +78,7 @@ Click any task card to open the detail panel. From here you can:
 
 - Move it through the stages: **Not Started → Started → Complete**
 - **Edit** any of the task's details
-- **Defer** the task — click *Defer* to set a new due date without opening the full edit form
+- **Defer** the task — click *Defer* to set a new due date without opening the full edit form. You can enter the date directly or use the *"or in X days/weeks/months from now"* shortcut below the date picker
 - **Archive** it to tidy your view (archived tasks can always be brought back)
 - **Delete** it permanently — note that for group tasks, only the task creator or a group admin can delete; other group members can edit all other details but not delete
 
@@ -80,10 +87,11 @@ Click any task card to open the detail panel. From here you can:
 Sporadic tasks are **maintenance tasks with no fixed schedule** — things you do occasionally and want to track, like a haircut, car service, or cleaning the gutters.
 
 **Creating a sporadic task:**
-1. Tap **`+`** to open the New Task form.
+1. Tap **`+`** and choose **🔄 Sporadic Task** from the popup.
 2. Fill in the title, type, and optional group/notes.
-3. Tick the **Sporadic (maintenance task)** checkbox — the due date and recurrence fields hide automatically.
-4. Click **Save Task**.
+3. Click **Save Task** — the due date and recurrence fields are already hidden.
+
+You can also tap **`+`**, choose **📋 New Task**, and tick the **Sporadic (maintenance task)** checkbox manually.
 
 **How they work:**
 - Sporadic tasks appear in the **Sporadic Tasks** section at the top of the Tasks page, always visible and collapsed by default.
@@ -97,11 +105,12 @@ Sporadic tasks are **maintenance tasks with no fixed schedule** — things you d
 Long-term goals are **aspirational items with no immediate deadline** — things you want to do eventually but aren't ready to schedule yet. Think *Learn Spanish*, *Run a half-marathon*, or *Redecorate the living room*.
 
 **Creating a long-term goal:**
-1. Tap **`+`** to open the New Task form, **or** tap **+ Add Goal** in the Long-term Goals section header.
+1. Tap **`+`** and choose **🎯 Long-term Goal** from the popup.
 2. Fill in the title, type, optional group, and notes.
-3. Tick the **Long-term Goal** checkbox — the due date and recurrence fields hide.
-4. If the task is in a group with gamification enhancements enabled, you can set an **XP Multiplier** to boost the reward when the goal is eventually completed.
-5. Click **Save Task**.
+3. If the task is in a group with gamification enhancements enabled, you can set an **XP Multiplier** to boost the reward when the goal is eventually completed.
+4. Click **Save Task** — the due date and recurrence fields are already hidden.
+
+You can also tap **`+`**, choose **📋 New Task**, and tick the **Long-term Goal** checkbox manually; or tap **+ Add Goal** in the Long-term Goals section header.
 
 **The Long-term Goals section:**
 - Sits at the **bottom of the Tasks page**, collapsed by default, showing **(0)** when empty.

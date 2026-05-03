@@ -40,6 +40,18 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Dedicated limiter for static file requests.
+// Static assets (CSS, JS, images) are requested in bursts at page load time.
+// Using a generous limit separate from the API limiter prevents CSS/JS from
+// being rate-limited when many assets load at once, or when a reverse proxy
+// presents all upstream clients under the same IP.
+const staticLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 2000,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
@@ -295,13 +307,38 @@ app.get('/sw.js', (_req, res) => {
   res.send(swContent);
 });
 
-// Serve static frontend files
-app.use(generalLimiter, express.static(path.join(__dirname, '..', '..', 'public'), {
+// Serve static frontend files.
+// Uses a dedicated high-limit rate-limiter (staticLimiter) rather than the
+// general API limiter so that a page-load burst of concurrent asset requests
+// (HTML + CSS + JS + icons) never exhausts the API quota — this is especially
+// important when the server runs behind a reverse proxy or CDN that presents
+// all upstream clients under a single IP address.
+app.use(staticLimiter, express.static(path.join(__dirname, '..', '..', 'public'), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('index.html')) {
       // Always revalidate the HTML shell so clients pick up new asset fingerprints
       // immediately, even when the Service Worker has been bypassed or not yet active.
       res.setHeader('Cache-Control', 'no-cache');
+      return;
+    }
+    // Explicitly declare MIME types for CSS and JavaScript files.
+    // Some reverse proxies and CDNs strip or alter Content-Type headers; by
+    // setting it here we ensure the browser always receives the correct type.
+    // Combined with Helmet's X-Content-Type-Options: nosniff, an incorrect or
+    // missing Content-Type would silently prevent CSS/JS from being applied —
+    // the explicit header removes that risk regardless of the deployment
+    // environment (direct server, nginx proxy, Cloudflare, etc.).
+    if (filePath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else if (filePath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+      // Images, fonts, manifests and other static assets — allow caching with
+      // revalidation so browsers and CDNs can serve them efficiently without
+      // storing them forever (they have no fingerprint in their filename).
+      res.setHeader('Cache-Control', 'public, max-age=86400');
     }
   },
 }));

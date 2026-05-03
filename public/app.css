@@ -1862,6 +1862,89 @@ a:hover { text-decoration: underline; }
   box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
 }
 
+/* FAB popup menu */
+.fab-menu-overlay {
+  position: fixed;
+  top: 0; right: 0; bottom: 0; left: 0;
+  z-index: 44;
+}
+.fab-menu {
+  position: fixed;
+  bottom: 140px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 46;
+  align-items: flex-end;
+}
+/* scale() removed: combined scale+translateY matrix decomposition fails silently on
+   some Android GPU drivers. Opacity-only + translateY is reliably composited. */
+@-webkit-keyframes fab-item-in {
+  from { opacity: 0; -webkit-transform: translateY(20px); transform: translateY(20px); }
+  to   { opacity: 1; -webkit-transform: translateY(0);    transform: translateY(0); }
+}
+@keyframes fab-item-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@-webkit-keyframes fab-item-out {
+  from { opacity: 1; -webkit-transform: translateY(0);    transform: translateY(0); }
+  to   { opacity: 0; -webkit-transform: translateY(20px); transform: translateY(20px); }
+}
+@keyframes fab-item-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(20px); }
+}
+/* Items default to invisible so there is no flash during the double-rAF window
+   before the animation class is applied. The animation fill-mode handles all
+   visibility changes once the class is present. */
+.fab-menu .fab-menu-item {
+  opacity: 0;
+  pointer-events: none;
+}
+/* Open: items slide up staggered.
+   will-change forces a compositor layer so the animation tween is never skipped. */
+.fab-menu.fab-menu-open .fab-menu-item {
+  pointer-events: auto;
+  -webkit-will-change: opacity, transform;
+  will-change: opacity, transform;
+  -webkit-animation: fab-item-in .22s cubic-bezier(.25,.46,.45,.94) both;
+  animation: fab-item-in .22s cubic-bezier(.25,.46,.45,.94) both;
+}
+.fab-menu.fab-menu-open .fab-menu-item:nth-child(1) { -webkit-animation-delay: .04s; animation-delay: .04s; }
+.fab-menu.fab-menu-open .fab-menu-item:nth-child(2) { -webkit-animation-delay: .09s; animation-delay: .09s; }
+.fab-menu.fab-menu-open .fab-menu-item:nth-child(3) { -webkit-animation-delay: .14s; animation-delay: .14s; }
+/* Close: items slide down in reverse stagger (bottom item first) */
+.fab-menu.fab-menu-closing .fab-menu-item {
+  -webkit-will-change: opacity, transform;
+  will-change: opacity, transform;
+  -webkit-animation: fab-item-out .18s cubic-bezier(.55,.06,.68,.19) both;
+  animation: fab-item-out .18s cubic-bezier(.55,.06,.68,.19) both;
+}
+.fab-menu.fab-menu-closing .fab-menu-item:nth-child(3) { -webkit-animation-delay: 0s;   animation-delay: 0s; }
+.fab-menu.fab-menu-closing .fab-menu-item:nth-child(2) { -webkit-animation-delay: .05s; animation-delay: .05s; }
+.fab-menu.fab-menu-closing .fab-menu-item:nth-child(1) { -webkit-animation-delay: .1s;  animation-delay: .1s; }
+.fab-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  font-size: .92rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0,0,0,.12);
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .1s;
+}
+.fab-menu-item:active { background: #f3f4f6; }
+.fab-menu-icon { font-size: 1.1rem; }
+
 /* Gamification strip on My Tasks */
 .gamif-strip {
   background: linear-gradient(135deg, #312e81 0%, #7c3aed 100%);

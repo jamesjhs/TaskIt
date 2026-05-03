@@ -1865,7 +1865,7 @@ a:hover { text-decoration: underline; }
 /* FAB popup menu */
 .fab-menu-overlay {
   position: fixed;
-  inset: 0;
+  top: 0; right: 0; bottom: 0; left: 0;
   z-index: 44;
 }
 .fab-menu {
@@ -1879,15 +1879,29 @@ a:hover { text-decoration: underline; }
   align-items: flex-end;
 }
 @keyframes fab-item-in {
-  from { opacity: 0; transform: translateY(16px) scale(.92); }
-  to   { opacity: 1; transform: translateY(0)   scale(1); }
+  from { opacity: 0; transform: translateY(20px) scale(.88); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
-.fab-menu:not(.hidden) .fab-menu-item {
-  animation: fab-item-in .2s cubic-bezier(.25,.46,.45,.94) both;
+@keyframes fab-item-out {
+  from { opacity: 1; transform: translateY(0)    scale(1); }
+  to   { opacity: 0; transform: translateY(20px) scale(.88); }
 }
-.fab-menu:not(.hidden) .fab-menu-item:nth-child(1) { animation-delay: .05s; }
-.fab-menu:not(.hidden) .fab-menu-item:nth-child(2) { animation-delay: .1s; }
-.fab-menu:not(.hidden) .fab-menu-item:nth-child(3) { animation-delay: .15s; }
+/* Open: items slide up staggered */
+.fab-menu.fab-menu-open .fab-menu-item {
+  -webkit-animation: fab-item-in .22s cubic-bezier(.25,.46,.45,.94) both;
+  animation: fab-item-in .22s cubic-bezier(.25,.46,.45,.94) both;
+}
+.fab-menu.fab-menu-open .fab-menu-item:nth-child(1) { -webkit-animation-delay: .04s; animation-delay: .04s; }
+.fab-menu.fab-menu-open .fab-menu-item:nth-child(2) { -webkit-animation-delay: .09s; animation-delay: .09s; }
+.fab-menu.fab-menu-open .fab-menu-item:nth-child(3) { -webkit-animation-delay: .14s; animation-delay: .14s; }
+/* Close: items slide down in reverse stagger (bottom first) */
+.fab-menu.fab-menu-closing .fab-menu-item {
+  -webkit-animation: fab-item-out .18s cubic-bezier(.55,.06,.68,.19) both;
+  animation: fab-item-out .18s cubic-bezier(.55,.06,.68,.19) both;
+}
+.fab-menu.fab-menu-closing .fab-menu-item:nth-child(3) { -webkit-animation-delay: 0s;   animation-delay: 0s; }
+.fab-menu.fab-menu-closing .fab-menu-item:nth-child(2) { -webkit-animation-delay: .05s; animation-delay: .05s; }
+.fab-menu.fab-menu-closing .fab-menu-item:nth-child(1) { -webkit-animation-delay: .1s;  animation-delay: .1s; }
 .fab-menu-item {
   display: flex;
   align-items: center;

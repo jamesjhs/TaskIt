@@ -1677,18 +1677,18 @@
   </div>
 
   <!-- Floating Action Button — New Task (Tasks page only) -->
-  <button id="fabNewTask" onclick="openFabMenu()" class="fab-btn" aria-label="New Task" title="New Task">+</button>
+  <button id="fabNewTask" onclick="toggleFabMenu()" class="fab-btn" aria-label="New Task" title="New Task">+</button>
 
   <!-- FAB popup menu -->
   <div id="fabMenuOverlay" class="fab-menu-overlay hidden" onclick="closeFabMenu()"></div>
   <div id="fabMenu" class="fab-menu hidden" role="menu" aria-label="Create new task">
-    <button onclick="closeFabMenu(); openTaskModalWithMode('goal')" class="fab-menu-item" role="menuitem" aria-label="Create long-term goal">
+    <button onclick="closeFabMenu(true); openTaskModalWithMode('goal')" class="fab-menu-item" role="menuitem" aria-label="Create long-term goal">
       <span class="fab-menu-icon">🎯</span>Long-term Goal
     </button>
-    <button onclick="closeFabMenu(); openTaskModalWithMode('sporadic')" class="fab-menu-item" role="menuitem" aria-label="Create sporadic task">
+    <button onclick="closeFabMenu(true); openTaskModalWithMode('sporadic')" class="fab-menu-item" role="menuitem" aria-label="Create sporadic task">
       <span class="fab-menu-icon">🔄</span>Sporadic Task
     </button>
-    <button onclick="closeFabMenu(); openTaskModalWithMode('task')" class="fab-menu-item" role="menuitem" aria-label="Create new task">
+    <button onclick="closeFabMenu(true); openTaskModalWithMode('task')" class="fab-menu-item" role="menuitem" aria-label="Create new task">
       <span class="fab-menu-icon">📋</span>New Task
     </button>
   </div>
@@ -3383,13 +3383,47 @@ function applyFilters() {
 }
 
 // ========== FAB Popup Menu ==========
+var fabCloseTimer = null;
 function openFabMenu() {
-  document.getElementById('fabMenu').classList.remove('hidden');
-  document.getElementById('fabMenuOverlay').classList.remove('hidden');
+  var menu = document.getElementById('fabMenu');
+  var overlay = document.getElementById('fabMenuOverlay');
+  if (fabCloseTimer) { clearTimeout(fabCloseTimer); fabCloseTimer = null; }
+  menu.classList.remove('fab-menu-closing');
+  menu.classList.add('hidden'); // brief hidden to reset animation state
+  // Force reflow so animation restarts cleanly
+  void menu.offsetWidth;
+  menu.classList.remove('hidden');
+  menu.classList.add('fab-menu-open');
+  overlay.classList.remove('hidden');
 }
-function closeFabMenu() {
-  document.getElementById('fabMenu').classList.add('hidden');
-  document.getElementById('fabMenuOverlay').classList.add('hidden');
+function closeFabMenu(instant) {
+  var menu = document.getElementById('fabMenu');
+  var overlay = document.getElementById('fabMenuOverlay');
+  if (fabCloseTimer) { clearTimeout(fabCloseTimer); fabCloseTimer = null; }
+  if (instant) {
+    menu.classList.remove('fab-menu-open', 'fab-menu-closing');
+    menu.classList.add('hidden');
+    overlay.classList.add('hidden');
+    return;
+  }
+  if (menu.classList.contains('hidden')) return;
+  overlay.classList.add('hidden');
+  menu.classList.remove('fab-menu-open');
+  menu.classList.add('fab-menu-closing');
+  // Hide after longest close animation completes (.1s delay + .18s duration = .28s)
+  fabCloseTimer = setTimeout(function() {
+    menu.classList.remove('fab-menu-closing');
+    menu.classList.add('hidden');
+    fabCloseTimer = null;
+  }, 320);
+}
+function toggleFabMenu() {
+  var menu = document.getElementById('fabMenu');
+  if (menu.classList.contains('hidden') || menu.classList.contains('fab-menu-closing')) {
+    openFabMenu();
+  } else {
+    closeFabMenu();
+  }
 }
 function openTaskModalWithMode(mode) {
   openTaskModal(null);

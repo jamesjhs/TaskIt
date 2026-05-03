@@ -1828,7 +1828,7 @@
             <input id="dueDateRelativeNum" type="number" min="1" max="999" value="1" class="input" style="width:60px;flex-shrink:0;padding:6px 8px" aria-label="Number of time units" />
             <select id="dueDateRelativeUnit" class="select" style="flex:1;min-width:90px" aria-label="Time unit (days, weeks, or months)">
               <option value="days">days</option>
-              <option value="weeks">weeks</option>
+              <option value="weeks" selected>weeks</option>
               <option value="months">months</option>
             </select>
             <span style="font-size:.85rem;color:#6b7280">from now</span>
@@ -1843,7 +1843,7 @@
             <option value="complete">Complete</option>
           </select>
         </div>
-        <div class="form-group">
+        <div id="taskSporadicGroup" class="form-group">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
             <input type="checkbox" id="taskSporadic" onchange="onSporadicChange()" style="width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0" />
             <span>Sporadic (maintenance task)</span>
@@ -1854,7 +1854,7 @@
             <input id="sporadicLastDoneDateTime" type="date" class="input" />
           </div>
         </div>
-        <div class="form-group">
+        <div id="taskLongTermGoalGroup" class="form-group">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
             <input type="checkbox" id="taskLongTermGoal" onchange="onLongTermGoalChange()" style="width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0" />
             <span>Long-term Goal</span>
@@ -3479,9 +3479,11 @@ function openTaskModal(task = null) {
     document.getElementById('taskTitle').value = '';
     document.getElementById('taskDetails').value = '';
     setNotesPanel(false);
-    const today = new Date();
     const pad = n => String(n).padStart(2, '0');
-    document.getElementById('taskDueDate').value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+    const oneWeek = new Date(); oneWeek.setDate(oneWeek.getDate() + 7);
+    document.getElementById('taskDueDate').value = `${oneWeek.getFullYear()}-${pad(oneWeek.getMonth()+1)}-${pad(oneWeek.getDate())}`;
+    document.getElementById('dueDateRelativeNum').value = '1';
+    document.getElementById('dueDateRelativeUnit').value = 'weeks';
     document.getElementById('taskStatusRow').classList.add('hidden');
     document.getElementById('taskRecurEnabled').checked = false;
     document.getElementById('taskRecurFields').classList.add('hidden');
@@ -3495,12 +3497,20 @@ function openTaskModal(task = null) {
     document.getElementById('assigneeContainer').innerHTML = '';
     const ltgCheck = document.getElementById('taskLongTermGoal');
     if (ltgCheck) ltgCheck.checked = false;
+    // Hide sporadic/goal checkboxes for new tasks — mode is selected via the FAB menu
+    document.getElementById('taskSporadicGroup').classList.add('hidden');
+    document.getElementById('taskLongTermGoalGroup').classList.add('hidden');
   }
   // Reset long-term goal checkbox state when editing
   const ltgCb = document.getElementById('taskLongTermGoal');
   if (ltgCb && task) ltgCb.checked = !!(task.is_long_term_goal);
   const sporadicCb = document.getElementById('taskSporadic');
   if (sporadicCb && task) sporadicCb.checked = !!(task.is_sporadic);
+  // Show sporadic/goal checkboxes when editing so the user can change the task type
+  if (task) {
+    document.getElementById('taskSporadicGroup').classList.remove('hidden');
+    document.getElementById('taskLongTermGoalGroup').classList.remove('hidden');
+  }
   updateTaskMode();
   document.getElementById('taskModal').classList.remove('hidden');
 }

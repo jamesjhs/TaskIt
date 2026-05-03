@@ -1878,6 +1878,16 @@ a:hover { text-decoration: underline; }
   z-index: 46;
   align-items: flex-end;
 }
+@keyframes fab-item-in {
+  from { opacity: 0; transform: translateY(16px) scale(.92); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+.fab-menu:not(.hidden) .fab-menu-item {
+  animation: fab-item-in .2s cubic-bezier(.25,.46,.45,.94) both;
+}
+.fab-menu:not(.hidden) .fab-menu-item:nth-child(1) { animation-delay: .05s; }
+.fab-menu:not(.hidden) .fab-menu-item:nth-child(2) { animation-delay: .1s; }
+.fab-menu:not(.hidden) .fab-menu-item:nth-child(3) { animation-delay: .15s; }
 .fab-menu-item {
   display: flex;
   align-items: center;

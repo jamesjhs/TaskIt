@@ -1804,7 +1804,7 @@
           </div>
         </div>
         <div class="form-group" id="dueDateGroup">
-          <label>Due Date</label>
+          <label for="taskDueDate">Due Date</label>
           <input id="taskDueDate" type="date" class="input" />
           <div id="dueDateRelativeRow" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px">
             <span style="font-size:.85rem;color:#6b7280">or in</span>
@@ -1833,7 +1833,7 @@
           </label>
           <p id="sporadicInfo" style="font-size:.8rem;color:#6b7280;margin:8px 0 0 24px;display:none">This task has no fixed schedule. When completed, it reappears and shows how long ago you last did it. Examples: Haircut, Lawn mowing, Car maintenance</p>
           <div id="sporadicLastDoneDateField" class="hidden" style="margin-top:12px;margin-left:24px">
-            <label>Last Completed <span style="color:#dc2626">*</span></label>
+            <label for="sporadicLastDoneDateTime">Last Completed <span style="color:#dc2626">*</span></label>
             <input id="sporadicLastDoneDateTime" type="date" class="input" />
           </div>
         </div>
@@ -1908,7 +1908,7 @@
       <p style="font-size:.9rem;color:#6b7280;margin-bottom:16px">Set a due date to move this goal into your active task list.</p>
       <input type="hidden" id="setDeadlineGoalId" />
       <div class="form-group">
-        <label>Due Date <span style="color:#dc2626">*</span></label>
+        <label for="setDeadlineDueDate">Due Date <span style="color:#dc2626">*</span></label>
         <input id="setDeadlineDueDate" type="date" class="input" />
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px">
           <span style="font-size:.85rem;color:#6b7280">or in</span>
@@ -2041,7 +2041,7 @@
       <div id="deferSection" class="detail-section hidden">
         <p class="detail-section-title">Defer Task</p>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <input id="deferDateInput" type="date" class="input" style="flex:1;min-width:140px" />
+          <input id="deferDateInput" type="date" class="input" style="flex:1;min-width:140px" aria-label="New due date" />
           <button onclick="confirmDefer()" class="btn btn-primary btn-sm">Set Date</button>
           <button onclick="document.getElementById('deferSection').classList.add('hidden')" class="btn btn-secondary btn-sm">✕</button>
         </div>
@@ -2092,7 +2092,7 @@
       <p style="font-size:.9rem;color:#6b7280;margin-bottom:16px">Update when you last completed this sporadic task.</p>
       <input type="hidden" id="editSporadicTaskId" />
       <div class="form-group">
-        <label>Date <span style="color:#dc2626">*</span></label>
+        <label for="editSporadicDateTime">Date <span style="color:#dc2626">*</span></label>
         <input id="editSporadicDateTime" type="date" class="input" />
       </div>
     </div>

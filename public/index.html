@@ -39,7 +39,7 @@
       "priceCurrency": "GBP"
     },
     "featureList": [
-      "XP-based gamification with skill trees and dynamic titles",
+      "XP-based gamification with overall levels, skill XP breakdown, and dynamic titles",
       "Personal achievements and streak tracking",
       "Recurring tasks with automatic next-occurrence spawning",
       "Group collaboration with QR-code and email invites",
@@ -198,7 +198,7 @@
         <div class="lp-feature-card">
           <div class="lp-feature-icon lp-feature-icon-purple">🎮</div>
           <h3>Gamification Engine</h3>
-          <p>Earn XP, grow skill trees, unlock achievements, and track streaks. Use Freeze Credits to protect a streak when life gets busy.</p>
+          <p>Earn XP, level up, unlock achievements, and track streaks. See your XP breakdown by skill. Use Freeze Credits to protect a streak when life gets busy.</p>
         </div>
         <div class="lp-feature-card">
           <div class="lp-feature-icon lp-feature-icon-amber">✅</div>
@@ -234,7 +234,7 @@
         <div class="lp-why-card">
           <span class="lp-why-icon">🎮</span>
           <h3>Gamification Built In</h3>
-          <p>Most task managers ignore the motivation problem. TaskIt! solves it with XP, skill trees, achievements, streaks, Freeze Credits, and earned Titles — all optional, all rewarding.</p>
+          <p>Most task managers ignore the motivation problem. TaskIt! solves it with XP, levels, skill XP breakdowns, achievements, streaks, Freeze Credits, and earned Titles — all optional, all rewarding.</p>
         </div>
         <div class="lp-why-card">
           <span class="lp-why-icon">🆓</span>
@@ -448,30 +448,32 @@
                   <span class="lp-mini-header-title">⭐ My Progress</span>
                   <span></span>
                 </div>
-                <!-- Overall XP bar -->
+                <!-- Overall XP / Level bar -->
                 <div style="background:#fff;border-radius:8px;padding:7px 8px;margin-bottom:5px;box-shadow:0 1px 5px rgba(0,0,0,.07)">
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-                    <span style="font-size:9px;font-weight:800;color:#1a1a2e">Level 7 · Expert</span>
+                    <span style="font-size:9px;font-weight:800;color:#1a1a2e">Level 7 · Expert Household</span>
                     <span style="font-size:7px;color:#7c3aed;font-weight:700">2,840 XP</span>
                   </div>
                   <div style="background:#ede9fe;border-radius:99px;height:6px;overflow:hidden">
                     <div style="width:68%;background:linear-gradient(90deg,#7c3aed,#c084fc);height:100%;border-radius:99px"></div>
                   </div>
-                  <div style="font-size:6.5px;color:#9ca3af;margin-top:2px">340 XP to Level 8 · Virtuoso</div>
+                  <div style="font-size:6.5px;color:#9ca3af;margin-top:2px">340 XP to Level 8</div>
                 </div>
-                <!-- Skill trees -->
-                <div class="lp-mini-section-title">Skill Trees</div>
-                <div style="background:#fff;border-radius:8px;padding:6px 8px;margin-bottom:4px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
-                  <div style="display:flex;justify-content:space-between;font-size:7.5px;color:#374151;margin-bottom:2px"><span>🏠 Household</span><span style="color:#7c3aed;font-weight:700">Lv 5</span></div>
-                  <div style="background:#ede9fe;border-radius:99px;height:5px"><div style="width:82%;background:#7c3aed;height:100%;border-radius:99px"></div></div>
-                </div>
-                <div style="background:#fff;border-radius:8px;padding:6px 8px;margin-bottom:4px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
-                  <div style="display:flex;justify-content:space-between;font-size:7.5px;color:#374151;margin-bottom:2px"><span>💼 Work</span><span style="color:#059669;font-weight:700">Lv 4</span></div>
-                  <div style="background:#dcfce7;border-radius:99px;height:5px"><div style="width:55%;background:#059669;height:100%;border-radius:99px"></div></div>
-                </div>
-                <div style="background:#fff;border-radius:8px;padding:6px 8px;margin-bottom:5px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
-                  <div style="display:flex;justify-content:space-between;font-size:7.5px;color:#374151;margin-bottom:2px"><span>🌱 Personal</span><span style="color:#f59e0b;font-weight:700">Lv 6</span></div>
-                  <div style="background:#fef3c7;border-radius:99px;height:5px"><div style="width:40%;background:#f59e0b;height:100%;border-radius:99px"></div></div>
+                <!-- XP Breakdown -->
+                <div class="lp-mini-section-title">XP Breakdown</div>
+                <div style="background:#fff;border-radius:8px;padding:6px 8px;margin-bottom:5px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;align-items:center;gap:6px">
+                  <!-- Mini donut -->
+                  <svg viewBox="0 0 40 40" width="36" height="36" style="flex-shrink:0">
+                    <circle cx="20" cy="20" r="16" fill="none" stroke="#7c3aed" stroke-width="8" stroke-dasharray="40 60" stroke-dashoffset="0"/>
+                    <circle cx="20" cy="20" r="16" fill="none" stroke="#059669" stroke-width="8" stroke-dasharray="24 76" stroke-dashoffset="-40"/>
+                    <circle cx="20" cy="20" r="16" fill="none" stroke="#f59e0b" stroke-width="8" stroke-dasharray="36 64" stroke-dashoffset="-64"/>
+                    <circle cx="20" cy="20" r="8" fill="white"/>
+                  </svg>
+                  <div style="flex:1;font-size:6.5px;line-height:1.6">
+                    <div style="display:flex;justify-content:space-between"><span>🏠 Household</span><span style="color:#7c3aed;font-weight:700">1,140 XP</span></div>
+                    <div style="display:flex;justify-content:space-between"><span>💼 Work</span><span style="color:#059669;font-weight:700">900 XP</span></div>
+                    <div style="display:flex;justify-content:space-between"><span>🌱 Personal</span><span style="color:#f59e0b;font-weight:700">800 XP</span></div>
+                  </div>
                 </div>
                 <!-- Achievements -->
                 <div class="lp-mini-section-title">Recent Achievements</div>
@@ -515,15 +517,15 @@
         <!-- XP & Skills -->
         <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:24px 20px;text-align:center">
           <div style="font-size:2.2rem;margin-bottom:10px">⭐</div>
-          <h3 style="color:white;font-size:1rem;font-weight:700;margin:0 0 8px">XP &amp; Skill Trees</h3>
-          <p style="color:#c4b5fd;font-size:.875rem;margin:0">Earn 50 XP per completed task in the matching skill. Level up from <em>Apprentice</em> to <em>Guru</em> as you work.</p>
-          <!-- Mini XP bar -->
+          <h3 style="color:white;font-size:1rem;font-weight:700;margin:0 0 8px">XP &amp; Levels</h3>
+          <p style="color:#c4b5fd;font-size:.875rem;margin:0">Earn XP for every completed task. Your <strong>overall Level</strong> grows with your total XP — from Apprentice to Guru.</p>
+          <!-- Mini overall level bar -->
           <div style="margin-top:14px">
-            <div style="display:flex;justify-content:space-between;font-size:.72rem;color:#a5b4fc;margin-bottom:4px"><span>Household</span><span>Level 4</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:.72rem;color:#a5b4fc;margin-bottom:4px"><span>Overall Level</span><span>Level 7</span></div>
             <div style="background:rgba(255,255,255,.15);border-radius:99px;height:8px;overflow:hidden">
-              <div style="width:72%;background:linear-gradient(90deg,#818cf8,#c084fc);height:100%;border-radius:99px"></div>
+              <div style="width:68%;background:linear-gradient(90deg,#818cf8,#c084fc);height:100%;border-radius:99px"></div>
             </div>
-            <div style="font-size:.7rem;color:#a5b4fc;margin-top:3px">720 / 1,000 XP to Level 5</div>
+            <div style="font-size:.7rem;color:#a5b4fc;margin-top:3px">340 XP to Level 8</div>
           </div>
         </div>
 
@@ -573,7 +575,7 @@
         <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:24px 20px;text-align:center">
           <div style="font-size:2.2rem;margin-bottom:10px">👑</div>
           <h3 style="color:white;font-size:1rem;font-weight:700;margin:0 0 8px">Earned Titles</h3>
-          <p style="color:#c4b5fd;font-size:.875rem;margin:0 0 14px">Your skill level earns you a title to display on your profile — from <em>Apprentice</em> all the way to <em>Guru</em>. Wear it with pride.</p>
+          <p style="color:#c4b5fd;font-size:.875rem;margin:0 0 14px">Your overall level earns you a title based on the skill where you've earned the most XP — from <em>Apprentice</em> all the way to <em>Guru</em>. Wear it with pride.</p>
           <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px">
             <span style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#e0e7ff;border-radius:6px;font-size:.72rem;padding:3px 8px">🌱 Apprentice</span>
             <span style="background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);color:#a5b4fc;border-radius:6px;font-size:.72rem;padding:3px 8px">⚡ Specialist</span>
@@ -788,7 +790,7 @@
         <div class="lp-step">
           <div class="lp-step-num">5</div>
           <h3>Level up as you go</h3>
-          <p>Enable gamification from your Profile. Earn XP for every completed task, grow skill trees, unlock achievements, and build daily streaks that keep motivation high.</p>
+          <p>Enable gamification from your Profile. Earn XP for every completed task, level up, unlock achievements, and build daily streaks that keep motivation high.</p>
         </div>
       </div>
     </div>
@@ -1009,7 +1011,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.14.4</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
+      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.16.0</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>
@@ -1028,8 +1030,8 @@
     <div id="tasksGamifStrip" class="gamif-strip hidden" onclick="showPage('progress')" role="button" tabindex="0" aria-label="View progress">
       <div class="gamif-strip-left">
         <div class="gamif-strip-skill-header">
-          <span id="stripSkillName" class="gamif-strip-skill-name">—</span>
-          <span id="stripSkillBadge" class="gamif-strip-lvl-badge">Lv 1</span>
+          <span id="stripSkillName" class="gamif-strip-skill-name">Level</span>
+          <span id="stripSkillBadge" class="gamif-strip-lvl-badge">1</span>
         </div>
         <div class="gamif-strip-bar-track"><div id="stripBarFill" class="gamif-strip-bar-fill" style="width:0%"></div></div>
         <div id="stripXpSub" class="gamif-strip-xp-sub">Complete tasks to earn XP</div>
@@ -1288,7 +1290,7 @@
           <span class="toggle-switch-track"></span>
         </label>
       </div>
-      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Earn XP, grow skill trees, unlock achievements, and protect streaks as you complete tasks. Fully optional.</p>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:12px">Earn XP, level up, unlock achievements, and protect streaks as you complete tasks. See your XP breakdown by skill. Fully optional.</p>
       <button onclick="showPage('progress')" class="btn btn-secondary btn-full btn-sm">⭐ View Progress &amp; Achievements →</button>
     </div>
 
@@ -1576,7 +1578,7 @@
     <div id="progressDisabledCard" class="card" style="text-align:center;padding:28px 16px">
       <div style="font-size:2.8rem;margin-bottom:10px">🎮</div>
       <p style="font-weight:700;font-size:1rem;color:#1a1a2e;margin-bottom:8px">Gamification is off</p>
-      <p style="font-size:.85rem;color:#6b7280;margin-bottom:16px">Enable gamification to earn XP, grow skill trees, unlock achievements, and track streaks as you complete tasks.</p>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:16px">Enable gamification to earn XP, level up, unlock achievements, and track streaks as you complete tasks.</p>
       <button onclick="showPage('profile')" class="btn btn-primary btn-full">Enable in Profile →</button>
     </div>
 
@@ -1594,14 +1596,25 @@
               <div class="gamif-banner-stat-label">Total XP</div>
             </div>
             <div class="gamif-banner-stat">
+              <div class="gamif-banner-stat-num" id="gamifCurrentLevel">1</div>
+              <div class="gamif-banner-stat-label">Level</div>
+            </div>
+            <div class="gamif-banner-stat">
               <div class="gamif-banner-stat-num credits" id="gamifFreezeCredits">0</div>
               <div class="gamif-banner-stat-label">❄️ Freeze Credits</div>
             </div>
           </div>
+          <!-- Overall level progress bar -->
+          <div style="margin-top:10px">
+            <div class="gamif-skill-bar-track" id="overallLevelBarTrack">
+              <div class="gamif-skill-bar-fill" id="overallLevelBarFill" style="width:0%"></div>
+            </div>
+            <div id="overallLevelXpSub" style="font-size:.75rem;color:rgba(255,255,255,.75);margin-top:4px;text-align:center">Complete tasks to earn XP</div>
+          </div>
         </div>
-        <!-- Skills -->
-        <p class="detail-section-title">⭐ Skills</p>
-        <div id="gamifSkillsList"><p style="font-size:.85rem;color:#9ca3af;font-style:italic">Complete tasks to earn XP and grow your skills.</p></div>
+        <!-- Skills XP breakdown -->
+        <p class="detail-section-title">⭐ XP Breakdown</p>
+        <div id="gamifSkillsList"><p style="font-size:.85rem;color:#9ca3af;font-style:italic">Complete tasks to earn XP and see your breakdown.</p></div>
         <!-- Achievements -->
         <p class="detail-section-title" style="margin-top:16px">🏆 Achievements</p>
         <div id="gamifAchievementsList" class="gamif-ach-grid"></div>
@@ -1725,7 +1738,7 @@
       <div style="font-size:3rem;margin-bottom:12px">🎮</div>
       <h2 class="modal-title">Level Up Your Tasks?</h2>
       <p style="font-size:.9rem;color:#6b7280;line-height:1.6;margin-bottom:20px">
-        TaskIt! has a built-in gamification engine. Earn <strong>XP</strong> as you complete tasks, grow <strong>skill trees</strong>, unlock <strong>achievements</strong>, and protect <strong>streaks</strong> with Freeze Credits.<br/>
+        TaskIt! has a built-in gamification engine. Earn <strong>XP</strong> as you complete tasks, <strong>level up</strong> from your total XP, unlock <strong>achievements</strong>, and protect <strong>streaks</strong> with Freeze Credits.<br/>
         <span style="font-size:.82rem">Totally optional — you can turn it off any time from Profile.</span>
       </p>
       <button onclick="handleGamifOptInYes()" class="btn btn-primary btn-full" style="margin-bottom:10px">🚀 Enable Gamification</button>
@@ -4230,25 +4243,24 @@ function renderGamifStrip(profile, streaks) {
   }
   strip.classList.remove('hidden');
 
-  // Top skill (first in list — sorted by level desc server-side)
-  const topSkill = profile.skills && profile.skills.length ? profile.skills[0] : null;
-  if (topSkill) {
-    document.getElementById('stripSkillName').textContent = topSkill.skill_name;
-    document.getElementById('stripSkillBadge').textContent = 'Lv ' + topSkill.level;
-    const span          = 100 * topSkill.level;
-    const earnedInLevel = Math.max(0, span - Math.max(0, topSkill.xpForNextLevel || 0));
-    const pct           = span > 0 ? Math.min(100, Math.round((earnedInLevel / span) * 100)) : 0;
-    document.getElementById('stripBarFill').style.width = pct + '%';
-    const xpLeft = Math.max(0, topSkill.xpForNextLevel || 0);
-    document.getElementById('stripXpSub').textContent   = xpLeft > 0
-      ? xpLeft + ' XP to Level ' + (topSkill.level + 1)
-      : 'Max level reached';
-  } else {
-    document.getElementById('stripSkillName').textContent = 'No skills yet';
-    document.getElementById('stripSkillBadge').textContent = 'Lv 0';
-    document.getElementById('stripBarFill').style.width = '0%';
-    document.getElementById('stripXpSub').textContent   = 'Complete tasks to earn XP';
-  }
+  // Overall level from total XP
+  const level = profile.level || 1;
+  const xpToNext = profile.xpToNextLevel || 0;
+  const totalXp = profile.totalXp || 0;
+
+  document.getElementById('stripSkillName').textContent = 'Level';
+  document.getElementById('stripSkillBadge').textContent = String(level);
+
+  // Progress within current level: XP earned since level started / XP needed for this level span
+  const xpThisLevel = xpThresholdForLevel(level);
+  const xpNextLevel = xpThresholdForLevel(level + 1);
+  const span = xpNextLevel - xpThisLevel;
+  const earned = totalXp - xpThisLevel;
+  const pct = span > 0 ? Math.min(100, Math.round((earned / span) * 100)) : 100;
+  document.getElementById('stripBarFill').style.width = pct + '%';
+  document.getElementById('stripXpSub').textContent = xpToNext > 0
+    ? xpToNext + ' XP to Level ' + (level + 1)
+    : 'Max level reached';
 
   // Best active streak
   const bestStreak = streaks && streaks.length ? Math.max(...streaks.map(s => s.currentStreak)) : 0;
@@ -4262,33 +4274,81 @@ function renderGamifStrip(profile, streaks) {
   if (achBadge) achBadge.classList.toggle('hidden', !recentAch);
 }
 
+// Pure JS equivalent of the server-side xpThresholdForLevel so the strip bar
+// can compute progress within the current level without a round-trip.
+function xpThresholdForLevel(n) {
+  return 100 * ((n - 1) * n) / 2;
+}
+
 function renderGamificationProfile(profile, streaks) {
   // Banner
   document.getElementById('gamifBannerTitle').textContent = profile.title || '\uD83C\uDF31 Just Getting Started';
   document.getElementById('gamifTotalXp').textContent = (profile.totalXp || 0).toLocaleString();
   document.getElementById('gamifFreezeCredits').textContent = profile.freezeCredits ?? 0;
 
-  // Skills
+  // Overall level + progress bar
+  const level = profile.level || 1;
+  const xpToNext = profile.xpToNextLevel || 0;
+  const totalXp = profile.totalXp || 0;
+  const levelEl = document.getElementById('gamifCurrentLevel');
+  if (levelEl) levelEl.textContent = String(level);
+  const xpThisLevel = xpThresholdForLevel(level);
+  const xpNextLevel = xpThresholdForLevel(level + 1);
+  const span = xpNextLevel - xpThisLevel;
+  const earned = totalXp - xpThisLevel;
+  const pct = span > 0 ? Math.min(100, Math.round((earned / span) * 100)) : 100;
+  const barFill = document.getElementById('overallLevelBarFill');
+  if (barFill) barFill.style.width = pct + '%';
+  const xpSubEl = document.getElementById('overallLevelXpSub');
+  if (xpSubEl) xpSubEl.textContent = xpToNext > 0
+    ? xpToNext + ' XP to Level ' + (level + 1)
+    : 'Max level reached!';
+
+  // XP breakdown — pie/donut chart + skill rows
   const skillsEl = document.getElementById('gamifSkillsList');
-  if (profile.skills && profile.skills.length) {
-    skillsEl.innerHTML = profile.skills.map(s => {
-      const span = 100 * s.level;
-      const earned = Math.max(0, span - (s.xpForNextLevel || 0));
-      const pct = span > 0 ? Math.min(100, Math.round((earned / span) * 100)) : 0;
-      return `
-        <div class="gamif-skill-row">
-          <div class="gamif-skill-header">
-            <span class="gamif-skill-name">${escHtml(s.skill_name)}</span>
-            <span class="gamif-skill-lvl-badge">Lv ${s.level}</span>
-          </div>
-          <div class="gamif-skill-bar-track">
-            <div class="gamif-skill-bar-fill" style="width:${pct}%"></div>
-          </div>
-          <div class="gamif-skill-xp-sub">${s.xpForNextLevel} XP to level ${s.level + 1}</div>
-        </div>`;
+  if (profile.skills && profile.skills.length && totalXp > 0) {
+    // Build SVG donut chart
+    const PIE_COLOURS = [
+      '#7c3aed','#059669','#f59e0b','#ef4444','#3b82f6','#ec4899','#10b981','#8b5cf6',
+      '#f97316','#14b8a6','#6366f1','#84cc16','#a855f7','#0ea5e9','#fb923c','#d946ef',
+    ];
+    const cx = 60, cy = 60, r = 48, inner = 28;
+    let startAngle = -Math.PI / 2;
+    let slices = '';
+    profile.skills.forEach((s, i) => {
+      const fraction = s.xp / totalXp;
+      const angle = fraction * 2 * Math.PI;
+      const endAngle = startAngle + angle;
+      const x1 = cx + r * Math.cos(startAngle);
+      const y1 = cy + r * Math.sin(startAngle);
+      const x2 = cx + r * Math.cos(endAngle);
+      const y2 = cy + r * Math.sin(endAngle);
+      const ix1 = cx + inner * Math.cos(startAngle);
+      const iy1 = cy + inner * Math.sin(startAngle);
+      const ix2 = cx + inner * Math.cos(endAngle);
+      const iy2 = cy + inner * Math.sin(endAngle);
+      const large = angle > Math.PI ? 1 : 0;
+      const colour = PIE_COLOURS[i % PIE_COLOURS.length];
+      slices += `<path d="M${ix1},${iy1} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} L${ix2},${iy2} A${inner},${inner} 0 ${large},0 ${ix1},${iy1} Z" fill="${colour}" opacity="0.9"><title>${escHtml(s.skill_name)}: ${s.xp.toLocaleString()} XP</title></path>`;
+      startAngle = endAngle;
+    });
+    const svgChart = `<svg viewBox="0 0 120 120" width="120" height="120" style="flex-shrink:0" aria-label="XP breakdown pie chart">${slices}<circle cx="${cx}" cy="${cy}" r="${inner - 2}" fill="white"/><text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="9" font-weight="700" fill="#1a1a2e">${totalXp.toLocaleString()}</text><text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="7" fill="#6b7280">Total XP</text></svg>`;
+
+    // Skill legend rows
+    const legendRows = profile.skills.map((s, i) => {
+      const pctStr = totalXp > 0 ? Math.round((s.xp / totalXp) * 100) + '%' : '0%';
+      const colour = PIE_COLOURS[i % PIE_COLOURS.length];
+      return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f3f4f6">
+        <span style="width:12px;height:12px;border-radius:50%;background:${colour};flex-shrink:0"></span>
+        <span style="flex:1;font-size:.85rem;font-weight:500;color:#374151">${escHtml(s.skill_name)}</span>
+        <span style="font-size:.8rem;color:#7c3aed;font-weight:700">${s.xp.toLocaleString()} XP</span>
+        <span style="font-size:.75rem;color:#9ca3af;width:36px;text-align:right">${pctStr}</span>
+      </div>`;
     }).join('');
+
+    skillsEl.innerHTML = `<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">${svgChart}<div style="flex:1;min-width:160px">${legendRows}</div></div>`;
   } else {
-    skillsEl.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">Complete tasks to earn XP and grow your skills.</p>';
+    skillsEl.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">Complete tasks to earn XP and see your breakdown.</p>';
   }
 
   // Achievements

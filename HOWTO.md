@@ -1,6 +1,6 @@
 # TaskIt! – How-To Manual
 
-**Version 1.13.4**  
+**Version 1.16.0**  
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -483,9 +483,11 @@ Your progress is preserved if you toggle it off and back on.
 
 ---
 
-### XP & Skill Levels
+### XP & Overall Level
 
-Completing a task earns you **50 XP** in the skill matching its type. XP accumulates to increase the skill level using a triangular progression:
+Completing a task earns you **50 XP** in the skill matching its type. However, **your overall Level is determined by the sum of all XP you have earned**, regardless of which skill it came from. Every completed task — in any category — contributes to the same single level.
+
+The level formula uses a triangular progression:
 
 ```
 XP to reach level n = 50 × n × (n − 1)
@@ -496,15 +498,21 @@ Level 5  →  1,000 XP total
 Level 10 →  4,500 XP total
 ```
 
-Your highest-level skill earns you a **dynamic title** shown on your profile:
+A **level progress bar** shows how far through the current level you are and how much XP remains to the next level. This bar appears both in the slim strip at the top of the My Tasks page and in the banner on the Progress page.
 
-| Skill level | Title             |
-|-------------|-------------------|
-| 10+         | Guru of …         |
-| 7–9         | Master …          |
-| 5–6         | Expert …          |
-| 3–4         | Skilled …         |
-| 1–2         | Apprentice of …   |
+### XP Breakdown
+
+The **⭐ XP Breakdown** section on the Progress page displays a donut chart showing how your total XP is distributed across your different skill categories. A colour-coded legend lists each skill with its exact XP total and percentage share. This replaces the old per-skill progress bars — skills no longer have their own independent levels.
+
+Your top-XP skill determines the skill qualifier in your **dynamic title**, shown on your profile:
+
+| Overall level | Title             |
+|---------------|-------------------|
+| 10+           | Guru of …         |
+| 7–9           | Master …          |
+| 5–6           | Expert …          |
+| 3–4           | Skilled …         |
+| 1–2           | Apprentice of …   |
 
 ---
 
@@ -522,8 +530,8 @@ Achievements unlock automatically when you hit specific milestones. They are vis
 | 📝 Detail Oriented    | Add 50 progress notes                            |
 | 🐦 Early Bird         | Complete 10 tasks before their due date          |
 | 🗺️ Type Explorer      | Use 5 different task types                       |
-| 🎯 Specialist         | Reach skill level 5                              |
-| 🎓 Master of the Craft| Reach skill level 10                             |
+| 🎯 Specialist         | Reach overall level 5                            |
+| 🎓 Master of the Craft| Reach overall level 10                           |
 | 🎩 Hat Trick          | Recurring task streak of 3                       |
 | 🍀 Lucky Streak       | Recurring task streak of 7                       |
 | 🚂 Unstoppable        | Recurring task streak of 30                      |
@@ -587,4 +595,4 @@ The Freeze is consumed automatically, the streak is preserved, and the ❄️ is
 
 ---
 
-*TaskIt! v1.12.0 – Copyright J Rowson 2026 | jahosi.co.uk*
+*TaskIt! v1.16.0 – Copyright J Rowson 2026 | jahosi.co.uk*

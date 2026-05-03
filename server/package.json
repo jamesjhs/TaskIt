@@ -10,6 +10,9 @@
     "dev:css": "tailwindcss -i src/css/input.css -o ../public/tailwind.css --watch",
     "dev": "tsx watch src/index.ts"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "@types/web-push": "^3.6.4",
     "bcryptjs": "^2.4.3",

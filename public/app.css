@@ -1878,24 +1878,47 @@ a:hover { text-decoration: underline; }
   z-index: 46;
   align-items: flex-end;
 }
+/* scale() removed: combined scale+translateY matrix decomposition fails silently on
+   some Android GPU drivers. Opacity-only + translateY is reliably composited. */
+@-webkit-keyframes fab-item-in {
+  from { opacity: 0; -webkit-transform: translateY(20px); transform: translateY(20px); }
+  to   { opacity: 1; -webkit-transform: translateY(0);    transform: translateY(0); }
+}
 @keyframes fab-item-in {
-  from { opacity: 0; transform: translateY(20px) scale(.88); }
-  to   { opacity: 1; transform: translateY(0)    scale(1); }
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@-webkit-keyframes fab-item-out {
+  from { opacity: 1; -webkit-transform: translateY(0);    transform: translateY(0); }
+  to   { opacity: 0; -webkit-transform: translateY(20px); transform: translateY(20px); }
 }
 @keyframes fab-item-out {
-  from { opacity: 1; transform: translateY(0)    scale(1); }
-  to   { opacity: 0; transform: translateY(20px) scale(.88); }
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(20px); }
 }
-/* Open: items slide up staggered */
+/* Items default to invisible so there is no flash during the double-rAF window
+   before the animation class is applied. The animation fill-mode handles all
+   visibility changes once the class is present. */
+.fab-menu .fab-menu-item {
+  opacity: 0;
+  pointer-events: none;
+}
+/* Open: items slide up staggered.
+   will-change forces a compositor layer so the animation tween is never skipped. */
 .fab-menu.fab-menu-open .fab-menu-item {
+  pointer-events: auto;
+  -webkit-will-change: opacity, transform;
+  will-change: opacity, transform;
   -webkit-animation: fab-item-in .22s cubic-bezier(.25,.46,.45,.94) both;
   animation: fab-item-in .22s cubic-bezier(.25,.46,.45,.94) both;
 }
 .fab-menu.fab-menu-open .fab-menu-item:nth-child(1) { -webkit-animation-delay: .04s; animation-delay: .04s; }
 .fab-menu.fab-menu-open .fab-menu-item:nth-child(2) { -webkit-animation-delay: .09s; animation-delay: .09s; }
 .fab-menu.fab-menu-open .fab-menu-item:nth-child(3) { -webkit-animation-delay: .14s; animation-delay: .14s; }
-/* Close: items slide down in reverse stagger (bottom first) */
+/* Close: items slide down in reverse stagger (bottom item first) */
 .fab-menu.fab-menu-closing .fab-menu-item {
+  -webkit-will-change: opacity, transform;
+  will-change: opacity, transform;
   -webkit-animation: fab-item-out .18s cubic-bezier(.55,.06,.68,.19) both;
   animation: fab-item-out .18s cubic-bezier(.55,.06,.68,.19) both;
 }

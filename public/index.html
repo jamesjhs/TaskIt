@@ -3388,13 +3388,18 @@ function openFabMenu() {
   var menu = document.getElementById('fabMenu');
   var overlay = document.getElementById('fabMenuOverlay');
   if (fabCloseTimer) { clearTimeout(fabCloseTimer); fabCloseTimer = null; }
-  menu.classList.remove('fab-menu-closing');
-  menu.classList.add('hidden'); // brief hidden to reset animation state
-  // Force reflow so animation restarts cleanly
-  void menu.offsetWidth;
+  menu.classList.remove('fab-menu-closing', 'fab-menu-open');
   menu.classList.remove('hidden');
-  menu.classList.add('fab-menu-open');
   overlay.classList.remove('hidden');
+  // Double rAF: first rAF fires after the current paint (where display:flex is
+  // committed); second rAF fires after the compositor layer for the element
+  // exists. Adding the animation class only after this prevents Blink
+  // (Chrome Android / Samsung Internet / Edge) from skipping the tween.
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      menu.classList.add('fab-menu-open');
+    });
+  });
 }
 function closeFabMenu(instant) {
   var menu = document.getElementById('fabMenu');

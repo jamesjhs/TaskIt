@@ -334,6 +334,11 @@ app.use(staticLimiter, express.static(path.join(__dirname, '..', '..', 'public')
     } else if (filePath.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+      // Images, fonts, manifests and other static assets — allow caching with
+      // revalidation so browsers and CDNs can serve them efficiently without
+      // storing them forever (they have no fingerprint in their filename).
+      res.setHeader('Cache-Control', 'public, max-age=86400');
     }
   },
 }));

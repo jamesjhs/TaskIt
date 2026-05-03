@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.15.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.16.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -35,7 +35,7 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - Self-service account deletion (GDPR right to erasure)
 - Admin panel: stats dashboard, SMTP configuration, locked accounts, user reports, feedback management
 - **Database encryption** — full SQLite file encryption at rest via SQLCipher (set `DB_ENCRYPTION_KEY` env var)
-- **Gamification Engine** — opt-in XP system, skill trees, dynamic titles, personal achievements, streak tracking, and freeze mechanic (see below)
+- **Gamification Engine** — opt-in XP system, overall level progression, XP breakdown by skill, dynamic titles, personal achievements, streak tracking, and freeze mechanic (see below)
 - **Friends & Leaderboards** — connect with other users via invite link, QR code, or username + friend key; compete on XP leaderboards per group and across friends
 - **Persistent login** — optional "Remember me" session storage (30-day JWT in localStorage vs session-only)
 - **Sporadic Tasks** — maintenance tasks with no fixed schedule that reappear after completion and show how long ago they were last done in friendly format with dd/mm/yyyy date (e.g. Haircut, Car service). Fully editable like regular tasks: change title, type, group, delete, or archive. Always visible at the top of the task list, collapsed by default
@@ -45,9 +45,11 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 
 TaskIt! includes a fully opt-in gamification system that rewards consistent productivity. It activates per-user and never affects the core task management experience for those who prefer it off.
 
-### Skill Trees & XP
+### XP & Overall Level
 
-Every time you complete a task, you earn **50 XP** in the skill matching the task type (e.g. completing a *Household* task earns Household XP). XP accumulates to increase your skill level using a triangular progression curve:
+Every time you complete a task, you earn **50 XP** in the skill matching the task type (e.g. completing a *Household* task earns Household XP). **Your overall Level is derived from the sum of all XP you have ever earned**, regardless of which skill it came from. This means every task you complete — in any category — contributes to your single unified level.
+
+The level formula uses a triangular progression curve:
 
 | Level | Cumulative XP required |
 |-------|------------------------|
@@ -58,17 +60,23 @@ Every time you complete a task, you earn **50 XP** in the skill matching the tas
 | 5     | 1,000 XP               |
 | n     | 50 × n × (n−1) XP      |
 
+A **level progress bar** on both the Tasks page strip and the Progress page shows how far through the current level you are and how much XP remains to the next level.
+
+### XP Breakdown by Skill
+
+The **⭐ XP Breakdown** section on the Progress page shows a **pie/donut chart** with each skill's share of your total XP, alongside a legend showing the exact XP earned per skill and its percentage of your total. This gives a clear picture of where your effort goes without replacing your unified level.
+
 ### Dynamic Titles
 
-Your highest-level skill earns you a title that appears on your profile:
+Your overall level, combined with the skill in which you have earned the most XP, earns you a title that appears on your profile:
 
-| Skill Level | Title prefix  | Example               |
-|-------------|---------------|-----------------------|
-| 10+         | Guru of       | Guru of Household     |
-| 7–9         | Master        | Master of Routine     |
-| 5–6         | Expert        | Expert at Hobby       |
-| 3–4         | Skilled       | Skilled in Finance    |
-| 1–2         | Apprentice    | Apprentice of Urgent  |
+| Overall Level | Title prefix  | Example               |
+|---------------|---------------|-----------------------|
+| 10+           | Guru of       | Guru of Household     |
+| 7–9           | Master        | Master of Routine     |
+| 5–6           | Expert        | Expert at Hobby       |
+| 3–4           | Skilled       | Skilled in Finance    |
+| 1–2           | Apprentice    | Apprentice of Urgent  |
 
 ### Achievements
 
@@ -82,8 +90,8 @@ Your highest-level skill earns you a title that appears on your profile:
 | `detail_oriented`| Detail Oriented      | Add 50 progress notes                          |
 | `early_bird`     | Early Bird           | Complete 10 tasks before their due date        |
 | `type_explorer`  | Type Explorer        | Complete tasks across 5 different task types   |
-| `skill_level_5`  | Specialist           | Reach level 5 in any skill                     |
-| `skill_level_10` | Master of the Craft  | Reach level 10 in any skill                    |
+| `skill_level_5`  | Specialist           | Reach overall level 5                          |
+| `skill_level_10` | Master of the Craft  | Reach overall level 10                         |
 | `streak_3`       | Hat Trick            | Keep a recurring task streak of 3              |
 | `streak_7`       | Lucky Streak         | Keep a recurring task streak of 7              |
 | `streak_30`      | Unstoppable          | Keep a recurring task streak of 30             |
@@ -110,7 +118,113 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 
 ## Changelog
 
+### v1.16.0
+
+- **⭐ Unified XP level system** — a user's Level is now determined solely by their total accumulated XP across all skills, rather than by individual per-skill levels. Every completed task — regardless of type — contributes to the same single level counter. The level progress bar on the Tasks page strip and the Progress page banner both reflect this unified level.
+- **📊 XP Breakdown chart** — the Skills section on the Progress page now shows an interactive SVG donut chart illustrating the proportional breakdown of XP by skill source, alongside a legend with exact XP amounts and percentages. Per-skill progress bars and individual skill level badges have been removed.
+- **🏅 Level-based achievements** — the *Specialist* (`skill_level_5`) and *Master of the Craft* (`skill_level_10`) achievements now unlock at overall Level 5 and Level 10 respectively, consistent with the unified level system.
+- **🎮 Arcade token level-ups** — the 3-token arcade bonus awarded on each level-up is now triggered by crossing an overall level threshold (total XP), rather than a per-skill threshold.
+- **👑 Title based on overall level** — the dynamic profile title now reflects the user's overall level alongside their highest-XP skill name (e.g. "Expert Household").
+- **🔢 Version bump** — server, README, user guide, how-to, and technical reference updated to 1.16.0.
+
+### v1.15.0 and earlier
+
+See previous changelog entries below.
+
 ### v1.12.1
+
+- **🧹 Main task list filtering** — the main task list now excludes all tasks without set due dates (sporadic and maintenance tasks, unscheduled items). Only completed tasks and pending tasks with explicit due dates appear in the main active list. Tasks without due dates remain visible in their dedicated dropdown sections (Sporadic Tasks, Long-term Goals). Updated frontend filtering logic to enforce date requirements.
+- **Version bump** — server, README, user guide, how-to, and technical reference updated to 1.12.1.
+
+### v1.12.0
+
+- **🐛 Collectible items table layout fix** — the Edit button in the admin Collectible Items table was unexpectedly wide for rows that had a custom icon. The per-row `display:grid` with a variable column count (`28px 1fr auto auto` vs `1fr auto auto`) caused CSS Grid's `auto` track sizing to produce inconsistent button widths. Replaced with `display:flex` so the name column grows (`flex:1;min-width:0`) and buttons remain at their natural content size (`flex-shrink:0`) regardless of whether a row has a custom icon.
+- **🐛 PNG upload "could not read image dimensions" fix** — the admin icon upload used `URL.createObjectURL` to load the selected file into an `<img>` for a client-side dimension check. The resulting `blob:` URL was blocked by the server's Content-Security-Policy `imgSrc` directive (which only allows `'self'` and `data:`), so every upload immediately fired `img.onerror`. Replaced with a single `FileReader.readAsDataURL` pass that produces a CSP-compliant `data:` URL; this same data URL is also reused as the base64 upload payload, eliminating a redundant second file-read.
+- **Version bump** — server, README, user guide, how-to, and technical reference updated to 1.12.0.
+
+### v1.11.0
+
+- **🐛 Push notification fix** — the reminder scheduler now correctly respects the per-task browser popup notification flags (`notify_popup_7day`, `notify_popup_1day`, `notify_popup_onday`). Previously, push notifications were sent for every task that had email notifications enabled, ignoring whether browser push was actually toggled on for that window. Additionally, tasks with browser push enabled but email disabled will now receive push reminders as intended.
+- **Version bump** — server, README, user guide, how-to, and technical reference updated to 1.11.0.
+
+### v1.10.0
+
+- **📌 Sporadic Tasks always visible** — the Sporadic Tasks section now always appears at the top of the task list, collapsed by default, and displays **(0)** when no sporadic tasks exist rather than being hidden entirely. This gives clearer discoverability and consistent placement.
+- **🎯 Long-term Goals** — a new collapsible **Long-term Goals** section appears at the bottom of the task list. Goals are aspirational items outside the active task queue that support groups, XP multipliers, and notes. Tap **📅 Set Deadline** on any goal card to instantly convert it into a scheduled deadline task. Goals can also be created via the standard *New Task* modal by checking *Long-term Goal*.
+- **Version bump** — server, README, user guide, and technical reference updated to 1.10.0.
+
+### v1.9.0
+
+- **🖼️ Collectible item icons** — administrators can now assign a custom PNG artwork to any collectible item. Place transparent PNG files in the `public/collectables/` directory on the server, then use the new **Browse** button in the Collectible Items admin panel to pick a file from a server-side list. The selected icon replaces the rarity emoji in both the loot-drop pop-up alert and the user's Collections page. Items without a custom icon continue to use the existing coloured emoji fallback. The server validates all filenames strictly (alphanumeric, hyphens, underscores, `.png` extension only) to prevent path traversal attacks.
+- **Version bump** — server, README, user guides, and technical reference updated to 1.9.0.
+
+### v1.8.4
+
+- **🕹️ Hat Trick & Lucky Draw arcade cards reinstated** — `streak_3` (Hat Trick 🎩) and `streak_7` (Lucky Draw 🍀) are back in the arcade catalogue with their own game IDs (`hat_trick`, `lucky_draw`), distinct from the four already-developed games.
+- **🐛 Whac-a-Bug difficulty increase** — system-error penalty doubled (−5 → −10 points), starting timer reduced by 5 seconds (60 s → 55 s), and spawn rate now ramps up linearly by 5 % every 30 seconds of play, adding a sustained challenge curve.
+- **Version bump** — server, README, and technical reference updated to 1.8.4.
+
+### v1.8.3
+
+- **🎮 Arcade game assignment fix** — Whac-a-Bug and Code Breaker are now assigned to the 3rd and 4th earliest achievements (`task_50` and `task_100`) respectively, so all four developed games unlock in order: Hangman → Wordsearch → Whac-a-Bug → Code Breaker. Previously Whac-a-Bug and Code Breaker were erroneously attached to streak achievements that most users reach much later, meaning early achievers found undeveloped games.
+- **🏷️ Game name on achievement cards** — each achievement card that has an associated arcade game now shows the game title in small italic text beneath the description, so users can see what they are working toward before they unlock it.
+- **Version bump** — server, README, and technical reference updated to 1.8.3.
+
+### v1.8.2
+
+- **Version bump** — server and technical reference updated to 1.8.2.
+
+### v1.8.1
+
+- **🖱️ Task form UX polish** — "Add Sub-tasks" panel moved to directly below the Group field for a more natural top-down workflow. "Assign To" is now hidden until a group is selected (no more placeholder text cluttering the form). Notes field is now collapsed by default behind a toggle, keeping the form compact; it auto-expands when editing a task that already has notes.
+- **Version bump** — server, README, user guides, and technical reference updated to 1.8.1.
+
+### v1.8.0
+
+- **✅ Sub-tasks** — tasks can now be broken down into individual checklist steps. When creating a task, expand the "Add Sub-tasks" panel to add as many steps as needed (up to 50 per task). Each sub-task can be ticked off independently from the task detail modal. A progress bar (and step count) appears on both the task card and the detail modal. Ticking any sub-task automatically sets the parent task status to "Started". Completing the final sub-task (or clicking Complete) finalises the task through the normal flow.
+- **⭐ Sub-task XP** — each sub-task tick earns a small configurable XP reward (`complete_subtask` event, default 5 XP). Admins can adjust this in the XP Events section of the admin panel.
+- **Version bump** — server, README, user guides, and technical reference updated to 1.8.0.
+
+### v1.7.0
+
+- **🔒 Security hardening** — comprehensive security audit and remediation:
+  - JWT algorithm explicitly locked to `HS256` in both `jwt.verify` (auth middleware) and all `jwt.sign` calls, preventing algorithm-confusion attacks.
+  - Email inputs in login, magic-link, and forgot-password endpoints now normalized (trimmed and lowercased) before DB lookup, matching registration behaviour and eliminating case-sensitive lookup failures.
+  - HTML email templates now HTML-escape all user-controlled content (task titles, group names, inviter usernames, URLs) to prevent HTML-injection in email clients.
+  - `express.json()` body-size limit set to 50 KB to mitigate memory-exhaustion DoS attacks.
+  - Input length caps added: task title ≤ 255 chars, task details ≤ 10 000 chars, task note ≤ 5 000 chars, report reason ≤ 1 000 chars, group name ≤ 200 chars, task-type name ≤ 100 chars, admin reply ≤ 5 000 chars.
+  - `assigneeIds` array capped at 100 entries per request to prevent oversized `IN (…)` queries.
+- **Version bump** — server, README, user guides, and technical reference updated to 1.7.0.
+
+### v1.6.2
+
+- **🕹️ Arcade Token Economy** — a new token-based system gates access to the arcade mini-games. Users spend **Arcade Tokens** (earned through task completions and gamification events) to play. A configurable **daily play limit** (default 15 minutes, up to 180) adds a digital-wellbeing guardrail per user.
+- **🎮 Two new arcade games** — **Code Breaker** (`game-code-breaker.js`) and **Whac-a-Bug** (`game-whac-a-bug.js`) join Hangman and Wordsearch in the arcade. All four games are loaded lazily when their corresponding badge is unlocked.
+- **⚙️ New arcade endpoints** — `PATCH /api/gamification/arcade/daily-limit` (set daily play allowance) and `POST /api/gamification/arcade/spend-token` (atomic token deduction with race-condition guard).
+- **🗂️ Collectible inventory API** — `GET /api/gamification/inventory` returns the authenticated user's full owned-item list with item and category details.
+- **✅ `POST /api/gamification/inventory/claim`** — consumes a pending loot drop from the in-memory cache and persists it to `user_inventory` in an atomic transaction.
+- **🛡️ Anti-farming improvements** — new `tasks.original_due_date` column records the deadline set at task creation; `tasks.xp_claimed` flag prevents XP being re-awarded on task edits. Both columns are added as runtime migrations.
+- **🔧 Admin panel consolidation** — the Locked Accounts and User Reports sub-tabs have been merged into a single **Users** tab (each user row now shows lock status and open report count inline). A new **Gamify** tab consolidates XP Events configuration and the Collectibles CRUD panel into one place, replacing two separate tabs.
+- **Version bump** — server, README, user guides, and technical reference updated to 1.6.2.
+
+### v1.6.1
+
+- **🎒 Collectibles & Loot Drop system** — completing tasks can now reward a random collectible item. A **Loot Drop Modal** appears after task completion if a drop is rolled, showing the item name, rarity (Common / Rare / Epic), category, and description. Players choose to **Keep** the item (adds it permanently to their inventory) or **Recycle** it for a small XP bonus. High-rarity items prompt a confirmation before recycling.
+- **📦 My Collection view** — a new *🎒 My Collection* section on the Progress tab shows the full catalogue grouped by category. Owned items display in colour; unowned catalogue entries appear as greyed-out silhouettes so players can see what they have yet to collect. Each category is collapsible and scales gracefully to large catalogues.
+- **⚙️ Admin collectibles management** — a new **🎒 Items** tab in the Admin Panel gives site administrators full CRUD control over:
+  - **Categories** — create, rename, and soft-delete item categories.
+  - **Items** — create (with name, optional description, category, and rarity), inline-edit, and soft-delete collectible items.
+  - **Bulk Seed** — paste a structured JSON array to create multiple categories and items in one step. Existing entries (matched by name) are skipped without error, making re-seeding safe.
+- **🌱 `POST /api/admin/collectibles/seed`** — new bulk-seed endpoint consumed by the admin UI. Returns a detailed summary (categories created / reused, items created / skipped).
+- **🗂️ `GET /api/gamification/catalogue`** — public (authenticated) endpoint that returns the full active catalogue, used to render unowned silhouette placeholders in the player-facing Collection view.
+- **♻️ `POST /api/gamification/inventory/recycle`** — endpoint to discard a pending drop in exchange for a configurable `recycle_drop` XP event (15 XP by default, adjustable in Admin → XP Events).
+- **Version bump** — server, README, user guides, and technical reference updated to 1.6.1.
+
+### v1.3.1
+
+- **⭐ Progress tab** — dedicated bottom-navigation tab housing the full gamification dashboard (Skills, Achievements, Streaks). Gamification content moved from the Profile page to Progress for better discoverability.
+- **Persistent XP/streak strip** — a slim interactive banner at the top of My Tasks shows the user's current level badge, XP progress bar toward the next level, and best active streak count. Tapping it navigates to the Progress tab. Only visible when gamification is enabled.
+- **Floating Action Button (FAB)** — a large `+` button fixed at the bottom-right of the Tasks page replaces the in-header "New Task" button, positioning the primary action where thumbs naturally rest.
 
 - **🧹 Main task list filtering** — the main task list now excludes all tasks without set due dates (sporadic and maintenance tasks, unscheduled items). Only completed tasks and pending tasks with explicit due dates appear in the main active list. Tasks without due dates remain visible in their dedicated dropdown sections (Sporadic Tasks, Long-term Goals). Updated frontend filtering logic to enforce date requirements.
 - **Version bump** — server, README, user guide, how-to, and technical reference updated to 1.12.1.
@@ -221,7 +335,7 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 
 ### v1.1.0
 
-- Gamification engine — opt-in XP system, skill trees, dynamic titles, achievements, streak tracking, and freeze mechanic.
+- Gamification engine — opt-in XP system, unified overall levels, XP breakdown by skill, dynamic titles, achievements, streak tracking, and freeze mechanic.
 - Per-task notification preferences grid (email + popup × 7-day / 1-day / on-day).
 - ICS calendar feed (private token-based URL).
 - Task fast-forward, defer, recurrence.
@@ -419,6 +533,18 @@ User passwords are **never stored in plaintext**. They are hashed using **bcrypt
 ---
 
 ## Release Notes
+
+### Version 1.16.0 (2026-05-03)
+
+**Gamification overhaul:**
+- **Unified level system** — a user's Level is now derived from the sum of all XP earned across all skills. Every completed task contributes to a single overall level, regardless of task type.
+- **XP breakdown chart** — the Skills section on the Progress page has been replaced with an SVG donut chart showing the proportional breakdown of XP by skill. Each skill's exact XP and percentage are shown in a colour-coded legend.
+- **Level progress bars everywhere** — the Tasks page strip and the Progress page banner both show the overall level number and a bar indicating progress toward the next level.
+- **Level-based achievements** — Specialist and Master of the Craft achievements now trigger at overall Level 5 and Level 10.
+- **Title updated** — dynamic title prefix is now based on the user's overall level; the skill qualifier uses the skill with the highest accumulated XP.
+
+**Backend:**
+- Server version bumped to 1.16.0
 
 ### Version 1.8.6 (2026-04-26)
 

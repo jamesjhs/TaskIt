@@ -54,7 +54,7 @@
   <article class="prose prose-slate dark:prose-invert max-w-none bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 sm:p-8">
 
     <h1>👋 TaskIt! — Complete User Guide</h1>
-    <p class="lead" style="color:#6b7280;font-size:.95rem;margin-top:-4px">v<span class="page-version">1.12.2</span> &nbsp;·&nbsp; Copyright J Rowson and R Shaw, 2026</p>
+    <p class="lead" style="color:#6b7280;font-size:.95rem;margin-top:-4px">v<span class="page-version">1.16.0</span> &nbsp;·&nbsp; Copyright J Rowson and R Shaw, 2026</p>
     <p>TaskIt! is a friendly, self-hosted task manager for individuals and small teams. This guide covers every feature — from your very first login to competing with friends on the XP leaderboard.</p>
 
     <div class="toc">
@@ -344,23 +344,26 @@
 
     <div class="info-box">&#x2139;&#xFE0F; XP values shown above are defaults. The amounts for each event are configurable.</div>
 
-    <p>Completing a task also earns XP in the <strong>skill matching its type</strong> (e.g. a <em>Household</em> task earns Household XP). When a group admin has enabled <strong>Gamification Enhancements</strong> on the group, tasks can carry an <strong>XP Multiplier</strong> (e.g. ×2 for an especially demanding task). XP builds skill levels on a triangular curve:</p>
+    <p>Completing a task also earns XP in the <strong>skill matching its type</strong> (e.g. a <em>Household</em> task earns Household XP). When a group admin has enabled <strong>Gamification Enhancements</strong> on the group, tasks can carry an <strong>XP Multiplier</strong> (e.g. ×2 for an especially demanding task).</p>
+
+    <p><strong>Your overall Level is determined by the sum of all XP you have ever earned</strong>, regardless of which skill it came from. Every completed task contributes to the same unified level. A progress bar on both the Tasks strip and the Progress page shows how far through the current level you are.</p>
 
     <div class="mockup-card">
       <div style="margin-bottom:8px;font-size:.85rem;font-weight:600;color:#374151">&#x1F9F9; Household &#x2014; Task completed (×2 multiplier)</div>
+      <div style="font-size:.78rem;color:#9ca3af;margin-bottom:8px">+100 XP earned &#x00B7; all XP adds to your overall level</div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-        <span style="font-size:.8rem;color:#6b7280;white-space:nowrap">Household XP</span>
+        <span style="font-size:.8rem;color:#6b7280;white-space:nowrap">Overall Level</span>
         <div style="flex:1;background:#e5e7eb;border-radius:99px;height:10px;overflow:hidden">
-          <div style="width:63%;background:#7c3aed;height:100%;border-radius:99px"></div>
+          <div style="width:68%;background:#7c3aed;height:100%;border-radius:99px"></div>
         </div>
-        <span style="font-size:.8rem;font-weight:600;color:#7c3aed;white-space:nowrap">Level 3</span>
+        <span style="font-size:.8rem;font-weight:600;color:#7c3aed;white-space:nowrap">Level 7</span>
       </div>
-      <div style="font-size:.78rem;color:#9ca3af">+100 XP earned &#x00B7; 630 / 1,000 XP to Level 5</div>
+      <div style="font-size:.78rem;color:#9ca3af">340 XP to Level 8</div>
     </div>
 
     <table style="border-collapse:collapse;font-size:.88rem;width:100%;margin:8px 0 14px">
       <tr style="background:#f8fafc">
-        <th style="padding:7px 12px;text-align:left;border:1px solid #e2e8f0">Level</th>
+        <th style="padding:7px 12px;text-align:left;border:1px solid #e2e8f0">Overall Level</th>
         <th style="padding:7px 12px;text-align:left;border:1px solid #e2e8f0">Total XP required</th>
         <th style="padding:7px 12px;text-align:left;border:1px solid #e2e8f0">Title earned</th>
       </tr>
@@ -371,7 +374,10 @@
       <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">10+</td><td style="padding:6px 12px;border:1px solid #e2e8f0">4,500+ XP</td><td style="padding:6px 12px;border:1px solid #e2e8f0">Guru of &hellip;</td></tr>
     </table>
 
-    <p>Your highest skill level determines your <strong>dynamic title</strong> (e.g. <em>Expert Household</em> or <em>Guru of Routine</em>) shown on your Profile.</p>
+    <p>Your <strong>overall level</strong> determines your title tier. The skill qualifier in the title (e.g. <em>Expert <u>Household</u></em> or <em>Guru of <u>Routine</u></em>) comes from whichever skill has the highest accumulated XP.</p>
+
+    <h3>&#x1F4CA; XP Breakdown</h3>
+    <p>Open the <strong>&#x2B50; Progress</strong> tab to see the <strong>XP Breakdown</strong> section &#x2014; a donut chart showing how your total XP is split across your different skill categories. A colour-coded legend lists each skill with its exact XP total and percentage share, so you can see at a glance which areas you spend most of your effort in.</p>
 
     <h3>&#x1F3C6; Achievements</h3>
     <p>Achievements unlock automatically at milestones:</p>
@@ -391,7 +397,7 @@
         <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:10px;text-align:center">
           <div style="font-size:1.4rem;margin-bottom:3px">&#x1F3AF;</div>
           <div style="font-size:.8rem;font-weight:600;color:#6b21a8">Specialist</div>
-          <div style="font-size:.7rem;color:#6b7280;margin-top:2px">Level 5 in any skill</div>
+          <div style="font-size:.7rem;color:#6b7280;margin-top:2px">Overall Level 5</div>
         </div>
         <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px;text-align:center;opacity:.5">
           <div style="font-size:1.4rem;margin-bottom:3px">&#x1F682;</div>
@@ -412,8 +418,8 @@
       <tr><td style="padding:5px 12px 5px 0">&#x1F4DD; Detail Oriented</td><td>Add 50 progress notes</td></tr>
       <tr><td style="padding:5px 12px 5px 0">&#x1F426; Early Bird</td><td>Complete 10 tasks before their due date</td></tr>
       <tr><td style="padding:5px 12px 5px 0">&#x1F5FA;&#xFE0F; Type Explorer</td><td>Complete tasks in 5 different task types</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">&#x1F3AF; Specialist</td><td>Reach level 5 in any skill</td></tr>
-      <tr><td style="padding:5px 12px 5px 0">&#x1F393; Master of the Craft</td><td>Reach level 10 in any skill</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F3AF; Specialist</td><td>Reach overall level 5</td></tr>
+      <tr><td style="padding:5px 12px 5px 0">&#x1F393; Master of the Craft</td><td>Reach overall level 10</td></tr>
       <tr><td style="padding:5px 12px 5px 0">&#x1F3A9; Hat Trick</td><td>Maintain a recurring task streak of 3</td></tr>
       <tr><td style="padding:5px 12px 5px 0">&#x1F340; Lucky Streak</td><td>Maintain a recurring task streak of 7</td></tr>
       <tr><td style="padding:5px 12px 5px 0">&#x1F682; Unstoppable</td><td>Maintain a recurring task streak of 30</td></tr>
@@ -565,7 +571,7 @@
 
     <hr/>
 
-    <p style="font-size:.88rem;color:#6b7280;margin-top:0">TaskIt! v<span class="page-version">1.12.2</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;&#x00B7;&nbsp;
+    <p style="font-size:.88rem;color:#6b7280;margin-top:0">TaskIt! v<span class="page-version">1.16.0</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;&#x00B7;&nbsp;
       <a href="https://jahosi.co.uk" class="text-indigo-500 hover:underline" target="_blank" rel="noopener noreferrer">jahosi.co.uk</a> &nbsp;&#x00B7;&nbsp;
       <a href="/privacy-policy.html" class="text-indigo-500 hover:underline">Privacy Policy</a>
     </p>
@@ -574,7 +580,7 @@
 </main>
 
 <footer class="border-t border-slate-200 dark:border-slate-700 py-4 mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-  <span>TaskIt! v<span class="page-version">1.12.2</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;&#x00B7;&nbsp;
+  <span>TaskIt! v<span class="page-version">1.16.0</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;&#x00B7;&nbsp;
     <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer" class="text-indigo-500 hover:underline">jahosi.co.uk</a>
     &nbsp;&#x00B7;&nbsp;
     <a href="/privacy-policy.html" class="text-indigo-500 hover:underline">Privacy Policy</a>

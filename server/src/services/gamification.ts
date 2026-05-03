@@ -266,10 +266,14 @@ export function awardEventXp(
     'SELECT xp, level FROM user_skills WHERE user_id = ? AND skill_name = ?'
   ).get(userId, SKILL) as { xp: number; level: number } | undefined;
 
+  // Compute old overall level before award
+  const oldTotalRow = db.prepare(
+    'SELECT COALESCE(SUM(xp), 0) AS total FROM user_skills WHERE user_id = ?'
+  ).get(userId) as { total: number };
+  const oldOverallLevel = computeLevel(oldTotalRow.total);
+
   let newXp: number;
   let newLevel: number;
-
-  const oldLevel = existing ? existing.level : 1;
 
   if (existing) {
     newXp = existing.xp + xpAmount;
@@ -285,8 +289,9 @@ export function awardEventXp(
     ).run(userId, SKILL, newXp, newLevel);
   }
 
-  // Award 3 Arcade Tokens whenever the user crosses a level threshold.
-  if (newLevel > oldLevel) {
+  // Award 3 Arcade Tokens whenever the overall level crosses a threshold.
+  const newOverallLevel = computeLevel(oldTotalRow.total + xpAmount);
+  if (newOverallLevel > oldOverallLevel) {
     db.prepare(
       'UPDATE users SET arcade_tokens = arcade_tokens + 3 WHERE id = ?'
     ).run(userId);
@@ -309,17 +314,27 @@ const TITLE_TIERS: Array<{ minLevel: number; prefix: string }> = [
 ];
 
 /**
- * Returns the highest-level skill for a user and derives a title string.
+ * Derives a title string from the user's overall level (computed from total XP
+ * across all skills) combined with the skill in which the most XP has been earned.
  * Returns null if the user has no skills yet.
  */
 export function computeDynamicTitle(userId: string): string | null {
+  const totalXpRow = db.prepare(
+    'SELECT COALESCE(SUM(xp), 0) AS total FROM user_skills WHERE user_id = ?'
+  ).get(userId) as { total: number } | undefined;
+
+  const totalXp = totalXpRow?.total ?? 0;
+  const overallLevel = computeLevel(totalXp);
+
+  if (overallLevel < 1 || totalXp === 0) return null;
+
   const topSkill = db.prepare(
-    'SELECT skill_name, level FROM user_skills WHERE user_id = ? ORDER BY level DESC, xp DESC LIMIT 1'
-  ).get(userId) as { skill_name: string; level: number } | undefined;
+    'SELECT skill_name FROM user_skills WHERE user_id = ? ORDER BY xp DESC LIMIT 1'
+  ).get(userId) as { skill_name: string } | undefined;
 
-  if (!topSkill || topSkill.level < 1) return null;
+  if (!topSkill) return null;
 
-  const tier = TITLE_TIERS.find(t => topSkill.level >= t.minLevel) ?? TITLE_TIERS[TITLE_TIERS.length - 1];
+  const tier = TITLE_TIERS.find(t => overallLevel >= t.minLevel) ?? TITLE_TIERS[TITLE_TIERS.length - 1];
   return `${tier.prefix} ${topSkill.skill_name}`;
 }
 
@@ -361,14 +376,18 @@ export function awardTaskXp(
   const clampedMultiplier = Math.max(0.1, Math.min(10, xpMultiplier));
   const awardXp = Math.max(1, Math.round(baseXp * clampedMultiplier));
 
+  // Compute old overall level before award
+  const oldTotalRow = db.prepare(
+    'SELECT COALESCE(SUM(xp), 0) AS total FROM user_skills WHERE user_id = ?'
+  ).get(userId) as { total: number };
+  const oldOverallLevel = computeLevel(oldTotalRow.total);
+
   const existing = db.prepare(
     'SELECT xp, level FROM user_skills WHERE user_id = ? AND skill_name = ?'
   ).get(userId, skillName) as { xp: number; level: number } | undefined;
 
   let newXp: number;
   let newLevel: number;
-
-  const oldLevel = existing ? existing.level : 1;
 
   if (existing) {
     newXp = existing.xp + awardXp;
@@ -384,8 +403,9 @@ export function awardTaskXp(
     ).run(userId, skillName, newXp, newLevel);
   }
 
-  // Award 3 Arcade Tokens whenever the user crosses a level threshold.
-  if (newLevel > oldLevel) {
+  // Award 3 Arcade Tokens whenever the overall level crosses a threshold.
+  const newOverallLevel = computeLevel(oldTotalRow.total + awardXp);
+  if (newOverallLevel > oldOverallLevel) {
     db.prepare(
       'UPDATE users SET arcade_tokens = arcade_tokens + 3 WHERE id = ?'
     ).run(userId);
@@ -469,11 +489,11 @@ export function checkAndGrantAchievements(userId: string): string[] {
   `).get(userId, userId) as { cnt: number };
   const typeCount = typeCountRow.cnt;
 
-  // Highest skill level the user has ever reached
-  const topLevelRow = db.prepare(
-    'SELECT MAX(level) AS maxLevel FROM user_skills WHERE user_id = ?'
-  ).get(userId) as { maxLevel: number | null };
-  const topLevel = topLevelRow.maxLevel ?? 0;
+  // Overall level derived from total XP across all skills (used for level-based achievements)
+  const totalXpRow = db.prepare(
+    'SELECT COALESCE(SUM(xp), 0) AS total FROM user_skills WHERE user_id = ?'
+  ).get(userId) as { total: number };
+  const overallLevel = computeLevel(totalXpRow.total);
 
   // Longest streak across all of the user's recurring tasks
   const topStreakRow = db.prepare(`
@@ -493,8 +513,8 @@ export function checkAndGrantAchievements(userId: string): string[] {
     { key: 'detail_oriented', earned: noteCount >= 50 },
     { key: 'early_bird',      earned: earlyCount >= 10 },
     { key: 'type_explorer',   earned: typeCount >= 5 },
-    { key: 'skill_level_5',   earned: topLevel >= 5 },
-    { key: 'skill_level_10',  earned: topLevel >= 10 },
+    { key: 'skill_level_5',   earned: overallLevel >= 5 },
+    { key: 'skill_level_10',  earned: overallLevel >= 10 },
     { key: 'streak_3',        earned: topStreak >= 3 },
     { key: 'streak_7',        earned: topStreak >= 7 },
     { key: 'streak_30',       earned: topStreak >= 30 },
@@ -527,10 +547,12 @@ export interface GamificationProfile {
   enabled: boolean;
   title: string | null;
   totalXp: number;
+  level: number;
+  xpToNextLevel: number;
   freezeCredits: number;
   arcadeTokens: number;
   dailyPlayMinutes: number;
-  skills: Array<{ skill_name: string; xp: number; level: number; xpForNextLevel: number }>;
+  skills: Array<{ skill_name: string; xp: number }>;
   achievements: Array<{
     id: string;
     key: string;
@@ -551,13 +573,12 @@ export function getGamificationProfile(userId: string): GamificationProfile {
   const dailyPlayMinutes = user?.daily_play_minutes ?? 15;
 
   const skills = (db.prepare(
-    'SELECT skill_name, xp, level FROM user_skills WHERE user_id = ? ORDER BY level DESC, xp DESC'
-  ).all(userId) as Array<{ skill_name: string; xp: number; level: number }>).map(s => ({
-    ...s,
-    xpForNextLevel: xpThresholdForLevel(s.level + 1) - s.xp,
-  }));
+    'SELECT skill_name, xp FROM user_skills WHERE user_id = ? ORDER BY xp DESC'
+  ).all(userId) as Array<{ skill_name: string; xp: number }>);
 
   const totalXp = skills.reduce((sum, s) => sum + s.xp, 0);
+  const level = computeLevel(totalXp);
+  const xpToNextLevel = Math.max(0, xpThresholdForLevel(level + 1) - totalXp);
 
   // All achievements with unlock status for this user.
   // SQLite orders NULLs last in a DESC sort, so unlocked achievements appear first.
@@ -575,6 +596,8 @@ export function getGamificationProfile(userId: string): GamificationProfile {
     enabled,
     title: enabled ? computeDynamicTitle(userId) : null,
     totalXp,
+    level,
+    xpToNextLevel,
     freezeCredits,
     arcadeTokens,
     dailyPlayMinutes,

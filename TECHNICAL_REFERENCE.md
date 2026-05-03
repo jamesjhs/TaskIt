@@ -1,8 +1,8 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.15.0**  
+**Version 1.16.0**  
 **Author:** J Rowson  
-**Generated:** 2026-05-02
+**Generated:** 2026-05-03
 
 ---
 
@@ -60,8 +60,9 @@
     - 14.1 [XP Events Catalogue](#141-xp-events-catalogue)
     - 14.2 [Achievements Catalogue](#142-achievements-catalogue)
     - 14.3 [Level Formula](#143-level-formula)
-    - 14.4 [Streak System](#144-streak-system)
-    - 14.5 [Title Tiers](#145-title-tiers)
+    - 14.4 [XP Breakdown Display](#144-xp-breakdown-display)
+    - 14.5 [Streak System](#145-streak-system)
+    - 14.6 [Title Tiers](#146-title-tiers)
 15. [Email / SMTP System](#15-email--smtp-system)
 16. [Recurring Tasks — Spawn Logic](#16-recurring-tasks--spawn-logic)
 17. [ICS Calendar Feed](#17-ics-calendar-feed)
@@ -1144,8 +1145,12 @@ interface GamificationProfile {
   enabled: boolean;
   title: string | null;
   totalXp: number;
+  level: number;               // overall level derived from totalXp
+  xpToNextLevel: number;       // XP remaining until the next overall level
   freezeCredits: number;
-  skills: Array<{ skill_name: string; xp: number; level: number; xpForNextLevel: number }>;
+  arcadeTokens: number;
+  dailyPlayMinutes: number;
+  skills: Array<{ skill_name: string; xp: number }>;  // sorted by xp desc; no per-skill level
   achievements: Array<{
     id: string; key: string; name: string; description: string; unlockedAt: number | null;
   }>;
@@ -1450,8 +1455,9 @@ The entire application UI and all client-side logic is contained in a single HTM
 | Function | Description |
 |---|---|
 | `loadGamificationProfile()` | GET `/api/gamification/profile`; updates strip and full profile |
-| `renderGamifStrip(profile, streaks)` | Updates the compact XP strip at top of Tasks view |
-| `renderGamificationProfile(profile, streaks)` | Full Progress page render |
+| `renderGamifStrip(profile, streaks)` | Updates the compact XP strip at top of Tasks view (shows overall level, XP progress bar, best streak) |
+| `renderGamificationProfile(profile, streaks)` | Full Progress page render (banner with level + XP bar, XP breakdown donut chart, achievements, streaks, leaderboards, inventory) |
+| `xpThresholdForLevel(n)` | Pure JS equivalent of the server-side level threshold formula — used by the strip and banner to compute progress within the current level without a server round-trip |
 | `handleGamifToggle(checked)` | PATCH `/api/gamification/opt-in` |
 | `toggleGroupLeaderboard()` | Toggle between friends/group leaderboard |
 | `renderLeaderboardTable(rows, myId)` | Renders leaderboard HTML table |
@@ -1541,10 +1547,10 @@ The entire application UI and all client-side logic is contained in a single HTM
 | `filterArchived` | checkbox | Show archived toggle |
 | `filterAssignedToMe` | checkbox | Assigned-to-me filter |
 | `tasksGamifStrip` | div | Gamification XP strip |
-| `stripSkillName` | span | Top skill name in strip |
-| `stripSkillBadge` | span | Level badge in strip |
-| `stripBarFill` | div | XP progress bar fill |
-| `stripXpSub` | div | XP subtitle text |
+| `stripSkillName` | span | Static "Level" label in strip |
+| `stripSkillBadge` | span | Overall level number in strip |
+| `stripBarFill` | div | XP progress bar fill (overall level progress) |
+| `stripXpSub` | div | XP subtitle text ("N XP to Level X+1") |
 | `stripStreak` | div | Streak count in strip |
 | `stripAchBadge` | div | Achievement unlock indicator |
 | `taskModal` | div | Create/edit task modal |
@@ -1732,6 +1738,8 @@ These are stored in `xp_events` and admin-configurable:
 All event XP goes to the `'Activity'` skill via `awardEventXp()`.  
 Task-completion XP goes to the skill matching the task type name via `awardTaskXp()`.
 
+Both functions compare the **overall level** (computed from total XP across all skills) before and after the award. If the overall level increases, 3 Arcade Tokens are granted.
+
 ---
 
 ### 14.2 Achievements Catalogue
@@ -1746,14 +1754,16 @@ Task-completion XP goes to the skill matching the task type name via `awardTaskX
 | `detail_oriented` | Detail Oriented | Add 50 progress notes | *(in development)* |
 | `early_bird` | Early Bird | Complete 10 tasks before due date | *(in development)* |
 | `type_explorer` | Type Explorer | Complete tasks across 5 different types | *(in development)* |
-| `skill_level_5` | Specialist | Reach level 5 in any skill | *(in development)* |
-| `skill_level_10` | Master of the Craft | Reach level 10 in any skill | *(in development)* |
+| `skill_level_5` | Specialist | Reach **overall level 5** | *(in development)* |
+| `skill_level_10` | Master of the Craft | Reach **overall level 10** | *(in development)* |
 | `streak_3` | Hat Trick | Recurring task streak of 3 | Hat Trick *(in development)* |
 | `streak_7` | Lucky Streak | Recurring task streak of 7 | Lucky Draw *(in development)* |
 | `streak_30` | Unstoppable | Recurring task streak of 30 | *(in development)* |
 
 Games are assigned to achievements in earliest-unlock order: Hangman, Wordsearch, Whac-a-Bug, Code Breaker unlock at the 1st, 2nd, 3rd, and 4th achievements respectively.  
 Each achievement card displays the associated game title so users know what they are working toward.
+
+The `skill_level_5` and `skill_level_10` achievements check the user's **overall level** (computed from total XP across all skills), not any individual skill's level.
 
 Achievement IDs are identical to their keys (deterministic across restarts).  
 Checking is triggered by: task completion, note creation, gamification opt-in.
@@ -1775,11 +1785,25 @@ Level n: 50 × n × (n-1)
 computeLevel(xp) = max(1, floor( (1 + sqrt(1 + 4×xp/50)) / 2 ))
 ```
 
-`xpForNextLevel` returned in the profile = `xpThresholdForLevel(level + 1) - currentXp`
+**Overall level** is derived from `totalXp` (the sum of XP across all `user_skills` rows for the user).  
+`xpToNextLevel` = `xpThresholdForLevel(level + 1) - totalXp`
+
+Individual skill rows in `user_skills` still store a `level` column (updated on each XP award for historical purposes), but the displayed level everywhere in the UI is the overall level computed from `totalXp`.
 
 ---
 
-### 14.4 Streak System
+### 14.4 XP Breakdown Display
+
+The Progress page **⭐ XP Breakdown** section renders:
+
+1. An **SVG donut chart** — each skill is a coloured segment sized proportionally to its share of `totalXp`. Hovering/tapping a segment shows the skill name and XP as a tooltip.
+2. A **legend table** — skill name, exact XP, and percentage of total, sorted by XP descending.
+
+Skills are returned from `GET /api/gamification/profile` sorted by `xp DESC`. The `xpThresholdForLevel` helper function is duplicated in the frontend as a pure JS function to compute the current-level progress without a round-trip.
+
+---
+
+### 14.5 Streak System
 
 **Tracking:** `streak_current`, `streak_longest`, `streak_frozen` columns on `tasks`.
 
@@ -1801,11 +1825,11 @@ computeLevel(xp) = max(1, floor( (1 + sqrt(1 + 4×xp/50)) / 2 ))
 
 ---
 
-### 14.5 Title Tiers
+### 14.6 Title Tiers
 
-Dynamic title = highest-level skill + tier prefix:
+Dynamic title = overall-level-based prefix + skill-qualifier from the skill with highest XP:
 
-| Skill level | Title format |
+| Overall level | Title format |
 |---|---|
 | ≥ 10 | `"Guru of <SkillName>"` |
 | ≥ 7 | `"Master <SkillName>"` |

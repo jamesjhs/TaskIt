@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.15.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.16.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -302,11 +302,12 @@ The first time you log in, TaskIt! may ask if you'd like to enable gamification 
 ### ⭐ Progress tab
 
 All gamification content lives in the **⭐ Progress** tab in the bottom navigation. Here you can see:
-- Your full skill tree with XP progress bars
+- Your **overall Level** and XP progress bar toward the next level
+- An **XP Breakdown** donut chart showing how your XP is distributed across different skill categories
 - Your unlocked achievements
 - Your active streaks
 
-When gamification is enabled, a slim **XP/streak strip** also appears at the top of the My Tasks page. It shows your top skill, current level, XP progress, and best active streak at a glance. Tap the strip to go straight to the Progress tab.
+When gamification is enabled, a slim **XP/level strip** also appears at the top of the My Tasks page. It shows your current level, the XP progress bar toward the next level, and your best active streak at a glance. Tap the strip to go straight to the Progress tab.
 
 ### Enabling / Disabling
 
@@ -314,11 +315,13 @@ When gamification is enabled, a slim **XP/streak strip** also appears at the top
 2. Find the **Gamification** card.
 3. Toggle it on (or off). Your progress is preserved if you turn it off and back on.
 
-### ⭐ XP & Skill Levels
+### ⭐ XP & Overall Level
 
 Every time you complete a task, you earn **50 XP** in the *skill* that matches the task type. For example, completing a Household task earns Household XP; completing a Financial task earns Financial XP.
 
-XP accumulates to raise your skill level using a triangular curve — each level costs more XP than the last:
+**Your overall Level is based on the total of all XP you have ever earned**, regardless of which skill it came from. Complete tasks in any category and they all count toward the same single level. A progress bar shows how far through the current level you are and how much XP remains until the next level.
+
+Level milestones use a triangular curve — each level costs more XP than the last:
 
 | Level | Total XP needed |
 |-------|-----------------|
@@ -330,15 +333,19 @@ XP accumulates to raise your skill level using a triangular curve — each level
 | 6     | 1,500           |
 | 10    | 4,500           |
 
-Your top skill level also earns you a **dynamic title** shown on your profile:
+### 📊 XP Breakdown
 
-| Skill level | Title example          |
-|-------------|------------------------|
-| 10+         | Guru of Household      |
-| 7–9         | Master Routine         |
-| 5–6         | Expert Hobby           |
-| 3–4         | Skilled Financial      |
-| 1–2         | Apprentice of Urgent   |
+The **⭐ XP Breakdown** section on the Progress page shows a donut chart illustrating how your total XP is split across your different skills (task types). A colour-coded legend lists each skill with its exact XP total and percentage share. This gives you a clear picture of where you spend your effort without replacing your unified level.
+
+Your top-XP skill also earns you a **dynamic title** shown on your profile, based on your overall level:
+
+| Overall level | Title example          |
+|---------------|------------------------|
+| 10+           | Guru of Household      |
+| 7–9           | Master Routine         |
+| 5–6           | Expert Hobby           |
+| 3–4           | Skilled Financial      |
+| 1–2           | Apprentice of Urgent   |
 
 ### 🏆 Achievements
 
@@ -354,8 +361,8 @@ Achievements are one-time awards that unlock when you hit milestones:
 | 📝 Detail Oriented  | Add 50 progress notes across all tasks            |
 | 🐦 Early Bird       | Complete 10 tasks before their due date           |
 | 🗺️ Type Explorer    | Complete tasks in 5 different task types          |
-| 🎯 Specialist       | Reach level 5 in any skill                        |
-| 🎓 Master of Craft  | Reach level 10 in any skill                       |
+| 🎯 Specialist       | Reach overall level 5                             |
+| 🎓 Master of Craft  | Reach overall level 10                            |
 | 🎩 Hat Trick        | Maintain a recurring task streak of 3             |
 | 🍀 Lucky Streak     | Maintain a recurring task streak of 7             |
 | 🚂 Unstoppable      | Maintain a recurring task streak of 30            |
@@ -450,4 +457,4 @@ Tap the **⭐ Progress** tab in the bottom navigation. You can also enable or di
 
 ---
 
-*TaskIt! v1.12.0 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*TaskIt! v1.16.0 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*

@@ -1761,7 +1761,7 @@
         <input type="hidden" id="taskEditId" />
         <div class="form-group">
           <label>Title <span style="color:#dc2626">*</span></label>
-          <input id="taskTitle" type="text" required placeholder="Task title" class="input" />
+          <input id="taskTitle" type="text" required placeholder="Task title" class="input" maxlength="200" />
         </div>
         <div class="form-group">
           <label>Type <span style="color:#dc2626">*</span></label>
@@ -2261,12 +2261,11 @@ function isMobileDevice() {
 
 // On mobile, enhance date inputs for better UX
 function enhanceMobileDatetimePickers() {
-  // Ensure date inputs are touch-friendly on mobile
-  const inputs = document.querySelectorAll('input[type="date"]');
-  inputs.forEach(input => {
-    input.style.fontSize = '16px'; // Prevents zoom-on-focus on iOS
-    input.style.minHeight = '44px'; // Touch-friendly size
-    input.style.minWidth = '100%';
+  // Ensure date and text inputs are touch-friendly on mobile
+  // 16px font prevents iOS auto-zoom on focus; 44px min-height aids tapping
+  document.querySelectorAll('input[type="date"], input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, textarea').forEach(el => {
+    if (!el.style.fontSize) el.style.fontSize = '16px';
+    if (!el.style.minHeight) el.style.minHeight = '44px';
   });
 }
 
@@ -2709,7 +2708,7 @@ function toggleEditTaskType(typeId) {
     const nameSpan = container.querySelector('span');
     const origName = nameSpan.textContent;
     const editHtml = `
-      <input type="text" id="edit-${typeId}" class="input" value="${origName}" maxlength="80" style="font-size:.9rem;flex:1" />
+      <input type="text" id="edit-${typeId}" class="input" value="${escHtml(origName)}" maxlength="80" style="font-size:.9rem;flex:1" />
       <div style="display:flex;gap:6px">
         <button type="button" onclick="saveEditTaskType('${typeId}')" class="btn btn-sm btn-primary" style="padding:4px 8px;font-size:.75rem">Save</button>
         <button type="button" onclick="cancelEditTaskType('${typeId}')" class="btn btn-sm btn-secondary" style="padding:4px 8px;font-size:.75rem">Cancel</button>
@@ -3272,9 +3271,9 @@ function openNewGoalModal() {
 
 function openSetDeadlineModal(goalId) {
   document.getElementById('setDeadlineGoalId').value = goalId;
-  const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
-  const iso = new Date(midnight.getTime() - midnight.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-  document.getElementById('setDeadlineDueDate').value = iso;
+  const today = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById('setDeadlineDueDate').value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
   document.getElementById('setDeadlineModal').classList.remove('hidden');
 }
 
@@ -3523,6 +3522,10 @@ async function loadGroupMembersForTask(selectedIds = []) {
 
 async function handleTaskSubmit(e) {
   e.preventDefault();
+  const saveBtn = document.getElementById('taskSaveBtn');
+  const origLabel = saveBtn ? saveBtn.textContent : 'Save Task';
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+  const restoreBtn = () => { if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = origLabel; } };
   const editId = document.getElementById('taskEditId').value;
   const sporadicCheckbox = document.getElementById('taskSporadic');
   const isSporadic = sporadicCheckbox && sporadicCheckbox.checked;
@@ -3536,8 +3539,8 @@ async function handleTaskSubmit(e) {
     const groupId = document.getElementById('taskGroup').value || null;
     const typeId = document.getElementById('taskType').value;
 
-    if (!title) { toast('Goal title is required', 'error'); return; }
-    if (!typeId) { toast('Task type is required', 'error'); return; }
+    if (!title) { toast('Goal title is required', 'error'); restoreBtn(); return; }
+    if (!typeId) { toast('Task type is required', 'error'); restoreBtn(); return; }
 
     const xpMultiplierRow = document.getElementById('taskXpMultiplierRow');
     const xpMultiplier = (xpMultiplierRow && !xpMultiplierRow.classList.contains('hidden'))
@@ -3561,7 +3564,7 @@ async function handleTaskSubmit(e) {
     } catch (err) {
       toast(err.message, 'error');
     }
-    return;
+    restoreBtn(); return;
   }
 
   // Handle sporadic task creation
@@ -3571,14 +3574,8 @@ async function handleTaskSubmit(e) {
     const groupId = document.getElementById('taskGroup').value || null;
     const typeId = document.getElementById('taskType').value;
     
-    if (!title) {
-      toast('Task title is required', 'error');
-      return;
-    }
-    if (!typeId) {
-      toast('Task type is required', 'error');
-      return;
-    }
+    if (!title) { toast('Task title is required', 'error'); restoreBtn(); return; }
+    if (!typeId) { toast('Task type is required', 'error'); restoreBtn(); return; }
     
     try {
       await api('POST', '/tasks/create-sporadic', {
@@ -3595,7 +3592,7 @@ async function handleTaskSubmit(e) {
     } catch (err) {
       toast(err.message, 'error');
     }
-    return;
+    restoreBtn(); return;
   }
 
   // Handle sporadic task editing
@@ -3606,14 +3603,8 @@ async function handleTaskSubmit(e) {
     const typeId = document.getElementById('taskType').value;
     const lastDoneDateTimeVal = document.getElementById('sporadicLastDoneDateTime').value;
 
-    if (!title) {
-      toast('Task title is required', 'error');
-      return;
-    }
-    if (!typeId) {
-      toast('Task type is required', 'error');
-      return;
-    }
+    if (!title) { toast('Task title is required', 'error'); restoreBtn(); return; }
+    if (!typeId) { toast('Task type is required', 'error'); restoreBtn(); return; }
 
     const body = {
       title,
@@ -3636,7 +3627,7 @@ async function handleTaskSubmit(e) {
     } catch (err) {
       toast(err.message, 'error');
     }
-    return;
+    restoreBtn(); return;
   }
   
   // Handle regular task creation/editing
@@ -3692,6 +3683,7 @@ async function handleTaskSubmit(e) {
     resetSubtaskPanel();
     closeTaskModal(); loadTasks(); loadLongTermGoals();
   } catch (err) { toast(err.message, 'error'); }
+  restoreBtn();
 }
 
 // ========== Task Detail ==========

@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.14.4**  
+**Version 1.15.0**  
 **Author:** J Rowson  
 **Generated:** 2026-05-02
 
@@ -1417,8 +1417,12 @@ The entire application UI and all client-side logic is contained in a single HTM
 | `updateFilterBadge()` | Updates active-filter count badge |
 | `setFilter(key, value)` | Updates `currentFilter` and calls `loadTasks()` |
 | `applyFilters()` | Reads all filter form controls into `currentFilter` and calls `loadTasks()` |
-| `openTaskModal(task?)` | Opens create (null) or edit (task) modal; populates form fields; collapses Notes panel (auto-expands if task has existing notes); hides assignee row |
+| `openTaskModal(task?)` | Opens create (null) or edit (task) modal; populates form fields; collapses Notes panel (auto-expands if task has existing notes); hides assignee row; due date uses `type="date"` (date only, no time) |
 | `closeTaskModal()` | Hides task modal |
+| `openFabMenu()` | Shows the FAB popup menu (New Task / Sporadic Task / Long-term Goal) |
+| `closeFabMenu()` | Hides the FAB popup menu |
+| `openTaskModalWithMode(mode)` | Opens task modal pre-configured for `'task'`, `'sporadic'`, or `'goal'` |
+| `setRelativeDueDate(dateInputId, numInputId, unitInputId)` | Computes a date offset (days/weeks/months from today) and writes it to the target date input |
 | `loadGroupMembersForTask(selectedIds?)` | Populates assignee checkboxes for selected group; shows/hides `assigneeRow` depending on whether a group is selected |
 | `handleTaskSubmit(e)` | POST or PATCH `/api/tasks[/:id]`; builds request body including all notification flags |
 | `openDetailById(id)` | Looks up task in `tasksMap` and calls `openDetail()` |
@@ -1547,7 +1551,8 @@ The entire application UI and all client-side logic is contained in a single HTM
 | `taskEditId` | input | Hidden edit task ID |
 | `taskType` | select | Type select in task form |
 | `taskGroup` | select | Group select in task form |
-| `taskDueDate` | input | Due date input |
+| `taskDueDate` | input[date] | Due date (date only, no time — stored as midnight local) |
+| `dueDateRelativeRow` | div | Relative-date shortcut row ("or in X days/weeks/months from now") |
 | `taskRecurEnabled` | checkbox | Enable recurrence checkbox |
 | `taskXpMultiplierRow` | div | XP multiplier row (group-only) |
 | `taskXpMultiplier` | input | XP multiplier value |
@@ -1556,6 +1561,8 @@ The entire application UI and all client-side logic is contained in a single HTM
 | `notesToggleBtn` | button | Notes collapsible toggle button |
 | `notesToggleIcon` | span | Arrow icon inside notes toggle (▶ / ▼) |
 | `notesPanel` | div | Collapsible notes panel (hidden by default; auto-expanded when editing a task with existing notes) |
+| `fabMenu` | div | FAB popup menu (New Task / Sporadic / Goal) |
+| `fabMenuOverlay` | div | Click-away overlay for FAB popup menu |
 | `loginForm` | form | Login form |
 | `registerForm` | form | Register form |
 | `loginEmail` | input | Login email |

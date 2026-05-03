@@ -1665,13 +1665,13 @@
   <!-- FAB popup menu -->
   <div id="fabMenuOverlay" class="fab-menu-overlay hidden" onclick="closeFabMenu()"></div>
   <div id="fabMenu" class="fab-menu hidden" role="menu" aria-label="Create new task">
-    <button onclick="closeFabMenu(); openTaskModalWithMode('goal')" class="fab-menu-item" role="menuitem">
+    <button onclick="closeFabMenu(); openTaskModalWithMode('goal')" class="fab-menu-item" role="menuitem" aria-label="Create long-term goal">
       <span class="fab-menu-icon">🎯</span>Long-term Goal
     </button>
-    <button onclick="closeFabMenu(); openTaskModalWithMode('sporadic')" class="fab-menu-item" role="menuitem">
+    <button onclick="closeFabMenu(); openTaskModalWithMode('sporadic')" class="fab-menu-item" role="menuitem" aria-label="Create sporadic task">
       <span class="fab-menu-icon">🔄</span>Sporadic Task
     </button>
-    <button onclick="closeFabMenu(); openTaskModalWithMode('task')" class="fab-menu-item" role="menuitem">
+    <button onclick="closeFabMenu(); openTaskModalWithMode('task')" class="fab-menu-item" role="menuitem" aria-label="Create new task">
       <span class="fab-menu-icon">📋</span>New Task
     </button>
   </div>
@@ -1808,8 +1808,8 @@
           <input id="taskDueDate" type="date" class="input" />
           <div id="dueDateRelativeRow" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px">
             <span style="font-size:.85rem;color:#6b7280">or in</span>
-            <input id="dueDateRelativeNum" type="number" min="1" max="999" value="1" class="input" style="width:60px;flex-shrink:0;padding:6px 8px" />
-            <select id="dueDateRelativeUnit" class="select" style="flex:1;min-width:90px">
+            <input id="dueDateRelativeNum" type="number" min="1" max="999" value="1" class="input" style="width:60px;flex-shrink:0;padding:6px 8px" aria-label="Number of time units" />
+            <select id="dueDateRelativeUnit" class="select" style="flex:1;min-width:90px" aria-label="Time unit (days, weeks, or months)">
               <option value="days">days</option>
               <option value="weeks">weeks</option>
               <option value="months">months</option>
@@ -1912,8 +1912,8 @@
         <input id="setDeadlineDueDate" type="date" class="input" />
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px">
           <span style="font-size:.85rem;color:#6b7280">or in</span>
-          <input id="deadlineRelativeNum" type="number" min="1" max="999" value="1" class="input" style="width:60px;flex-shrink:0;padding:6px 8px" />
-          <select id="deadlineRelativeUnit" class="select" style="flex:1;min-width:90px">
+          <input id="deadlineRelativeNum" type="number" min="1" max="999" value="1" class="input" style="width:60px;flex-shrink:0;padding:6px 8px" aria-label="Number of time units" />
+          <select id="deadlineRelativeUnit" class="select" style="flex:1;min-width:90px" aria-label="Time unit (days, weeks, or months)">
             <option value="days">days</option>
             <option value="weeks">weeks</option>
             <option value="months">months</option>
@@ -2047,8 +2047,8 @@
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px">
           <span style="font-size:.85rem;color:#6b7280">or in</span>
-          <input id="deferRelativeNum" type="number" min="1" max="999" value="1" class="input" style="width:60px;flex-shrink:0;padding:6px 8px" />
-          <select id="deferRelativeUnit" class="select" style="flex:1;min-width:90px">
+          <input id="deferRelativeNum" type="number" min="1" max="999" value="1" class="input" style="width:60px;flex-shrink:0;padding:6px 8px" aria-label="Number of time units" />
+          <select id="deferRelativeUnit" class="select" style="flex:1;min-width:90px" aria-label="Time unit (days, weeks, or months)">
             <option value="days">days</option>
             <option value="weeks">weeks</option>
             <option value="months">months</option>
@@ -3385,6 +3385,10 @@ function openTaskModalWithMode(mode) {
   } else if (mode === 'goal') {
     document.getElementById('taskLongTermGoal').checked = true;
     document.getElementById('taskSporadic').checked = false;
+    updateTaskMode();
+  } else {
+    document.getElementById('taskSporadic').checked = false;
+    document.getElementById('taskLongTermGoal').checked = false;
     updateTaskMode();
   }
 }
@@ -5928,6 +5932,7 @@ function setRelativeDueDate(dateInputId, numInputId, unitInputId) {
   if (unit === 'days') d.setDate(d.getDate() + num);
   else if (unit === 'weeks') d.setDate(d.getDate() + num * 7);
   else if (unit === 'months') d.setMonth(d.getMonth() + num);
+  else { toast('Invalid time unit', 'error'); return; }
   const pad = n => String(n).padStart(2, '0');
   document.getElementById(dateInputId).value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 }

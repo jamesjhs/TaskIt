@@ -56,6 +56,24 @@
   }
   </script>
 
+  <!--
+    Critical visibility guard — inline so it applies even if the external CSS file
+    fails to load (e.g. proxy misconfiguration, CDN miss, or network error).
+
+    The SPA relies entirely on the JavaScript pattern:
+      element.classList.add('hidden')    → hide
+      element.classList.remove('hidden') → show
+
+    If the external app.css never arrives, the .hidden rule is absent, every
+    page section is rendered simultaneously, and an unauthenticated visitor can
+    read ALL of the app's HTML structure — including the admin panel (SMTP
+    config, user management, locked accounts, reports, etc.) — as raw unstyled
+    text.  By defining .hidden here, in the document itself, we guarantee the
+    rule is always present regardless of the network or security environment.
+  -->
+  <style>
+    .hidden { display: none !important; }
+  </style>
   <link rel="stylesheet" href="/app.css" type="text/css" />
   <!-- PWA / installable web app -->
   <link rel="manifest" href="/manifest.json" />

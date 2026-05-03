@@ -1035,7 +1035,6 @@
         <button onclick="setFilter('status','')" id="filterAll" class="chip active">All</button>
         <button onclick="setFilter('status','not_started')" id="filterNotStarted" class="chip">Not Started</button>
         <button onclick="setFilter('status','started')" id="filterStarted" class="chip">Started</button>
-        <button onclick="setFilter('status','complete')" id="filterComplete" class="chip">Complete</button>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <select id="filterGroup" onchange="applyFilters()" class="filter-select">
@@ -1046,7 +1045,7 @@
         </select>
         <label class="toggle-label">
           <input type="checkbox" id="filterArchived" onchange="applyFilters()" />
-          Show Archived
+          Show Completed
         </label>
         <label class="toggle-label">
           <input type="checkbox" id="filterAssignedToMe" onchange="applyFilters()" />
@@ -2077,7 +2076,6 @@
     <div class="modal-footer">
       <button onclick="toggleDeferSection()" class="btn btn-outline btn-sm" style="flex:1">Defer</button>
       <button onclick="editCurrentTask()" class="btn btn-outline btn-sm" style="flex:1">Edit</button>
-      <button onclick="archiveCurrentTask()" class="btn btn-secondary btn-sm" style="flex:1">Archive</button>
       <button id="detailDeleteBtn" onclick="deleteCurrentTask()" class="btn btn-danger btn-sm" style="flex:1">Delete</button>
       <button onclick="closeDetailModal()" class="btn btn-secondary btn-sm">✕</button>
     </div>
@@ -3346,7 +3344,7 @@ function updateFilterBadge() {
 
 function setFilter(key, value) {
   currentFilter[key] = value;
-  const btnMap = { '': 'filterAll', 'not_started': 'filterNotStarted', 'started': 'filterStarted', 'complete': 'filterComplete' };
+  const btnMap = { '': 'filterAll', 'not_started': 'filterNotStarted', 'started': 'filterStarted' };
   Object.entries(btnMap).forEach(([v, id]) => {
     const btn = document.getElementById(id);
     if (!btn) return;
@@ -4014,6 +4012,9 @@ async function deleteSubtask(subId) {
 
 async function quickStatus(status) {
   if (!currentDetailTask) return;
+  if (status === 'complete') {
+    if (!confirm('Mark this task as complete? It will be moved out of your active list.')) return;
+  }
   try {
     const wasRecurring = !!(currentDetailTask.recur_interval && currentDetailTask.recur_unit);
     const updated = await api('PATCH', '/tasks/' + currentDetailTask.id + '/status', { status });

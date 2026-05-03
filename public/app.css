@@ -1862,6 +1862,42 @@ a:hover { text-decoration: underline; }
   box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
 }
 
+/* FAB popup menu */
+.fab-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 44;
+}
+.fab-menu {
+  position: fixed;
+  bottom: 140px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 46;
+  align-items: flex-end;
+}
+.fab-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  font-size: .92rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0,0,0,.12);
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .1s;
+}
+.fab-menu-item:active { background: #f3f4f6; }
+.fab-menu-icon { font-size: 1.1rem; }
+
 /* Gamification strip on My Tasks */
 .gamif-strip {
   background: linear-gradient(135deg, #312e81 0%, #7c3aed 100%);

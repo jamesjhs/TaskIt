@@ -2346,6 +2346,8 @@ let _turnstileInitPending = false; // true when initTurnstile ran before script 
 /**
  * Called by the Turnstile script once it has fully loaded (via ?onload=onTurnstileLoad).
  * If initTurnstile() was called before the script was ready, complete the render now.
+ * NOTE: This must be assigned directly to window (not prefixed) because the Turnstile
+ * script calls it by the literal name passed in the ?onload= query parameter.
  */
 window.onTurnstileLoad = function () {
   console.debug('[Turnstile] Script loaded and ready');
@@ -2499,7 +2501,9 @@ async function initTurnstile() {
     // Remove any previously rendered widget before rendering a fresh one
     if (_turnstileWidgetId !== null) {
       console.debug('[Turnstile] Removing previous widget ID:', _turnstileWidgetId);
-      try { window.turnstile.remove(_turnstileWidgetId); } catch (e) { console.debug('[Turnstile] remove() error (non-fatal):', e); }
+      try { window.turnstile.remove(_turnstileWidgetId); } catch (e) { console.debug('[Turnstile] remove() error (proceeding with fresh render anyway):', e); }
+      // Always clear the stored ID so the render() below creates a new widget,
+      // even if remove() threw (e.g. widget was already destroyed).
       _turnstileWidgetId = null;
     }
 
@@ -2544,10 +2548,12 @@ async function handleRegister(e) {
     return;
   }
   try {
+    console.debug('[Register] Turnstile ready:', _turnstileReady, '| widget ID:', _turnstileWidgetId);
+    // In explicit render mode a widget ID is required; fall back to empty string if no widget was rendered
     const turnstileToken = (_turnstileWidgetId !== null && window.turnstile)
-      ? window.turnstile.getResponse(_turnstileWidgetId)
-      : (window.turnstile ? window.turnstile.getResponse() : '');
-    console.debug('[Register] Turnstile widget ID:', _turnstileWidgetId, '| token present:', !!turnstileToken, '| token length:', turnstileToken ? turnstileToken.length : 0);
+      ? (window.turnstile.getResponse(_turnstileWidgetId) || '')
+      : '';
+    console.debug('[Register] Turnstile token present:', !!turnstileToken, '| token length:', turnstileToken ? turnstileToken.length : 0);
     const email = document.getElementById('regEmail').value;
     console.debug('[Register] Submitting registration for email:', email);
     const data = await api('POST', '/auth/register', {

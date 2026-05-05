@@ -177,10 +177,12 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
   }
 
   const normalizedLoginEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  console.debug('[auth/login] Login attempt for:', normalizedLoginEmail);
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(normalizedLoginEmail) as UserRow | undefined;
 
   // Check if account is locked
   if (user && user.locked_until && user.locked_until > Date.now()) {
+    console.debug('[auth/login] Account is locked until:', new Date(user.locked_until).toISOString());
     res.status(423).json({ error: 'Account locked. Please contact an administrator.' });
     return;
   }
@@ -188,14 +190,18 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
     if (user) {
       const newFailedLogins = (user.failed_logins || 0) + 1;
+      console.debug('[auth/login] Invalid password for known account. Failed attempts:', newFailedLogins);
       if (newFailedLogins >= MAX_LOGIN_ATTEMPTS) {
         const lockedUntil = Date.now() + LOCKOUT_MINUTES * 60 * 1000;
         db.prepare('UPDATE users SET failed_logins = ?, locked_until = ? WHERE id = ?').run(
           newFailedLogins, lockedUntil, user.id
         );
+        console.debug('[auth/login] Account locked until:', new Date(lockedUntil).toISOString());
       } else {
         db.prepare('UPDATE users SET failed_logins = ? WHERE id = ?').run(newFailedLogins, user.id);
       }
+    } else {
+      console.debug('[auth/login] No account found for that email');
     }
     res.status(401).json({ error: 'Invalid credentials' });
     return;
@@ -203,12 +209,14 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 
   // Check email verification
   if (!user.email_verified) {
+    console.debug('[auth/login] Email not verified for user:', user.id);
     res.status(403).json({ error: 'Email address not yet verified. Please check your inbox for the verification link.' });
     return;
   }
 
   // Credentials valid — reset failed-login counter
   db.prepare('UPDATE users SET failed_logins = 0, locked_until = NULL WHERE id = ?').run(user.id);
+  console.debug('[auth/login] Credentials valid for user:', user.id, '— generating OTP');
 
   // Generate a 6-digit OTP for 2FA.
   // Store only the SHA-256 hash so that a database leak does not expose pending codes.
@@ -221,10 +229,12 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     'INSERT INTO otp_tokens (id, user_id, code, expires_at, used, created_at) VALUES (?, ?, ?, ?, 0, ?)'
   ).run(sessionId, user.id, codeHash, expiresAt, Date.now());
 
+  console.debug('[auth/login] OTP session created:', sessionId, '— attempting SMTP send to:', user.email);
   try {
     await sendOTP(user.email, code);
+    console.debug('[auth/login] OTP email sent successfully to:', user.email);
   } catch (err) {
-    console.error('[auth] Failed to send OTP email:', err);
+    console.error('[auth/login] Failed to send OTP email to', user.email, ':', err);
   }
 
   res.json({ status: 'otp_required', sessionId });
@@ -286,16 +296,19 @@ router.post('/magic-link', async (req: Request, res: Response): Promise<void> =>
   const ALWAYS_OK = { message: 'If that email is registered, a login link has been sent.' };
 
   if (!email) {
+    console.debug('[auth/magic-link] No email provided in request body');
     res.json(ALWAYS_OK);
     return;
   }
 
   const normalizedMagicEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  console.debug('[auth/magic-link] Request for:', normalizedMagicEmail);
   const user = db.prepare('SELECT id, email FROM users WHERE email = ?').get(normalizedMagicEmail) as
     | { id: string; email: string }
     | undefined;
 
   if (!user) {
+    console.debug('[auth/magic-link] No account found for that email — returning generic OK');
     res.json(ALWAYS_OK);
     return;
   }
@@ -309,10 +322,12 @@ router.post('/magic-link', async (req: Request, res: Response): Promise<void> =>
   ).run(token, user.id, expiresAt, now, 'login');
 
   const baseUrl = getBaseUrl(req);
+  console.debug('[auth/magic-link] Token created; attempting SMTP send to:', user.email, '| baseUrl:', baseUrl);
   try {
     await sendMagicLink(user.email, token, baseUrl, 'login');
+    console.debug('[auth/magic-link] Magic link email sent successfully to:', user.email);
   } catch (err) {
-    console.error('[auth] Failed to send magic link email:', err);
+    console.error('[auth/magic-link] Failed to send magic link email to', user.email, ':', err);
   }
 
   res.json(ALWAYS_OK);

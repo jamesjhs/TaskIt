@@ -31,8 +31,10 @@ interface SmtpSettings {
 export async function getTransporter(): Promise<nodemailer.Transporter | null> {
   const settings = db.prepare('SELECT * FROM smtp_settings WHERE id = 1').get() as SmtpSettings | undefined;
   if (!settings || !settings.enabled || !settings.host) {
+    console.debug('[mail] getTransporter: SMTP not configured or disabled (host:', settings?.host || 'unset', ', enabled:', settings?.enabled ?? 0, ')');
     return null;
   }
+  console.debug('[mail] getTransporter: building transporter for', settings.host + ':' + settings.port, '| secure:', settings.secure === 1, '| auth:', !!settings.username);
   return nodemailer.createTransport({
     host: settings.host,
     port: settings.port,
@@ -42,6 +44,7 @@ export async function getTransporter(): Promise<nodemailer.Transporter | null> {
 }
 
 export async function sendMagicLink(to: string, token: string, baseUrl: string, purpose: 'login' | 'verify' = 'login'): Promise<void> {
+  console.debug('[mail] sendMagicLink called for purpose:', purpose, '| recipient:', to);
   const transporter = await getTransporter();
   const link = `${baseUrl}?token=${token}`;
 
@@ -59,16 +62,24 @@ export async function sendMagicLink(to: string, token: string, baseUrl: string, 
     ? 'Click the link below to verify your email address and activate your TaskIt! account (expires in 15 minutes):'
     : 'Click the link below to sign in to TaskIt! (expires in 15 minutes):';
 
-  await transporter.sendMail({
-    from,
-    to,
-    subject,
-    text: `${intro}\n\n${link}\n\nIf you did not request this, you can safely ignore this email.`,
-    html: `<p>${intro}</p><p><a href="${escHtml(link)}">${escHtml(link)}</a></p><p>If you did not request this, you can safely ignore this email.</p>`,
-  });
+  console.debug('[mail] Sending magic link email to:', to, '| subject:', subject, '| from:', from);
+  try {
+    const info = await transporter.sendMail({
+      from,
+      to,
+      subject,
+      text: `${intro}\n\n${link}\n\nIf you did not request this, you can safely ignore this email.`,
+      html: `<p>${intro}</p><p><a href="${escHtml(link)}">${escHtml(link)}</a></p><p>If you did not request this, you can safely ignore this email.</p>`,
+    });
+    console.debug('[mail] Magic link email accepted by SMTP server. messageId:', (info as { messageId?: string }).messageId);
+  } catch (err) {
+    console.error('[mail] SMTP error sending magic link to', to, ':', err);
+    throw err;
+  }
 }
 
 export async function sendOTP(to: string, code: string): Promise<void> {
+  console.debug('[mail] sendOTP called for recipient:', to);
   const transporter = await getTransporter();
 
   if (!transporter) {
@@ -79,13 +90,20 @@ export async function sendOTP(to: string, code: string): Promise<void> {
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
   const from = settings?.from_addr || DEFAULT_FROM;
 
-  await transporter.sendMail({
-    from,
-    to,
-    subject: 'Your TaskIt! verification code',
-    text: `Your TaskIt! two-factor authentication code is: ${code}\n\nThis code expires in 10 minutes. Do not share it with anyone.`,
-    html: `<p>Your TaskIt! two-factor authentication code is:</p><h2 style="letter-spacing:0.2em;">${code}</h2><p>This code expires in 10 minutes. Do not share it with anyone.</p>`,
-  });
+  console.debug('[mail] Sending OTP email to:', to, '| from:', from);
+  try {
+    const info = await transporter.sendMail({
+      from,
+      to,
+      subject: 'Your TaskIt! verification code',
+      text: `Your TaskIt! two-factor authentication code is: ${code}\n\nThis code expires in 10 minutes. Do not share it with anyone.`,
+      html: `<p>Your TaskIt! two-factor authentication code is:</p><h2 style="letter-spacing:0.2em;">${code}</h2><p>This code expires in 10 minutes. Do not share it with anyone.</p>`,
+    });
+    console.debug('[mail] OTP email accepted by SMTP server. messageId:', (info as { messageId?: string }).messageId);
+  } catch (err) {
+    console.error('[mail] SMTP error sending OTP to', to, ':', err);
+    throw err;
+  }
 }
 
 export async function sendGroupInvite(to: string, groupName: string, inviteUrl: string, inviterName?: string): Promise<void> {

@@ -82,8 +82,8 @@
   <meta name="apple-mobile-web-app-title" content="TaskIt!" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
-  <!-- Cloudflare Turnstile for CAPTCHA security -->
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  <!-- Cloudflare Turnstile for CAPTCHA security (explicit render; onload callback fires when ready) -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit" async defer></script>
 </head>
 <body>
 
@@ -2338,6 +2338,25 @@ function toast(msg, type = 'success') {
 // ========== Auth ==========
 let loginMode = 'magic';
 
+// Turnstile state — tracks readiness and the rendered widget ID
+let _turnstileReady = false;
+let _turnstileWidgetId = null;
+let _turnstileInitPending = false; // true when initTurnstile ran before script loaded
+
+/**
+ * Called by the Turnstile script once it has fully loaded (via ?onload=onTurnstileLoad).
+ * If initTurnstile() was called before the script was ready, complete the render now.
+ */
+window.onTurnstileLoad = function () {
+  console.debug('[Turnstile] Script loaded and ready');
+  _turnstileReady = true;
+  if (_turnstileInitPending) {
+    _turnstileInitPending = false;
+    console.debug('[Turnstile] Script was deferred; retrying pending init');
+    initTurnstile();
+  }
+};
+
 function toggleLoginMode() {
   loginMode = loginMode === 'magic' ? 'password' : 'magic';
   const magicDiv = document.getElementById('magicLinkMode');
@@ -2361,28 +2380,40 @@ async function handleMagicLinkSend(e) {
   // email link is clicked.
   const rememberMe = document.getElementById('rememberMeMagic').checked;
   localStorage.setItem('jbRememberMe', rememberMe ? 'true' : 'false');
+  const email = document.getElementById('loginEmail').value;
+  console.debug('[Login] Sending magic link to:', email, '| rememberMe:', rememberMe);
   try {
-    const data = await api('POST', '/auth/magic-link', { email: document.getElementById('loginEmail').value });
+    const data = await api('POST', '/auth/magic-link', { email });
+    console.debug('[Login] Magic link API response:', data);
     toast(data.message || 'Check your email for a login link.', 'info');
-  } catch (err) { toast(err.message, 'error'); }
+  } catch (err) {
+    console.error('[Login] Magic link send failed:', err.message || err);
+    toast(err.message, 'error');
+  }
 }
 
 let _otpSessionId = null;
 
 async function handlePasswordLogin() {
+  const email = document.getElementById('loginEmail').value;
+  console.debug('[Login] Password login attempt for:', email);
   try {
     const data = await api('POST', '/auth/login', {
-      email: document.getElementById('loginEmail').value,
+      email,
       password: document.getElementById('loginPassword').value,
     });
+    console.debug('[Login] /auth/login response status:', data.status || 'authenticated');
     if (data.status === 'otp_required') {
+      console.debug('[Login] OTP required — session ID:', data.sessionId);
       _otpSessionId = data.sessionId;
       document.getElementById('otpCode').value = '';
       document.getElementById('otpModal').classList.remove('hidden');
     } else {
+      console.debug('[Login] Login successful — storing auth');
       storeAuth(data);
     }
   } catch (err) {
+    console.error('[Login] Password login failed:', err.message || err);
     toast(err.message, 'error');
   }
 }
@@ -2394,12 +2425,17 @@ async function handleOTPVerify() {
     return;
   }
   const rememberMe = document.getElementById('rememberMePassword').checked;
+  console.debug('[Login] Submitting OTP code — session ID:', _otpSessionId, '| rememberMe:', rememberMe);
   try {
     const data = await api('POST', '/auth/verify-otp', { sessionId: _otpSessionId, code, rememberMe });
+    console.debug('[Login] OTP verified successfully');
     document.getElementById('otpModal').classList.add('hidden');
     _otpSessionId = null;
     storeAuth(data, rememberMe);
-  } catch (err) { toast(err.message, 'error'); }
+  } catch (err) {
+    console.error('[Login] OTP verification failed:', err.message || err);
+    toast(err.message, 'error');
+  }
 }
 
 function cancelOTP() {
@@ -2430,32 +2466,71 @@ function showTab(tab) {
 }
 
 async function initTurnstile() {
-  try {
-    const response = await fetch('/api/auth/turnstile');
-    if (!response.ok) return; // Turnstile not configured
+  // If the Turnstile script hasn't loaded yet, mark the init as pending.
+  // onTurnstileLoad() will call us again once the script is ready.
+  if (!_turnstileReady) {
+    console.debug('[Turnstile] Script not yet ready — deferring init until onTurnstileLoad fires');
+    _turnstileInitPending = true;
+    return;
+  }
 
-    const settings = await response.json();
-    if (!settings.enabled || !settings.site_key) {
+  console.debug('[Turnstile] initTurnstile() called');
+  try {
+    console.debug('[Turnstile] Fetching /api/auth/turnstile settings…');
+    const response = await fetch('/api/auth/turnstile');
+    if (!response.ok) {
+      console.debug('[Turnstile] Settings endpoint returned', response.status, '— Turnstile disabled/unconfigured');
       document.getElementById('turnstileContainer').style.display = 'none';
       return;
     }
 
-    document.getElementById('turnstileContainer').style.display = 'block';
-    // Update the data-sitekey attribute
-    const turnstileDiv = document.querySelector('.cf-turnstile');
-    if (turnstileDiv) {
-      turnstileDiv.setAttribute('data-sitekey', settings.site_key);
-      // Reset any existing widget
-      if (window.turnstile && window.turnstile.remove) {
-        window.turnstile.remove();
-      }
-      // Re-render the widget
-      if (window.turnstile && window.turnstile.render) {
-        window.turnstile.render('#turnstileContainer .cf-turnstile');
-      }
+    const settings = await response.json();
+    console.debug('[Turnstile] Settings received:', { enabled: settings.enabled, hasSiteKey: !!settings.site_key });
+
+    if (!settings.enabled || !settings.site_key) {
+      console.debug('[Turnstile] Disabled or no site key configured — hiding widget');
+      document.getElementById('turnstileContainer').style.display = 'none';
+      return;
     }
+
+    console.debug('[Turnstile] Enabled. Site key:', settings.site_key.slice(0, 8) + '…');
+    document.getElementById('turnstileContainer').style.display = 'block';
+
+    // Remove any previously rendered widget before rendering a fresh one
+    if (_turnstileWidgetId !== null) {
+      console.debug('[Turnstile] Removing previous widget ID:', _turnstileWidgetId);
+      try { window.turnstile.remove(_turnstileWidgetId); } catch (e) { console.debug('[Turnstile] remove() error (non-fatal):', e); }
+      _turnstileWidgetId = null;
+    }
+
+    // Render explicitly into the .cf-turnstile container
+    const container = document.querySelector('.cf-turnstile');
+    if (!container) {
+      console.error('[Turnstile] .cf-turnstile container not found in DOM');
+      return;
+    }
+    container.setAttribute('data-sitekey', settings.site_key);
+
+    console.debug('[Turnstile] Calling turnstile.render()…');
+    _turnstileWidgetId = window.turnstile.render(container, {
+      sitekey: settings.site_key,
+      theme: 'light',
+      callback: function (token) {
+        console.debug('[Turnstile] Challenge solved — token received (length:', token.length, ')');
+      },
+      'error-callback': function (code) {
+        console.error('[Turnstile] Widget error callback fired. Error code:', code);
+      },
+      'expired-callback': function () {
+        console.debug('[Turnstile] Token expired — widget will require re-challenge');
+      },
+      'timeout-callback': function () {
+        console.debug('[Turnstile] Challenge timed out');
+      },
+    });
+    console.debug('[Turnstile] Widget rendered. Widget ID:', _turnstileWidgetId);
   } catch (err) {
-    console.debug('[Turnstile] Init error:', err);
+    console.error('[Turnstile] Init error:', err);
     document.getElementById('turnstileContainer').style.display = 'none';
   }
 }
@@ -2469,22 +2544,37 @@ async function handleRegister(e) {
     return;
   }
   try {
-    const turnstileToken = window.turnstile ? window.turnstile.getResponse() : '';
+    const turnstileToken = (_turnstileWidgetId !== null && window.turnstile)
+      ? window.turnstile.getResponse(_turnstileWidgetId)
+      : (window.turnstile ? window.turnstile.getResponse() : '');
+    console.debug('[Register] Turnstile widget ID:', _turnstileWidgetId, '| token present:', !!turnstileToken, '| token length:', turnstileToken ? turnstileToken.length : 0);
+    const email = document.getElementById('regEmail').value;
+    console.debug('[Register] Submitting registration for email:', email);
     const data = await api('POST', '/auth/register', {
       username: document.getElementById('regUsername').value,
-      email: document.getElementById('regEmail').value,
+      email,
       password,
       locale: document.getElementById('regLocale').value || 'en-GB',
       turnstileToken,
     });
+    console.debug('[Register] Registration succeeded:', data.message);
     // Registration no longer auto-logs in — user must verify email first
     document.getElementById('registerForm').reset();
-    if (window.turnstile) window.turnstile.reset();
+    if (_turnstileWidgetId !== null && window.turnstile) {
+      window.turnstile.reset(_turnstileWidgetId);
+    } else if (window.turnstile) {
+      window.turnstile.reset();
+    }
     showTab('login');
     toast(data.message || 'Registration successful! Check your email to verify your account.', 'info');
   } catch (err) {
+    console.error('[Register] Registration error:', err.message || err);
     toast(err.message, 'error');
-    if (window.turnstile) window.turnstile.reset();
+    if (_turnstileWidgetId !== null && window.turnstile) {
+      window.turnstile.reset(_turnstileWidgetId);
+    } else if (window.turnstile) {
+      window.turnstile.reset();
+    }
   }
 }
 

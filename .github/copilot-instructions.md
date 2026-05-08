@@ -196,3 +196,146 @@ curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"Password123!"}'
 ```
+
+---
+
+## Session Completion Protocol
+
+**Every agent session MUST end by running this protocol in full, in order.** Do not skip any step, even if no functional changes were made.
+
+---
+
+### Step 1 — Increment the Patch Version
+
+Bump the **patch** (third) segment of the semver string by 1 everywhere it appears.
+
+Files that must be updated (all must agree on the same version string):
+
+| File | Location |
+|---|---|
+| `server/package.json` | `"version"` field |
+| `TECHNICAL_REFERENCE.md` | First line header `**Version X.Y.Z**` |
+| `TECHNICAL_REFERENCE.md` | Footer line `*End of Technical Reference Manual — TaskIt! vX.Y.Z*` |
+| `README.md` | Top of the **Changelog** section — add a new `### vX.Y.Z` entry summarising this session's changes |
+
+Use `npm version patch --no-git-tag-version` from the `server/` directory so `package-lock.json` is also updated, then manually update the markdown files.
+
+---
+
+### Step 2 — Update Technical Documentation
+
+Open `TECHNICAL_REFERENCE.md` and update every section that describes something that changed in this session:
+
+- New API endpoints → add to the relevant route table and § 5 (API Reference).
+- Changed request/response shapes → update the relevant table rows.
+- New database columns or tables → update § 4 (Database Schema).
+- New environment variables → update § 3 (Configuration).
+- New services, middleware, or scheduled jobs → update the relevant architecture sections.
+- New frontend functions, global variables, or UI elements → update § 9 (Frontend Reference).
+- Changed Android integration points → update § 11 (Android).
+
+If no changes were made to a section, leave it untouched.
+
+---
+
+### Step 3 — Update User-Facing Documentation (conditional)
+
+Only perform this step if the session introduced **any user-visible change** (new feature, changed behaviour, renamed UI element, new error message, altered workflow, etc.).
+
+Update all of the following:
+
+- `USER_GUIDE.md` — add or revise the relevant feature description, step-by-step instructions, and screenshots references.
+- `public/user-guide.html` — mirror the same changes in the HTML version so both stay in sync.
+- `README.md` features list — if a net-new feature was added, add a bullet under the relevant category.
+
+---
+
+### Step 4 — Verify Version Consistency
+
+After steps 1–3, run a quick search to confirm every version reference in the repository matches the new version string:
+
+```bash
+grep -r "1\.\d\+\.\d\+" --include="*.json" --include="*.md" --include="*.html" --include="*.ts" .
+```
+
+Any stale version string found (other than inside `node_modules/`) must be updated before continuing.
+
+---
+
+### Step 5 — Deep-Dive Quality & Security Audit
+
+Run each check below. For every finding, either fix it immediately or, if a fix would exceed the scope of this session, open a clearly labelled `// TODO(security):` or `// TODO(quality):` comment in the relevant file and add a note to the README changelog entry.
+
+#### 5a — Dependency health
+
+```bash
+cd server
+npm audit --audit-level=moderate
+npm outdated
+```
+
+- Fix all `critical` and `high` vulnerabilities reported by `npm audit` before completing the session.
+- For `moderate` vulnerabilities, fix if the upgrade is non-breaking; otherwise document.
+- Do **not** blindly upgrade major versions without verifying compatibility first.
+
+#### 5b — TypeScript compilation
+
+```bash
+cd server
+npm run build
+```
+
+Zero errors and zero warnings are required. Do not suppress TS errors with `// @ts-ignore` unless accompanied by a detailed comment explaining why it is unavoidable.
+
+#### 5c — Input validation & server error prevention
+
+Review every route handler touched (or added) in this session and verify:
+
+- All user-supplied path parameters, query strings, and request body fields are validated **before** use (type, format, length, allowed values).
+- Missing or malformed inputs return a structured `{ error: "..." }` response with a 4xx status — never a 500 or an unhandled exception.
+- No raw user input is ever interpolated into SQL; only parameterised queries (`db.prepare('... WHERE id = ?').get(value)`) are used.
+- No raw user input is ever interpolated into file paths, shell commands, or email templates without sanitisation.
+- Numeric IDs are coerced to integers (`parseInt`) and checked for `NaN` before use in queries.
+- Pagination parameters (`limit`, `offset`) are clamped to safe maximums.
+
+#### 5d — Authentication & authorisation boundary
+
+For every endpoint touched in this session:
+
+- Unauthenticated endpoints do **not** expose data about other users or internal state.
+- Every endpoint that returns or modifies user-owned data checks `userId === resource.owner_id` (or equivalent) — not just that the user is authenticated.
+- Admin endpoints are guarded by both the `auth` **and** `admin` middleware.
+- JWT tokens are never logged, stored in the database, or returned in error responses.
+
+#### 5e — Information leakage
+
+- Error responses never include stack traces, internal file paths, SQL query text, or any detail that reveals the server implementation.
+- The `/api/version` endpoint returns only the version string — nothing else.
+- `console.error` / `console.log` statements do not print sensitive values (passwords, tokens, PII).
+
+#### 5f — Code quality
+
+Review all files changed in this session:
+
+- No dead code, unused imports, or variables declared but never read.
+- No `any` type casts unless genuinely unavoidable and explained in a comment.
+- No duplicate logic that could be extracted to a shared helper.
+- Async operations inside Express handlers are wrapped in try/catch (or use an `asyncHandler` wrapper) so unhandled promise rejections cannot crash the process.
+
+---
+
+### Step 6 — Final Commit
+
+Stage all changes and create a single commit with the message format:
+
+```
+chore: bump to vX.Y.Z — <one-line summary of session work>
+
+- <bullet: key change 1>
+- <bullet: key change 2>
+- <bullet: dependency/security updates if any>
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+```
+
+Do **not** commit if Step 5a reports any unfixed `critical` or `high` vulnerabilities, or if Step 5b produces any TypeScript errors.

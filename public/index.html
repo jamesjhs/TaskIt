@@ -4469,14 +4469,17 @@ function renderGamificationProfile(profile, streaks) {
   }
 
   // Achievements
-  // Rebuild the set of keys the current user is allowed to open in the arcade.
-  // Admins get all registered keys so they can test every game without having to earn it.
+  // Rebuild the set of arcade keys the current user may open.
+  // Access is purely count-based: N earned achievements → first N games in
+  // ARCADE_GAME_ORDER, regardless of *which* achievements were earned.
+  // Admins always get all registered keys so they can test every game.
   const isAdmin = currentUser && currentUser.role === 'admin';
   unlockedArcadeKeys.clear();
   if (isAdmin) {
-    Object.keys(ARCADE_GAMES).forEach(k => unlockedArcadeKeys.add(k));
+    ARCADE_GAME_ORDER.forEach(k => unlockedArcadeKeys.add(k));
   } else if (profile.achievements) {
-    profile.achievements.forEach(a => { if (a.unlockedAt) unlockedArcadeKeys.add(a.key); });
+    const earnedCount = profile.achievements.filter(a => a.unlockedAt).length;
+    ARCADE_GAME_ORDER.slice(0, earnedCount).forEach(k => unlockedArcadeKeys.add(k));
   }
 
   const achEl = document.getElementById('gamifAchievementsList');
@@ -4485,20 +4488,35 @@ function renderGamificationProfile(profile, streaks) {
       const icon = ACHIEVEMENT_ICONS[a.key] || '\uD83C\uDFC5';
       const unlocked = !!a.unlockedAt;
       const dateStr = unlocked ? new Date(a.unlockedAt).toLocaleDateString(userLocale()) : '';
-      // For admins every badge with a registered game is playable (for testing).
       const gameEntry = ARCADE_GAMES && ARCADE_GAMES[a.key];
-      const hasGame = gameEntry && (unlocked || isAdmin);
+      // Game is accessible if count qualifies this slot — independent of whether
+      // the user has earned this specific achievement.
+      const gameAccessible = !!gameEntry && (isAdmin || unlockedArcadeKeys.has(a.key));
+      const hasGame = gameAccessible;
       const playableClass = hasGame ? ' arcade-playable' : '';
       // Use data attribute + event delegation — avoids inline JS and single-quote injection.
       const dataAttr = hasGame ? ` data-arcade-key="${escHtml(a.key)}" role="button" tabindex="0"` : '';
       const dateLabel = unlocked
         ? escHtml(dateStr)
-        : (isAdmin ? '\uD83D\uDEE0\uFE0F Admin preview' : '\uD83D\uDD12 Locked');
+        : (isAdmin ? '\uD83D\uDEE0\uFE0F Admin preview'
+          : (hasGame ? '\uD83C\uDFAE Game available' : '\uD83D\uDD12 Locked'));
       // Show the game title on every card that has an associated game so users
-      // know what they are working towards, whether locked or unlocked.
+      // know what they are working towards, whether the game is locked or not.
       const gameLabel = gameEntry ? `<div class="gamif-ach-game">\uD83C\uDFAE ${escHtml(gameEntry.title)}</div>` : '';
+      // Card state: unlocked achievement, admin preview, game-ready (accessible
+      // but achievement not yet earned), or fully locked.
+      let cardClass;
+      if (unlocked) {
+        cardClass = 'gamif-ach-unlocked' + playableClass;
+      } else if (isAdmin) {
+        cardClass = 'gamif-ach-admin-preview' + playableClass;
+      } else if (hasGame) {
+        cardClass = 'gamif-ach-game-ready arcade-playable';
+      } else {
+        cardClass = 'gamif-ach-locked';
+      }
       return `
-        <div class="gamif-ach ${unlocked ? 'gamif-ach-unlocked' + playableClass : (isAdmin ? 'gamif-ach-admin-preview' + playableClass : 'gamif-ach-locked')}" title="${escHtml(a.description)}"${dataAttr}>
+        <div class="gamif-ach ${cardClass}" title="${escHtml(a.description)}"${dataAttr}>
           <span class="gamif-ach-icon">${icon}</span>
           <div class="gamif-ach-name">${escHtml(a.name)}</div>
           <div class="gamif-ach-desc">${escHtml(a.description)}</div>
@@ -6278,8 +6296,37 @@ if ('serviceWorker' in navigator) {
 const TOKEN_TIME_EXTENSION_SECONDS = 30;
 
 /**
+ * Canonical unlock order for arcade games.
+ *
+ * A user with N total achievements earned (any achievements) may play the
+ * first N games in this list, regardless of *which* achievements they have.
+ * Adding a new key here at position N automatically enables that game for
+ * every user who already has ≥ N achievements — no database changes needed.
+ *
+ * Rule: one achievement earns one game slot, in order.
+ */
+const ARCADE_GAME_ORDER = [
+  'first_task',
+  'task_10',
+  'task_50',
+  'task_100',
+  'task_500',
+  'detail_oriented',
+  'early_bird',
+  'type_explorer',
+  'skill_level_5',
+  'skill_level_10',
+  'streak_3',
+  'streak_7',
+  'streak_30',
+];
+
+/**
  * Maps each achievement badge key to display metadata and a gameId
  * that Stage 2 game modules will use to boot the correct mini-game.
+ * The key also identifies which achievement card the game is displayed on.
+ * Unlock access is governed by ARCADE_GAME_ORDER + achievement count, not
+ * by whether the user has specifically earned the paired achievement.
  */
 const ARCADE_GAMES = {
   first_task:      { title: 'Productivity Hangman', icon: '🥇', subtitle: 'Guess the word — don\u2019t lose your head!',        gameId: 'hangman'      },
@@ -6301,10 +6348,11 @@ const ARCADE_GAMES = {
  * Opens the Arcade overlay for the given achievement badge key.
  *
  * Access rules:
- *   • Regular users: only keys present in `unlockedArcadeKeys` (populated
- *     from the server-fetched gamification profile after authentication).
- *   • Site administrators: all registered keys, regardless of earned status,
- *     so they can test every game without needing to earn the badge first.
+ *   • Regular users: key must be in `unlockedArcadeKeys`, which is populated
+ *     purely by count — N earned achievements (any) unlock the first N games
+ *     listed in ARCADE_GAME_ORDER, regardless of which achievements were earned.
+ *   • Site administrators: all registered keys are accessible so they can
+ *     test every game without needing to earn any badge first.
  *
  * Includes a Time Budget pre-game check: if the user has consumed all of
  * their daily play allowance the game frame shows a locked message instead

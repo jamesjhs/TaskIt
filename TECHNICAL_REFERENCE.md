@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.16.1**  
+**Version 1.16.2**  
 **Author:** J Rowson  
 **Generated:** 2026-05-03
 
@@ -1335,7 +1335,7 @@ The entire application UI and all client-side logic is contained in a single HTM
 | `currentDetailTask` | object\|null | `null` | Task currently open in the detail modal |
 | `blockedUserIds` | Set | `new Set()` | Set of user IDs the current user has blocked |
 | `gamificationEnabled` | boolean | `false` | Mirrors `currentUser.gamification_enabled` in-memory |
-| `unlockedArcadeKeys` | Set | `new Set()` | Tracks which arcade badges have been unlocked |
+| `unlockedArcadeKeys` | Set | `new Set()` | Keys from `ARCADE_GAME_ORDER` that the current user may open. Populated by achievement **count** (N earned achievements → first N games in order), not by specific achievement identity. Admins get all keys. |
 | `loginMode` | string | `'magic'` | `'magic'` or `'password'` — auth form mode |
 | `_otpSessionId` | string\|null | `null` | OTP session ID from `/api/auth/login` response |
 | `_resetToken` | string\|null | `null` | Password reset token from URL |
@@ -1531,8 +1531,10 @@ The entire application UI and all client-side logic is contained in a single HTM
 #### Arcade
 | Function | Description |
 |---|---|
-| `openArcade(badgeKey)` | Opens arcade modal; renders game based on badge key (hangman → `first_task`, wordsearch → `task_10`, whac-a-bug → `task_50`, code-breaker → `task_100`); calls `POST /api/gamification/arcade/spend-token` before launching |
+| `openArcade(badgeKey)` | Opens arcade modal; renders game based on badge key; authorises via `unlockedArcadeKeys` (count-based: N achievements → first N games in `ARCADE_GAME_ORDER`); calls `POST /api/gamification/arcade/spend-token` before launching |
 | `closeArcade()` | Hides arcade modal |
+
+**Unlock model:** `ARCADE_GAME_ORDER` is an ordered array of all game keys. A user with N total achievements earned (any) may play the first N games in this list — the *identity* of the achievements is irrelevant. Adding a new entry to `ARCADE_GAME_ORDER` at position N automatically enables it for all users who already have ≥ N achievements (no DB change needed).
 
 ---
 
@@ -1757,24 +1759,24 @@ Both functions compare the **overall level** (computed from total XP across all 
 
 ### 14.2 Achievements Catalogue
 
-| Key | Name | Condition | Arcade Game |
+| Key | Name | Condition | Arcade Game (slot #) |
 |---|---|---|---|
-| `first_task` | First Steps | Complete 1 task | Hangman |
-| `task_10` | Getting Started | Complete 10 tasks | Wordsearch |
-| `task_50` | On a Roll | Complete 50 tasks | Whac-a-Bug |
-| `task_100` | Centurion | Complete 100 tasks | Code Breaker |
-| `task_500` | Task Master | Complete 500 tasks | *(in development)* |
-| `detail_oriented` | Detail Oriented | Add 50 progress notes | *(in development)* |
-| `early_bird` | Early Bird | Complete 10 tasks before due date | *(in development)* |
-| `type_explorer` | Type Explorer | Complete tasks across 5 different types | *(in development)* |
-| `skill_level_5` | Specialist | Reach **overall level 5** | *(in development)* |
-| `skill_level_10` | Master of the Craft | Reach **overall level 10** | *(in development)* |
-| `streak_3` | Hat Trick | Recurring task streak of 3 | Hat Trick *(in development)* |
-| `streak_7` | Lucky Streak | Recurring task streak of 7 | Lucky Draw *(in development)* |
-| `streak_30` | Unstoppable | Recurring task streak of 30 | *(in development)* |
+| `first_task` | First Steps | Complete 1 task | Hangman (slot 1) |
+| `task_10` | Getting Started | Complete 10 tasks | Wordsearch (slot 2) |
+| `task_50` | On a Roll | Complete 50 tasks | Whac-a-Bug (slot 3) |
+| `task_100` | Centurion | Complete 100 tasks | Code Breaker (slot 4) |
+| `task_500` | Task Master | Complete 500 tasks | *(in development, slot 5)* |
+| `detail_oriented` | Detail Oriented | Add 50 progress notes | *(in development, slot 6)* |
+| `early_bird` | Early Bird | Complete 10 tasks before due date | *(in development, slot 7)* |
+| `type_explorer` | Type Explorer | Complete tasks across 5 different types | *(in development, slot 8)* |
+| `skill_level_5` | Specialist | Reach **overall level 5** | *(in development, slot 9)* |
+| `skill_level_10` | Master of the Craft | Reach **overall level 10** | *(in development, slot 10)* |
+| `streak_3` | Hat Trick | Recurring task streak of 3 | Hat Trick *(in development, slot 11)* |
+| `streak_7` | Lucky Streak | Recurring task streak of 7 | Lucky Draw *(in development, slot 12)* |
+| `streak_30` | Unstoppable | Recurring task streak of 30 | *(in development, slot 13)* |
 
-Games are assigned to achievements in earliest-unlock order: Hangman, Wordsearch, Whac-a-Bug, Code Breaker unlock at the 1st, 2nd, 3rd, and 4th achievements respectively.  
-Each achievement card displays the associated game title so users know what they are working toward.
+**Arcade unlock model:** games unlock by achievement *count*, not identity. A user with N achievements earned (any) may play the first N games in `ARCADE_GAME_ORDER`. The "Arcade Game" column shows which achievement card the game is displayed on; the user need not have earned that specific achievement — only enough achievements in total. When a new game is released at slot N, all users with ≥ N achievements gain access automatically.  
+Each achievement card displays the associated game title so users know what they are working toward. A purple "game available" badge is shown on cards where the slot is accessible but the specific achievement is not yet earned.
 
 The `skill_level_5` and `skill_level_10` achievements check the user's **overall level** (computed from total XP across all skills), not any individual skill's level.
 
@@ -2110,4 +2112,4 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.16.1*
+*End of Technical Reference Manual — TaskIt! v1.16.2*

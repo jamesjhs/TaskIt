@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.16.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.16.2** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -533,6 +533,15 @@ User passwords are **never stored in plaintext**. They are hashed using **bcrypt
 ---
 
 ## Release Notes
+
+### Version 1.16.2 (2026-05-09)
+
+**Arcade — achievement-count game unlocking:**
+- **`ARCADE_GAME_ORDER`** — a new explicit ordered array that defines the canonical unlock sequence for all arcade games. Position N in the list = game N+1 (1-indexed).
+- **Count-based unlock logic** — a user with N total achievements earned (any achievements) may play the first N games in `ARCADE_GAME_ORDER`. The *identity* of the achievements does not matter, only the count. This ensures users who unlock achievements faster than games are created always have games to play.
+- **Automatic catch-up on new game creation** — when a new game is added to `ARCADE_GAME_ORDER` at position N, every user with ≥ N achievements gains access immediately with no database changes.
+- **New card state: "Game available"** — achievement cards whose game slot is accessible (by count) but whose specific achievement is not yet earned are rendered in a purple tint (`gamif-ach-game-ready`) with "🎮 Game available" label and a "🕹️ Play" button.
+- Admins continue to access all games regardless of achievement count.
 
 ### Version 1.16.1 (2026-05-08)
 

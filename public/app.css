@@ -2216,7 +2216,8 @@ body.arcade-open { overflow: hidden; }
 
 /* Clickable unlocked achievement badges */
 .gamif-ach-unlocked.arcade-playable,
-.gamif-ach-admin-preview.arcade-playable {
+.gamif-ach-admin-preview.arcade-playable,
+.gamif-ach-game-ready.arcade-playable {
   cursor: pointer;
   transition: transform .15s, box-shadow .15s;
 }
@@ -2231,6 +2232,18 @@ body.arcade-open { overflow: hidden; }
   background: #fffbeb;
   border-color: #fcd34d;
   opacity: .85;
+}
+
+/* Game-ready: game slot is accessible by achievement count but this specific
+   achievement hasn't been earned yet. Purple tint to distinguish from both
+   the green (earned+playable) and grey (locked, no access) states. */
+.gamif-ach-game-ready {
+  background: #f5f3ff;
+  border-color: #a78bfa;
+}
+.gamif-ach-game-ready.arcade-playable:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 4px 14px rgba(167,139,250,.35);
 }
 
 .gamif-ach-play-hint {

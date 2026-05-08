@@ -570,7 +570,7 @@ export function getGamificationProfile(userId: string): GamificationProfile {
   const enabled = !!(user?.gamification_enabled);
   const freezeCredits = user?.freeze_credits ?? 0;
   const arcadeTokens = user?.arcade_tokens ?? 0;
-  const dailyPlayMinutes = user?.daily_play_minutes ?? 15;
+  const dailyPlayMinutes = user?.daily_play_minutes ?? 5;
 
   const skills = (db.prepare(
     'SELECT skill_name, xp FROM user_skills WHERE user_id = ? ORDER BY xp DESC'

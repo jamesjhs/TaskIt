@@ -305,7 +305,7 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `freeze_credits` | INTEGER NOT NULL DEFAULT 0 | Streak-freeze currency (migration) |
 | `friend_key` | TEXT | CamelCase two-word pair e.g. `BraveOcean` (migration) |
 | `arcade_tokens` | INTEGER NOT NULL DEFAULT 0 | Arcade Token balance — spendable to play mini-games (migration) |
-| `daily_play_minutes` | INTEGER NOT NULL DEFAULT 15 | Digital-wellbeing daily arcade play limit in minutes (1–180) (migration) |
+| `daily_play_minutes` | INTEGER NOT NULL DEFAULT 5 | Digital-wellbeing daily arcade play limit in minutes (1–180) (migration) |
 
 #### `groups`
 | Column | Type | Notes |
@@ -644,7 +644,7 @@ These `ALTER TABLE … ADD COLUMN` statements run on every server start but only
 | `users` | `freeze_credits` | `INTEGER NOT NULL DEFAULT 0` |
 | `users` | `friend_key` | `TEXT` |
 | `users` | `arcade_tokens` | `INTEGER NOT NULL DEFAULT 0` |
-| `users` | `daily_play_minutes` | `INTEGER NOT NULL DEFAULT 15` |
+| `users` | `daily_play_minutes` | `INTEGER NOT NULL DEFAULT 5` |
 | `tasks` | `due_date` | `INTEGER` |
 | `tasks` | `recur_interval` | `INTEGER` |
 | `tasks` | `recur_unit` | `TEXT` |

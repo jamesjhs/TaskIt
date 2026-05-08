@@ -198,7 +198,7 @@ See previous changelog entries below.
 
 ### v1.6.2
 
-- **🕹️ Arcade Token Economy** — a new token-based system gates access to the arcade mini-games. Users spend **Arcade Tokens** (earned through task completions and gamification events) to play. A configurable **daily play limit** (default 15 minutes, up to 180) adds a digital-wellbeing guardrail per user.
+- **🕹️ Arcade Token Economy** — a new token-based system gates access to the arcade mini-games. Users spend **Arcade Tokens** (earned through task completions and gamification events) to play. A configurable **daily play limit** (default 5 minutes, up to 180) adds a digital-wellbeing guardrail per user.
 - **🎮 Two new arcade games** — **Code Breaker** (`game-code-breaker.js`) and **Whac-a-Bug** (`game-whac-a-bug.js`) join Hangman and Wordsearch in the arcade. All four games are loaded lazily when their corresponding badge is unlocked.
 - **⚙️ New arcade endpoints** — `PATCH /api/gamification/arcade/daily-limit` (set daily play allowance) and `POST /api/gamification/arcade/spend-token` (atomic token deduction with race-condition guard).
 - **🗂️ Collectible inventory API** — `GET /api/gamification/inventory` returns the authenticated user's full owned-item list with item and category details.
@@ -291,7 +291,7 @@ See previous changelog entries below.
 
 ### v1.6.2
 
-- **🕹️ Arcade Token Economy** — a new token-based system gates access to the arcade mini-games. Users spend **Arcade Tokens** (earned through task completions and gamification events) to play. A configurable **daily play limit** (default 15 minutes, up to 180) adds a digital-wellbeing guardrail per user.
+- **🕹️ Arcade Token Economy** — a new token-based system gates access to the arcade mini-games. Users spend **Arcade Tokens** (earned through task completions and gamification events) to play. A configurable **daily play limit** (default 5 minutes, up to 180) adds a digital-wellbeing guardrail per user.
 - **🎮 Two new arcade games** — **Code Breaker** (`game-code-breaker.js`) and **Whac-a-Bug** (`game-whac-a-bug.js`) join Hangman and Wordsearch in the arcade. All four games are loaded lazily when their corresponding badge is unlocked.
 - **⚙️ New arcade endpoints** — `PATCH /api/gamification/arcade/daily-limit` (set daily play allowance) and `POST /api/gamification/arcade/spend-token` (atomic token deduction with race-condition guard).
 - **🗂️ Collectible inventory API** — `GET /api/gamification/inventory` returns the authenticated user's full owned-item list with item and category details.

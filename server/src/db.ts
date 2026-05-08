@@ -417,7 +417,7 @@ addCol('tasks', 'original_due_date', 'INTEGER');
 addCol('tasks', 'xp_claimed', 'INTEGER NOT NULL DEFAULT 0');
 // Arcade: token economy and digital-wellbeing daily play limit
 addCol('users', 'arcade_tokens', 'INTEGER NOT NULL DEFAULT 0');
-addCol('users', 'daily_play_minutes', 'INTEGER NOT NULL DEFAULT 10');
+addCol('users', 'daily_play_minutes', 'INTEGER NOT NULL DEFAULT 5');
 // Sporadic Tasks: track whether task is sporadic and last completion timestamp
 addCol('tasks', 'is_sporadic', 'INTEGER NOT NULL DEFAULT 0');
 addCol('tasks', 'last_completed_at', 'INTEGER');

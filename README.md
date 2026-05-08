@@ -534,6 +534,12 @@ User passwords are **never stored in plaintext**. They are hashed using **bcrypt
 
 ## Release Notes
 
+### Version 1.16.1 (2026-05-08)
+
+**Fixes & adjustments:**
+- Reduced default arcade daily play limit from 15 minutes to 5 minutes across all defaults (DB migration, server fallback, frontend fallback) and updated all documentation to match.
+- Added Session Completion Protocol to `.github/copilot-instructions.md` — version bumping, doc updates, and security/quality deep-dive steps for agent sessions.
+
 ### Version 1.16.0 (2026-05-03)
 
 **Gamification overhaul:**

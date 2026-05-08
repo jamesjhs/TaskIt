@@ -347,6 +347,16 @@ Your top-XP skill also earns you a **dynamic title** shown on your profile, base
 | 3–4           | Skilled Financial      |
 | 1–2           | Apprentice of Urgent   |
 
+### 🕹️ TaskIt! Arcade
+
+Each of the 13 achievement badges has a corresponding **mini-game** in the TaskIt! Arcade. Once you unlock a badge, tap it in the **⭐ Progress** tab to open the Arcade and play its game. Press **Esc** or tap **↩ Back to Tasks** to return to the app at any time.
+
+#### Daily play limit
+
+The Arcade has a **daily play time limit** set by your site administrator (default 5 minutes). Once your daily allowance is used up, the Arcade is locked until the next calendar day. Completing tasks earns **Arcade Tokens** 🎟️ which can grant bonus play time.
+
+---
+
 ### 🏆 Achievements
 
 Achievements are one-time awards that unlock when you hit milestones:

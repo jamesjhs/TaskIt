@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.16.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.16.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -536,9 +536,15 @@ User passwords are **never stored in plaintext**. They are hashed using **bcrypt
 
 ### Version 1.16.1 (2026-05-08)
 
-**Fixes & adjustments:**
-- Reduced default arcade daily play limit from 15 minutes to 5 minutes across all defaults (DB migration, server fallback, frontend fallback) and updated all documentation to match.
-- Added Session Completion Protocol to `.github/copilot-instructions.md` — version bumping, doc updates, and security/quality deep-dive steps for agent sessions.
+**Arcade — global daily play limit:**
+- **New `site_settings` table** — a key-value store for server-wide configuration. Seeded with `arcade_daily_play_minutes = 5` as the single source of truth for the arcade daily play limit.
+- **Admin arcade settings** — new `GET /api/admin/arcade-settings` and `PUT /api/admin/arcade-settings` endpoints allow admins to read and update the global daily play limit (1–180 minutes). A PUT immediately propagates the new value to all existing users.
+- **Admin Gamify tab — 🕹️ Arcade Settings card** — admins can now edit the global daily play limit directly from the Gamify tab of the administrator dashboard.
+- **Whac-a-Bug game timer unchanged** — individual game session timers are independent of the daily wrapper limit. The 55-second base game duration was not altered.
+- Reduced default arcade daily play limit from 15 minutes to **5 minutes** across DB migration default, server fallback, and frontend fallback; all documentation updated to match.
+
+**Tooling:**
+- Added Session Completion Protocol to `.github/copilot-instructions.md` — version bumping, documentation updates, and security/quality deep-dive steps enforced at the end of every agent session.
 
 ### Version 1.16.0 (2026-05-03)
 

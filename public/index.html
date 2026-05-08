@@ -1567,10 +1567,29 @@
         </div>
       </details>
 
+      <!-- Arcade Settings card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+        <summary class="admin-collapsible-summary">
+          <span>🕹️ Arcade Settings</span>
+          <button onclick="event.preventDefault();event.stopPropagation();loadArcadeSettings()" class="btn btn-sm btn-secondary">Refresh</button>
+        </summary>
+        <div style="padding-top:12px">
+          <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Set the global daily arcade play limit. This applies immediately to all users and is the single source of truth for how long players may use the arcade each day.</p>
+          <form onsubmit="saveArcadeSettings(event)">
+            <div class="admin-field-row" style="align-items:flex-end">
+              <div class="form-group" style="flex:1;margin-bottom:0">
+                <label>Daily Play Limit (minutes)</label>
+                <input id="arcadeDailyLimitInput" type="number" min="1" max="180" class="input" placeholder="5" />
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm" style="margin-bottom:0">Save</button>
+            </div>
+            <p style="font-size:.75rem;color:#9ca3af;margin-top:6px">Allowed range: 1–180 minutes. Default is 5 minutes.</p>
+          </form>
+        </div>
+      </details>
+
     </div>
   </div>
-
-  <!-- ===== PROGRESS PAGE ===== -->
   <div id="progressPage" class="view hidden">
     <div class="view-header"><h1>⭐ Progress</h1></div>
 
@@ -5048,7 +5067,7 @@ function showAdminTab(tab) {
   });
   if (tab === 'users') { loadUsersPanel(); loadLockedAccounts(); loadUserReports(); }
   if (tab === 'feedback') loadAdminFeedback();
-  if (tab === 'gamify') { loadXpEvents(); loadCollectiblesAdmin(); }
+  if (tab === 'gamify') { loadXpEvents(); loadCollectiblesAdmin(); loadArcadeSettings(); }
 }
 
 async function loadAdminPage() {
@@ -5307,6 +5326,28 @@ async function sendFeedbackReply(id) {
     inp.value = '';
     toast('Alert sent to user!');
   } catch (err) { toast(err.message, 'error'); }
+}
+
+async function loadArcadeSettings() {
+  try {
+    const data = await api('GET', '/admin/arcade-settings');
+    const input = document.getElementById('arcadeDailyLimitInput');
+    if (input) input.value = data.arcadeDailyPlayMinutes ?? 5;
+  } catch (err) { toast('Failed to load arcade settings: ' + err.message, 'error'); }
+}
+
+async function saveArcadeSettings(e) {
+  e.preventDefault();
+  const minutes = parseInt(document.getElementById('arcadeDailyLimitInput').value, 10);
+  if (isNaN(minutes) || minutes < 1 || minutes > 180) {
+    toast('Enter a value between 1 and 180 minutes', 'error');
+    return;
+  }
+  try {
+    await api('PUT', '/admin/arcade-settings', { arcadeDailyPlayMinutes: minutes });
+    arcadeDailyPlayMinutes = minutes;
+    toast('Arcade play limit updated to ' + minutes + ' min for all users', 'success');
+  } catch (err) { toast('Failed to save arcade settings: ' + err.message, 'error'); }
 }
 
 async function loadXpEvents() {

@@ -279,7 +279,7 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 **Engine:** `better-sqlite3-multiple-ciphers` (SQLite 3 + SQLCipher)  
 **Default path:** `server/taskit.db`  
 **Pragmas set at startup:** `journal_mode = WAL`, `foreign_keys = ON`  
-**Key type convention:** All primary keys are UUID (TEXT) except `smtp_settings.id` (INTEGER = 1, singleton) and junction table composite PKs.  
+**Key type convention:** All primary keys are UUID (TEXT) except `smtp_settings.id` (INTEGER = 1, singleton), `turnstile_settings.id` (INTEGER = 1, singleton), `site_settings.key` (TEXT, keyed by setting name), and junction table composite PKs.  
 **Timestamp convention:** All `*_at` columns store Unix milliseconds (JavaScript `Date.now()`).
 
 ---
@@ -562,6 +562,17 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `updated_at` | INTEGER NOT NULL DEFAULT 0 | Unix ms when settings were last modified |
 
 **Note:** The `secret_key` is never exposed to the client. Only `site_key` and `enabled` are returned by the public `/api/auth/turnstile` endpoint. Server-side verification always uses the secret key directly from the database.
+
+#### `site_settings`
+| Column | Type | Notes |
+|---|---|---|
+| `key` | TEXT PK | Setting identifier (e.g. `'arcade_daily_play_minutes'`) |
+| `value` | TEXT NOT NULL | Stored as text; cast to the appropriate type in application code |
+
+Seeded on first run:
+| Key | Default | Description |
+|---|---|---|
+| `arcade_daily_play_minutes` | `'5'` | Global daily arcade play limit (minutes). Applied to all users. Admin-editable via `PUT /api/admin/arcade-settings`. |
 
 #### `task_reminders_sent`
 | Column | Type | Notes |
@@ -1067,6 +1078,8 @@ Requires both `authMiddleware` + `adminMiddleware`.
 | `PUT /smtp` | Updates SMTP settings (empty pass = keep existing) |
 | `GET /turnstile` | Returns Turnstile settings (omits `secret_key` for security) |
 | `PUT /turnstile` | Updates Turnstile site key, secret key, and enabled status |
+| `GET /arcade-settings` | Returns `{ arcadeDailyPlayMinutes }` from `site_settings` |
+| `PUT /arcade-settings` | Validates `arcadeDailyPlayMinutes` is integer 1–180; writes to `site_settings` **and** runs `UPDATE users SET daily_play_minutes = ?` so the change is applied to all users immediately |
 | `GET /users` | All users ordered by `created_at`; response includes `is_locked`, `open_reports`, `is_original_admin` |
 | `GET /locked` | Users with `locked_until > now` |
 | `POST /users/:id/unlock` | Clears `failed_logins` and `locked_until` |

@@ -892,4 +892,24 @@ router.put('/turnstile', (req: Request, res: Response): void => {
   res.json({ message: 'Turnstile settings updated' });
 });
 
+// ─── Arcade Settings ─────────────────────────────────────────────────────────
+
+router.get('/arcade-settings', (_req: Request, res: Response): void => {
+  const row = db.prepare("SELECT value FROM site_settings WHERE key = 'arcade_daily_play_minutes'").get() as { value: string } | undefined;
+  const minutes = row ? (parseInt(row.value, 10) || 5) : 5;
+  res.json({ arcadeDailyPlayMinutes: minutes });
+});
+
+router.put('/arcade-settings', (req: Request, res: Response): void => {
+  const raw = req.body?.arcadeDailyPlayMinutes;
+  const minutes = parseInt(raw, 10);
+  if (isNaN(minutes) || minutes < 1 || minutes > 180) {
+    res.status(400).json({ error: 'arcadeDailyPlayMinutes must be an integer between 1 and 180' });
+    return;
+  }
+  db.prepare("INSERT OR REPLACE INTO site_settings (key, value) VALUES ('arcade_daily_play_minutes', ?)").run(String(minutes));
+  db.prepare('UPDATE users SET daily_play_minutes = ?').run(minutes);
+  res.json({ arcadeDailyPlayMinutes: minutes });
+});
+
 export default router;

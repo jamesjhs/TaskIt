@@ -343,7 +343,15 @@ db.exec(`
 
   CREATE UNIQUE INDEX IF NOT EXISTS push_subscriptions_endpoint_uidx
     ON push_subscriptions (endpoint);
+
+  CREATE TABLE IF NOT EXISTS site_settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 `);
+
+// Seed site-wide defaults (INSERT OR IGNORE so existing values are never overwritten)
+db.prepare("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('arcade_daily_play_minutes', '5')").run();
 
 // Runtime migrations — add columns if they don't exist yet
 const VALID_IDENTIFIER = /^[a-zA-Z_][a-zA-Z0-9_]*$/;

@@ -3254,9 +3254,7 @@ function renderTasks(tasks) {
 
   if (!displayTasks.length) {
     const emptyLabel = _tileDrill ? 'No tasks found in this tile.' : 'No tasks found. Create your first task!';
-    const backBtn = _tileDrill
-      ? '<div style="margin-top:10px"><button class="btn btn-outline btn-sm" onclick="clearTileDrill()">← Back to grouped tiles</button></div>'
-      : '';
+    const backBtn = _tileDrill ? '<div style="margin-top:10px">' + renderTileDrillBackButton() + '</div>' : '';
     grid.innerHTML = `<div class="loading"><div style="font-size:3rem;margin-bottom:12px">\ud83d\udccb</div><p>${emptyLabel}</p>${backBtn}</div>`;
     return;
   }
@@ -3337,10 +3335,10 @@ function renderTasks(tasks) {
     html = `
       <div class="task-drill-banner">
         <div class="task-drill-banner-left">
-          <div class="task-drill-banner-title">${drillLabel}</div>
+          <div class="task-drill-banner-title" title="${drillLabel}">${drillLabel}</div>
           <div class="task-drill-banner-sub">Showing tasks within this tile</div>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="clearTileDrill()">← Back to grouped tiles</button>
+        ${renderTileDrillBackButton()}
       </div>
     ` + html;
   }
@@ -3398,7 +3396,7 @@ function renderGroupedTasks(tasks, mode) {
     const nextDue = pending[0];
     const overdue = nextDue && nextDue.due_date < now;
     const nextDueStr = nextDue
-      ? (overdue ? '⚠️ Next task due: ' : 'Next task due: ') + fmtDate(nextDue.due_date)
+      ? (overdue ? 'Overdue — Next task due: ' : 'Next task due: ') + fmtDate(nextDue.due_date)
       : 'No next task due';
     const drillArgs = JSON.stringify(mode) + ',' + JSON.stringify(tile.tileValue) + ',' + JSON.stringify(tile.name);
     return `
@@ -3427,6 +3425,10 @@ function drillIntoGroup(mode, value, label) {
   renderTasks(_lastRenderInput);
 }
 
+function renderTileDrillBackButton() {
+  return '<button class="btn btn-outline btn-sm" onclick="clearTileDrill()">← Back to grouped tiles</button>';
+}
+
 function clearTileDrill() {
   const mode = _tileDrill ? _tileDrill.mode : '';
   _tileDrill = null;
@@ -3439,7 +3441,7 @@ function pickTileColor(colorKey, btn) {
   const stored = _getTileColors()[colorKey] || _DEFAULT_TILE_COLOR;
   inp.value = _isValidTileColor(stored) ? stored : _DEFAULT_TILE_COLOR;
   inp.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
-  function cleanup() { if (inp.parentNode) inp.parentNode.removeChild(inp); }
+  function cleanup() { if (inp.parentNode) inp.remove(); }
   inp.addEventListener('change', function () {
     _setTileColor(colorKey, this.value);
     renderTasks(_lastRenderInput);

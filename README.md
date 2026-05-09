@@ -120,7 +120,7 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 
 ### v1.16.3
 
-- **🤖 QC trigger gate** — the Copilot session completion automation in `.github/copilot-instructions.md` now runs only when the user explicitly types the exact phrase `trigger QC actions`.
+- **🤖 QC trigger gate** — the Copilot session completion protocol in `.github/copilot-instructions.md` now runs only when the user explicitly types the exact phrase `trigger QC actions`.
 - **🔢 Version bump** — server package metadata, README, and technical reference updated to 1.16.3.
 
 ### v1.16.0

@@ -2334,6 +2334,10 @@ window.addEventListener('popstate', function () {
 });
 
 // ========== Tile colour helpers (task group-by view) ==========
+const _HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+const _COLOR_PICKER_CLEANUP_MS = 30000;
+const _DEFAULT_TILE_COLOR = '#7c3aed';
+
 function _getTileColors() {
   try { return JSON.parse(localStorage.getItem('taskit_tile_colors') || '{}'); } catch { return {}; }
 }
@@ -2341,6 +2345,7 @@ function _setTileColor(key, color) {
   const c = _getTileColors(); c[key] = color;
   localStorage.setItem('taskit_tile_colors', JSON.stringify(c));
 }
+function _isValidTileColor(str) { return _HEX_COLOR_RE.test(str); }
 function _defaultTileColor(idx) {
   return ['#7c3aed','#059669','#f59e0b','#ef4444','#3b82f6','#ec4899','#10b981','#8b5cf6','#f97316'][idx % 9];
 }
@@ -3326,13 +3331,13 @@ function renderGroupedTasks(tasks, mode) {
   }
 
   if (!tiles.length) {
-    grid.innerHTML = '<div class="loading"><div style="font-size:3rem;margin-bottom:12px">📋</div><p>No tasks found.</p></div>';
+    grid.innerHTML = '<div class="loading"><div aria-hidden="true" style="font-size:3rem;margin-bottom:12px">📋</div><p>No tasks found.</p></div>';
     return;
   }
 
   grid.innerHTML = '<div class="task-group-tile-grid">' + tiles.map((tile, idx) => {
     const rawColor = colors[tile.colorKey];
-    const color = (rawColor && /^#[0-9a-fA-F]{6}$/.test(rawColor)) ? rawColor : _defaultTileColor(idx);
+    const color = (_isValidTileColor(rawColor)) ? rawColor : _defaultTileColor(idx);
     const count = tile.tasks.length;
     const pending = tile.tasks.filter(t => t.status !== 'complete' && t.due_date).sort((a, b) => a.due_date - b.due_date);
     const nextDue = pending[0];
@@ -3374,8 +3379,8 @@ function drillIntoGroup(mode, value) {
 function pickTileColor(colorKey, btn) {
   const inp = document.createElement('input');
   inp.type = 'color';
-  const stored = _getTileColors()[colorKey] || '#7c3aed';
-  inp.value = /^#[0-9a-fA-F]{6}$/.test(stored) ? stored : '#7c3aed';
+  const stored = _getTileColors()[colorKey] || _DEFAULT_TILE_COLOR;
+  inp.value = _isValidTileColor(stored) ? stored : _DEFAULT_TILE_COLOR;
   inp.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
   function cleanup() { if (inp.parentNode) inp.parentNode.removeChild(inp); }
   inp.addEventListener('change', function () {
@@ -3386,7 +3391,7 @@ function pickTileColor(colorKey, btn) {
   inp.addEventListener('cancel', cleanup);
   document.body.appendChild(inp);
   inp.click();
-  setTimeout(cleanup, 30000);
+  setTimeout(cleanup, _COLOR_PICKER_CLEANUP_MS);
 }
 
 // ========== Sporadic Tasks ==========
@@ -3686,6 +3691,7 @@ function applyFilters() {
 
 // ========== FAB Popup Menu ==========
 var fabCloseTimer = null;
+function _closeFabMenuInstant() { closeFabMenu(true); }
 function openFabMenu() {
   var menu = document.getElementById('fabMenu');
   var overlay = document.getElementById('fabMenuOverlay');
@@ -3693,7 +3699,7 @@ function openFabMenu() {
   menu.classList.remove('fab-menu-closing', 'fab-menu-open');
   menu.classList.remove('hidden');
   overlay.classList.remove('hidden');
-  _pushModalHistory(function() { closeFabMenu(true); });
+  _pushModalHistory(_closeFabMenuInstant);
   requestAnimationFrame(function() {
     requestAnimationFrame(function() {
       menu.classList.add('fab-menu-open');

@@ -3294,7 +3294,7 @@ body.arcade-open { overflow: hidden; }
 /* ========== Task Group-By Tile View ========== */
 .task-group-tile-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 10px;
   margin-top: 4px;
 }

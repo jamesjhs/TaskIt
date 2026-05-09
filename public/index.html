@@ -2162,6 +2162,22 @@
   </div>
 </div>
 
+<!-- ===== GROUPED TILE TASKS MODAL ===== -->
+<div id="tileTasksModal" class="modal-overlay hidden">
+  <div class="modal-sheet tile-tasks-modal-sheet">
+    <div class="modal-body">
+      <div class="tile-tasks-modal-head">
+        <h2 id="tileTasksModalTitle" class="modal-title">Tile Tasks</h2>
+        <p id="tileTasksModalMeta" class="tile-tasks-modal-meta"></p>
+      </div>
+      <div id="tileTasksModalList" class="tile-tasks-modal-list"></div>
+    </div>
+    <div class="modal-footer">
+      <button onclick="closeTileTasksModal()" class="btn btn-secondary btn-sm">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== SPORADIC TASK EDIT LAST DONE MODAL ===== -->
 <div id="editSporadicLastDoneModal" class="modal-overlay hidden">
   <div class="modal-sheet">
@@ -2322,8 +2338,9 @@ let arcadeDailyPlayMinutes = 5;
 let _farFutureExpanded = false;
 // Last task array passed to renderTasks — used by toggleFarFuture to re-render without a network fetch.
 let _lastRenderInput = [];
-// Current "drilled into tile" context for grouped-task mode.
-let _tileDrill = null;
+// Current grouped-tile modal context and source tasks.
+let _tileModalContext = null;
+let _lastGroupedRenderInput = [];
 
 // ========== Modal back-button stack ==========
 // Each entry is { closeFn }. When the OS/browser back button fires we close the
@@ -3234,28 +3251,12 @@ function renderTasks(tasks) {
 
   // Grouped tile view
   if (currentFilter.groupBy && currentFilter.groupBy !== '') {
-    _tileDrill = null;
     renderGroupedTasks(displayTasks, currentFilter.groupBy);
     return;
   }
 
-  // Drill-down from grouped tiles
-  if (_tileDrill) {
-    if (_tileDrill.mode === 'type') {
-      displayTasks = displayTasks.filter(t => t.type_id === _tileDrill.value);
-    } else if (_tileDrill.mode === 'group') {
-      if (_tileDrill.value === '__personal__') {
-        displayTasks = displayTasks.filter(t => !t.group_id);
-      } else {
-        displayTasks = displayTasks.filter(t => t.group_id === _tileDrill.value);
-      }
-    }
-  }
-
   if (!displayTasks.length) {
-    const emptyLabel = _tileDrill ? 'No tasks found in this tile.' : 'No tasks found. Create your first task!';
-    const backBtn = _tileDrill ? '<div class="task-drill-empty-back">' + renderTileDrillBackButton() + '</div>' : '';
-    grid.innerHTML = `<div class="loading"><div style="font-size:3rem;margin-bottom:12px">\ud83d\udccb</div><p>${emptyLabel}</p>${backBtn}</div>`;
+    grid.innerHTML = '<div class="loading"><div style="font-size:3rem;margin-bottom:12px">\ud83d\udccb</div><p>No tasks found. Create your first task!</p></div>';
     return;
   }
 
@@ -3330,19 +3331,6 @@ function renderTasks(tasks) {
     }
   }
 
-  if (_tileDrill) {
-    const drillLabel = escHtml(_tileDrill.label || 'Selected tile');
-    html = `
-      <div class="task-drill-banner">
-        <div class="task-drill-banner-left">
-          <div class="task-drill-banner-title" title="${drillLabel}">${drillLabel}</div>
-          <div class="task-drill-banner-sub">Showing tasks within this tile</div>
-        </div>
-        ${renderTileDrillBackButton()}
-      </div>
-    ` + html;
-  }
-
   grid.innerHTML = html;
 }
 
@@ -3360,6 +3348,7 @@ function renderGroupedTasks(tasks, mode) {
   const grid = document.getElementById('taskGrid');
   const colors = _getTileColors();
   const now = Date.now();
+  _lastGroupedRenderInput = tasks;
 
   let tiles;
   if (mode === 'type') {
@@ -3413,29 +3402,52 @@ function renderGroupedTasks(tasks, mode) {
 }
 
 function drillIntoGroup(mode, value, label) {
-  _tileDrill = { mode, value, label };
-  setGroupBy('', { preserveDrill: true });
-  // Tile drill-down uses _tileDrill as the source of truth. We intentionally
-  // clear type/group selects to avoid implying those backend query filters are
-  // active; this is a client-side drill view over already-fetched tasks.
-  if (mode === 'type') currentFilter.typeId = '';
-  if (mode === 'group') currentFilter.groupId = '';
-  const typeSel = document.getElementById('filterType');
-  if (typeSel) typeSel.value = currentFilter.typeId;
-  const groupSel = document.getElementById('filterGroup');
-  if (groupSel) groupSel.value = currentFilter.groupId;
-  updateFilterBadge();
-  renderTasks(_lastRenderInput);
+  _tileModalContext = { mode, value, label };
+  const source = _lastGroupedRenderInput || [];
+  const tileTasks = source.filter(t => {
+    if (mode === 'type') return t.type_id === value;
+    if (mode === 'group') return value === '__personal__' ? !t.group_id : t.group_id === value;
+    return false;
+  });
+  const title = document.getElementById('tileTasksModalTitle');
+  if (title) title.textContent = label || 'Tile Tasks';
+  const meta = document.getElementById('tileTasksModalMeta');
+  if (meta) meta.textContent = `${tileTasks.length} ${tileTasks.length === 1 ? 'task' : 'tasks'}`;
+  const list = document.getElementById('tileTasksModalList');
+  if (list) {
+    if (!tileTasks.length) {
+      list.innerHTML = '<div class="loading" style="margin-top:0">No tasks found in this tile.</div>';
+    } else {
+      list.innerHTML = tileTasks.map(t => {
+        const statusInfo = statusMeta(t.status);
+        const overdue = t.due_date && t.due_date < Date.now() && t.status !== 'complete';
+        return `
+          <div onclick="openTaskFromTileModal('${escHtml(t.id)}')" class="task-card tile-task-card">
+            <div class="task-card-title${t.group_id ? ' task-card-title-group' : ''}">${escHtml(t.title)}</div>
+            <div class="task-card-badges">
+              <span class="badge badge-blue">${escHtml(t.type_name || '')}</span>
+              <span class="badge ${statusInfo.cls}">${statusInfo.label}</span>
+              ${t.archived ? '<span class="badge badge-warn">Archived</span>' : ''}
+            </div>
+            ${t.due_date ? `<p class="task-card-meta ${overdue ? 'due-overdue' : ''}">\ud83d\udcc5 ${fmtDate(t.due_date)}</p>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+  }
+  document.getElementById('tileTasksModal').classList.remove('hidden');
+  _pushModalHistory(closeTileTasksModal);
 }
 
-function renderTileDrillBackButton() {
-  return '<button class="btn btn-outline btn-sm" onclick="clearTileDrill()">← Back to grouped tiles</button>';
+function openTaskFromTileModal(taskId) {
+  closeTileTasksModal();
+  openDetailById(taskId);
 }
 
-function clearTileDrill() {
-  const mode = _tileDrill ? _tileDrill.mode : '';
-  _tileDrill = null;
-  setGroupBy(mode === 'type' || mode === 'group' ? mode : '');
+function closeTileTasksModal() {
+  _popModalStack();
+  _tileModalContext = null;
+  document.getElementById('tileTasksModal').classList.add('hidden');
 }
 
 function pickTileColor(colorKey, btn) {
@@ -3717,16 +3729,7 @@ function updateFilterBadge() {
   }
 }
 
-/**
- * Sets task list layout mode.
- * @param {string} mode '' | 'type' | 'group'
- * @param {{ preserveDrill?: boolean }} opts Internal-only; preserveDrill is
- * used by drillIntoGroup() so the grouped-to-list transition keeps _tileDrill.
- */
-function setGroupBy(mode, opts = {}) {
-  // preserveDrill is used by drillIntoGroup() so the grouped-to-list
-  // transition doesn't clear _tileDrill before renderTasks() uses it.
-  if (!opts.preserveDrill) _tileDrill = null;
+function setGroupBy(mode) {
   currentFilter.groupBy = mode;
   ['gbNone', 'gbType', 'gbGroup'].forEach(id => {
     const b = document.getElementById(id);
@@ -3741,9 +3744,6 @@ function setGroupBy(mode, opts = {}) {
 }
 
 function setFilter(key, value) {
-  // Any top-level filter change exits tile drill-down and returns to
-  // normal list behavior for clarity.
-  _tileDrill = null;
   currentFilter[key] = value;
   const btnMap = { '': 'filterAll', 'not_started': 'filterNotStarted', 'started': 'filterStarted' };
   Object.entries(btnMap).forEach(([v, id]) => {
@@ -3756,7 +3756,6 @@ function setFilter(key, value) {
 }
 
 function applyFilters() {
-  _tileDrill = null;
   currentFilter.groupId = document.getElementById('filterGroup').value;
   currentFilter.typeId = document.getElementById('filterType').value;
   currentFilter.archived = document.getElementById('filterArchived').checked;
@@ -3767,7 +3766,6 @@ function applyFilters() {
 }
 
 function resetFilters() {
-  _tileDrill = null;
   currentFilter = {
     status: '',
     groupId: '',

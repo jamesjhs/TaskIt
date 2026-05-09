@@ -1341,7 +1341,8 @@ The task Filters panel is responsive: at narrow widths (`max-width: 520px`) its 
 | `_otpSessionId` | string\|null | `null` | OTP session ID from `/api/auth/login` response |
 | `_resetToken` | string\|null | `null` | Password reset token from URL |
 | `currentGroupId` | string\|null | `null` | Currently active group context |
-| `_tileDrill` | object\|null | `null` | Grouped-tile drill-down state: `{ mode, value, label }`; when set, tasks page shows only tasks inside the selected tile |
+| `_tileModalContext` | object\|null | `null` | Grouped-tile modal context: `{ mode, value, label }` for currently opened tile task list |
+| `_lastGroupedRenderInput` | array | `[]` | Cached task list used to build grouped tiles and tile modal task contents |
 
 ---
 
@@ -1431,14 +1432,15 @@ The task Filters panel is responsive: at narrow widths (`max-width: 520px`) its 
 | Function | Description |
 |---|---|
 | `loadTasks()` | GET `/api/tasks` with current filter params; populates `tasksMap` |
-| `renderTasks(tasks)` | Renders task cards sorted by urgency/due-date; also handles grouped-tile drill-down views via `_tileDrill` |
+| `renderTasks(tasks)` | Renders task cards sorted by urgency/due-date |
 | `renderGroupedTasks(tasks, mode)` | Renders grouped summary tiles (`mode`: `type` or `group`) with next-due and task-count metadata |
-| `drillIntoGroup(mode, value, label)` | Activates tile drill-down state and shows tasks inside the selected tile |
-| `clearTileDrill()` | Clears drill state and returns to grouped-tile mode |
+| `drillIntoGroup(mode, value, label)` | Opens grouped-tile task modal with a scrollable list of tasks in the selected tile |
+| `openTaskFromTileModal(taskId)` | Closes tile modal and opens full task detail modal for selected task |
+| `closeTileTasksModal()` | Closes grouped-tile task modal |
 | `statusMeta(status)` | Returns `{ label, cls }` for a status string |
 | `toggleFilterPanel()` | Expands/collapses filter panel |
 | `updateFilterBadge()` | Updates active-filter count badge |
-| `setGroupBy(mode, opts?)` | Updates list layout mode (`flat`/`group-by`) and re-renders task list |
+| `setGroupBy(mode)` | Updates list layout mode (`flat`/`group-by`) and re-renders task list |
 | `setFilter(key, value)` | Updates `currentFilter` and calls `loadTasks()` |
 | `applyFilters()` | Reads all filter form controls into `currentFilter` and calls `loadTasks()` |
 | `resetFilters()` | Restores all task filters/layout options to defaults and reloads tasks |
@@ -1570,6 +1572,10 @@ The task Filters panel is responsive: at narrow widths (`max-width: 520px`) its 
 | `filterAssignedToMe` | checkbox | Assigned-to-me filter |
 | `filterShowGroupTasks` | checkbox | Toggle inclusion of group tasks in task list |
 | `gbNone/gbType/gbGroup` | buttons | Layout mode chips (flat list / group by type / group by group) |
+| `tileTasksModal` | div | Modal overlay showing scrollable tasks for a clicked grouped tile |
+| `tileTasksModalTitle` | h2 | Title of selected grouped tile in tile modal |
+| `tileTasksModalMeta` | p | Task count summary in tile modal |
+| `tileTasksModalList` | div | Scrollable task-card list for selected tile |
 | `tasksGamifStrip` | div | Gamification XP strip |
 | `stripSkillName` | span | Static "Level" label in strip |
 | `stripSkillBadge` | span | Overall level number in strip |

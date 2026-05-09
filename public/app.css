@@ -731,32 +731,28 @@ a:hover { text-decoration: underline; }
 .task-card-urgent   { background: #fff0f0; }
 .task-card-due-soon { border: 2px solid #dc2626; }
 
-.task-drill-banner {
-  background: #f5f3ff;
-  border: 1px solid #ddd6fe;
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+.tile-tasks-modal-sheet {
+  max-height: min(82vh, 760px);
 }
-.task-drill-banner-left { min-width: 0; }
-.task-drill-banner-title {
-  font-size: .9rem;
-  font-weight: 700;
-  color: #4c1d95;
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.tile-tasks-modal-head {
+  margin-bottom: 10px;
 }
-.task-drill-banner-sub {
-  font-size: .75rem;
+.tile-tasks-modal-meta {
+  font-size: .82rem;
   color: #6b7280;
+  margin: -4px 0 0;
 }
-.task-drill-empty-back { margin-top: 10px; }
+.tile-tasks-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 58vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.tile-task-card {
+  margin-bottom: 0;
+}
 
 /* Far-future tasks collapsible toggle button */
 .task-far-future-toggle {

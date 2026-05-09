@@ -3422,7 +3422,7 @@ function drillIntoGroup(mode, value, label) {
         const statusInfo = statusMeta(t.status);
         const overdue = t.due_date && t.due_date < Date.now() && t.status !== 'complete';
         return `
-          <div onclick="openTaskFromTileModal('${escHtml(t.id)}')" class="task-card tile-task-card">
+          <div onclick="openTaskFromTileModal(${JSON.stringify(String(t.id || ''))})" class="task-card tile-task-card">
             <div class="task-card-title${t.group_id ? ' task-card-title-group' : ''}">${escHtml(t.title)}</div>
             <div class="task-card-badges">
               <span class="badge badge-blue">${escHtml(t.type_name || '')}</span>

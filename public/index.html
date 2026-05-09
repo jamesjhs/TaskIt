@@ -1050,37 +1050,59 @@
     </div>
 
     <!-- Collapsible filter panel -->
-    <div id="filterPanel" class="hidden" style="margin-bottom:16px">
-      <div class="filter-chips" style="margin-bottom:10px">
-        <button onclick="setFilter('status','')" id="filterAll" class="chip active">All</button>
-        <button onclick="setFilter('status','not_started')" id="filterNotStarted" class="chip">Not Started</button>
-        <button onclick="setFilter('status','started')" id="filterStarted" class="chip">Started</button>
+    <div id="filterPanel" class="filter-panel hidden">
+      <div class="filter-panel-section">
+        <p class="filter-panel-title">Status</p>
+        <div class="filter-chips filter-chips-compact">
+          <button onclick="setFilter('status','')" id="filterAll" class="chip active">All</button>
+          <button onclick="setFilter('status','not_started')" id="filterNotStarted" class="chip">Not Started</button>
+          <button onclick="setFilter('status','started')" id="filterStarted" class="chip">Started</button>
+        </div>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <select id="filterGroup" onchange="applyFilters()" class="filter-select">
-          <option value="">All Groups</option>
-        </select>
-        <select id="filterType" onchange="applyFilters()" class="filter-select">
-          <option value="">All Types</option>
-        </select>
-        <label class="toggle-label">
-          <input type="checkbox" id="filterArchived" onchange="applyFilters()" />
-          Show Completed
-        </label>
-        <label class="toggle-label">
-          <input type="checkbox" id="filterAssignedToMe" onchange="applyFilters()" />
-          Assigned to Me
-        </label>
-        <label class="toggle-label">
-          <input type="checkbox" id="filterShowGroupTasks" onchange="applyFilters()" checked />
-          Show Group Tasks
-        </label>
+      <div class="filter-panel-section">
+        <p class="filter-panel-title">Scope</p>
+        <div class="filter-field-grid">
+          <label class="filter-field">
+            <span>Group</span>
+            <select id="filterGroup" onchange="applyFilters()" class="filter-select">
+              <option value="">All Groups</option>
+            </select>
+          </label>
+          <label class="filter-field">
+            <span>Type</span>
+            <select id="filterType" onchange="applyFilters()" class="filter-select">
+              <option value="">All Types</option>
+            </select>
+          </label>
+        </div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
-        <span style="font-size:.82rem;color:#6b7280;font-weight:500">Group By:</span>
-        <button onclick="setGroupBy('')" id="gbNone" class="chip active">None</button>
-        <button onclick="setGroupBy('type')" id="gbType" class="chip">Task Type</button>
-        <button onclick="setGroupBy('group')" id="gbGroup" class="chip">Group</button>
+      <div class="filter-panel-section">
+        <p class="filter-panel-title">Options</p>
+        <div class="filter-toggle-grid">
+          <label class="toggle-label">
+            <input type="checkbox" id="filterArchived" onchange="applyFilters()" />
+            Show Completed
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="filterAssignedToMe" onchange="applyFilters()" />
+            Assigned to Me
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="filterShowGroupTasks" onchange="applyFilters()" checked />
+            Show Group Tasks
+          </label>
+        </div>
+      </div>
+      <div class="filter-panel-section">
+        <p class="filter-panel-title">Layout</p>
+        <div class="filter-chips filter-chips-compact">
+          <button onclick="setGroupBy('')" id="gbNone" class="chip active">Flat List</button>
+          <button onclick="setGroupBy('type')" id="gbType" class="chip">Group by Type</button>
+          <button onclick="setGroupBy('group')" id="gbGroup" class="chip">Group by Group</button>
+        </div>
+      </div>
+      <div class="filter-panel-actions">
+        <button onclick="resetFilters()" class="btn btn-secondary btn-sm">Reset Filters</button>
       </div>
     </div>
 
@@ -2300,6 +2322,8 @@ let arcadeDailyPlayMinutes = 5;
 let _farFutureExpanded = false;
 // Last task array passed to renderTasks — used by toggleFarFuture to re-render without a network fetch.
 let _lastRenderInput = [];
+// Current "drilled into tile" context for grouped-task mode.
+let _tileDrill = null;
 
 // ========== Modal back-button stack ==========
 // Each entry is { closeFn }. When the OS/browser back button fires we close the
@@ -3210,12 +3234,30 @@ function renderTasks(tasks) {
 
   // Grouped tile view
   if (currentFilter.groupBy && currentFilter.groupBy !== '') {
+    _tileDrill = null;
     renderGroupedTasks(displayTasks, currentFilter.groupBy);
     return;
   }
 
+  // Drill-down from grouped tiles
+  if (_tileDrill) {
+    if (_tileDrill.mode === 'type') {
+      displayTasks = displayTasks.filter(t => t.type_id === _tileDrill.value);
+    } else if (_tileDrill.mode === 'group') {
+      if (_tileDrill.value === '__personal__') {
+        displayTasks = displayTasks.filter(t => !t.group_id);
+      } else {
+        displayTasks = displayTasks.filter(t => t.group_id === _tileDrill.value);
+      }
+    }
+  }
+
   if (!displayTasks.length) {
-    grid.innerHTML = '<div class="loading"><div style="font-size:3rem;margin-bottom:12px">\ud83d\udccb</div><p>No tasks found. Create your first task!</p></div>';
+    const emptyLabel = _tileDrill ? 'No tasks found in this tile.' : 'No tasks found. Create your first task!';
+    const backBtn = _tileDrill
+      ? '<div style="margin-top:10px"><button class="btn btn-outline btn-sm" onclick="clearTileDrill()">← Back to grouped tiles</button></div>'
+      : '';
+    grid.innerHTML = `<div class="loading"><div style="font-size:3rem;margin-bottom:12px">\ud83d\udccb</div><p>${emptyLabel}</p>${backBtn}</div>`;
     return;
   }
 
@@ -3290,6 +3332,19 @@ function renderTasks(tasks) {
     }
   }
 
+  if (_tileDrill) {
+    const drillLabel = escHtml(_tileDrill.label || 'Selected tile');
+    html = `
+      <div class="task-drill-banner">
+        <div class="task-drill-banner-left">
+          <div class="task-drill-banner-title">${drillLabel}</div>
+          <div class="task-drill-banner-sub">Showing tasks within this tile</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="clearTileDrill()">← Back to grouped tiles</button>
+      </div>
+    ` + html;
+  }
+
   grid.innerHTML = html;
 }
 
@@ -3313,7 +3368,7 @@ function renderGroupedTasks(tasks, mode) {
     const map = new Map();
     tasks.forEach(t => {
       const key = t.type_id || '';
-      if (!map.has(key)) map.set(key, { colorKey: 'type_' + key, name: t.type_name || 'Unknown', typeId: key, groupId: null, tasks: [] });
+      if (!map.has(key)) map.set(key, { colorKey: 'type_' + key, name: t.type_name || 'Unknown', tileValue: key, tasks: [] });
       map.get(key).tasks.push(t);
     });
     tiles = [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
@@ -3323,7 +3378,7 @@ function renderGroupedTasks(tasks, mode) {
       const key = t.group_id || '__personal__';
       if (!map.has(key)) {
         const name = key === '__personal__' ? '🏠 Personal' : (t.group_name || key);
-        map.set(key, { colorKey: 'group_' + key, name, typeId: null, groupId: key === '__personal__' ? '' : key, tasks: [] });
+        map.set(key, { colorKey: 'group_' + key, name, tileValue: key, tasks: [] });
       }
       map.get(key).tasks.push(t);
     });
@@ -3343,11 +3398,9 @@ function renderGroupedTasks(tasks, mode) {
     const nextDue = pending[0];
     const overdue = nextDue && nextDue.due_date < now;
     const nextDueStr = nextDue
-      ? (overdue ? '⚠️ Overdue: ' : 'Due: ') + fmtDate(nextDue.due_date)
-      : 'No upcoming due dates';
-    const drillArgs = mode === 'type'
-      ? JSON.stringify('type') + ',' + JSON.stringify(tile.typeId)
-      : JSON.stringify('group') + ',' + JSON.stringify(tile.groupId);
+      ? (overdue ? '⚠️ Next task due: ' : 'Next task due: ') + fmtDate(nextDue.due_date)
+      : 'No next task due';
+    const drillArgs = JSON.stringify(mode) + ',' + JSON.stringify(tile.tileValue) + ',' + JSON.stringify(tile.name);
     return `
       <div class="task-group-tile" style="border-top:3px solid ${color}">
         <div class="task-group-tile-body" onclick="drillIntoGroup(${drillArgs})">
@@ -3361,19 +3414,23 @@ function renderGroupedTasks(tasks, mode) {
   }).join('') + '</div>';
 }
 
-function drillIntoGroup(mode, value) {
-  setGroupBy('');
-  if (mode === 'type') {
-    currentFilter.typeId = value;
-    const sel = document.getElementById('filterType');
-    if (sel) sel.value = value;
-  } else if (mode === 'group') {
-    currentFilter.groupId = value;
-    const sel = document.getElementById('filterGroup');
-    if (sel) sel.value = value;
-  }
+function drillIntoGroup(mode, value, label) {
+  _tileDrill = { mode, value, label };
+  setGroupBy('', { preserveDrill: true });
+  if (mode === 'type') currentFilter.typeId = '';
+  if (mode === 'group') currentFilter.groupId = '';
+  const typeSel = document.getElementById('filterType');
+  if (typeSel) typeSel.value = currentFilter.typeId;
+  const groupSel = document.getElementById('filterGroup');
+  if (groupSel) groupSel.value = currentFilter.groupId;
   updateFilterBadge();
-  loadTasks();
+  renderTasks(_lastRenderInput);
+}
+
+function clearTileDrill() {
+  const mode = _tileDrill ? _tileDrill.mode : '';
+  _tileDrill = null;
+  setGroupBy(mode === 'type' || mode === 'group' ? mode : '');
 }
 
 function pickTileColor(colorKey, btn) {
@@ -3653,7 +3710,8 @@ function updateFilterBadge() {
   }
 }
 
-function setGroupBy(mode) {
+function setGroupBy(mode, opts = {}) {
+  if (!opts.preserveDrill) _tileDrill = null;
   currentFilter.groupBy = mode;
   ['gbNone', 'gbType', 'gbGroup'].forEach(id => {
     const b = document.getElementById(id);
@@ -3668,6 +3726,7 @@ function setGroupBy(mode) {
 }
 
 function setFilter(key, value) {
+  _tileDrill = null;
   currentFilter[key] = value;
   const btnMap = { '': 'filterAll', 'not_started': 'filterNotStarted', 'started': 'filterStarted' };
   Object.entries(btnMap).forEach(([v, id]) => {
@@ -3680,11 +3739,47 @@ function setFilter(key, value) {
 }
 
 function applyFilters() {
+  _tileDrill = null;
   currentFilter.groupId = document.getElementById('filterGroup').value;
   currentFilter.typeId = document.getElementById('filterType').value;
   currentFilter.archived = document.getElementById('filterArchived').checked;
   currentFilter.assignedToMe = document.getElementById('filterAssignedToMe').checked;
   currentFilter.showGroupTasks = document.getElementById('filterShowGroupTasks').checked;
+  updateFilterBadge();
+  loadTasks();
+}
+
+function resetFilters() {
+  _tileDrill = null;
+  currentFilter = {
+    status: '',
+    groupId: '',
+    typeId: '',
+    archived: false,
+    assignedToMe: false,
+    showGroupTasks: true,
+    groupBy: '',
+  };
+  const setActive = (id, on) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('active', on);
+  };
+  setActive('filterAll', true);
+  setActive('filterNotStarted', false);
+  setActive('filterStarted', false);
+  setActive('gbNone', true);
+  setActive('gbType', false);
+  setActive('gbGroup', false);
+  const groupSel = document.getElementById('filterGroup');
+  if (groupSel) groupSel.value = '';
+  const typeSel = document.getElementById('filterType');
+  if (typeSel) typeSel.value = '';
+  const archived = document.getElementById('filterArchived');
+  if (archived) archived.checked = false;
+  const assigned = document.getElementById('filterAssignedToMe');
+  if (assigned) assigned.checked = false;
+  const showGroup = document.getElementById('filterShowGroupTasks');
+  if (showGroup) showGroup.checked = true;
   updateFilterBadge();
   loadTasks();
 }

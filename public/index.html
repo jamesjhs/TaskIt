@@ -1076,6 +1076,12 @@
           Show Group Tasks
         </label>
       </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+        <span style="font-size:.82rem;color:#6b7280;font-weight:500">Group By:</span>
+        <button onclick="setGroupBy('')" id="gbNone" class="chip active">None</button>
+        <button onclick="setGroupBy('type')" id="gbType" class="chip">Task Type</button>
+        <button onclick="setGroupBy('group')" id="gbGroup" class="chip">Group</button>
+      </div>
     </div>
 
     <!-- Sporadic Tasks Section -->
@@ -1796,7 +1802,7 @@
     <div class="modal-body">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <h2 class="modal-title" style="margin-bottom:0">Alerts</h2>
-        <button class="btn btn-sm btn-secondary" onclick="toggleNotifModal()">Close</button>
+        <button class="btn btn-sm btn-secondary" onclick="closeNotifModal()">Close</button>
       </div>
       <div id="notificationList"><div class="loading">No alerts</div></div>
     </div>
@@ -2266,7 +2272,7 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button onclick="document.getElementById('groupMembersModal').classList.add('hidden')" class="btn btn-secondary btn-full">Close</button>
+      <button onclick="closeGroupMembersModal()" class="btn btn-secondary btn-full">Close</button>
     </div>
   </div>
 </div>
@@ -2280,7 +2286,7 @@ let groups = [];
 let tasksMap = new Map();
 let goalsMap = new Map();
 let sporadicMap = new Map();
-let currentFilter = { status: '', groupId: '', typeId: '', archived: false, assignedToMe: false, showGroupTasks: true };
+let currentFilter = { status: '', groupId: '', typeId: '', archived: false, assignedToMe: false, showGroupTasks: true, groupBy: '' };
 let currentDetailTask = null;
 let blockedUserIds = new Set();
 let gamificationEnabled = false;
@@ -2294,6 +2300,42 @@ let arcadeDailyPlayMinutes = 5;
 let _farFutureExpanded = false;
 // Last task array passed to renderTasks — used by toggleFarFuture to re-render without a network fetch.
 let _lastRenderInput = [];
+
+// ========== Modal back-button stack ==========
+// Each entry is { closeFn }. When the OS/browser back button fires we close the
+// topmost open modal instead of navigating away.
+let _modalStack = [];
+
+function _pushModalHistory(closeFn) {
+  _modalStack.push({ closeFn });
+  history.pushState({ modal: true }, '');
+}
+
+function _popModalStack() {
+  if (_modalStack.length > 0) _modalStack.pop();
+}
+
+window.addEventListener('popstate', function () {
+  if (_modalStack.length > 0) {
+    // Delegate to the topmost close-function; it calls _popModalStack() itself.
+    _modalStack[_modalStack.length - 1].closeFn();
+  } else {
+    // No modal open — push a replacement state so the app never exits on back.
+    history.pushState({ appOpen: true }, '');
+  }
+});
+
+// ========== Tile colour helpers (task group-by view) ==========
+function _getTileColors() {
+  try { return JSON.parse(localStorage.getItem('taskit_tile_colors') || '{}'); } catch { return {}; }
+}
+function _setTileColor(key, color) {
+  const c = _getTileColors(); c[key] = color;
+  localStorage.setItem('taskit_tile_colors', JSON.stringify(c));
+}
+function _defaultTileColor(idx) {
+  return ['#7c3aed','#059669','#f59e0b','#ef4444','#3b82f6','#ec4899','#10b981','#8b5cf6','#f97316'][idx % 9];
+}
 
 // ========== Reminder window constants (must match server/src/services/scheduler.ts) ==========
 const POPUP_WINDOW_7D_MIN_MS  = 6  * 24 * 3600000;
@@ -2717,6 +2759,8 @@ async function handleChangePassword() {
 
 // ========== App init ==========
 function initApp() {
+  // Push an initial history state so pressing back never exits the PWA.
+  history.pushState({ appOpen: true }, '');
   document.getElementById('landingPage').classList.add('hidden');
   document.getElementById('authPage').classList.add('hidden');
   document.getElementById('appPage').classList.remove('hidden');
@@ -3088,8 +3132,9 @@ function copyToClipboard(text) {
 function openCreateGroupModal() {
   document.getElementById('createGroupName').value = '';
   document.getElementById('createGroupModal').classList.remove('hidden');
+  _pushModalHistory(closeCreateGroupModal);
 }
-function closeCreateGroupModal() { document.getElementById('createGroupModal').classList.add('hidden'); }
+function closeCreateGroupModal() { _popModalStack(); document.getElementById('createGroupModal').classList.add('hidden'); }
 
 async function handleCreateGroup(e) {
   e.preventDefault();
@@ -3106,8 +3151,9 @@ function openJoinGroupModal() {
   document.getElementById('joinGroupKey').value = '';
   document.getElementById('joinGroupXpShare').checked = true;
   document.getElementById('joinGroupModal').classList.remove('hidden');
+  _pushModalHistory(closeJoinGroupModal);
 }
-function closeJoinGroupModal() { document.getElementById('joinGroupModal').classList.add('hidden'); }
+function closeJoinGroupModal() { _popModalStack(); document.getElementById('joinGroupModal').classList.add('hidden'); }
 
 async function handleJoinGroup(e) {
   e.preventDefault();
@@ -3148,6 +3194,13 @@ function renderTasks(tasks) {
   if (!currentFilter.showGroupTasks) {
     displayTasks = tasks.filter(t => !t.group_id);
   }
+
+  // Grouped tile view
+  if (currentFilter.groupBy && currentFilter.groupBy !== '') {
+    renderGroupedTasks(displayTasks, currentFilter.groupBy);
+    return;
+  }
+
   if (!displayTasks.length) {
     grid.innerHTML = '<div class="loading"><div style="font-size:3rem;margin-bottom:12px">\ud83d\udccb</div><p>No tasks found. Create your first task!</p></div>';
     return;
@@ -3236,6 +3289,93 @@ function toggleFarFuture() {
   renderTasks(_lastRenderInput);
 }
 
+// ========== Task Group-By Tile View ==========
+function renderGroupedTasks(tasks, mode) {
+  const grid = document.getElementById('taskGrid');
+  const colors = _getTileColors();
+  const now = Date.now();
+
+  let tiles;
+  if (mode === 'type') {
+    const map = new Map();
+    tasks.forEach(t => {
+      const key = t.type_id || '';
+      if (!map.has(key)) map.set(key, { colorKey: 'type_' + key, name: t.type_name || 'Unknown', typeId: key, groupId: null, tasks: [] });
+      map.get(key).tasks.push(t);
+    });
+    tiles = [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  } else {
+    const map = new Map();
+    tasks.forEach(t => {
+      const key = t.group_id || '__personal__';
+      if (!map.has(key)) {
+        const name = key === '__personal__' ? '🏠 Personal' : (t.group_name || key);
+        map.set(key, { colorKey: 'group_' + key, name, typeId: null, groupId: key === '__personal__' ? '' : key, tasks: [] });
+      }
+      map.get(key).tasks.push(t);
+    });
+    tiles = [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  if (!tiles.length) {
+    grid.innerHTML = '<div class="loading"><div style="font-size:3rem;margin-bottom:12px">📋</div><p>No tasks found.</p></div>';
+    return;
+  }
+
+  grid.innerHTML = '<div class="task-group-tile-grid">' + tiles.map((tile, idx) => {
+    const color = colors[tile.colorKey] || _defaultTileColor(idx);
+    const count = tile.tasks.length;
+    const pending = tile.tasks.filter(t => t.status !== 'complete' && t.due_date).sort((a, b) => a.due_date - b.due_date);
+    const nextDue = pending[0];
+    const overdue = nextDue && nextDue.due_date < now;
+    const nextDueStr = nextDue
+      ? (overdue ? '⚠️ Overdue: ' : 'Due: ') + fmtDate(nextDue.due_date)
+      : 'No upcoming due dates';
+    const drillArgs = mode === 'type'
+      ? `'type','${escHtml(tile.typeId)}'`
+      : `'group','${escHtml(tile.groupId)}'`;
+    return `
+      <div class="task-group-tile" style="border-top:3px solid ${color}">
+        <div class="task-group-tile-body" onclick="drillIntoGroup(${drillArgs})">
+          <div class="task-group-tile-title">${escHtml(tile.name)}</div>
+          <div class="task-group-tile-count">(${count} ${count === 1 ? 'task' : 'tasks'})</div>
+          <div class="task-group-tile-due${overdue ? ' task-group-tile-overdue' : ''}">${escHtml(nextDueStr)}</div>
+        </div>
+        <div class="task-group-tile-color-btn" title="Set tile colour" style="background:${color}"
+             onclick="event.stopPropagation();pickTileColor('${escHtml(tile.colorKey)}',this)"></div>
+      </div>`;
+  }).join('') + '</div>';
+}
+
+function drillIntoGroup(mode, value) {
+  setGroupBy('');
+  if (mode === 'type') {
+    currentFilter.typeId = value;
+    const sel = document.getElementById('filterType');
+    if (sel) sel.value = value;
+  } else if (mode === 'group') {
+    currentFilter.groupId = value;
+    const sel = document.getElementById('filterGroup');
+    if (sel) sel.value = value;
+  }
+  updateFilterBadge();
+  loadTasks();
+}
+
+function pickTileColor(colorKey, btn) {
+  const inp = document.createElement('input');
+  inp.type = 'color';
+  inp.value = (_getTileColors()[colorKey] || '#7c3aed');
+  inp.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+  inp.addEventListener('change', function () {
+    _setTileColor(colorKey, this.value);
+    renderTasks(_lastRenderInput);
+  });
+  document.body.appendChild(inp);
+  inp.click();
+  setTimeout(() => { if (inp.parentNode) inp.parentNode.removeChild(inp); }, 1000);
+}
+
 // ========== Sporadic Tasks ==========
 async function loadSporadicTasks() {
   try {
@@ -3307,9 +3447,11 @@ function openEditSporadicLastDoneModal(taskId) {
   const d = task.last_completed_at ? new Date(task.last_completed_at) : new Date();
   document.getElementById('editSporadicDateTime').value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   document.getElementById('editSporadicLastDoneModal').classList.remove('hidden');
+  _pushModalHistory(closeEditSporadicLastDoneModal);
 }
 
 function closeEditSporadicLastDoneModal() {
+  _popModalStack();
   document.getElementById('editSporadicLastDoneModal').classList.add('hidden');
   document.getElementById('editSporadicTaskId').value = '';
   document.getElementById('editSporadicDateTime').value = '';
@@ -3421,9 +3563,11 @@ function openSetDeadlineModal(goalId) {
   const pad = n => String(n).padStart(2, '0');
   document.getElementById('setDeadlineDueDate').value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
   document.getElementById('setDeadlineModal').classList.remove('hidden');
+  _pushModalHistory(closeSetDeadlineModal);
 }
 
 function closeSetDeadlineModal() {
+  _popModalStack();
   document.getElementById('setDeadlineModal').classList.add('hidden');
   document.getElementById('setDeadlineGoalId').value = '';
   document.getElementById('setDeadlineDueDate').value = '';
@@ -3473,6 +3617,7 @@ function updateFilterBadge() {
     currentFilter.archived,
     currentFilter.assignedToMe,
     !currentFilter.showGroupTasks,
+    currentFilter.groupBy !== '',
   ].filter(Boolean).length;
   const badge = document.getElementById('filterActiveBadge');
   const btn   = document.getElementById('filterToggleBtn');
@@ -3488,6 +3633,20 @@ function updateFilterBadge() {
       btn.classList.remove('active');
     }
   }
+}
+
+function setGroupBy(mode) {
+  currentFilter.groupBy = mode;
+  ['gbNone', 'gbType', 'gbGroup'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.classList.remove('active');
+  });
+  const activeId = mode === 'type' ? 'gbType' : mode === 'group' ? 'gbGroup' : 'gbNone';
+  const activeBtn = document.getElementById(activeId);
+  if (activeBtn) activeBtn.classList.add('active');
+  updateFilterBadge();
+  // Re-render without a network round-trip when tasks are already loaded
+  if (_lastRenderInput.length) renderTasks(_lastRenderInput); else loadTasks();
 }
 
 function setFilter(key, value) {
@@ -3521,10 +3680,7 @@ function openFabMenu() {
   menu.classList.remove('fab-menu-closing', 'fab-menu-open');
   menu.classList.remove('hidden');
   overlay.classList.remove('hidden');
-  // Double rAF: first rAF fires after the current paint (where display:flex is
-  // committed); second rAF fires after the compositor layer for the element
-  // exists. Adding the animation class only after this prevents Blink
-  // (Chrome Android / Samsung Internet / Edge) from skipping the tween.
+  _pushModalHistory(function() { closeFabMenu(true); });
   requestAnimationFrame(function() {
     requestAnimationFrame(function() {
       menu.classList.add('fab-menu-open');
@@ -3532,6 +3688,7 @@ function openFabMenu() {
   });
 }
 function closeFabMenu(instant) {
+  _popModalStack();
   var menu = document.getElementById('fabMenu');
   var overlay = document.getElementById('fabMenuOverlay');
   if (fabCloseTimer) { clearTimeout(fabCloseTimer); fabCloseTimer = null; }
@@ -3545,7 +3702,6 @@ function closeFabMenu(instant) {
   overlay.classList.add('hidden');
   menu.classList.remove('fab-menu-open');
   menu.classList.add('fab-menu-closing');
-  // Hide after longest close animation completes (.1s delay + .18s duration = .28s)
   fabCloseTimer = setTimeout(function() {
     menu.classList.remove('fab-menu-closing');
     menu.classList.add('hidden');
@@ -3682,9 +3838,10 @@ function openTaskModal(task = null) {
   }
   updateTaskMode();
   document.getElementById('taskModal').classList.remove('hidden');
+  _pushModalHistory(closeTaskModal);
 }
 
-function closeTaskModal() { resetSubtaskPanel(); document.getElementById('taskModal').classList.add('hidden'); }
+function closeTaskModal() { _popModalStack(); resetSubtaskPanel(); document.getElementById('taskModal').classList.add('hidden'); }
 
 async function loadGroupMembersForTask(selectedIds = []) {
   const groupId = document.getElementById('taskGroup').value;
@@ -3933,6 +4090,7 @@ function openDetail(task) {
   loadTaskNotes(task.id);
   loadSubtasks(task.id);
   renderStreakInDetail(task);
+  _pushModalHistory(closeDetailModal);
 }
 
 async function loadTaskNotes(taskId) {
@@ -3971,6 +4129,7 @@ async function submitNote() {
 }
 
 function closeDetailModal() {
+  _popModalStack();
   document.getElementById('taskDetailModal').classList.add('hidden');
   document.getElementById('deferSection').classList.add('hidden');
   currentDetailTask = null;
@@ -4744,7 +4903,14 @@ function maybeShowGamifOptIn() {
   // Delay so the app finishes rendering first
   setTimeout(() => {
     const modal = document.getElementById('gamifOptInModal');
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+      modal.classList.remove('hidden');
+      _pushModalHistory(function() {
+        modal.classList.add('hidden');
+        _popModalStack();
+        localStorage.setItem(GAMIF_ASKED_KEY, '1');
+      });
+    }
   }, 1200);
 }
 
@@ -4752,6 +4918,7 @@ async function handleGamifOptInYes() {
   localStorage.setItem(GAMIF_ASKED_KEY, '1');
   const modal = document.getElementById('gamifOptInModal');
   if (modal) modal.classList.add('hidden');
+  _popModalStack();
   const toggleEl = document.getElementById('gamifToggle');
   if (toggleEl) toggleEl.disabled = true;
   try {
@@ -4771,6 +4938,7 @@ function handleGamifOptInNo() {
   localStorage.setItem(GAMIF_ASKED_KEY, '1');
   const modal = document.getElementById('gamifOptInModal');
   if (modal) modal.classList.add('hidden');
+  _popModalStack();
 }
 
 // ========== Cookie / Storage Notice ==========
@@ -4891,11 +5059,17 @@ async function loadBlockedUsers() {
 }
 
 // ========== Group Members ==========
+function closeGroupMembersModal() {
+  _popModalStack();
+  document.getElementById('groupMembersModal').classList.add('hidden');
+}
+
 async function openGroupMembers(groupId) {
   currentGroupId = groupId;
   const modal = document.getElementById('groupMembersModal');
   const listEl = document.getElementById('groupMembersList');
   modal.classList.remove('hidden');
+  _pushModalHistory(closeGroupMembersModal);
   listEl.innerHTML = '<div class="loading">Loading\u2026</div>';
   const group = groups.find(g => g.id === groupId);
   document.getElementById('groupMembersTitle').textContent = group ? group.name : 'Group Members';
@@ -5027,7 +5201,7 @@ async function deleteGroup() {
   if (!confirm('Are you sure you want to delete "' + groupName + '"? This cannot be undone.')) return;
   try {
     await api('DELETE', '/groups/' + currentGroupId);
-    document.getElementById('groupMembersModal').classList.add('hidden');
+    closeGroupMembersModal();
     toast('Group deleted');
     await loadGroups(); renderGroups();
   } catch (err) { toast(err.message, 'error'); }
@@ -5820,11 +5994,20 @@ async function adminSeedCollectibles() {
 }
 
 // ========== Notifications ==========
+function openNotifModal() {
+  const modal = document.getElementById('notifModal');
+  if (!modal.classList.contains('hidden')) return;
+  modal.classList.remove('hidden');
+  refreshNotifications();
+  _pushModalHistory(closeNotifModal);
+}
+function closeNotifModal() {
+  _popModalStack();
+  document.getElementById('notifModal').classList.add('hidden');
+}
 function toggleNotifModal() {
   const modal = document.getElementById('notifModal');
-  const isHidden = modal.classList.contains('hidden');
-  modal.classList.toggle('hidden');
-  if (isHidden) refreshNotifications();
+  if (modal.classList.contains('hidden')) openNotifModal(); else closeNotifModal();
 }
 
 async function refreshNotifications() {
@@ -6404,6 +6587,7 @@ function openArcade(badgeKey) {
   void overlay.offsetWidth; // intentional: force CSS reflow so .arcade-animating restart is registered
   overlay.classList.add('arcade-animating');
   document.body.classList.add('arcade-open');
+  _pushModalHistory(closeArcade);
 
   // ── Time budget HUD ────────────────────────────────────────────────────
   arcadeUpdateTimeBudget(remainingSeconds);
@@ -6556,6 +6740,7 @@ async function arcadeSpendToken() {
  * Closes the Arcade overlay and restores the main app.
  */
 function closeArcade() {
+  _popModalStack();
   const overlay = document.getElementById('arcadeOverlay');
   if (!overlay || overlay.classList.contains('hidden')) return;
 
@@ -6667,10 +6852,12 @@ function openLootDropModal(drop) {
   rarityEl.textContent = rarity.charAt(0).toUpperCase() + rarity.slice(1);
 
   document.getElementById('lootDropModal').classList.remove('hidden');
+  _pushModalHistory(closeLootDropModal);
 }
 
 /** Closes the loot-drop modal and clears the pending drop reference. */
 function closeLootDropModal() {
+  _popModalStack();
   _pendingDrop = null;
   document.getElementById('lootDropModal').classList.add('hidden');
   // Reset icon to default state for next use

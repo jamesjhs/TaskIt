@@ -1319,6 +1319,7 @@ Exports:
 ## 10. Frontend SPA — `public/index.html`
 
 The entire application UI and all client-side logic is contained in a single HTML file. All JavaScript is inline (`<script>` tag). CSS comes from `app.css` and `tailwind.css`. The file is ~4000 lines.
+The task Filters panel is responsive: at narrow widths (`max-width: 520px`) its field and toggle grids collapse to single-column layout and the reset action becomes full-width.
 
 ---
 
@@ -1331,7 +1332,7 @@ The entire application UI and all client-side logic is contained in a single HTM
 | `taskTypes` | array | `[]` | Cached task types from `/api/task-types` |
 | `groups` | array | `[]` | Cached groups from `/api/groups` |
 | `tasksMap` | Map | `new Map()` | `task.id → task` for O(1) lookup by ID |
-| `currentFilter` | object | `{ status:'', groupId:'', typeId:'', archived:false, assignedToMe:false, showGroupTasks:true }` | Active task list filters |
+| `currentFilter` | object | `{ status:'', groupId:'', typeId:'', archived:false, assignedToMe:false, showGroupTasks:true, groupBy:'' }` | Active task list filters and list-layout mode (`groupBy`: `''`, `type`, `group`) |
 | `currentDetailTask` | object\|null | `null` | Task currently open in the detail modal |
 | `blockedUserIds` | Set | `new Set()` | Set of user IDs the current user has blocked |
 | `gamificationEnabled` | boolean | `false` | Mirrors `currentUser.gamification_enabled` in-memory |
@@ -1340,6 +1341,7 @@ The entire application UI and all client-side logic is contained in a single HTM
 | `_otpSessionId` | string\|null | `null` | OTP session ID from `/api/auth/login` response |
 | `_resetToken` | string\|null | `null` | Password reset token from URL |
 | `currentGroupId` | string\|null | `null` | Currently active group context |
+| `_tileDrill` | object\|null | `null` | Grouped-tile drill-down state: `{ mode, value, label }`; when set, tasks page shows only tasks inside the selected tile |
 
 ---
 
@@ -1429,12 +1431,17 @@ The entire application UI and all client-side logic is contained in a single HTM
 | Function | Description |
 |---|---|
 | `loadTasks()` | GET `/api/tasks` with current filter params; populates `tasksMap` |
-| `renderTasks(tasks)` | Renders task cards sorted by urgency/due-date |
+| `renderTasks(tasks)` | Renders task cards sorted by urgency/due-date; also handles grouped-tile drill-down views via `_tileDrill` |
+| `renderGroupedTasks(tasks, mode)` | Renders grouped summary tiles (`mode`: `type` or `group`) with next-due and task-count metadata |
+| `drillIntoGroup(mode, value, label)` | Activates tile drill-down state and shows tasks inside the selected tile |
+| `clearTileDrill()` | Clears drill state and returns to grouped-tile mode |
 | `statusMeta(status)` | Returns `{ label, cls }` for a status string |
 | `toggleFilterPanel()` | Expands/collapses filter panel |
 | `updateFilterBadge()` | Updates active-filter count badge |
+| `setGroupBy(mode, opts?)` | Updates list layout mode (`flat`/`group-by`) and re-renders task list |
 | `setFilter(key, value)` | Updates `currentFilter` and calls `loadTasks()` |
 | `applyFilters()` | Reads all filter form controls into `currentFilter` and calls `loadTasks()` |
+| `resetFilters()` | Restores all task filters/layout options to defaults and reloads tasks |
 | `openTaskModal(task?)` | Opens create (null) or edit (task) modal; populates form fields; collapses Notes panel (auto-expands if task has existing notes); hides assignee row; due date uses `type="date"` (date only, no time) |
 | `closeTaskModal()` | Hides task modal |
 | `openFabMenu()` | Shows the FAB popup menu (New Task / Sporadic Task / Long-term Goal) |
@@ -1553,14 +1560,16 @@ The entire application UI and all client-side logic is contained in a single HTM
 | `profilePage` | div | User profile/settings view |
 | `adminPage` | div | Admin panel view |
 | `taskGrid` | div | Task card list |
-| `filterPanel` | div | Collapsible task filters |
+| `filterPanel` | div | Collapsible task filters (sectioned UI: Status, Scope, Options, Layout) |
 | `filterActiveBadge` | span | Count of active filters |
 | `filterToggleBtn` | button | Filter panel toggle |
-| `filterAll/NotStarted/Started/Complete` | buttons | Status filter chips |
+| `filterAll/NotStarted/Started` | buttons | Status filter chips |
 | `filterGroup` | select | Group filter dropdown |
 | `filterType` | select | Type filter dropdown |
 | `filterArchived` | checkbox | Show archived toggle |
 | `filterAssignedToMe` | checkbox | Assigned-to-me filter |
+| `filterShowGroupTasks` | checkbox | Toggle inclusion of group tasks in task list |
+| `gbNone/gbType/gbGroup` | buttons | Layout mode chips (flat list / group by type / group by group) |
 | `tasksGamifStrip` | div | Gamification XP strip |
 | `stripSkillName` | span | Static "Level" label in strip |
 | `stripSkillBadge` | span | Overall level number in strip |

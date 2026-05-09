@@ -2359,7 +2359,7 @@ window.addEventListener('popstate', function () {
 
 // ========== Tile colour helpers (task group-by view) ==========
 const _HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
-const _COLOR_PICKER_CLEANUP_MS = 30000;
+const _COLOR_PICKER_CLEANUP_MS = 5000;
 const _DEFAULT_TILE_COLOR = '#7c3aed';
 
 function _getTileColors() {
@@ -3415,6 +3415,8 @@ function renderGroupedTasks(tasks, mode) {
 function drillIntoGroup(mode, value, label) {
   _tileDrill = { mode, value, label };
   setGroupBy('', { preserveDrill: true });
+  // Tile drill-down uses _tileDrill as the source of truth; clear type/group
+  // select filters so the panel still reflects "Flat List + drill context".
   if (mode === 'type') currentFilter.typeId = '';
   if (mode === 'group') currentFilter.groupId = '';
   const typeSel = document.getElementById('filterType');
@@ -3694,7 +3696,7 @@ function updateFilterBadge() {
     currentFilter.archived,
     currentFilter.assignedToMe,
     !currentFilter.showGroupTasks,
-    !!currentFilter.groupBy,
+    currentFilter.groupBy !== '',
   ].filter(Boolean).length;
   const badge = document.getElementById('filterActiveBadge');
   const btn   = document.getElementById('filterToggleBtn');
@@ -3713,6 +3715,8 @@ function updateFilterBadge() {
 }
 
 function setGroupBy(mode, opts = {}) {
+  // preserveDrill is used by drillIntoGroup() so the grouped-to-list
+  // transition doesn't clear _tileDrill before renderTasks() uses it.
   if (!opts.preserveDrill) _tileDrill = null;
   currentFilter.groupBy = mode;
   ['gbNone', 'gbType', 'gbGroup'].forEach(id => {

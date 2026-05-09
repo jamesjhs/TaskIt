@@ -2305,6 +2305,7 @@ let _lastRenderInput = [];
 // Each entry is { closeFn }. When the OS/browser back button fires we close the
 // topmost open modal instead of navigating away.
 let _modalStack = [];
+let _popstateInProgress = false;
 
 function _pushModalHistory(closeFn) {
   _modalStack.push({ closeFn });
@@ -2312,13 +2313,20 @@ function _pushModalHistory(closeFn) {
 }
 
 function _popModalStack() {
-  if (_modalStack.length > 0) _modalStack.pop();
+  // No-op when called re-entrantly from a popstate-triggered closeFn
+  // (the popstate handler already popped the entry before calling it).
+  if (!_popstateInProgress && _modalStack.length > 0) _modalStack.pop();
 }
 
 window.addEventListener('popstate', function () {
   if (_modalStack.length > 0) {
-    // Delegate to the topmost close-function; it calls _popModalStack() itself.
-    _modalStack[_modalStack.length - 1].closeFn();
+    const { closeFn } = _modalStack[_modalStack.length - 1];
+    // Pre-pop before invoking closeFn so that closeFn's own _popModalStack()
+    // call is a no-op (guarded by _popstateInProgress).
+    _modalStack.pop();
+    _popstateInProgress = true;
+    try { closeFn(); } catch (e) { console.error('Modal close error:', e); }
+    finally { _popstateInProgress = false; }
   } else {
     // No modal open — push a replacement state so the app never exits on back.
     history.pushState({ appOpen: true }, '');
@@ -3323,7 +3331,8 @@ function renderGroupedTasks(tasks, mode) {
   }
 
   grid.innerHTML = '<div class="task-group-tile-grid">' + tiles.map((tile, idx) => {
-    const color = colors[tile.colorKey] || _defaultTileColor(idx);
+    const rawColor = colors[tile.colorKey];
+    const color = (rawColor && /^#[0-9a-fA-F]{6}$/.test(rawColor)) ? rawColor : _defaultTileColor(idx);
     const count = tile.tasks.length;
     const pending = tile.tasks.filter(t => t.status !== 'complete' && t.due_date).sort((a, b) => a.due_date - b.due_date);
     const nextDue = pending[0];
@@ -3332,8 +3341,8 @@ function renderGroupedTasks(tasks, mode) {
       ? (overdue ? '⚠️ Overdue: ' : 'Due: ') + fmtDate(nextDue.due_date)
       : 'No upcoming due dates';
     const drillArgs = mode === 'type'
-      ? `'type','${escHtml(tile.typeId)}'`
-      : `'group','${escHtml(tile.groupId)}'`;
+      ? JSON.stringify('type') + ',' + JSON.stringify(tile.typeId)
+      : JSON.stringify('group') + ',' + JSON.stringify(tile.groupId);
     return `
       <div class="task-group-tile" style="border-top:3px solid ${color}">
         <div class="task-group-tile-body" onclick="drillIntoGroup(${drillArgs})">
@@ -3342,7 +3351,7 @@ function renderGroupedTasks(tasks, mode) {
           <div class="task-group-tile-due${overdue ? ' task-group-tile-overdue' : ''}">${escHtml(nextDueStr)}</div>
         </div>
         <div class="task-group-tile-color-btn" title="Set tile colour" style="background:${color}"
-             onclick="event.stopPropagation();pickTileColor('${escHtml(tile.colorKey)}',this)"></div>
+             onclick="event.stopPropagation();pickTileColor(${JSON.stringify(tile.colorKey)},this)"></div>
       </div>`;
   }).join('') + '</div>';
 }
@@ -3365,15 +3374,19 @@ function drillIntoGroup(mode, value) {
 function pickTileColor(colorKey, btn) {
   const inp = document.createElement('input');
   inp.type = 'color';
-  inp.value = (_getTileColors()[colorKey] || '#7c3aed');
+  const stored = _getTileColors()[colorKey] || '#7c3aed';
+  inp.value = /^#[0-9a-fA-F]{6}$/.test(stored) ? stored : '#7c3aed';
   inp.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+  function cleanup() { if (inp.parentNode) inp.parentNode.removeChild(inp); }
   inp.addEventListener('change', function () {
     _setTileColor(colorKey, this.value);
     renderTasks(_lastRenderInput);
+    cleanup();
   });
+  inp.addEventListener('cancel', cleanup);
   document.body.appendChild(inp);
   inp.click();
-  setTimeout(() => { if (inp.parentNode) inp.parentNode.removeChild(inp); }, 1000);
+  setTimeout(cleanup, 30000);
 }
 
 // ========== Sporadic Tasks ==========
@@ -3617,7 +3630,7 @@ function updateFilterBadge() {
     currentFilter.archived,
     currentFilter.assignedToMe,
     !currentFilter.showGroupTasks,
-    currentFilter.groupBy !== '',
+    !!currentFilter.groupBy,
   ].filter(Boolean).length;
   const badge = document.getElementById('filterActiveBadge');
   const btn   = document.getElementById('filterToggleBtn');
@@ -4907,7 +4920,6 @@ function maybeShowGamifOptIn() {
       modal.classList.remove('hidden');
       _pushModalHistory(function() {
         modal.classList.add('hidden');
-        _popModalStack();
         localStorage.setItem(GAMIF_ASKED_KEY, '1');
       });
     }

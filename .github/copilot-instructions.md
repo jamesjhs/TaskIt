@@ -201,7 +201,7 @@ curl -X POST http://localhost:3000/api/auth/register \
 
 ## Session Completion Protocol
 
-**Every agent session MUST end by running this protocol in full, in order.** Do not skip any step, even if no functional changes were made.
+**Only run this protocol when the user explicitly types the exact phrase `trigger QC actions`.** If that exact phrase does not appear in the user's message, skip the entire protocol and do not perform the version bump, audit, build, documentation sweep, version-consistency search, or final commit steps automatically.
 
 ---
 

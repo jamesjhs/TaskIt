@@ -433,7 +433,7 @@ a:hover { text-decoration: underline; }
 }
 .filter-field-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 .filter-field {
@@ -756,6 +756,7 @@ a:hover { text-decoration: underline; }
   font-size: .75rem;
   color: #6b7280;
 }
+.task-drill-empty-back { margin-top: 10px; }
 
 /* Far-future tasks collapsible toggle button */
 .task-far-future-toggle {
@@ -3379,7 +3380,7 @@ body.arcade-open { overflow: hidden; }
 /* ========== Task Group-By Tile View ========== */
 .task-group-tile-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   gap: 10px;
   margin-top: 4px;
 }

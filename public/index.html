@@ -3254,7 +3254,7 @@ function renderTasks(tasks) {
 
   if (!displayTasks.length) {
     const emptyLabel = _tileDrill ? 'No tasks found in this tile.' : 'No tasks found. Create your first task!';
-    const backBtn = _tileDrill ? '<div style="margin-top:10px">' + renderTileDrillBackButton() + '</div>' : '';
+    const backBtn = _tileDrill ? '<div class="task-drill-empty-back">' + renderTileDrillBackButton() + '</div>' : '';
     grid.innerHTML = `<div class="loading"><div style="font-size:3rem;margin-bottom:12px">\ud83d\udccb</div><p>${emptyLabel}</p>${backBtn}</div>`;
     return;
   }
@@ -3415,8 +3415,9 @@ function renderGroupedTasks(tasks, mode) {
 function drillIntoGroup(mode, value, label) {
   _tileDrill = { mode, value, label };
   setGroupBy('', { preserveDrill: true });
-  // Tile drill-down uses _tileDrill as the source of truth; clear type/group
-  // select filters so the panel still reflects "Flat List + drill context".
+  // Tile drill-down uses _tileDrill as the source of truth. We intentionally
+  // clear type/group selects to avoid implying those backend query filters are
+  // active; this is a client-side drill view over already-fetched tasks.
   if (mode === 'type') currentFilter.typeId = '';
   if (mode === 'group') currentFilter.groupId = '';
   const typeSel = document.getElementById('filterType');
@@ -3452,6 +3453,8 @@ function pickTileColor(colorKey, btn) {
   inp.addEventListener('cancel', cleanup);
   document.body.appendChild(inp);
   inp.click();
+  // Safety cleanup: if browser doesn't emit change/cancel reliably, remove
+  // orphaned temporary picker after a short grace period.
   setTimeout(cleanup, _COLOR_PICKER_CLEANUP_MS);
 }
 
@@ -3714,6 +3717,12 @@ function updateFilterBadge() {
   }
 }
 
+/**
+ * Sets task list layout mode.
+ * @param {string} mode '' | 'type' | 'group'
+ * @param {{ preserveDrill?: boolean }} opts Internal-only; preserveDrill is
+ * used by drillIntoGroup() so the grouped-to-list transition keeps _tileDrill.
+ */
 function setGroupBy(mode, opts = {}) {
   // preserveDrill is used by drillIntoGroup() so the grouped-to-list
   // transition doesn't clear _tileDrill before renderTasks() uses it.
@@ -3732,6 +3741,8 @@ function setGroupBy(mode, opts = {}) {
 }
 
 function setFilter(key, value) {
+  // Any top-level filter change exits tile drill-down and returns to
+  // normal list behavior for clarity.
   _tileDrill = null;
   currentFilter[key] = value;
   const btnMap = { '': 'filterAll', 'not_started': 'filterNotStarted', 'started': 'filterStarted' };

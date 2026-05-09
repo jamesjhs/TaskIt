@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.16.2** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.16.3** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -117,6 +117,11 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.16.3
+
+- **🤖 QC trigger gate** — the Copilot session completion protocol in `.github/copilot-instructions.md` now runs only when the user explicitly types the exact phrase `trigger QC actions`.
+- **🔢 Version bump** — server package metadata, README, and technical reference updated to 1.16.3.
 
 ### v1.16.0
 

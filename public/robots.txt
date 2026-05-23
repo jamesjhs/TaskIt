@@ -1,4 +1,5 @@
-# Replace the domain below if you deploy TaskIt on a hostname other than taskit.jahosi.co.uk.
+# Self-hosters: replace taskit.jahosi.co.uk with your own canonical hostname below.
+# That includes the sitemap URL at the bottom of this file.
 User-agent: *
 Allow: /
 
@@ -17,5 +18,4 @@ Allow: /
 User-agent: PerplexityBot
 Allow: /
 
-# Update this sitemap hostname if you deploy TaskIt on a different canonical domain.
 Sitemap: https://taskit.jahosi.co.uk/sitemap.xml

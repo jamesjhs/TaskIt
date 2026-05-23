@@ -924,12 +924,9 @@ a:hover { text-decoration: underline; }
   margin-top: 2px;
 }
 .lp-hero-proof {
-  list-style: none;
   max-width: 760px;
   margin: 18px auto 14px;
   padding: 0;
-  display: grid;
-  gap: 10px;
 }
 .lp-hero-proof li {
   background: rgba(255,255,255,.11);
@@ -940,6 +937,8 @@ a:hover { text-decoration: underline; }
   text-align: left;
   font-size: .9rem;
   line-height: 1.55;
+  list-style: none;
+  margin-top: 10px;
 }
 
 /* ── Stats strip ─────────────────────────────────────────────────── */

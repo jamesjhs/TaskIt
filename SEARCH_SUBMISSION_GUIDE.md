@@ -3,7 +3,14 @@
 **Version 1.17.0**  
 For the official hosted property: `https://taskit.jahosi.co.uk/`
 
-> If you self-host TaskIt on your own domain, replace every `taskit.jahosi.co.uk` reference in this guide, `public/robots.txt`, `public/sitemap.xml`, and the canonical / Open Graph / Twitter URLs in `public/index.html` with your own canonical hostname before launch. If you publish your own forked documentation, also update the “official hosted property” wording and any version / branding context to match your deployment.
+## Self-Hosting Domain Configuration
+
+If you deploy TaskIt on your own domain, update all official-host references before launch:
+
+- Replace every `taskit.jahosi.co.uk` reference in this guide with your own canonical hostname
+- Update `public/robots.txt` and `public/sitemap.xml`
+- Update the canonical, Open Graph, Twitter, and structured-data URLs in `public/index.html`
+- If you publish your own forked documentation, replace the “official hosted property” wording and any version / branding context that no longer applies
 
 ## 1. What to submit before launch
 

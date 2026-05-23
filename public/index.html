@@ -15,6 +15,7 @@
   <link rel="canonical" href="https://taskit.jahosi.co.uk/" />
 
   <!-- Open Graph (Facebook, LinkedIn, AI crawlers) -->
+  <!-- Self-hosters: replace the official taskit.jahosi.co.uk URLs below with your own public hostname. -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="TaskIt! | The free self-hosted task manager that actually motivates you" />
   <meta property="og:description" content="Run recurring tasks, household jobs, long-term goals, and team work from one privacy-first app with optional XP, streaks, and achievements." />
@@ -32,6 +33,7 @@
   <meta name="twitter:image:alt" content="TaskIt landing page showing self-hosted task management, collaboration, and optional gamification." />
 
   <!-- Structured data — SoftwareApplication (JSON-LD) -->
+  <!-- Self-hosters: keep structured-data URLs aligned with your own canonical hostname. -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -203,7 +205,7 @@
       <h1>The free self-hosted task manager<br><span>that actually motivates you.</span></h1>
       <p class="lp-hero-sub">Run recurring work, household jobs, sporadic maintenance, long-term goals, and group collaboration from one privacy-first app. Add reminders, calendar sync, and optional gamification — without subscriptions or vendor lock-in.</p>
       <div class="lp-hero-ctas">
-        <button type="button" onclick="goToAuth('register')" class="lp-btn-hero-primary">🚀 Create Free Account</button>
+        <button type="button" onclick="goToAuth('register')" class="lp-btn-hero-primary" aria-label="Create Free Account">🚀 Create Free Account</button>
         <a href="/user-guide.html" class="lp-btn-hero-outline">Read the Guide</a>
       </div>
       <div class="lp-hero-badges">
@@ -212,7 +214,7 @@
         <span class="lp-hero-badge">🎮 Gamification optional</span>
         <span class="lp-hero-badge">🔐 SQLCipher supported</span>
       </div>
-      <ul class="lp-hero-proof" aria-label="TaskIt proof points">
+      <ul class="lp-hero-proof" role="list" aria-label="TaskIt proof points">
         <li>Three task modes: scheduled tasks, sporadic maintenance, and long-term goals</li>
         <li>Collaborate with groups, assignees, QR/email invites, progress notes, and subtasks</li>
         <li>Stay ahead with reminders, in-app alerts, calendar feeds, and optional streak-based motivation</li>

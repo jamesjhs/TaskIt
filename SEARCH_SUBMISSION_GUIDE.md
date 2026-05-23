@@ -3,6 +3,8 @@
 **Version 1.17.0**  
 For the official hosted property: `https://taskit.jahosi.co.uk/`
 
+> If you self-host TaskIt on your own domain, replace every `taskit.jahosi.co.uk` reference in this guide, `public/robots.txt`, and `public/sitemap.xml` with your own canonical hostname before launch.
+
 ## 1. What to submit before launch
 
 Make sure the hosted site has all of these live first:

@@ -883,6 +883,9 @@ a:hover { text-decoration: underline; }
   margin-bottom: 14px;
 }
 .lp-btn-hero-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 15px 30px;
   border-radius: 12px;
   font-size: 1.05rem;
@@ -894,6 +897,7 @@ a:hover { text-decoration: underline; }
   transition: opacity .15s, transform .1s, box-shadow .15s;
   box-shadow: 0 4px 20px rgba(0,0,0,0.18);
   min-height: 52px;
+  text-decoration: none;
 }
 .lp-btn-hero-primary:hover { opacity: .92; box-shadow: 0 6px 28px rgba(0,0,0,0.22); }
 .lp-btn-hero-primary:active { transform: scale(.97); }
@@ -1707,9 +1711,16 @@ a:hover { text-decoration: underline; }
 
 /* ── Responsive tweaks ────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .lp-nav { padding: 12px 16px; }
+  .lp-nav { padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
   .lp-nav-title { font-size: 1.1rem; }
-  .lp-nav-links { display: none; }
+  .lp-nav-links {
+    width: 100%;
+    order: 3;
+    justify-content: center;
+    gap: 14px;
+    padding-top: 2px;
+  }
+  .lp-nav-links a { font-size: .8rem; }
   .lp-btn-nav-signin { padding: 8px 12px; font-size: .82rem; }
   .lp-btn-nav-started { padding: 8px 12px; font-size: .82rem; }
   .lp-hero { padding: 100px 16px 60px; }

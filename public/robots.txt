@@ -1,3 +1,4 @@
+# Replace the domain below if you deploy TaskIt on a hostname other than taskit.jahosi.co.uk.
 User-agent: *
 Allow: /
 

@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.ui.main
+package com.jamesjhs.taskit.ui.main
 
 import android.os.Bundle
 import android.view.MenuItem
@@ -6,12 +6,12 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.jamesjhs.jobber.api.ApiClient
-import com.jamesjhs.jobber.data.TokenManager
-import com.jamesjhs.jobber.databinding.ActivityJoinGroupBinding
-import com.jamesjhs.jobber.databinding.DialogCreateGroupBinding
-import com.jamesjhs.jobber.models.CreateGroupRequest
-import com.jamesjhs.jobber.models.JoinGroupRequest
+import com.jamesjhs.taskit.api.ApiClient
+import com.jamesjhs.taskit.data.TokenManager
+import com.jamesjhs.taskit.databinding.ActivityJoinGroupBinding
+import com.jamesjhs.taskit.databinding.DialogCreateGroupBinding
+import com.jamesjhs.taskit.models.CreateGroupRequest
+import com.jamesjhs.taskit.models.JoinGroupRequest
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import kotlinx.coroutines.flow.first
@@ -56,10 +56,10 @@ class JoinGroupActivity : AppCompatActivity() {
     }
 
     private fun handleQrCode(contents: String) {
-        // Expected format: jobber://join?invite_name=...&shared_key=...
+        // Expected format: taskit://join?invite_name=...&shared_key=...
         try {
             val uri = android.net.Uri.parse(contents)
-            if (uri.scheme == "jobber" && uri.host == "join") {
+            if (uri.scheme == "taskit" && uri.host == "join") {
                 val inviteName = uri.getQueryParameter("invite_name")
                 val sharedKey = uri.getQueryParameter("shared_key")
                 if (inviteName != null && sharedKey != null) {
@@ -67,13 +67,13 @@ class JoinGroupActivity : AppCompatActivity() {
                     binding.editSharedKey.setText(sharedKey)
                     joinGroup()
                 } else {
-                    Toast.makeText(this, getString(com.jamesjhs.jobber.R.string.qr_error), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(com.jamesjhs.taskit.R.string.qr_error), Toast.LENGTH_SHORT).show()
                 }
             } else {
-                Toast.makeText(this, getString(com.jamesjhs.jobber.R.string.qr_error), Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(com.jamesjhs.taskit.R.string.qr_error), Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
-            Toast.makeText(this, getString(com.jamesjhs.jobber.R.string.qr_error), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(com.jamesjhs.taskit.R.string.qr_error), Toast.LENGTH_SHORT).show()
         }
     }
 

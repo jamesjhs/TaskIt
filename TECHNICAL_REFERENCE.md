@@ -1,8 +1,8 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.16.3**  
+**Version 1.17.0**  
 **Author:** J Rowson  
-**Generated:** 2026-05-03
+**Generated:** 2026-05-23
 
 ---
 
@@ -80,6 +80,7 @@
 TaskIt/
 ├── HOWTO.md                    # Deployment & ops guide
 ├── README.md                   # Project overview
+├── SEARCH_SUBMISSION_GUIDE.md  # Search-engine / AI discovery rollout guide
 ├── USER_GUIDE.md               # End-user documentation
 ├── TECHNICAL_REFERENCE.md      # This file
 │
@@ -123,6 +124,10 @@ TaskIt/
 │   ├── manifest.json           # PWA web app manifest
 │   ├── favicon.png
 │   ├── apple-touch-icon.png
+│   ├── og-image.png            # Social share preview image for Open Graph / Twitter cards
+│   ├── robots.txt              # Search-engine and crawler directives
+│   ├── sitemap.xml             # Public-page XML sitemap
+│   ├── llms.txt                # AI crawler summary / discovery hints
 │   ├── howto.html              # Static how-to page
 │   ├── privacy-policy.html     # Static privacy policy page
 │   ├── user-guide.html         # Static user guide page
@@ -1320,6 +1325,8 @@ Exports:
 
 The entire application UI and all client-side logic is contained in a single HTML file. All JavaScript is inline (`<script>` tag). CSS comes from `app.css` and `tailwind.css`. The file is ~4000 lines.
 
+For unauthenticated users, the top of the file renders the public marketing / landing experience, including SEO metadata, Open Graph / Twitter cards, JSON-LD structured data, competitor comparison copy, and a visible FAQ block. Authenticated users continue into the SPA proper after login.
+
 ---
 
 ### 10.1 Global State Variables
@@ -2112,4 +2119,4 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.16.3*
+*End of Technical Reference Manual — TaskIt! v1.17.0*

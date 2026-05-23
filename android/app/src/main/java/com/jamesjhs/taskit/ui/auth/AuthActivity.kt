@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.ui.auth
+package com.jamesjhs.taskit.ui.auth
 
 import android.content.Intent
 import android.os.Bundle
@@ -6,16 +6,16 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.jamesjhs.jobber.R
-import com.jamesjhs.jobber.api.ApiClient
-import com.jamesjhs.jobber.data.TokenManager
-import com.jamesjhs.jobber.models.LoginRequest
-import com.jamesjhs.jobber.models.RegisterRequest
-import com.jamesjhs.jobber.ui.main.MainActivity
+import com.jamesjhs.taskit.R
+import com.jamesjhs.taskit.api.ApiClient
+import com.jamesjhs.taskit.data.TokenManager
+import com.jamesjhs.taskit.models.LoginRequest
+import com.jamesjhs.taskit.models.RegisterRequest
+import com.jamesjhs.taskit.ui.main.MainActivity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-import com.jamesjhs.jobber.models.VerifyOtpRequest
+import com.jamesjhs.taskit.models.VerifyOtpRequest
 
 class AuthActivity : AppCompatActivity() {
     private lateinit var tokenManager: TokenManager

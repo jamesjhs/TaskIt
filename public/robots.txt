@@ -1,0 +1,21 @@
+# Self-hosters: replace taskit.jahosi.co.uk with your own canonical hostname below.
+# That includes the sitemap URL at the bottom of this file.
+User-agent: *
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+Sitemap: https://taskit.jahosi.co.uk/sitemap.xml

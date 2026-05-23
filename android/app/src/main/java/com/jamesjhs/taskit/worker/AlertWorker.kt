@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.worker
+package com.jamesjhs.taskit.worker
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -8,12 +8,12 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.jamesjhs.jobber.R
-import com.jamesjhs.jobber.api.ApiClient
-import com.jamesjhs.jobber.data.TokenManager
-import com.jamesjhs.jobber.models.Task
-import com.jamesjhs.jobber.ui.main.MainActivity
-import com.jamesjhs.jobber.ui.main.TaskDetailActivity
+import com.jamesjhs.taskit.R
+import com.jamesjhs.taskit.api.ApiClient
+import com.jamesjhs.taskit.data.TokenManager
+import com.jamesjhs.taskit.models.Task
+import com.jamesjhs.taskit.ui.main.MainActivity
+import com.jamesjhs.taskit.ui.main.TaskDetailActivity
 import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -102,7 +102,7 @@ class AlertWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
 
     private fun showAlertNotification(message: String) {
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channelId = "jobber_alerts"
+        val channelId = "taskit_alerts"
 
         val channel = NotificationChannel(channelId, "TaskIt! Alerts", NotificationManager.IMPORTANCE_DEFAULT)
         notificationManager.createNotificationChannel(channel)

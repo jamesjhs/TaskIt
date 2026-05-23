@@ -776,6 +776,18 @@ a:hover { text-decoration: underline; }
   color: #fff;
   letter-spacing: -.01em;
 }
+.lp-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.lp-nav-links a {
+  color: rgba(255,255,255,0.78);
+  text-decoration: none;
+  font-size: .88rem;
+  font-weight: 700;
+}
+.lp-nav-links a:hover { color: #fff; }
 .lp-nav-actions {
   display: flex;
   gap: 8px;
@@ -871,6 +883,9 @@ a:hover { text-decoration: underline; }
   margin-bottom: 14px;
 }
 .lp-btn-hero-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 15px 30px;
   border-radius: 12px;
   font-size: 1.05rem;
@@ -882,10 +897,14 @@ a:hover { text-decoration: underline; }
   transition: opacity .15s, transform .1s, box-shadow .15s;
   box-shadow: 0 4px 20px rgba(0,0,0,0.18);
   min-height: 52px;
+  text-decoration: none;
 }
 .lp-btn-hero-primary:hover { opacity: .92; box-shadow: 0 6px 28px rgba(0,0,0,0.22); }
 .lp-btn-hero-primary:active { transform: scale(.97); }
 .lp-btn-hero-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 15px 30px;
   border-radius: 12px;
   font-size: 1.05rem;
@@ -896,12 +915,30 @@ a:hover { text-decoration: underline; }
   cursor: pointer;
   transition: background .15s, border-color .15s;
   min-height: 52px;
+  text-decoration: none;
 }
 .lp-btn-hero-outline:hover { background: rgba(255,255,255,0.12); border-color: #fff; }
 .lp-hero-note {
   font-size: .82rem;
   color: rgba(255,255,255,0.55);
   margin-top: 2px;
+}
+.lp-hero-proof {
+  max-width: 760px;
+  margin: 18px auto 14px;
+  padding: 0;
+}
+.lp-hero-proof li {
+  background: rgba(255,255,255,.11);
+  border: 1px solid rgba(255,255,255,.18);
+  color: rgba(255,255,255,.88);
+  border-radius: 14px;
+  padding: 12px 14px;
+  text-align: left;
+  font-size: .9rem;
+  line-height: 1.55;
+  list-style: none;
+  margin-top: 10px;
 }
 
 /* ── Stats strip ─────────────────────────────────────────────────── */
@@ -1368,56 +1405,87 @@ a:hover { text-decoration: underline; }
 .lp-step p  { font-size: .88rem; color: #6b7280; line-height: 1.6; }
 
 /* ── Testimonials ─────────────────────────────────────────────────── */
-.lp-testimonials-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 20px;
-}
-.lp-testimonial {
+/* ── Comparison ───────────────────────────────────────────────────── */
+.lp-compare-bg { background: #fff; }
+.lp-compare-wrap {
+  overflow-x: auto;
   background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 2px 14px rgba(0,0,0,0.07);
-  border: 1px solid #f1f5f9;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  box-shadow: 0 8px 30px rgba(15,23,42,.06);
 }
-.lp-testimonial-stars {
-  color: #f59e0b;
-  font-size: 1rem;
-  margin-bottom: 12px;
-  letter-spacing: 2px;
+.lp-compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
 }
-.lp-testimonial-text {
+.lp-compare-table th,
+.lp-compare-table td {
+  padding: 16px 18px;
+  border-bottom: 1px solid #eef2f7;
+  text-align: left;
   font-size: .9rem;
   color: #374151;
-  line-height: 1.65;
-  font-style: italic;
-  margin-bottom: 16px;
 }
-.lp-testimonial-author {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.lp-testimonial-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: .95rem;
+.lp-compare-table thead th {
+  background: #f8faff;
+  color: #111827;
+  font-size: .85rem;
   font-weight: 800;
-  color: #fff;
-  flex-shrink: 0;
+  letter-spacing: .04em;
+  text-transform: uppercase;
 }
-.lp-testimonial-name  { font-size: .88rem; font-weight: 700; color: #1a1a2e; }
-.lp-testimonial-role  { font-size: .78rem; color: #9ca3af; }
-.lp-testimonial-disclaimer {
-  text-align: center;
-  font-size: .75rem;
+.lp-compare-table tbody th {
+  font-weight: 800;
+  color: #111827;
+  background: #fcfcff;
+}
+.lp-compare-table tbody tr:last-child th,
+.lp-compare-table tbody tr:last-child td { border-bottom: none; }
+.lp-check {
+  color: #15803d;
+  font-weight: 900;
+}
+.lp-cross {
   color: #9ca3af;
-  font-style: italic;
-  margin-top: 24px;
+  font-weight: 900;
+}
+.lp-footnote {
+  margin-top: 14px;
+  text-align: center;
+  font-size: .78rem;
+  color: #6b7280;
+}
+
+/* ── FAQ ──────────────────────────────────────────────────────────── */
+.lp-faq-bg { background: #f8faff; }
+.lp-faq-grid {
+  display: grid;
+  gap: 16px;
+  max-width: 920px;
+  margin: 0 auto;
+}
+.lp-faq-item {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 0 18px;
+  box-shadow: 0 4px 20px rgba(15,23,42,.04);
+}
+.lp-faq-item summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #111827;
+  padding: 18px 0;
+}
+.lp-faq-item summary::-webkit-details-marker { display: none; }
+.lp-faq-item p {
+  margin: 0 0 18px;
+  font-size: .92rem;
+  color: #4b5563;
+  line-height: 1.7;
 }
 
 /* ── Bottom CTA ──────────────────────────────────────────────────── */
@@ -1642,14 +1710,23 @@ a:hover { text-decoration: underline; }
 
 /* ── Responsive tweaks ────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .lp-nav { padding: 12px 16px; }
+  .lp-nav { padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
   .lp-nav-title { font-size: 1.1rem; }
+  .lp-nav-links {
+    width: 100%;
+    order: 3;
+    justify-content: center;
+    gap: 14px;
+    padding-top: 2px;
+  }
+  .lp-nav-links a { font-size: .8rem; }
   .lp-btn-nav-signin { padding: 8px 12px; font-size: .82rem; }
   .lp-btn-nav-started { padding: 8px 12px; font-size: .82rem; }
   .lp-hero { padding: 100px 16px 60px; }
   .lp-stats { grid-template-columns: repeat(2, 1fr); }
   .lp-stat-num { font-size: 1.5rem; }
   .lp-section { padding: 52px 16px; }
+  .lp-hero-proof li { font-size: .86rem; }
   .lp-phones-row { gap: 16px; }
   .lp-phone { width: 170px; }
   .lp-phone-content { font-size: 8px; }
@@ -3289,4 +3366,3 @@ body.arcade-open { overflow: hidden; }
 .sporadic-complete-btn:hover {
   opacity: 0.9;
 }
-

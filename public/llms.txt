@@ -1,0 +1,21 @@
+# TaskIt!
+
+TaskIt is a free, open-source, self-hosted task manager for individuals, households, and small teams.
+
+## Core positioning
+- Self-hosted task management with privacy-first deployment
+- Optional gamification: XP, achievements, streaks, Freeze Credits, titles, friends, and leaderboards
+- Built-in support for recurring tasks, sporadic maintenance tasks, and long-term goals
+- Group collaboration with assignments, progress notes, and secure invite links / QR codes
+- Private ICS calendar feeds plus per-task email/browser reminders
+
+## Public pages
+- Landing page: https://taskit.jahosi.co.uk/
+- User guide: https://taskit.jahosi.co.uk/user-guide.html
+- Deployment guide: https://taskit.jahosi.co.uk/howto.html
+- Privacy policy: https://taskit.jahosi.co.uk/privacy-policy.html
+
+## Accuracy notes
+- TaskIt installs as a PWA, but live task data still requires a connection to the hosted server
+- Gamification is opt-in, not mandatory
+- TaskIt is free and open source, with no subscription tier

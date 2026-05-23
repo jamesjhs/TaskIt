@@ -17,4 +17,5 @@ Allow: /
 User-agent: PerplexityBot
 Allow: /
 
+# Update this sitemap hostname if you deploy TaskIt on a different canonical domain.
 Sitemap: https://taskit.jahosi.co.uk/sitemap.xml

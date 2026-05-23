@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.16.3** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.17.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -40,6 +40,7 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - **Persistent login** — optional "Remember me" session storage (30-day JWT in localStorage vs session-only)
 - **Sporadic Tasks** — maintenance tasks with no fixed schedule that reappear after completion and show how long ago they were last done in friendly format with dd/mm/yyyy date (e.g. Haircut, Car service). Fully editable like regular tasks: change title, type, group, delete, or archive. Always visible at the top of the task list, collapsed by default
 - **Long-term Goals** — aspirational goals that live in a dedicated collapsible section at the bottom of the task list, outside the active task queue. Support groups, XP multipliers, and notes. Convert any goal to a deadline task with a single tap
+- **Search-ready marketing site** — landing page includes structured FAQ content, comparison copy, richer Open Graph / Twitter metadata, plus `robots.txt`, `sitemap.xml`, and `llms.txt` discovery assets
 
 ## Gamification Engine
 
@@ -117,6 +118,13 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.17.0
+
+- **🚀 Landing page repositioning** — the homepage now leads with TaskIt's real market differentiators: self-hosting, privacy, recurring and sporadic task tracking, long-term goals, collaboration, and optional gamification. Unsupported claims were removed so the marketing copy matches the shipped product.
+- **🔎 Search / AI crawler optimisation** — added richer metadata, FAQ structured data, comparison content, `robots.txt`, `sitemap.xml`, and `llms.txt` to improve discoverability in search engines, social previews, and AI answer engines.
+- **📘 Search submission guide** — added `SEARCH_SUBMISSION_GUIDE.md` with the recommended rollout path for Google, Bing, Yandex, and AI-driven discovery channels.
+- **🔢 Version bump** — server package metadata and documentation updated to 1.17.0.
 
 ### v1.16.3
 

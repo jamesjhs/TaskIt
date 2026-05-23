@@ -3,26 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>TaskIt! – The Gamified Task Manager That Makes Productivity Addictive</title>
+  <title>TaskIt! | Free Self-Hosted Task Manager with Optional Gamification</title>
 
   <!-- SEO / AI-engine optimisation -->
-  <meta name="description" content="TaskIt! is the free, self-hosted task manager that actually motivates you. Earn XP, unlock achievements, and build streaks as you conquer your home, team, and personal goals. Collaborate with groups, set recurring tasks, integrate with your calendar — all on your own server, forever free." />
-  <meta name="keywords" content="task manager, to-do app, self-hosted, open source, gamification, XP, achievements, streak, task management, team collaboration, recurring tasks, free task manager" />
-  <meta name="robots" content="index, follow" />
+  <meta name="description" content="Free, self-hosted task manager with recurring tasks, group collaboration, calendar sync, reminders, and optional XP-based gamification." />
+  <meta name="keywords" content="self-hosted task manager, open source task app, recurring tasks, gamified todo app, household task manager, team task manager, productivity app" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <meta name="author" content="J Rowson" />
+  <meta name="application-name" content="TaskIt!" />
+  <link rel="canonical" href="https://taskit.jahosi.co.uk/" />
 
   <!-- Open Graph (Facebook, LinkedIn, AI crawlers) -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="TaskIt! – Free Self-Hosted Task Manager with Gamification" />
-  <meta property="og:description" content="Manage every job, big or small. TaskIt! combines powerful collaborative task management with an opt-in gamification engine — XP, skill trees, achievements, and streaks. Free and open source." />
-  <meta property="og:image" content="/apple-touch-icon.png" />
+  <meta property="og:title" content="TaskIt! | The free self-hosted task manager that actually motivates you" />
+  <meta property="og:description" content="Run recurring tasks, household jobs, long-term goals, and team work from one privacy-first app with optional XP, streaks, and achievements." />
+  <meta property="og:url" content="https://taskit.jahosi.co.uk/" />
+  <meta property="og:locale" content="en_GB" />
+  <meta property="og:image" content="https://taskit.jahosi.co.uk/og-image.png" />
+  <meta property="og:image:alt" content="TaskIt landing page showing self-hosted task management, recurring work, collaboration, and optional gamification." />
   <meta property="og:site_name" content="TaskIt!" />
 
   <!-- Twitter / X card -->
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="TaskIt! – Free Self-Hosted Task Manager with Gamification" />
-  <meta name="twitter:description" content="Free open-source task manager with XP, skill trees, achievements, streaks, group collaboration, recurring tasks, and calendar integration." />
-  <meta name="twitter:image" content="/apple-touch-icon.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="TaskIt! | Free self-hosted task management with optional gamification" />
+  <meta name="twitter:description" content="Recurring tasks, sporadic maintenance, long-term goals, groups, reminders, calendar sync, and optional XP-based motivation." />
+  <meta name="twitter:image" content="https://taskit.jahosi.co.uk/og-image.png" />
+  <meta name="twitter:image:alt" content="TaskIt landing page showing self-hosted task management, collaboration, and optional gamification." />
 
   <!-- Structured data — SoftwareApplication (JSON-LD) -->
   <script type="application/ld+json">
@@ -32,27 +38,90 @@
     "name": "TaskIt!",
     "applicationCategory": "ProductivityApplication",
     "operatingSystem": "Web, Android",
-    "description": "Free, open-source, self-hosted collaborative task manager with gamification: XP skill trees, personal achievements, streak tracking, freeze credits, recurring tasks, email reminders, group collaboration, and calendar integration.",
+    "description": "Free, open-source, self-hosted collaborative task manager with recurring tasks, sporadic maintenance tracking, long-term goals, reminders, calendar feeds, and optional gamification.",
     "offers": {
       "@type": "Offer",
       "price": "0",
       "priceCurrency": "GBP"
     },
+    "isAccessibleForFree": true,
     "featureList": [
-      "XP-based gamification with overall levels, skill XP breakdown, and dynamic titles",
-      "Personal achievements and streak tracking",
       "Recurring tasks with automatic next-occurrence spawning",
+      "Sporadic maintenance tasks and long-term goals",
       "Group collaboration with QR-code and email invites",
       "Per-task email and popup notification reminders",
       "ICS calendar feed integration",
-      "SQLCipher database encryption at rest",
-      "Self-hosted — your data stays on your server"
+      "Optional gamification with XP, achievements, streaks, and dynamic titles",
+      "Subtasks, progress notes, and task assignment",
+      "Self-hosted deployment with SQLCipher encryption at rest"
     ],
+    "image": "https://taskit.jahosi.co.uk/og-image.png",
     "author": {
       "@type": "Person",
       "name": "J Rowson"
     },
+    "publisher": {
+      "@type": "Organization",
+      "name": "TaskIt!"
+    },
     "url": "https://taskit.jahosi.co.uk"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "TaskIt!",
+    "url": "https://taskit.jahosi.co.uk/",
+    "about": "Self-hosted task management with optional gamification"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is TaskIt really free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. TaskIt is free and open source, with no subscription tier, per-seat pricing, or paid unlocks."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What makes TaskIt different from Todoist, Habitica, or Vikunja?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "TaskIt combines self-hosting, collaborative task management, recurring and sporadic task tracking, and optional gamification in one product. Most alternatives offer only one or two of those strengths."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does TaskIt work offline?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "TaskIt installs as a PWA and caches the app shell for fast loading, but live task data still requires a connection to your server."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is gamification mandatory?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Gamification is opt-in and can be enabled or disabled from your profile without affecting core task management."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Who is TaskIt built for?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "TaskIt is designed for privacy-focused self-hosters, households, small teams, and personal goal trackers who want strong task management without subscriptions or vendor lock-in."
+        }
+      }
+    ]
   }
   </script>
 
@@ -78,6 +147,7 @@
   <!-- PWA / installable web app -->
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#7c3aed" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="TaskIt!" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -97,7 +167,7 @@
 </div>
 
 <!-- ===== LANDING PAGE ===== -->
-<div id="landingPage">
+<main id="landingPage">
 
   <!-- Navigation -->
   <nav class="lp-nav">
@@ -109,6 +179,12 @@
       </div>
       <span class="lp-nav-title">TaskIt!</span>
     </a>
+    <div class="lp-nav-links" aria-label="Landing page sections">
+      <a href="#features">Features</a>
+      <a href="#why-taskit">Why TaskIt</a>
+      <a href="#compare">Compare</a>
+      <a href="#faq">FAQ</a>
+    </div>
     <div class="lp-nav-actions">
       <button onclick="goToAuth('login')" class="lp-btn-nav-signin">Sign In</button>
       <button onclick="goToAuth('register')" class="lp-btn-nav-started">Get Started</button>
@@ -123,132 +199,138 @@
     <div class="lp-hero-float lp-float-streak" aria-hidden="true">🔥 14-day streak!</div>
     <div style="position:relative;z-index:1">
       <div class="lp-hero-eyebrow"><span class="lp-hero-eyebrow-dot"></span>Free Forever · Open Source · Self-Hosted</div>
-      <h1>TaskIt!<br><span>Level up the way you work.</span></h1>
-      <p class="lp-hero-sub">The free, self-hosted task manager that actually motivates you. Earn XP, unlock achievements, and build streaks as you conquer your home, your team, and your goals — on any device, anywhere.</p>
+      <h1>The free self-hosted task manager<br><span>that actually motivates you.</span></h1>
+      <p class="lp-hero-sub">Run recurring work, household jobs, sporadic maintenance, long-term goals, and group collaboration from one privacy-first app. Add reminders, calendar sync, and optional gamification — without subscriptions or vendor lock-in.</p>
       <div class="lp-hero-ctas">
-        <button onclick="goToAuth('register')" class="lp-btn-hero-primary">🚀 Get Started Free</button>
-        <button onclick="goToAuth('login')" class="lp-btn-hero-outline">Sign In</button>
+        <button onclick="goToAuth('register')" class="lp-btn-hero-primary">🚀 Create Free Account</button>
+        <a href="/user-guide.html" class="lp-btn-hero-outline">Read the Guide</a>
       </div>
       <div class="lp-hero-badges">
-        <span class="lp-hero-badge">📱 Install on any device</span>
+        <span class="lp-hero-badge">📱 Installable PWA</span>
         <span class="lp-hero-badge">🔒 Your data, your server</span>
         <span class="lp-hero-badge">🎮 Gamification optional</span>
-        <span class="lp-hero-badge">🆓 Always free</span>
+        <span class="lp-hero-badge">🔐 SQLCipher supported</span>
       </div>
+      <ul class="lp-hero-proof" aria-label="TaskIt proof points">
+        <li>Three task modes: scheduled tasks, sporadic maintenance, and long-term goals</li>
+        <li>Collaborate with groups, assignees, QR/email invites, progress notes, and subtasks</li>
+        <li>Stay ahead with reminders, in-app alerts, calendar feeds, and optional streak-based motivation</li>
+      </ul>
+      <div class="lp-hero-note">Best fit for self-hosters, households, small teams, and people who want productivity without SaaS lock-in.</div>
     </div>
   </section>
 
   <!-- Stats strip -->
-  <div class="lp-stats">
+  <div class="lp-stats" aria-label="TaskIt highlights">
     <div class="lp-stat-item">
-      <div class="lp-stat-num">🆓</div>
-      <div class="lp-stat-label">Free forever, no subscription</div>
+      <div class="lp-stat-num">3</div>
+      <div class="lp-stat-label">Task modes built in</div>
     </div>
     <div class="lp-stat-item">
       <div class="lp-stat-num">13</div>
       <div class="lp-stat-label">Achievements to unlock</div>
     </div>
     <div class="lp-stat-item">
-      <div class="lp-stat-num">∞</div>
-      <div class="lp-stat-label">Tasks, no limits</div>
+      <div class="lp-stat-num">3</div>
+      <div class="lp-stat-label">Reminder windows per task</div>
     </div>
     <div class="lp-stat-item">
       <div class="lp-stat-num">100%</div>
-      <div class="lp-stat-label">Private &amp; self-hosted</div>
+      <div class="lp-stat-label">Self-hosted and subscription-free</div>
     </div>
   </div>
 
   <!-- Features -->
-  <div class="lp-features-bg">
+  <section id="features" class="lp-features-bg">
     <div class="lp-section lp-section-center">
       <p class="lp-section-label">Everything you need</p>
-      <h2 class="lp-section-heading">Everything you need. Nothing you don't.</h2>
-      <p class="lp-section-sub">TaskIt! packs powerful task management into a lightweight, mobile-first app — with built-in gamification, real collaboration, and smart reminders that keep you ahead of the game.</p>
+      <h2 class="lp-section-heading">Built for real work, real homes, and real momentum</h2>
+      <p class="lp-section-sub">TaskIt combines strong task management, privacy-first hosting, and optional motivation systems in one lightweight app. The result: less juggling, less forgetting, and more follow-through.</p>
       <div class="lp-features-grid">
-        <div class="lp-feature-card">
+        <article class="lp-feature-card">
           <div class="lp-feature-icon lp-feature-icon-blue">📋</div>
           <h3>Personal &amp; Group Tasks</h3>
-          <p>Create tasks for yourself or assign them to a group. Filter by status, type, or assignee in a single tap.</p>
-        </div>
-        <div class="lp-feature-card">
+          <p>Create tasks for yourself or collaborate in groups with assignments, filters, and a clear status flow from Not Started to Complete.</p>
+        </article>
+        <article class="lp-feature-card">
           <div class="lp-feature-icon lp-feature-icon-purple">👥</div>
-          <h3>Team Collaboration</h3>
-          <p>Share groups with colleagues, family, or contractors. Invite via QR code, link, or email — no accounts needed to join.</p>
-        </div>
-        <div class="lp-feature-card">
+          <h3>Secure Group Invites</h3>
+          <p>Invite people with secure links, QR codes, or email invitations, then manage members, admins, and shared XP visibility inside each group.</p>
+        </article>
+        <article class="lp-feature-card">
           <div class="lp-feature-icon lp-feature-icon-amber">🔔</div>
-          <h3>Smart Reminders</h3>
-          <p>Get email and in-app alerts 7 days, 1 day, and on the day a task is due. Never miss a deadline again.</p>
-        </div>
-        <div class="lp-feature-card">
+          <h3>Reminders &amp; Alerts</h3>
+          <p>Choose email and browser reminders 7 days, 1 day, or on the day a task is due, plus in-app alerts for overdue and due-soon work.</p>
+        </article>
+        <article class="lp-feature-card">
           <div class="lp-feature-icon lp-feature-icon-green">🔄</div>
           <h3>Recurring Tasks</h3>
-          <p>Set tasks to repeat daily, weekly, monthly, or yearly. Perfect for maintenance schedules, meetings, and routines.</p>
-        </div>
-        <div class="lp-feature-card">
+          <p>Repeat daily, weekly, monthly, or yearly tasks automatically. Complete one occurrence and the next one is created for you.</p>
+        </article>
+        <article class="lp-feature-card">
+          <div class="lp-feature-icon lp-feature-icon-cyan">🛠️</div>
+          <h3>Sporadic Tasks</h3>
+          <p>Track unscheduled maintenance work like haircuts, boiler services, or gutter cleaning, and instantly see how long it has been since the last completion.</p>
+        </article>
+        <article class="lp-feature-card">
+          <div class="lp-feature-icon lp-feature-icon-rose">🎯</div>
+          <h3>Long-term Goals</h3>
+          <p>Keep aspirational goals in their own section until you are ready to turn them into deadline-driven tasks.</p>
+        </article>
+        <article class="lp-feature-card">
           <div class="lp-feature-icon lp-feature-icon-cyan">📅</div>
           <h3>Calendar Integration</h3>
-          <p>Subscribe to your tasks in Google Calendar, Apple Calendar, or Outlook via a private ICS feed link.</p>
-        </div>
-        <div class="lp-feature-card">
-          <div class="lp-feature-icon lp-feature-icon-rose">📝</div>
-          <h3>Progress Notes</h3>
-          <p>Add timestamped progress notes to any task. Keep a full audit trail of what was done, when, and by whom.</p>
-        </div>
-        <div class="lp-feature-card">
-          <div class="lp-feature-icon lp-feature-icon-purple">🎮</div>
-          <h3>Gamification Engine</h3>
-          <p>Earn XP, level up, unlock achievements, and track streaks. See your XP breakdown by skill. Use Freeze Credits to protect a streak when life gets busy.</p>
-        </div>
-        <div class="lp-feature-card">
+          <p>Subscribe to a private ICS feed in Google Calendar, Apple Calendar, or Outlook to keep TaskIt aligned with the rest of your schedule.</p>
+        </article>
+        <article class="lp-feature-card">
           <div class="lp-feature-icon lp-feature-icon-amber">✅</div>
-          <h3>Sub-tasks</h3>
-          <p>Break big tasks into bite-sized steps. Check off sub-tasks individually and watch even the most complex jobs shrink before your eyes.</p>
-        </div>
-        <div class="lp-feature-card">
+          <h3>Subtasks &amp; Notes</h3>
+          <p>Break work into checklist steps, track progress visually, and keep timestamped progress notes for handovers, audits, or personal context.</p>
+        </article>
+        <article class="lp-feature-card">
+          <div class="lp-feature-icon lp-feature-icon-purple">🎮</div>
+          <h3>Optional Gamification</h3>
+          <p>Earn XP, unlock achievements, protect streaks with Freeze Credits, and see your progress by skill — only if you want that extra push.</p>
+        </article>
+        <article class="lp-feature-card">
           <div class="lp-feature-icon lp-feature-icon-rose">🤝</div>
           <h3>Friends &amp; Leaderboards</h3>
-          <p>Add friends, compare XP scores, and compete on leaderboards. A little friendly rivalry goes a long way when the bins need taking out.</p>
-        </div>
-        <div class="lp-feature-card">
-          <div class="lp-feature-icon lp-feature-icon-cyan">📧</div>
-          <h3>Email Digest</h3>
-          <p>Get a daily or weekly summary of your upcoming tasks delivered straight to your inbox — stay on top of your schedule without opening the app.</p>
-        </div>
+          <p>Add friends, share friend keys, and compare progress across leaderboards without turning the core product into a full-on game.</p>
+        </article>
       </div>
     </div>
-  </div>
+  </section>
 
   <!-- Why TaskIt? -->
-  <div class="lp-why-bg">
+  <section id="why-taskit" class="lp-why-bg">
     <div class="lp-section lp-section-center">
       <p class="lp-section-label">Built different</p>
       <h2 class="lp-section-heading">Why TaskIt! stands out</h2>
-      <p class="lp-section-sub">There's no shortage of task managers. But TaskIt! was built for people who want real control, genuine motivation, and effortless collaboration — without paying a penny or handing over their data.</p>
+      <p class="lp-section-sub">Most tools give you cloud convenience, self-hosted privacy, or motivation mechanics. TaskIt combines all three — while staying lightweight, flexible, and honest about what it does.</p>
       <div class="lp-why-grid">
         <div class="lp-why-card">
           <span class="lp-why-icon">🔒</span>
           <h3>Privacy First</h3>
-          <p>Self-host on your own server, VPS, or Raspberry Pi. Your tasks never touch a third-party cloud. SQLCipher encryption at rest means your data stays yours — always.</p>
+          <p>Self-host on your own server, VPS, or Raspberry Pi. Pair that with SQLCipher at-rest encryption and your task history stays under your control.</p>
         </div>
         <div class="lp-why-card">
           <span class="lp-why-icon">🎮</span>
-          <h3>Gamification Built In</h3>
-          <p>Most task managers ignore the motivation problem. TaskIt! solves it with XP, levels, skill XP breakdowns, achievements, streaks, Freeze Credits, and earned Titles — all optional, all rewarding.</p>
+          <h3>Motivation Without the Gimmicks</h3>
+          <p>TaskIt solves the motivation problem with optional XP, achievements, streaks, titles, and Freeze Credits — without forcing everyone into a role-playing game aesthetic.</p>
         </div>
         <div class="lp-why-card">
-          <span class="lp-why-icon">🆓</span>
-          <h3>Free. Forever.</h3>
-          <p>No freemium tier. No Pro plan. No subscription. TaskIt! is fully open source and completely free — for one person, one family, or a hundred-person team.</p>
+          <span class="lp-why-icon">🧩</span>
+          <h3>Task Types Other Apps Ignore</h3>
+          <p>Handle normal scheduled work, unscheduled maintenance, and long-term goals in one system instead of hacking together separate lists and reminders.</p>
         </div>
         <div class="lp-why-card">
           <span class="lp-why-icon">🌐</span>
-          <h3>Works Everywhere</h3>
-          <p>Install as a PWA on iPhone, Android, Mac, or Windows. Or use the native Android app. One product, every device — with calendar sync and offline support baked in.</p>
+          <h3>Fast on Any Device</h3>
+          <p>Use the web app anywhere, install it as a PWA on phone or desktop, and launch into a cached app shell quickly while your live task data stays synced with your server.</p>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
   <!-- Screenshots -->
   <div class="lp-screens-bg">
@@ -780,7 +862,7 @@
         <div class="lp-step">
           <div class="lp-step-num">3</div>
           <h3>Invite your team</h3>
-          <p>Create a group and share the invite link or QR code. Collaborators join instantly and can see tasks right away.</p>
+          <p>Create a group and share a secure invite link or QR code. Collaborators join with their own account and can jump straight into the shared workload.</p>
         </div>
         <div class="lp-step">
           <div class="lp-step-num">4</div>
@@ -796,61 +878,109 @@
     </div>
   </div>
 
-  <!-- Testimonials -->
-  <div style="background:#fff">
+  <!-- Comparison -->
+  <section id="compare" class="lp-compare-bg">
     <div class="lp-section lp-section-center">
-      <p class="lp-section-label">Real stories</p>
-      <h2 class="lp-section-heading">Built for people like you</h2>
-      <p class="lp-section-sub">From family homes to construction sites, from habit trackers to remote workers — TaskIt! fits the way real people actually live and work.</p>
-      <div class="lp-testimonials-grid">
-        <div class="lp-testimonial">
-          <div class="lp-testimonial-stars">★★★★★</div>
-          <p class="lp-testimonial-text">"We run a family of five and TaskIt! has completely transformed how we manage household tasks. The kids can see what's assigned to them, and the recurring reminders mean the bins never go out late!"</p>
-          <div class="lp-testimonial-author">
-            <div class="lp-testimonial-avatar" style="background:#7c3aed">S</div>
-            <div>
-              <p class="lp-testimonial-name">Sarah M.</p>
-              <p class="lp-testimonial-role">Parent &amp; household manager</p>
-            </div>
-          </div>
-        </div>
-        <div class="lp-testimonial">
-          <div class="lp-testimonial-stars">★★★★★</div>
-          <p class="lp-testimonial-text">"I manage a team of 14 on a busy construction site. TaskIt! gives us a clear view of every task, who's responsible, and what's done. The progress notes are brilliant for handovers."</p>
-          <div class="lp-testimonial-author">
-            <div class="lp-testimonial-avatar" style="background:#059669">D</div>
-            <div>
-              <p class="lp-testimonial-name">Dave K.</p>
-              <p class="lp-testimonial-role">Site manager, construction</p>
-            </div>
-          </div>
-        </div>
-        <div class="lp-testimonial">
-          <div class="lp-testimonial-stars">★★★★★</div>
-          <p class="lp-testimonial-text">"I use it for my personal goals — runs, reading, study. The recurring tasks keep me accountable every week without me having to think about it. The streak counter is addictive — I'm on a 21-day run streak!"</p>
-          <div class="lp-testimonial-author">
-            <div class="lp-testimonial-avatar" style="background:#7c3aed">A</div>
-            <div>
-              <p class="lp-testimonial-name">Aisha R.</p>
-              <p class="lp-testimonial-role">Student &amp; fitness enthusiast</p>
-            </div>
-          </div>
-        </div>
-        <div class="lp-testimonial">
-          <div class="lp-testimonial-stars">★★★★★</div>
-          <p class="lp-testimonial-text">"The gamification is what hooked me. Watching my Household skill level up to 'Expert' after a month of keeping on top of things actually made me feel proud. The achievements are a nice touch too."</p>
-          <div class="lp-testimonial-author">
-            <div class="lp-testimonial-avatar" style="background:#d97706">M</div>
-            <div>
-              <p class="lp-testimonial-name">Marcus T.</p>
-              <p class="lp-testimonial-role">Remote worker &amp; self-improvement enthusiast</p>
-            </div>
-          </div>
-        </div>
+      <p class="lp-section-label">Why buyers choose TaskIt</p>
+      <h2 class="lp-section-heading">A better fit than cloud-only or plain self-hosted tools</h2>
+      <p class="lp-section-sub">Cloud apps are convenient. Gamified apps are motivating. Self-hosted tools are private. TaskIt brings those strengths together without paid tiers or unnecessary complexity.</p>
+      <div class="lp-compare-wrap">
+        <table class="lp-compare-table">
+          <thead>
+            <tr>
+              <th scope="col">Capability</th>
+              <th scope="col">TaskIt</th>
+              <th scope="col">Todoist</th>
+              <th scope="col">Habitica</th>
+              <th scope="col">Vikunja</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Self-hosted</th>
+              <td><span class="lp-check">✓</span> Yes</td>
+              <td><span class="lp-cross">—</span> No</td>
+              <td><span class="lp-cross">—</span> No</td>
+              <td><span class="lp-check">✓</span> Yes</td>
+            </tr>
+            <tr>
+              <th scope="row">Optional gamification</th>
+              <td><span class="lp-check">✓</span> XP, achievements, streaks</td>
+              <td><span class="lp-cross">—</span> Light karma only</td>
+              <td><span class="lp-cross">—</span> Always-on RPG</td>
+              <td><span class="lp-cross">—</span> None</td>
+            </tr>
+            <tr>
+              <th scope="row">Sporadic maintenance tracking</th>
+              <td><span class="lp-check">✓</span> Built in</td>
+              <td><span class="lp-cross">—</span> Workaround needed</td>
+              <td><span class="lp-cross">—</span> Not purpose-built</td>
+              <td><span class="lp-cross">—</span> Not purpose-built</td>
+            </tr>
+            <tr>
+              <th scope="row">Group collaboration</th>
+              <td><span class="lp-check">✓</span> Groups, assignees, notes</td>
+              <td><span class="lp-check">✓</span> Shared projects</td>
+              <td><span class="lp-check">✓</span> Parties and tasks</td>
+              <td><span class="lp-check">✓</span> Teams and projects</td>
+            </tr>
+            <tr>
+              <th scope="row">Calendar feed</th>
+              <td><span class="lp-check">✓</span> Private ICS</td>
+              <td><span class="lp-check">✓</span> Yes</td>
+              <td><span class="lp-cross">—</span> No</td>
+              <td><span class="lp-check">✓</span> Yes</td>
+            </tr>
+            <tr>
+              <th scope="row">Subscription required</th>
+              <td><span class="lp-cross">—</span> Never</td>
+              <td><span class="lp-check">✓</span> For full power</td>
+              <td><span class="lp-check">✓</span> For extras</td>
+              <td><span class="lp-cross">—</span> No</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <p class="lp-testimonial-disclaimer">⚠️ Testimonials shown are illustrative examples only and do not represent real users.</p>
+      <p class="lp-footnote">High-level product comparison based on broad public positioning and the feature set shipped in this repository.</p>
     </div>
-  </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="lp-faq-bg">
+    <div class="lp-section">
+      <div class="lp-section-center">
+        <p class="lp-section-label">FAQ</p>
+        <h2 class="lp-section-heading">Questions buyers ask before they switch</h2>
+        <p class="lp-section-sub">Clear answers for search engines, AI crawlers, and the people deciding whether TaskIt belongs in their stack.</p>
+      </div>
+      <div class="lp-faq-grid">
+        <details class="lp-faq-item" open>
+          <summary>What is TaskIt best at?</summary>
+          <p>TaskIt is strongest when you need one self-hosted system for personal tasks, shared household work, recurring maintenance, and small-team collaboration — with optional gamification layered on top.</p>
+        </details>
+        <details class="lp-faq-item">
+          <summary>Is TaskIt really free?</summary>
+          <p>Yes. There is no subscription, no per-seat pricing, and no paid upgrade path. You host it yourself and keep the full feature set.</p>
+        </details>
+        <details class="lp-faq-item">
+          <summary>What makes TaskIt different from Todoist, Habitica, or Vikunja?</summary>
+          <p>TaskIt sits in the gap between them: more private than cloud-only apps, more motivating than plain task managers, and more approachable than heavyweight self-hosted project platforms.</p>
+        </details>
+        <details class="lp-faq-item">
+          <summary>Does TaskIt work offline?</summary>
+          <p>TaskIt can be installed as a PWA and caches its app shell for fast launch, but live task data, reminders, and calendar feeds still depend on your server being reachable.</p>
+        </details>
+        <details class="lp-faq-item">
+          <summary>Is the gamification mandatory?</summary>
+          <p>No. XP, achievements, streaks, titles, and leaderboards are opt-in. If you just want task management, you can use TaskIt that way.</p>
+        </details>
+        <details class="lp-faq-item">
+          <summary>Who should use TaskIt?</summary>
+          <p>It is a strong fit for privacy-focused self-hosters, families coordinating chores and maintenance, small teams with no software budget, and personal goal trackers who need more momentum than a plain to-do list gives them.</p>
+        </details>
+      </div>
+    </div>
+  </section>
 
   <!-- Bottom CTA -->
   <div class="lp-cta-bg">
@@ -869,12 +999,13 @@
     <div class="lp-footer-links">
       <a href="/privacy-policy.html">Privacy Policy</a>
       <a href="/user-guide.html">User Guide</a>
+      <a href="https://github.com/jamesjhs/TaskIt" target="_blank" rel="noopener">GitHub</a>
       <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a>
     </div>
     <p>TaskIt! &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; The free, self-hosted task manager that levels you up</p>
   </footer>
 
-</div><!-- end #landingPage -->
+</main><!-- end #landingPage -->
 
 <!-- ===== AUTH PAGE ===== -->
 <div id="authPage" class="auth-page hidden">
@@ -1011,7 +1142,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.16.0</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
+      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.17.0</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>

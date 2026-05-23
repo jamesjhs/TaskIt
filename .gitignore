@@ -13,6 +13,7 @@ captures/
 .externalNativeBuild/
 .cxx/
 *.png
+!public/og-image.png
 *.aab
 *.apk
 public/collectables/

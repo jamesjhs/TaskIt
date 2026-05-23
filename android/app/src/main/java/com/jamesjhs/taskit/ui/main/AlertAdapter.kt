@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.ui.main
+package com.jamesjhs.taskit.ui.main
 
 import android.graphics.Color
 import android.view.LayoutInflater
@@ -6,8 +6,8 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.jamesjhs.jobber.databinding.ItemAlertBinding
-import com.jamesjhs.jobber.models.Alert
+import com.jamesjhs.taskit.databinding.ItemAlertBinding
+import com.jamesjhs.taskit.models.Alert
 import java.text.SimpleDateFormat
 import java.util.*
 

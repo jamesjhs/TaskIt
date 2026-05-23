@@ -1,4 +1,4 @@
-package com.jamesjhs.jobber.ui.main
+package com.jamesjhs.taskit.ui.main
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -10,11 +10,11 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.jamesjhs.jobber.R
-import com.jamesjhs.jobber.api.ApiClient
-import com.jamesjhs.jobber.data.TokenManager
-import com.jamesjhs.jobber.databinding.FragmentGroupsBinding
-import com.jamesjhs.jobber.models.Group
+import com.jamesjhs.taskit.R
+import com.jamesjhs.taskit.api.ApiClient
+import com.jamesjhs.taskit.data.TokenManager
+import com.jamesjhs.taskit.databinding.FragmentGroupsBinding
+import com.jamesjhs.taskit.models.Group
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 

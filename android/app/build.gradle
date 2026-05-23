@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.jamesjhs.jobber'
+    namespace 'com.jamesjhs.taskit'
     compileSdk 36
 
     defaultConfig {
-        applicationId "com.jamesjhs.jobber"
+        applicationId "com.jamesjhs.taskit"
         minSdk 26
         targetSdk 36
         versionCode 1

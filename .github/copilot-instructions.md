@@ -23,7 +23,7 @@ npm start                  # Run compiled dist/index.js
 - **Entry point:** `server/src/index.ts`
 - **Tech stack:** Express, TypeScript, SQLite (with optional encryption via SQLCipher)
 - **Port:** Configurable via `PORT` env var (default 3000)
-- **Database:** `server/jobber.db` (SQLite with `.db-shm` and `.db-wal` WAL files)
+- **Database:** `server/taskit.db` (SQLite with `.db-shm` and `.db-wal` WAL files)
 - **Authentication:** JWT-based with email verification and optional OTP (two-factor)
 - **CORS:** Configured via `CORS_ORIGIN` env var
 

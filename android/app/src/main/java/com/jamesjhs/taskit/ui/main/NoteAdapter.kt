@@ -1,12 +1,12 @@
-package com.jamesjhs.jobber.ui.main
+package com.jamesjhs.taskit.ui.main
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.jamesjhs.jobber.R
-import com.jamesjhs.jobber.api.TaskNote
+import com.jamesjhs.taskit.R
+import com.jamesjhs.taskit.api.TaskNote
 import java.text.SimpleDateFormat
 import java.util.*
 

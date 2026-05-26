@@ -1528,7 +1528,7 @@
           </div>
           <div class="form-group">
             <label for="vapidPrivateKey">Private Key</label>
-            <input id="vapidPrivateKey" type="password" placeholder="leave blank to keep current" class="input" autocomplete="new-password" />
+            <input id="vapidPrivateKey" type="password" placeholder="leave blank to keep current" class="input" autocomplete="off" />
           </div>
           <div id="vapidPrivateKeyStatus" style="font-size:.82rem;color:#6b7280;margin:-8px 0 10px"></div>
           <div class="form-group">
@@ -5301,7 +5301,7 @@ async function handleVapidSave(e) {
 }
 
 async function handleVapidGenerate() {
-  if (!confirm('Generate a new VAPID key pair? This will fill in the public and private key fields — click "Save VAPID Settings" to apply them.')) return;
+  if (!confirm('Generate a new VAPID key pair?\n\nWARNING: Saving new keys will invalidate all existing push subscriptions — users will need to re-subscribe for push notifications.\n\nThe new keys will be filled into the fields. Click "Save VAPID Settings" to apply them.')) return;
   try {
     const keys = await api('GET', '/admin/vapid/generate');
     document.getElementById('vapidPublicKey').value = keys.publicKey;

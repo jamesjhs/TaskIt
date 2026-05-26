@@ -143,15 +143,19 @@ router.put('/vapid', (req: Request, res: Response): void => {
     const s = subject.trim();
     const mailtoMatch = s.match(/^mailto:([^\s]+)$/i);
     if (mailtoMatch) {
-      // Basic email sanity: must contain exactly one @ with non-empty local and domain parts
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mailtoMatch[1])) {
+      // Basic email sanity: must contain exactly one @ with non-empty parts before and after,
+      // and a dot somewhere in the domain. Checked without nested quantifiers to avoid ReDoS.
+      const email = mailtoMatch[1];
+      const atIdx = email.indexOf('@');
+      const dotIdx = email.lastIndexOf('.');
+      if (atIdx <= 0 || atIdx !== email.lastIndexOf('@') || dotIdx <= atIdx + 1 || dotIdx >= email.length - 1) {
         res.status(400).json({ error: 'subject mailto: URI must contain a valid email address' });
         return;
       }
     } else {
       try {
         const url = new URL(s);
-        if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+        if (url.protocol !== 'https:') {
           res.status(400).json({ error: 'subject must be a mailto: URI or an https:// URL' });
           return;
         }
@@ -187,8 +191,9 @@ router.put('/vapid', (req: Request, res: Response): void => {
   const newPrivateKey = (typeof privateKey === 'string' && privateKey.trim() !== '') ? privateKey.trim() : (current?.private_key || '');
   const newSubject = (typeof subject === 'string' && subject.trim() !== '') ? subject.trim() : (current?.subject || '');
 
-  // NOTE: The private key is stored in plaintext. Enable DB_ENCRYPTION_KEY in your .env
-  // (SQLCipher full-file encryption) to protect key material at rest in production.
+  // WARNING: The private key is stored in plaintext in the database.
+  // You MUST enable DB_ENCRYPTION_KEY in your .env (SQLCipher full-file encryption)
+  // to protect this key material at rest in production deployments.
   db.prepare('UPDATE vapid_settings SET public_key = ?, private_key = ?, subject = ?, updated_at = ? WHERE id = 1')
     .run(newPublicKey, newPrivateKey, newSubject, Date.now());
 

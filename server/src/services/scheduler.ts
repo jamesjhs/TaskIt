@@ -3,7 +3,8 @@ import webpush from 'web-push';
 import db from '../db';
 import { sendTaskReminder } from './mail';
 import { resetOverdueStreaks } from './gamification';
-import { VAPID, BASE_URL } from '../config';
+import { getVapidFromDb } from '../webpush-config';
+import { BASE_URL } from '../config';
 
 interface TaskRow {
   id: string;
@@ -46,7 +47,8 @@ const REMINDER_WINDOWS: Array<{ type: string; minMs: number; maxMs: number; labe
  * this to decide whether to write the deduplication record in `task_reminders_sent`.
  */
 async function sendPushNotificationsForUser(userId: string, taskId: string, taskTitle: string, windowLabel: string): Promise<boolean> {
-  if (!VAPID.publicKey || !VAPID.privateKey) return false;
+  const { publicKey, privateKey } = getVapidFromDb();
+  if (!publicKey || !privateKey) return false;
 
   const subscriptions = db.prepare(
     'SELECT id, endpoint, keys_p256dh, keys_auth FROM push_subscriptions WHERE user_id = ?'

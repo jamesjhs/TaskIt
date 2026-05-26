@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
-import { VAPID } from '../config';
+import { getVapidFromDb } from '../webpush-config';
 
 const router = Router();
 
@@ -18,11 +18,12 @@ const AUTH_MAX_LEN   = 50;
 // GET /api/push/vapid-public-key — public endpoint, returns the VAPID public key
 // so the frontend can subscribe without needing a logged-in user yet.
 router.get('/vapid-public-key', (_req: Request, res: Response): void => {
-  if (!VAPID.publicKey) {
+  const { publicKey } = getVapidFromDb();
+  if (!publicKey) {
     res.status(503).json({ error: 'Push notifications are not configured on this server.' });
     return;
   }
-  res.json({ publicKey: VAPID.publicKey });
+  res.json({ publicKey });
 });
 
 // All routes below require authentication.

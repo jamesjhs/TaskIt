@@ -2,10 +2,12 @@ import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import webpush from 'web-push';
 import { authMiddleware } from '../middleware/auth';
 import { adminMiddleware } from '../middleware/admin';
 import db from '../db';
-import { ADMIN_EMAIL, VAPID } from '../config';
+import { ADMIN_EMAIL } from '../config';
+import { getVapidFromDb, reconfigureWebpush } from '../webpush-config';
 
 /** Absolute path to the server-side PNG icons directory. */
 const COLLECTABLES_DIR = path.resolve(__dirname, '..', '..', '..', 'public', 'collectables');
@@ -72,12 +74,13 @@ router.get('/smtp', (_req: Request, res: Response): void => {
     res.status(404).json({ error: 'SMTP settings not found' });
     return;
   }
+  const vapid = getVapidFromDb();
   res.json({
     ...row,
     vapid: {
-      publicKey: VAPID.publicKey || '',
-      subject: VAPID.subject || '',
-      privateKeyConfigured: !!VAPID.privateKey,
+      publicKey: vapid.publicKey,
+      subject: vapid.subject,
+      privateKeyConfigured: !!vapid.privateKey,
     },
   });
 });
@@ -107,7 +110,72 @@ router.put('/smtp', (req: Request, res: Response): void => {
   res.json({ message: 'SMTP settings updated' });
 });
 
-// ─── Original-admin guard helper ──────────────────────────────────────────────
+// ─── VAPID (Web Push) settings ────────────────────────────────────────────────
+
+// Base64url pattern — used to sanity-check VAPID key material.
+const VAPID_KEY_RE = /^[A-Za-z0-9\-_]+=*$/;
+
+router.get('/vapid', (_req: Request, res: Response): void => {
+  const vapid = getVapidFromDb();
+  res.json({
+    publicKey: vapid.publicKey,
+    subject: vapid.subject,
+    privateKeyConfigured: !!vapid.privateKey,
+  });
+});
+
+router.put('/vapid', (req: Request, res: Response): void => {
+  const { publicKey, privateKey, subject } = req.body as {
+    publicKey?: string;
+    privateKey?: string;
+    subject?: string;
+  };
+
+  // Validate subject: must be mailto: or https:// URI
+  if (subject !== undefined && subject !== '') {
+    if (!/^(mailto:[^\s@]+@[^\s]+|https?:\/\/.+)$/.test(subject.trim())) {
+      res.status(400).json({ error: 'subject must be a mailto: or https:// URI' });
+      return;
+    }
+  }
+
+  // Validate key material when provided
+  if (publicKey !== undefined && publicKey !== '') {
+    if (!VAPID_KEY_RE.test(publicKey) || publicKey.length < 10 || publicKey.length > 200) {
+      res.status(400).json({ error: 'Invalid VAPID public key format' });
+      return;
+    }
+  }
+  if (privateKey !== undefined && privateKey !== '') {
+    if (!VAPID_KEY_RE.test(privateKey) || privateKey.length < 10 || privateKey.length > 200) {
+      res.status(400).json({ error: 'Invalid VAPID private key format' });
+      return;
+    }
+  }
+
+  // Load existing values so blank fields keep the current value
+  const current = db.prepare('SELECT public_key, private_key, subject FROM vapid_settings WHERE id = 1').get() as
+    | { public_key: string; private_key: string; subject: string }
+    | undefined;
+
+  const newPublicKey  = (typeof publicKey  === 'string' && publicKey.trim()  !== '') ? publicKey.trim()  : (current?.public_key  || '');
+  const newPrivateKey = (typeof privateKey === 'string' && privateKey.trim() !== '') ? privateKey.trim() : (current?.private_key || '');
+  const newSubject    = (typeof subject    === 'string' && subject.trim()    !== '') ? subject.trim()    : (current?.subject     || '');
+
+  db.prepare('UPDATE vapid_settings SET public_key = ?, private_key = ?, subject = ?, updated_at = ? WHERE id = 1')
+    .run(newPublicKey, newPrivateKey, newSubject, Date.now());
+
+  // Re-apply VAPID details to the web-push library so new keys take effect immediately
+  reconfigureWebpush();
+
+  res.json({ message: 'VAPID settings updated' });
+});
+
+// GET /admin/vapid/generate — generate a fresh VAPID key pair (does NOT save automatically)
+router.get('/vapid/generate', (_req: Request, res: Response): void => {
+  const keys = webpush.generateVAPIDKeys();
+  res.json({ publicKey: keys.publicKey, privateKey: keys.privateKey });
+});
 // The "original admin" is the user matched by ADMIN_EMAIL (if configured) OR
 // the first-ever registered user (lowest created_at across all users).
 // This user can never be demoted via the admin panel.

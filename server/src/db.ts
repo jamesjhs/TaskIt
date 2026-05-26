@@ -125,6 +125,14 @@ db.exec(`
     updated_at INTEGER NOT NULL DEFAULT 0
   );
 
+  CREATE TABLE IF NOT EXISTS vapid_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    public_key TEXT NOT NULL DEFAULT '',
+    private_key TEXT NOT NULL DEFAULT '',
+    subject TEXT NOT NULL DEFAULT '',
+    updated_at INTEGER NOT NULL DEFAULT 0
+  );
+
   CREATE TABLE IF NOT EXISTS otp_tokens (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
@@ -490,6 +498,25 @@ if (!turnstileRow) {
     process.env.TURNSTILE_SITE_KEY || '',
     process.env.TURNSTILE_SECRET_KEY || '',
     process.env.TURNSTILE_SITE_KEY && process.env.TURNSTILE_SECRET_KEY ? 1 : 0,
+    Date.now()
+  );
+}
+
+// Ensure vapid_settings has exactly one row (singleton pattern)
+const vapidRow = db.prepare('SELECT id FROM vapid_settings WHERE id = 1').get();
+if (!vapidRow) {
+  const vapidSubjectFallback = (() => {
+    if (process.env.VAPID_SUBJECT) return process.env.VAPID_SUBJECT;
+    if (process.env.BASE_URL) {
+      try { return `mailto:admin@${new URL(process.env.BASE_URL).hostname}`; } catch { /* ignore */ }
+    }
+    return 'mailto:admin@localhost';
+  })();
+  db.prepare(`INSERT INTO vapid_settings (id, public_key, private_key, subject, updated_at)
+    VALUES (1, ?, ?, ?, ?)`).run(
+    process.env.VAPID_PUBLIC_KEY || '',
+    process.env.VAPID_PRIVATE_KEY || '',
+    vapidSubjectFallback,
     Date.now()
   );
 }

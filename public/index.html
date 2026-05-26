@@ -1516,20 +1516,29 @@
             <label style="font-size:.9rem;font-weight:600;color:#333;margin:0">Enabled</label>
           </div>
           <hr style="border:none;border-top:1px solid #e5e7eb;margin:14px 0" />
-          <p style="font-size:.85rem;font-weight:700;color:#1a1a2e;margin:0 0 8px">Web Push (VAPID)</p>
-          <div class="form-group">
-            <label>Public Key</label>
-            <input id="vapidPublicKey" type="text" class="input" readonly />
-          </div>
-          <div class="form-group">
-            <label>Private Key</label>
-            <input id="vapidPrivateKeyStatus" type="text" class="input" readonly />
-          </div>
-          <div class="form-group">
-            <label>Subject</label>
-            <input id="vapidSubject" type="text" class="input" readonly />
-          </div>
           <button type="submit" class="btn btn-primary btn-full">Save SMTP Settings</button>
+        </form>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <p class="card-title">Web Push (VAPID)</p>
+        <form onsubmit="handleVapidSave(event)">
+          <div class="form-group">
+            <label for="vapidPublicKey">Public Key</label>
+            <input id="vapidPublicKey" type="text" placeholder="leave blank to keep current" class="input" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="vapidPrivateKey">Private Key</label>
+            <input id="vapidPrivateKey" type="password" placeholder="leave blank to keep current" class="input" autocomplete="off" />
+          </div>
+          <div id="vapidPrivateKeyStatus" style="font-size:.82rem;color:#6b7280;margin:-8px 0 10px"></div>
+          <div class="form-group">
+            <label for="vapidSubject">Subject <span style="font-weight:400;color:#6b7280">(mailto: or https://)</span></label>
+            <input id="vapidSubject" type="text" placeholder="mailto:admin@example.com" class="input" />
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+            <button type="button" onclick="handleVapidGenerate()" class="btn btn-secondary">Generate New Keys</button>
+            <button type="submit" class="btn btn-primary">Save VAPID Settings</button>
+          </div>
         </form>
       </div>
     </div>
@@ -5247,10 +5256,18 @@ async function loadAdminPage() {
     document.getElementById('smtpFrom').value = smtp.from_addr || '';
     document.getElementById('smtpEnabled').checked = smtp.enabled === 1;
     document.getElementById('smtpPass').value = '';
-    document.getElementById('vapidPublicKey').value = smtp.vapid?.publicKey || '';
-    document.getElementById('vapidPrivateKeyStatus').value = smtp.vapid?.privateKeyConfigured ? 'Configured (hidden)' : 'Not configured';
-    document.getElementById('vapidSubject').value = smtp.vapid?.subject || '';
   } catch (err) { toast('Failed to load SMTP settings: ' + err.message, 'error'); }
+  loadVapidSettings();
+}
+
+async function loadVapidSettings() {
+  try {
+    const vapid = await api('GET', '/admin/vapid');
+    document.getElementById('vapidPublicKey').value = vapid.publicKey || '';
+    document.getElementById('vapidPrivateKey').value = '';
+    document.getElementById('vapidSubject').value = vapid.subject || '';
+    document.getElementById('vapidPrivateKeyStatus').textContent = vapid.privateKeyConfigured ? '🔑 Private key is configured (hidden)' : '⚠️ No private key configured';
+  } catch (err) { toast('Failed to load VAPID settings: ' + err.message, 'error'); }
 }
 
 async function handleSmtpSave(e) {
@@ -5267,6 +5284,30 @@ async function handleSmtpSave(e) {
     });
     toast('SMTP settings saved!'); document.getElementById('smtpPass').value = '';
   } catch (err) { toast(err.message, 'error'); }
+}
+
+async function handleVapidSave(e) {
+  e.preventDefault();
+  try {
+    await api('PUT', '/admin/vapid', {
+      publicKey: document.getElementById('vapidPublicKey').value.trim(),
+      privateKey: document.getElementById('vapidPrivateKey').value.trim(),
+      subject: document.getElementById('vapidSubject').value.trim(),
+    });
+    toast('VAPID settings saved!');
+    document.getElementById('vapidPrivateKey').value = '';
+    loadVapidSettings();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function handleVapidGenerate() {
+  if (!confirm('Generate a new VAPID key pair?\n\nWARNING: Saving new keys will invalidate all existing push subscriptions — users will need to re-subscribe for push notifications.\n\nThe new keys will be filled into the fields. Click "Save VAPID Settings" to apply them.')) return;
+  try {
+    const keys = await api('GET', '/admin/vapid/generate');
+    document.getElementById('vapidPublicKey').value = keys.publicKey;
+    document.getElementById('vapidPrivateKey').value = keys.privateKey;
+    toast('New VAPID keys generated — review and click Save to apply.');
+  } catch (err) { toast('Failed to generate keys: ' + err.message, 'error'); }
 }
 
 // ========== Users Admin Panel ==========

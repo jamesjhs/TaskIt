@@ -2,10 +2,12 @@ import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import webpush from 'web-push';
 import { authMiddleware } from '../middleware/auth';
 import { adminMiddleware } from '../middleware/admin';
 import db from '../db';
-import { ADMIN_EMAIL, VAPID } from '../config';
+import { ADMIN_EMAIL } from '../config';
+import { getVapidFromDb, reconfigureWebpush } from '../webpush-config';
 
 /** Absolute path to the server-side PNG icons directory. */
 const COLLECTABLES_DIR = path.resolve(__dirname, '..', '..', '..', 'public', 'collectables');
@@ -72,12 +74,13 @@ router.get('/smtp', (_req: Request, res: Response): void => {
     res.status(404).json({ error: 'SMTP settings not found' });
     return;
   }
+  const vapid = getVapidFromDb();
   res.json({
     ...row,
     vapid: {
-      publicKey: VAPID.publicKey || '',
-      subject: VAPID.subject || '',
-      privateKeyConfigured: !!VAPID.privateKey,
+      publicKey: vapid.publicKey,
+      subject: vapid.subject,
+      privateKeyConfigured: !!vapid.privateKey,
     },
   });
 });
@@ -107,7 +110,104 @@ router.put('/smtp', (req: Request, res: Response): void => {
   res.json({ message: 'SMTP settings updated' });
 });
 
-// ─── Original-admin guard helper ──────────────────────────────────────────────
+// ─── VAPID (Web Push) settings ────────────────────────────────────────────────
+
+// Base64url pattern — used to sanity-check VAPID key material.
+// VAPID public keys are uncompressed P-256 EC points (65 bytes) → ~88 base64url chars.
+// VAPID private keys are 32-byte scalars → ~43 base64url chars.
+// Allow a small range around the expected lengths to accommodate padding variants.
+const VAPID_KEY_RE = /^[A-Za-z0-9\-_]+=*$/;
+const VAPID_PUBLIC_KEY_MIN = 80;
+const VAPID_PUBLIC_KEY_MAX = 100;
+const VAPID_PRIVATE_KEY_MIN = 38;
+const VAPID_PRIVATE_KEY_MAX = 50;
+
+router.get('/vapid', (_req: Request, res: Response): void => {
+  const vapid = getVapidFromDb();
+  res.json({
+    publicKey: vapid.publicKey,
+    subject: vapid.subject,
+    privateKeyConfigured: !!vapid.privateKey,
+  });
+});
+
+router.put('/vapid', (req: Request, res: Response): void => {
+  const { publicKey, privateKey, subject } = req.body as {
+    publicKey?: string;
+    privateKey?: string;
+    subject?: string;
+  };
+
+  // Validate subject: must be a mailto: URI with a plausible email, or a valid https:// URL.
+  if (typeof subject === 'string' && subject.trim() !== '') {
+    const s = subject.trim();
+    const mailtoMatch = s.match(/^mailto:([^\s]+)$/i);
+    if (mailtoMatch) {
+      // Basic email sanity: must contain exactly one @ with non-empty parts before and after,
+      // and a dot somewhere in the domain. Checked without nested quantifiers to avoid ReDoS.
+      const email = mailtoMatch[1];
+      const atIdx = email.indexOf('@');
+      const dotIdx = email.lastIndexOf('.');
+      if (atIdx <= 0 || atIdx !== email.lastIndexOf('@') || dotIdx <= atIdx + 1 || dotIdx >= email.length - 1) {
+        res.status(400).json({ error: 'subject mailto: URI must contain a valid email address' });
+        return;
+      }
+    } else {
+      try {
+        const url = new URL(s);
+        if (url.protocol !== 'https:') {
+          res.status(400).json({ error: 'subject must be a mailto: URI or an https:// URL' });
+          return;
+        }
+      } catch {
+        res.status(400).json({ error: 'subject must be a mailto: URI or a valid https:// URL' });
+        return;
+      }
+    }
+  }
+
+  // Validate key material when provided
+  if (typeof publicKey === 'string' && publicKey.trim() !== '') {
+    const k = publicKey.trim();
+    if (!VAPID_KEY_RE.test(k) || k.length < VAPID_PUBLIC_KEY_MIN || k.length > VAPID_PUBLIC_KEY_MAX) {
+      res.status(400).json({ error: 'Invalid VAPID public key format or length' });
+      return;
+    }
+  }
+  if (typeof privateKey === 'string' && privateKey.trim() !== '') {
+    const k = privateKey.trim();
+    if (!VAPID_KEY_RE.test(k) || k.length < VAPID_PRIVATE_KEY_MIN || k.length > VAPID_PRIVATE_KEY_MAX) {
+      res.status(400).json({ error: 'Invalid VAPID private key format or length' });
+      return;
+    }
+  }
+
+  // Load existing values so blank fields keep the current value
+  const current = db.prepare('SELECT public_key, private_key, subject FROM vapid_settings WHERE id = 1').get() as
+    | { public_key: string; private_key: string; subject: string }
+    | undefined;
+
+  const newPublicKey = (typeof publicKey === 'string' && publicKey.trim() !== '') ? publicKey.trim() : (current?.public_key || '');
+  const newPrivateKey = (typeof privateKey === 'string' && privateKey.trim() !== '') ? privateKey.trim() : (current?.private_key || '');
+  const newSubject = (typeof subject === 'string' && subject.trim() !== '') ? subject.trim() : (current?.subject || '');
+
+  // WARNING: The private key is stored in plaintext in the database.
+  // You MUST enable DB_ENCRYPTION_KEY in your .env (SQLCipher full-file encryption)
+  // to protect this key material at rest in production deployments.
+  db.prepare('UPDATE vapid_settings SET public_key = ?, private_key = ?, subject = ?, updated_at = ? WHERE id = 1')
+    .run(newPublicKey, newPrivateKey, newSubject, Date.now());
+
+  // Re-apply VAPID details to the web-push library so new keys take effect immediately
+  reconfigureWebpush();
+
+  res.json({ message: 'VAPID settings updated' });
+});
+
+// GET /admin/vapid/generate — generate a fresh VAPID key pair (does NOT save automatically)
+router.get('/vapid/generate', (_req: Request, res: Response): void => {
+  const keys = webpush.generateVAPIDKeys();
+  res.json({ publicKey: keys.publicKey, privateKey: keys.privateKey });
+});
 // The "original admin" is the user matched by ADMIN_EMAIL (if configured) OR
 // the first-ever registered user (lowest created_at across all users).
 // This user can never be demoted via the admin panel.

@@ -3985,14 +3985,16 @@ async function handleTaskSubmit(e) {
   // Handle regular task creation/editing
   const assigneeIds = Array.from(document.querySelectorAll('.assignee-check:checked')).map(el => el.value);
   const dueDateVal = document.getElementById('taskDueDate').value;
-  if (!dueDateVal) { toast('Due date is required', 'error'); restoreBtn(); return; }
+  const dueDateGroupEl = document.getElementById('dueDateGroup');
+  const dueDateVisible = dueDateGroupEl && !dueDateGroupEl.classList.contains('hidden');
+  if (dueDateVisible && !dueDateVal) { toast('Due date is required', 'error'); restoreBtn(); return; }
   const body = {
     title: document.getElementById('taskTitle').value.trim(),
     details: document.getElementById('taskDetails').value.trim() || null,
     typeId: document.getElementById('taskType').value,
     groupId: document.getElementById('taskGroup').value || null,
     assigneeIds,
-    dueDate: new Date(dueDateVal + 'T00:00:00').getTime(),
+    dueDate: dueDateVal ? new Date(dueDateVal + 'T00:00:00').getTime() : null,
   };
   if (editId) body.status = document.getElementById('taskStatus').value;
   const recurEnabled = document.getElementById('taskRecurEnabled').checked;

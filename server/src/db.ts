@@ -380,6 +380,8 @@ function addCol(table: string, col: string, def: string) {
 addCol('users', 'role', "TEXT NOT NULL DEFAULT 'user'");
 addCol('users', 'failed_logins', 'INTEGER NOT NULL DEFAULT 0');
 addCol('users', 'locked_until', 'INTEGER');
+// JWT invalidation counter: increment on password reset/change to revoke old tokens.
+addCol('users', 'token_version', 'INTEGER NOT NULL DEFAULT 0');
 // email_verified defaults to 1 so existing users stay accessible; new registrations set it to 0 explicitly
 addCol('users', 'email_verified', 'INTEGER NOT NULL DEFAULT 1');
 // locale defaults to en-GB (British English) for all users including existing accounts

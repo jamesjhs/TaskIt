@@ -1,6 +1,6 @@
 {
   "name": "taskit",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "private": true,
   "description": "TaskIt! task management application",
   "workspaces": [

@@ -10,10 +10,19 @@ import { awardEventXp } from '../services/gamification';
 
 const router = Router();
 
-// Derive the public-facing base URL, preferring the configured BASE_URL over the
-// request Host header (which is user-controlled and can be spoofed).
-function getBaseUrl(req: Request): string {
-  return BASE_URL ?? `${req.protocol}://${req.get('host')}`;
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
+
+// Resolve a safe base URL for outbound emails.
+// In production, BASE_URL must be configured to avoid Host header injection.
+// In non-production, allow loopback hosts for local testing.
+function getBaseUrl(req: Request, res: Response, errorMessage: string): string | null {
+  if (BASE_URL) return BASE_URL;
+  if (process.env.NODE_ENV !== 'production' && LOOPBACK_HOSTS.has(req.hostname)) {
+    const host = req.get('host');
+    if (host) return `${req.protocol}://${host}`;
+  }
+  res.status(500).json({ error: errorMessage });
+  return null;
 }
 
 // Basic email format guard (no regex to avoid ReDoS risk).
@@ -122,6 +131,9 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  const baseUrl = getBaseUrl(req, res, 'BASE_URL must be configured to send verification emails.');
+  if (!baseUrl) return;
+
   const passwordHash = bcrypt.hashSync(password, 10);
   const id = crypto.randomUUID();
   const now = Date.now();
@@ -156,7 +168,6 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     'INSERT INTO magic_tokens (token, user_id, expires_at, used, created_at, purpose) VALUES (?, ?, ?, 0, ?, ?)'
   ).run(token, id, expiresAt, now, 'verify');
 
-  const baseUrl = getBaseUrl(req);
   try {
     await sendMagicLink(normalizedEmail, token, baseUrl, 'verify');
   } catch (err) {
@@ -272,8 +283,8 @@ router.post('/verify-otp', (req: Request, res: Response): void => {
 
   db.prepare('UPDATE otp_tokens SET used = 1 WHERE id = ?').run(sessionId);
 
-  const user = db.prepare('SELECT id, username, email, role, locale FROM users WHERE id = ?').get(otpRow.user_id) as
-    | { id: string; username: string; email: string; role: string; locale: string }
+  const user = db.prepare('SELECT id, username, email, role, locale, token_version FROM users WHERE id = ?').get(otpRow.user_id) as
+    | { id: string; username: string; email: string; role: string; locale: string; token_version: number }
     | undefined;
 
   if (!user) {
@@ -283,7 +294,7 @@ router.post('/verify-otp', (req: Request, res: Response): void => {
 
   const tokenExpiry = rememberMe ? '30d' : '7d';
   const token = jwt.sign(
-    { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale },
+    { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale, token_version: user.token_version ?? 0 },
     JWT_SECRET,
     { algorithm: 'HS256', expiresIn: tokenExpiry }
   );
@@ -300,6 +311,9 @@ router.post('/magic-link', async (req: Request, res: Response): Promise<void> =>
     res.json(ALWAYS_OK);
     return;
   }
+
+  const baseUrl = getBaseUrl(req, res, 'BASE_URL must be configured to send login links.');
+  if (!baseUrl) return;
 
   const normalizedMagicEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   console.debug('[auth/magic-link] Request for:', normalizedMagicEmail);
@@ -321,7 +335,6 @@ router.post('/magic-link', async (req: Request, res: Response): Promise<void> =>
     'INSERT INTO magic_tokens (token, user_id, expires_at, used, created_at, purpose) VALUES (?, ?, ?, 0, ?, ?)'
   ).run(token, user.id, expiresAt, now, 'login');
 
-  const baseUrl = getBaseUrl(req);
   console.debug('[auth/magic-link] Token created; attempting SMTP send to:', user.email, '| baseUrl:', baseUrl);
   try {
     await sendMagicLink(user.email, token, baseUrl, 'login');
@@ -366,8 +379,8 @@ router.get('/magic-link/verify', (req: Request, res: Response): void => {
   db.prepare('UPDATE magic_tokens SET used = 1 WHERE token = ?').run(token);
   db.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').run(magicToken.user_id);
 
-  const user = db.prepare('SELECT id, username, email, role, locale FROM users WHERE id = ?').get(magicToken.user_id) as
-    | { id: string; username: string; email: string; role: string; locale: string }
+  const user = db.prepare('SELECT id, username, email, role, locale, token_version FROM users WHERE id = ?').get(magicToken.user_id) as
+    | { id: string; username: string; email: string; role: string; locale: string; token_version: number }
     | undefined;
 
   if (!user) {
@@ -377,7 +390,7 @@ router.get('/magic-link/verify', (req: Request, res: Response): void => {
 
   const tokenExpiry = rememberMe === 'true' ? '30d' : '7d';
   const jwtToken = jwt.sign(
-    { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale },
+    { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale, token_version: user.token_version ?? 0 },
     JWT_SECRET,
     { algorithm: 'HS256', expiresIn: tokenExpiry }
   );
@@ -397,6 +410,9 @@ router.post('/forgot-password', async (req: Request, res: Response): Promise<voi
     return;
   }
 
+  const baseUrl = getBaseUrl(req, res, 'BASE_URL must be configured to send password reset emails.');
+  if (!baseUrl) return;
+
   const normalizedResetEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   const user = db.prepare('SELECT id, email FROM users WHERE email = ?').get(normalizedResetEmail) as
     | { id: string; email: string }
@@ -415,7 +431,6 @@ router.post('/forgot-password', async (req: Request, res: Response): Promise<voi
     'INSERT INTO magic_tokens (token, user_id, expires_at, used, created_at, purpose) VALUES (?, ?, ?, 0, ?, ?)'
   ).run(resetToken, user.id, expiresAt, now, 'reset');
 
-  const baseUrl = getBaseUrl(req);
   try {
     await sendPasswordReset(user.email, resetToken, baseUrl);
   } catch (err) {
@@ -451,9 +466,9 @@ router.post('/reset-password', async (req: Request, res: Response): Promise<void
 
   const passwordHash = bcrypt.hashSync(newPassword, 10);
   db.prepare('UPDATE magic_tokens SET used = 1 WHERE token = ?').run(token);
-  db.prepare('UPDATE users SET password_hash = ?, failed_logins = 0, locked_until = NULL WHERE id = ?').run(
-    passwordHash, magicToken.user_id
-  );
+  db.prepare(
+    'UPDATE users SET password_hash = ?, failed_logins = 0, locked_until = NULL, token_version = COALESCE(token_version, 0) + 1 WHERE id = ?'
+  ).run(passwordHash, magicToken.user_id);
 
   res.json({ message: 'Password has been reset. You can now sign in with your new password.' });
 });

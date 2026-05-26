@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.17.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.18.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -119,12 +119,12 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 
 ## Changelog
 
-### v1.17.0
+### v1.18.0
 
 - **🚀 Landing page repositioning** — the homepage now leads with TaskIt's real market differentiators: self-hosting, privacy, recurring and sporadic task tracking, long-term goals, collaboration, and optional gamification. Unsupported claims were removed so the marketing copy matches the shipped product.
 - **🔎 Search / AI crawler optimisation** — added richer metadata, FAQ structured data, comparison content, `robots.txt`, `sitemap.xml`, and `llms.txt` to improve discoverability in search engines, social previews, and AI answer engines.
 - **📘 Search submission guide** — added `SEARCH_SUBMISSION_GUIDE.md` with the recommended rollout path for Google, Bing, Yandex, and AI-driven discovery channels.
-- **🔢 Version bump** — server package metadata and documentation updated to 1.17.0.
+- **🔢 Version bump** — server package metadata and documentation updated to 1.18.0.
 
 ### v1.16.3
 

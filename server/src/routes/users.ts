@@ -167,7 +167,9 @@ router.patch('/me/password', (req: Request, res: Response): void => {
   }
 
   const newHash = bcrypt.hashSync(newPassword, 10);
-  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, userId);
+  db.prepare('UPDATE users SET password_hash = ?, token_version = COALESCE(token_version, 0) + 1 WHERE id = ?').run(
+    newHash, userId
+  );
 
   res.json({ message: 'Password updated successfully' });
 });

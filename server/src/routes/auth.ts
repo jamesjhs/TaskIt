@@ -284,7 +284,7 @@ router.post('/verify-otp', (req: Request, res: Response): void => {
   db.prepare('UPDATE otp_tokens SET used = 1 WHERE id = ?').run(sessionId);
 
   const user = db.prepare('SELECT id, username, email, role, locale, token_version FROM users WHERE id = ?').get(otpRow.user_id) as
-    | { id: string; username: string; email: string; role: string; locale: string; token_version: number }
+    | { id: string; username: string; email: string; role: string; locale: string; token_version: number | null }
     | undefined;
 
   if (!user) {
@@ -380,7 +380,7 @@ router.get('/magic-link/verify', (req: Request, res: Response): void => {
   db.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').run(magicToken.user_id);
 
   const user = db.prepare('SELECT id, username, email, role, locale, token_version FROM users WHERE id = ?').get(magicToken.user_id) as
-    | { id: string; username: string; email: string; role: string; locale: string; token_version: number }
+    | { id: string; username: string; email: string; role: string; locale: string; token_version: number | null }
     | undefined;
 
   if (!user) {

@@ -74,6 +74,7 @@ export async function sendMagicLink(to: string, token: string, baseUrl: string, 
     console.debug('[mail] Magic link email accepted by SMTP server. messageId:', (info as { messageId?: string }).messageId);
   } catch (err) {
     console.error('[mail] SMTP error sending magic link to', to, ':', err);
+    console.info(`[mail] Magic link (${purpose}) fallback for ${to}: ${link}`);
     throw err;
   }
 }

@@ -5,7 +5,7 @@ import * as path from 'path';
 import { authMiddleware } from '../middleware/auth';
 import { adminMiddleware } from '../middleware/admin';
 import db from '../db';
-import { ADMIN_EMAIL } from '../config';
+import { ADMIN_EMAIL, VAPID } from '../config';
 
 /** Absolute path to the server-side PNG icons directory. */
 const COLLECTABLES_DIR = path.resolve(__dirname, '..', '..', '..', 'public', 'collectables');
@@ -72,7 +72,14 @@ router.get('/smtp', (_req: Request, res: Response): void => {
     res.status(404).json({ error: 'SMTP settings not found' });
     return;
   }
-  res.json(row);
+  res.json({
+    ...row,
+    vapid: {
+      publicKey: VAPID.publicKey || '',
+      subject: VAPID.subject || '',
+      privateKeyConfigured: !!VAPID.privateKey,
+    },
+  });
 });
 
 router.put('/smtp', (req: Request, res: Response): void => {

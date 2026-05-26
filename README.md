@@ -361,7 +361,6 @@ See previous changelog entries below.
 ### Server
 
 ```bash
-cd server
 npm install
 npm run dev       # development (tsx watch)
 npm run build     # compile TypeScript + CSS

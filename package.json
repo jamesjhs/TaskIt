@@ -1,1 +1,19 @@
-404: Not Found
+{
+  "name": "taskit",
+  "version": "1.17.0",
+  "private": true,
+  "description": "TaskIt! task management application",
+  "workspaces": [
+    "server"
+  ],
+  "scripts": {
+    "build": "npm run build -w server",
+    "build:css": "npm run build:css -w server",
+    "start": "npm run start -w server",
+    "dev": "npm run dev -w server",
+    "dev:css": "npm run dev:css -w server"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

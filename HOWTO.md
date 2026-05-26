@@ -72,7 +72,6 @@ Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 2. **Install server dependencies:**
 
    ```bash
-   cd server
    npm install
    ```
 
@@ -198,14 +197,12 @@ Make sure the `sqlite3` binary on your system supports the same cipher (SQLite3M
 ### Development mode (auto-restart on code changes)
 
 ```bash
-cd server
 npm run dev
 ```
 
 ### Production mode
 
 ```bash
-cd server
 npm run build   # compile TypeScript and CSS
 npm start       # run the compiled server
 ```
@@ -573,7 +570,7 @@ The Freeze is consumed automatically, the streak is preserved, and the ❄️ is
 
 **The app won't start**  
 - Ensure Node.js v18+ is installed: `node --version`
-- Run `npm install` inside the `server/` directory
+- Run `npm install` from the repository root
 - Check the `.env` file exists and `JWT_SECRET` is set
 
 **Email is not being sent**  

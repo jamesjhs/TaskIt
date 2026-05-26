@@ -113,7 +113,14 @@ router.put('/smtp', (req: Request, res: Response): void => {
 // ─── VAPID (Web Push) settings ────────────────────────────────────────────────
 
 // Base64url pattern — used to sanity-check VAPID key material.
+// VAPID public keys are uncompressed P-256 EC points (65 bytes) → ~88 base64url chars.
+// VAPID private keys are 32-byte scalars → ~43 base64url chars.
+// Allow a small range around the expected lengths to accommodate padding variants.
 const VAPID_KEY_RE = /^[A-Za-z0-9\-_]+=*$/;
+const VAPID_PUBLIC_KEY_MIN = 80;
+const VAPID_PUBLIC_KEY_MAX = 100;
+const VAPID_PRIVATE_KEY_MIN = 38;
+const VAPID_PRIVATE_KEY_MAX = 50;
 
 router.get('/vapid', (_req: Request, res: Response): void => {
   const vapid = getVapidFromDb();
@@ -131,24 +138,42 @@ router.put('/vapid', (req: Request, res: Response): void => {
     subject?: string;
   };
 
-  // Validate subject: must be mailto: or https:// URI
-  if (subject !== undefined && subject !== '') {
-    if (!/^(mailto:[^\s@]+@[^\s]+|https?:\/\/.+)$/.test(subject.trim())) {
-      res.status(400).json({ error: 'subject must be a mailto: or https:// URI' });
-      return;
+  // Validate subject: must be a mailto: URI with a plausible email, or a valid https:// URL.
+  if (typeof subject === 'string' && subject.trim() !== '') {
+    const s = subject.trim();
+    const mailtoMatch = s.match(/^mailto:([^\s]+)$/i);
+    if (mailtoMatch) {
+      // Basic email sanity: must contain exactly one @ with non-empty local and domain parts
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mailtoMatch[1])) {
+        res.status(400).json({ error: 'subject mailto: URI must contain a valid email address' });
+        return;
+      }
+    } else {
+      try {
+        const url = new URL(s);
+        if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+          res.status(400).json({ error: 'subject must be a mailto: URI or an https:// URL' });
+          return;
+        }
+      } catch {
+        res.status(400).json({ error: 'subject must be a mailto: URI or a valid https:// URL' });
+        return;
+      }
     }
   }
 
   // Validate key material when provided
-  if (publicKey !== undefined && publicKey !== '') {
-    if (!VAPID_KEY_RE.test(publicKey) || publicKey.length < 10 || publicKey.length > 200) {
-      res.status(400).json({ error: 'Invalid VAPID public key format' });
+  if (typeof publicKey === 'string' && publicKey.trim() !== '') {
+    const k = publicKey.trim();
+    if (!VAPID_KEY_RE.test(k) || k.length < VAPID_PUBLIC_KEY_MIN || k.length > VAPID_PUBLIC_KEY_MAX) {
+      res.status(400).json({ error: 'Invalid VAPID public key format or length' });
       return;
     }
   }
-  if (privateKey !== undefined && privateKey !== '') {
-    if (!VAPID_KEY_RE.test(privateKey) || privateKey.length < 10 || privateKey.length > 200) {
-      res.status(400).json({ error: 'Invalid VAPID private key format' });
+  if (typeof privateKey === 'string' && privateKey.trim() !== '') {
+    const k = privateKey.trim();
+    if (!VAPID_KEY_RE.test(k) || k.length < VAPID_PRIVATE_KEY_MIN || k.length > VAPID_PRIVATE_KEY_MAX) {
+      res.status(400).json({ error: 'Invalid VAPID private key format or length' });
       return;
     }
   }
@@ -158,10 +183,12 @@ router.put('/vapid', (req: Request, res: Response): void => {
     | { public_key: string; private_key: string; subject: string }
     | undefined;
 
-  const newPublicKey  = (typeof publicKey  === 'string' && publicKey.trim()  !== '') ? publicKey.trim()  : (current?.public_key  || '');
+  const newPublicKey = (typeof publicKey === 'string' && publicKey.trim() !== '') ? publicKey.trim() : (current?.public_key || '');
   const newPrivateKey = (typeof privateKey === 'string' && privateKey.trim() !== '') ? privateKey.trim() : (current?.private_key || '');
-  const newSubject    = (typeof subject    === 'string' && subject.trim()    !== '') ? subject.trim()    : (current?.subject     || '');
+  const newSubject = (typeof subject === 'string' && subject.trim() !== '') ? subject.trim() : (current?.subject || '');
 
+  // NOTE: The private key is stored in plaintext. Enable DB_ENCRYPTION_KEY in your .env
+  // (SQLCipher full-file encryption) to protect key material at rest in production.
   db.prepare('UPDATE vapid_settings SET public_key = ?, private_key = ?, subject = ?, updated_at = ? WHERE id = 1')
     .run(newPublicKey, newPrivateKey, newSubject, Date.now());
 

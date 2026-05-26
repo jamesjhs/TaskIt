@@ -1523,16 +1523,16 @@
         <p class="card-title">Web Push (VAPID)</p>
         <form onsubmit="handleVapidSave(event)">
           <div class="form-group">
-            <label>Public Key</label>
+            <label for="vapidPublicKey">Public Key</label>
             <input id="vapidPublicKey" type="text" placeholder="leave blank to keep current" class="input" autocomplete="off" />
           </div>
           <div class="form-group">
-            <label>Private Key</label>
-            <input id="vapidPrivateKey" type="password" placeholder="leave blank to keep current" class="input" autocomplete="off" />
+            <label for="vapidPrivateKey">Private Key</label>
+            <input id="vapidPrivateKey" type="password" placeholder="leave blank to keep current" class="input" autocomplete="new-password" />
           </div>
           <div id="vapidPrivateKeyStatus" style="font-size:.82rem;color:#6b7280;margin:-8px 0 10px"></div>
           <div class="form-group">
-            <label>Subject <span style="font-weight:400;color:#6b7280">(mailto: or https://)</span></label>
+            <label for="vapidSubject">Subject <span style="font-weight:400;color:#6b7280">(mailto: or https://)</span></label>
             <input id="vapidSubject" type="text" placeholder="mailto:admin@example.com" class="input" />
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">

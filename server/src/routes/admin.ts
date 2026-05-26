@@ -76,8 +76,8 @@ router.get('/smtp', (_req: Request, res: Response): void => {
     ...row,
     vapid: {
       publicKey: VAPID.publicKey || '',
-      privateKey: VAPID.privateKey || '',
       subject: VAPID.subject || '',
+      privateKeyConfigured: !!VAPID.privateKey,
     },
   });
 });

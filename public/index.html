@@ -1523,7 +1523,7 @@
           </div>
           <div class="form-group">
             <label>Private Key</label>
-            <input id="vapidPrivateKey" type="text" class="input" readonly />
+            <input id="vapidPrivateKeyStatus" type="text" class="input" readonly />
           </div>
           <div class="form-group">
             <label>Subject</label>
@@ -5248,7 +5248,7 @@ async function loadAdminPage() {
     document.getElementById('smtpEnabled').checked = smtp.enabled === 1;
     document.getElementById('smtpPass').value = '';
     document.getElementById('vapidPublicKey').value = smtp.vapid?.publicKey || '';
-    document.getElementById('vapidPrivateKey').value = smtp.vapid?.privateKey || '';
+    document.getElementById('vapidPrivateKeyStatus').value = smtp.vapid?.privateKeyConfigured ? 'Configured (hidden)' : 'Not configured';
     document.getElementById('vapidSubject').value = smtp.vapid?.subject || '';
   } catch (err) { toast('Failed to load SMTP settings: ' + err.message, 'error'); }
 }

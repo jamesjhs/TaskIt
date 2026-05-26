@@ -48,7 +48,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
     }
 
     const currentTokenVersion = userRow.token_version ?? 0;
-    if (typeof payload.token_version !== 'number' || payload.token_version !== currentTokenVersion) {
+    if (payload.token_version == null || typeof payload.token_version !== 'number' || payload.token_version !== currentTokenVersion) {
       res.status(401).json({ error: 'Invalid or expired token' });
       return;
     }

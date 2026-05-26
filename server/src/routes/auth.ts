@@ -15,13 +15,12 @@ const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 // Resolve a safe base URL for outbound emails.
 // In production, BASE_URL must be configured to avoid Host header injection.
 // In non-production, allow loopback hosts for local testing.
-function getBaseUrl(req: Request, res: Response, errorMessage: string): string | null {
+function getBaseUrl(req: Request): string | null {
   if (BASE_URL) return BASE_URL;
   if (process.env.NODE_ENV !== 'production' && LOOPBACK_HOSTS.has(req.hostname)) {
     const host = req.get('host');
     if (host) return `${req.protocol}://${host}`;
   }
-  res.status(500).json({ error: errorMessage });
   return null;
 }
 
@@ -131,8 +130,11 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const baseUrl = getBaseUrl(req, res, 'BASE_URL must be configured to send verification emails.');
-  if (!baseUrl) return;
+  const baseUrl = getBaseUrl(req);
+  if (!baseUrl) {
+    res.status(500).json({ error: 'BASE_URL must be configured to send verification emails.' });
+    return;
+  }
 
   const passwordHash = bcrypt.hashSync(password, 10);
   const id = crypto.randomUUID();
@@ -312,8 +314,11 @@ router.post('/magic-link', async (req: Request, res: Response): Promise<void> =>
     return;
   }
 
-  const baseUrl = getBaseUrl(req, res, 'BASE_URL must be configured to send login links.');
-  if (!baseUrl) return;
+  const baseUrl = getBaseUrl(req);
+  if (!baseUrl) {
+    res.status(500).json({ error: 'BASE_URL must be configured to send login links.' });
+    return;
+  }
 
   const normalizedMagicEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   console.debug('[auth/magic-link] Request for:', normalizedMagicEmail);
@@ -410,8 +415,11 @@ router.post('/forgot-password', async (req: Request, res: Response): Promise<voi
     return;
   }
 
-  const baseUrl = getBaseUrl(req, res, 'BASE_URL must be configured to send password reset emails.');
-  if (!baseUrl) return;
+  const baseUrl = getBaseUrl(req);
+  if (!baseUrl) {
+    res.status(500).json({ error: 'BASE_URL must be configured to send password reset emails.' });
+    return;
+  }
 
   const normalizedResetEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   const user = db.prepare('SELECT id, email FROM users WHERE email = ?').get(normalizedResetEmail) as

@@ -10,13 +10,12 @@ const router = Router();
 
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 
-function getBaseUrl(req: Request, res: Response): string | null {
+function getBaseUrl(req: Request): string | null {
   if (BASE_URL) return BASE_URL;
   if (process.env.NODE_ENV !== 'production' && LOOPBACK_HOSTS.has(req.hostname)) {
     const host = req.get('host');
     if (host) return `${req.protocol}://${host}`;
   }
-  res.status(500).json({ error: 'BASE_URL must be configured to generate invite links.' });
   return null;
 }
 
@@ -180,8 +179,11 @@ router.post('/invite', (req: Request, res: Response): void => {
     'INSERT INTO friend_invites (token, user_id, expires_at, used, created_at) VALUES (?, ?, ?, 0, ?)'
   ).run(token, userId, expiresAt, now);
 
-  const baseUrl = getBaseUrl(req, res);
-  if (!baseUrl) return;
+  const baseUrl = getBaseUrl(req);
+  if (!baseUrl) {
+    res.status(500).json({ error: 'BASE_URL must be configured to generate invite links.' });
+    return;
+  }
   const inviteUrl = `${baseUrl}?friend=${token}`;
 
   // Award send_app_invite XP (non-critical)

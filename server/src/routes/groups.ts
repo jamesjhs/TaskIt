@@ -12,13 +12,12 @@ const router = Router();
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 
 // Resolve a safe base URL for outbound invites.
-function getBaseUrl(req: Request, res: Response): string | null {
+function getBaseUrl(req: Request): string | null {
   if (BASE_URL) return BASE_URL;
   if (process.env.NODE_ENV !== 'production' && LOOPBACK_HOSTS.has(req.hostname)) {
     const host = req.get('host');
     if (host) return `${req.protocol}://${host}`;
   }
-  res.status(500).json({ error: 'BASE_URL must be configured to generate invite links.' });
   return null;
 }
 
@@ -360,8 +359,11 @@ router.post('/:id/invite', async (req: Request, res: Response): Promise<void> =>
     'INSERT INTO group_invites (token, group_id, invited_email, multi_use, created_by, expires_at, used, created_at) VALUES (?, ?, ?, ?, ?, ?, 0, ?)'
   ).run(token, groupId, invitedEmail, isMultiUse, userId, expiresAt, now);
 
-  const baseUrl = getBaseUrl(req, res);
-  if (!baseUrl) return;
+  const baseUrl = getBaseUrl(req);
+  if (!baseUrl) {
+    res.status(500).json({ error: 'BASE_URL must be configured to generate invite links.' });
+    return;
+  }
   const inviteUrl = `${baseUrl}?invite=${token}`;
 
   if (invitedEmail) {
@@ -423,8 +425,11 @@ router.get('/:id/qr', (req: Request, res: Response): void => {
     'INSERT INTO group_invites (token, group_id, invited_email, multi_use, created_by, expires_at, used, created_at) VALUES (?, ?, NULL, 1, ?, ?, 0, ?)'
   ).run(token, groupId, userId, expiresAt, now);
 
-  const baseUrl = getBaseUrl(req, res);
-  if (!baseUrl) return;
+  const baseUrl = getBaseUrl(req);
+  if (!baseUrl) {
+    res.status(500).json({ error: 'BASE_URL must be configured to generate invite links.' });
+    return;
+  }
   const inviteUrl = `${baseUrl}?invite=${token}`;
 
   // Award send_group_invite XP for generating the QR link (non-critical)

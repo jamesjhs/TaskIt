@@ -1515,6 +1515,20 @@
             <input id="smtpEnabled" type="checkbox" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0" />
             <label style="font-size:.9rem;font-weight:600;color:#333;margin:0">Enabled</label>
           </div>
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:14px 0" />
+          <p style="font-size:.85rem;font-weight:700;color:#1a1a2e;margin:0 0 8px">Web Push (VAPID)</p>
+          <div class="form-group">
+            <label>Public Key</label>
+            <input id="vapidPublicKey" type="text" class="input" readonly />
+          </div>
+          <div class="form-group">
+            <label>Private Key</label>
+            <input id="vapidPrivateKey" type="text" class="input" readonly />
+          </div>
+          <div class="form-group">
+            <label>Subject</label>
+            <input id="vapidSubject" type="text" class="input" readonly />
+          </div>
           <button type="submit" class="btn btn-primary btn-full">Save SMTP Settings</button>
         </form>
       </div>
@@ -5233,6 +5247,9 @@ async function loadAdminPage() {
     document.getElementById('smtpFrom').value = smtp.from_addr || '';
     document.getElementById('smtpEnabled').checked = smtp.enabled === 1;
     document.getElementById('smtpPass').value = '';
+    document.getElementById('vapidPublicKey').value = smtp.vapid?.publicKey || '';
+    document.getElementById('vapidPrivateKey').value = smtp.vapid?.privateKey || '';
+    document.getElementById('vapidSubject').value = smtp.vapid?.subject || '';
   } catch (err) { toast('Failed to load SMTP settings: ' + err.message, 'error'); }
 }
 

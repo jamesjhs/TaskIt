@@ -4,7 +4,7 @@
 
 ## Build, Test & Lint Commands
 
-All commands run from the `server/` directory:
+All commands run from the repository root:
 
 ```bash
 npm install                 # Install dependencies
@@ -182,7 +182,6 @@ db.prepare('UPDATE users SET xp = xp + ? WHERE id = ?').run(50, userId);
 ## Quick Start for Development
 
 ```bash
-cd server
 npm install
 npm run dev:css &  # Start Tailwind watcher in background
 npm run dev        # Start Express server with auto-reload
@@ -218,7 +217,7 @@ Files that must be updated (all must agree on the same version string):
 | `TECHNICAL_REFERENCE.md` | Footer line `*End of Technical Reference Manual — TaskIt! vX.Y.Z*` |
 | `README.md` | Top of the **Changelog** section — add a new `### vX.Y.Z` entry summarising this session's changes |
 
-Use `npm version patch --no-git-tag-version` from the `server/` directory so `package-lock.json` is also updated, then manually update the markdown files.
+Use `npm version patch --no-git-tag-version -w server` from the repository root so `package-lock.json` is also updated, then manually update the markdown files.
 
 ---
 
@@ -269,7 +268,6 @@ Run each check below. For every finding, either fix it immediately or, if a fix 
 #### 5a — Dependency health
 
 ```bash
-cd server
 npm audit --audit-level=moderate
 npm outdated
 ```
@@ -281,7 +279,6 @@ npm outdated
 #### 5b — TypeScript compilation
 
 ```bash
-cd server
 npm run build
 ```
 

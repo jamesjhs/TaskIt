@@ -37,7 +37,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd server 2>/dev/null || true
           npm ci 2>/dev/null || true
         continue-on-error: true
 
@@ -59,7 +58,7 @@ jobs:
           // 1. CVE Audit
           console.log('\n📦 Dependency Vulnerability Scan...');
           try {
-            const auditOutput = execSync('cd server && npm audit --json 2>/dev/null || echo "{}"', { encoding: 'utf8' });
+            const auditOutput = execSync('npm audit --json 2>/dev/null || echo "{}"', { encoding: 'utf8' });
             const audit = JSON.parse(auditOutput);
             if (audit.metadata?.vulnerabilities) {
               const total = audit.metadata.vulnerabilities.total || 0;
@@ -180,7 +179,7 @@ jobs:
 
           console.log('\n⏱️  Outdated Packages Check...');
           try {
-            const outdatedOutput = execSync('cd server && npm outdated --json 2>&1 || echo "{}"', { encoding: 'utf8' });
+            const outdatedOutput = execSync('npm outdated --json 2>&1 || echo "{}"', { encoding: 'utf8' });
             const outdated = JSON.parse(outdatedOutput);
             const count = Object.keys(outdated).length;
             if (count > 0) {

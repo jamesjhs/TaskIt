@@ -8,8 +8,15 @@ import { awardEventXp } from '../services/gamification';
 
 const router = Router();
 
-function getBaseUrl(req: Request): string {
-  return BASE_URL ?? `${req.protocol}://${req.get('host')}`;
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
+
+function getBaseUrl(req: Request): string | null {
+  if (BASE_URL) return BASE_URL;
+  if (process.env.NODE_ENV !== 'production' && LOOPBACK_HOSTS.has(req.hostname)) {
+    const host = req.get('host');
+    if (host) return `${req.protocol}://${host}`;
+  }
+  return null;
 }
 
 // ─── Public routes (no auth required) ────────────────────────────────────────
@@ -173,6 +180,10 @@ router.post('/invite', (req: Request, res: Response): void => {
   ).run(token, userId, expiresAt, now);
 
   const baseUrl = getBaseUrl(req);
+  if (!baseUrl) {
+    res.status(500).json({ error: 'BASE_URL must be configured to generate invite links.' });
+    return;
+  }
   const inviteUrl = `${baseUrl}?friend=${token}`;
 
   // Award send_app_invite XP (non-critical)

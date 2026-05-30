@@ -182,12 +182,6 @@
       </div>
       <span class="lp-nav-title">TaskIt!</span>
     </a>
-    <div class="lp-nav-links" aria-label="Landing page sections">
-      <a href="#features">Features</a>
-      <a href="#why-taskit">Why TaskIt</a>
-      <a href="#compare">Compare</a>
-      <a href="#faq">FAQ</a>
-    </div>
     <div class="lp-nav-actions">
       <button onclick="goToAuth('login')" class="lp-btn-nav-signin">Sign In</button>
       <button onclick="goToAuth('register')" class="lp-btn-nav-started">Get Started</button>
@@ -209,39 +203,17 @@
         <a href="/user-guide.html" class="lp-btn-hero-outline">Read the Guide</a>
       </div>
       <div class="lp-hero-badges">
-        <span class="lp-hero-badge">📱 Installable PWA</span>
-        <span class="lp-hero-badge">🔒 Your data, your server</span>
+        <span class="lp-hero-badge">📱 Installable web app</span>
         <span class="lp-hero-badge">🎮 Gamification optional</span>
-        <span class="lp-hero-badge">🔐 SQLCipher supported</span>
       </div>
       <ul class="lp-hero-proof" role="list" aria-label="TaskIt proof points">
         <li>Three task modes: scheduled tasks, sporadic maintenance, and long-term goals</li>
         <li>Collaborate with groups, assignees, QR/email invites, progress notes, and subtasks</li>
         <li>Stay ahead with reminders, in-app alerts, calendar feeds, and optional streak-based motivation</li>
       </ul>
-      <div class="lp-hero-note">Best fit for self-hosters, households, small teams, and people who want productivity without SaaS lock-in.</div>
+      <div class="lp-hero-note">Best fit for households, small teams, and people who want productivity.</div>
     </div>
   </section>
-
-  <!-- Stats strip -->
-  <div class="lp-stats" aria-label="TaskIt highlights">
-    <div class="lp-stat-item">
-      <div class="lp-stat-num">3</div>
-      <div class="lp-stat-label">Task modes built in</div>
-    </div>
-    <div class="lp-stat-item">
-      <div class="lp-stat-num">13</div>
-      <div class="lp-stat-label">Achievements to unlock</div>
-    </div>
-    <div class="lp-stat-item">
-      <div class="lp-stat-num">3</div>
-      <div class="lp-stat-label">Reminder windows per task</div>
-    </div>
-    <div class="lp-stat-item">
-      <div class="lp-stat-num">100%</div>
-      <div class="lp-stat-label">Self-hosted and subscription-free</div>
-    </div>
-  </div>
 
   <!-- Features -->
   <section id="features" class="lp-features-bg">
@@ -314,7 +286,7 @@
         <div class="lp-why-card">
           <span class="lp-why-icon">🔒</span>
           <h3>Privacy First</h3>
-          <p>Self-host on your own server, VPS, or Raspberry Pi. Pair that with SQLCipher at-rest encryption and your task history stays under your control.</p>
+          <p>Uses SQLCipher at-rest encryption: your task history stays under your control.</p>
         </div>
         <div class="lp-why-card">
           <span class="lp-why-icon">🎮</span>
@@ -329,7 +301,7 @@
         <div class="lp-why-card">
           <span class="lp-why-icon">🌐</span>
           <h3>Fast on Any Device</h3>
-          <p>Use the web app anywhere, install it as a PWA on phone or desktop, and launch into a cached app shell quickly while your live task data stays synced with your server.</p>
+          <p>Install as a web app on your phone.</p>
         </div>
       </div>
     </div>
@@ -681,22 +653,6 @@
   </div>
   <!-- ═══ END GAMIFICATION SHOWCASE ═══ -->
 
-  <!-- Privacy highlight band -->
-  <div class="lp-privacy-band">
-    <div class="lp-privacy-inner">
-      <div class="lp-privacy-icon">🔒</div>
-      <h2>Your server. Your data. Your rules.</h2>
-      <p>TaskIt! is self-hosted — every task, note, and achievement lives on your own machine. No third-party cloud, no data harvesting, no vendor lock-in. SQLCipher encryption at rest keeps your data private even if the server hardware is ever compromised.</p>
-      <div class="lp-privacy-pills">
-        <span class="lp-privacy-pill">🖥️ Self-hosted</span>
-        <span class="lp-privacy-pill">🔐 SQLCipher encrypted</span>
-        <span class="lp-privacy-pill">📂 Open source</span>
-        <span class="lp-privacy-pill">💸 No subscription</span>
-        <span class="lp-privacy-pill">🚫 No tracking</span>
-      </div>
-    </div>
-  </div>
-
   <!-- Use Cases -->
   <div style="background:#fff">
     <div class="lp-section lp-section-center">
@@ -900,13 +856,6 @@
           </thead>
           <tbody>
             <tr>
-              <th scope="row">Self-hosted</th>
-              <td><span class="lp-check">✓</span> Yes</td>
-              <td><span class="lp-cross">—</span> No</td>
-              <td><span class="lp-cross">—</span> No</td>
-              <td><span class="lp-check">✓</span> Yes</td>
-            </tr>
-            <tr>
               <th scope="row">Optional gamification</th>
               <td><span class="lp-check">✓</span> XP, achievements, streaks</td>
               <td><span class="lp-cross">—</span> Light karma only</td>
@@ -959,7 +908,7 @@
       <div class="lp-faq-grid">
         <details class="lp-faq-item">
           <summary>What is TaskIt best at?</summary>
-          <p>TaskIt is strongest when you need one self-hosted system for personal tasks, shared household work, recurring maintenance, and small-team collaboration — with optional gamification layered on top.</p>
+          <p>TaskIt is strongest for personal tasks, shared household work, recurring maintenance, and small-team collaboration — with optional gamification layered on top.</p>
         </details>
         <details class="lp-faq-item">
           <summary>Is TaskIt really free?</summary>
@@ -988,8 +937,6 @@
   <!-- Bottom CTA -->
   <div class="lp-cta-bg">
     <div class="lp-cta-section">
-      <h2>One app. Zero cost. Infinite potential.</h2>
-      <p>Start for free in seconds. Self-host on any machine. Invite your team, set recurring tasks, and earn XP as you go. This is what productivity feels like when it's actually rewarding.</p>
       <div class="lp-cta-buttons">
         <button onclick="goToAuth('register')" class="lp-btn-cta-white">🚀 Create Free Account</button>
         <button onclick="goToAuth('login')" class="lp-btn-cta-outline">Sign In</button>
@@ -1145,7 +1092,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.18.0</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
+      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.18.1</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>

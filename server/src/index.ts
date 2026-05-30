@@ -328,7 +328,7 @@ app.use(staticLimiter, express.static(path.join(__dirname, '..', '..', 'public')
     // environment (direct server, nginx proxy, Cloudflare, etc.).
     if (filePath.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css; charset=utf-8');
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.setHeader('Cache-Control', 'no-cache');
     } else if (filePath.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');

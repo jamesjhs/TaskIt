@@ -65,7 +65,11 @@ async function sendPushNotificationsForUser(userId: string, taskId: string, task
     url: `${appUrl}/?task=${taskId}`,
   });
 
-  // Send to all subscriptions in parallel; handle 410/404 by removing stale rows.
+  // Send to all subscriptions in parallel; remove stale/invalid subscription rows.
+  //   410 / 404 → endpoint is gone (browser unsubscribed or push service deleted it)
+  //   401 / 403 → application server key mismatch (VAPID keys were regenerated);
+  //               this subscription can never succeed with the current key pair and
+  //               must be removed so the browser can re-subscribe with the new key.
   const results = await Promise.allSettled(
     subscriptions.map(sub =>
       webpush.sendNotification(
@@ -73,8 +77,11 @@ async function sendPushNotificationsForUser(userId: string, taskId: string, task
         payload
       ).catch((err: unknown) => {
         const httpStatus = (err as { statusCode?: number }).statusCode;
-        if (httpStatus === 410 || httpStatus === 404) {
+        if (httpStatus === 410 || httpStatus === 404 || httpStatus === 401 || httpStatus === 403) {
           db.prepare('DELETE FROM push_subscriptions WHERE id = ?').run(sub.id);
+          if (httpStatus === 401 || httpStatus === 403) {
+            console.warn(`[scheduler] Removed push subscription ${sub.id} due to VAPID key mismatch (HTTP ${httpStatus}). User will resubscribe on next page load.`);
+          }
         } else {
           console.error(`[scheduler] Failed to send push notification to subscription ${sub.id}:`, err);
         }

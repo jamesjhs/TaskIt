@@ -6285,17 +6285,35 @@ async function dismissAlert(alertId) {
   } catch (err) { toast(err.message, 'error'); }
 }
 
+/**
+ * Returns the active ServiceWorkerRegistration, or throws if one cannot be
+ * obtained within SW_READY_TIMEOUT_MS.
+ *
+ * Fast path: when a service worker is already controlling this page (i.e. any
+ * visit after the first), navigator.serviceWorker.controller is set and we can
+ * resolve the registration immediately via getRegistration() — no timeout
+ * needed.  The slow path (navigator.serviceWorker.ready + timeout) only runs
+ * on the very first page load while the worker is still installing/activating,
+ * or after performAppUpdate() has unregistered the previous worker.
+ */
+async function getActiveSwRegistration() {
+  if (navigator.serviceWorker.controller) {
+    const reg = await navigator.serviceWorker.getRegistration('/');
+    if (reg) return reg;
+  }
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise((_r, rej) => setTimeout(() => rej(new Error('SW timeout')), SW_READY_TIMEOUT_MS)),
+  ]);
+}
+
 // Subscribe this browser to background push notifications.
 // Silently does nothing if the server has no VAPID keys configured.
 async function subscribeToPush() {
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
-    // Wait up to SW_READY_TIMEOUT_MS for the SW registration to be ready.
-    const reg = await Promise.race([
-      navigator.serviceWorker.ready,
-      new Promise((_r, rej) => setTimeout(() => rej(new Error('SW timeout')), SW_READY_TIMEOUT_MS)),
-    ]);
+    const reg = await getActiveSwRegistration();
 
     // Fetch the VAPID public key from the server.
     const resp = await fetch('/api/push/vapid-public-key');
@@ -6347,10 +6365,7 @@ async function cleanupRevokedPushSubscription() {
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     if (Notification.permission !== 'denied') return;
-    const reg = await Promise.race([
-      navigator.serviceWorker.ready,
-      new Promise((_r, rej) => setTimeout(() => rej(new Error('SW timeout')), SW_READY_TIMEOUT_MS)),
-    ]);
+    const reg = await getActiveSwRegistration();
     const sub = await reg.pushManager.getSubscription();
     if (!sub) return;
     const endpoint = sub.endpoint;
@@ -6572,10 +6587,7 @@ async function refreshPushStatusBanner() {
 
   // 4. Browser subscription
   try {
-    const reg = await Promise.race([
-      navigator.serviceWorker.ready,
-      new Promise((_r, rej) => setTimeout(() => rej(new Error('SW timeout')), SW_READY_TIMEOUT_MS)),
-    ]);
+    const reg = await getActiveSwRegistration();
     const sub = await reg.pushManager.getSubscription();
     if (sub) {
       set('✅', 'Background push notifications are <strong>active</strong> on this device. Reminders will arrive even when TaskIt! is not open.', '#d1fae5', '#065f46');
@@ -6583,7 +6595,11 @@ async function refreshPushStatusBanner() {
       set('🔄', 'Push notification permission is granted but this device is not yet subscribed. <a href="#" onclick="pushBannerSubscribeNow();return false;" style="color:#7c3aed;text-decoration:underline">Subscribe now</a> or reload the page.', '#eff6ff', '#1e40af');
     }
   } catch {
-    set('⚠️', 'Could not check push subscription status (service worker not ready). Try reloading the page.', '#fef3c7', '#92400e');
+    // The service worker is still starting up (e.g. first load on a slow
+    // connection, or right after an app update reset the worker). This is
+    // transient and will resolve itself — show a soft info message instead
+    // of a warning, with a link to re-check once the worker is ready.
+    set('ℹ️', 'Push notification service is still starting up. <a href="#" onclick="refreshPushStatusBanner();return false;" style="color:#1d4ed8;text-decoration:underline">Check again</a> once the page has fully loaded, or try reloading.', '#eff6ff', '#1e3a8a');
   }
 }
 

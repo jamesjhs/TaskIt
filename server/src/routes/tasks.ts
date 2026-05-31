@@ -19,6 +19,7 @@ const router = Router();
 const ALLOWED_STATUSES = new Set(['not_started', 'started', 'complete']);
 const ALLOWED_RECUR_UNITS = new Set(['days', 'weeks', 'months', 'years']);
 const ALLOWED_START_LIMITS = new Set([5, 10, 15, 60]);
+const TIMED_TASK_XP_MULTIPLIER = 2;
 
 // The system task type that is always sorted to the top of the task list
 const URGENT_TASK_TYPE = 'urgent';
@@ -935,7 +936,7 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
   }
 
   let resolvedTimeLimitMinutes: number | null = null;
-  if (status === 'started' && timeLimitMinutes !== undefined && timeLimitMinutes !== null) {
+  if (status === 'started' && timeLimitMinutes != null) {
     const parsedLimit = parseInt(String(timeLimitMinutes), 10);
     if (!Number.isInteger(parsedLimit) || !ALLOWED_START_LIMITS.has(parsedLimit)) {
       res.status(400).json({ error: 'timeLimitMinutes must be one of: 5, 10, 15, 60' });
@@ -1079,7 +1080,7 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
       if (completedTask) {
         if (shouldAwardXp) {
-          const xpMultiplier = (completedTask.xp_multiplier ?? 1.0) * (wasTimedStartActive ? 2 : 1);
+          const xpMultiplier = (completedTask.xp_multiplier ?? 1.0) * (wasTimedStartActive ? TIMED_TASK_XP_MULTIPLIER : 1);
           const xpResult = awardTaskXp(userId, completedTask.type_id, xpMultiplier);
           if (xpResult) lootDrop = xpResult.drop;
           awardFreezeCredit(userId);

@@ -3341,7 +3341,8 @@ function renderTasks(tasks) {
       <div class="subtask-progress-bar">
         <div class="subtask-progress-bar-fill" style="width:${subtaskPct}%"></div>
       </div>` : '';
-    const timerHtml = hasTimer ? `<div class="task-card-timer" data-expires-at="${Number(t.time_limit_expires_at)}">${'⏳ ' + formatCountdown(Number(t.time_limit_expires_at) - now)}</div>` : '';
+    const remaining = hasTimer ? Number(t.time_limit_expires_at) - now : 0;
+    const timerHtml = hasTimer ? `<div class="task-card-timer" data-expires-at="${Number(t.time_limit_expires_at)}">${remaining > 0 ? `⏳ ${formatCountdown(remaining)}` : '⏳ Expired'}</div>` : '';
     return `
       <div onclick="openDetailById('${escHtml(t.id)}')" class="${cardClass}">
         ${timerHtml}
@@ -3615,14 +3616,14 @@ function refreshTaskTimers() {
   document.querySelectorAll('.task-card-timer').forEach(el => {
     const expiry = Number(el.dataset.expiresAt || 0);
     const remaining = expiry - now;
-    el.textContent = '⏳ ' + formatCountdown(remaining);
+    el.textContent = remaining > 0 ? `⏳ ${formatCountdown(remaining)}` : '⏳ Expired';
     el.classList.toggle('task-card-timer-expired', remaining <= 0);
   });
 
   const detailTimer = document.getElementById('detailTimerBadge');
   if (detailTimer && currentDetailTask && currentDetailTask.status === 'started' && currentDetailTask.time_limit_expires_at) {
     const remaining = Number(currentDetailTask.time_limit_expires_at) - now;
-    detailTimer.textContent = '⏳ ' + formatCountdown(remaining);
+    detailTimer.textContent = remaining > 0 ? `⏳ ${formatCountdown(remaining)}` : '⏳ Expired';
     detailTimer.classList.remove('hidden');
     detailTimer.classList.toggle('task-card-timer-expired', remaining <= 0);
   } else if (detailTimer) {
@@ -4486,18 +4487,19 @@ async function quickStatus(status) {
     const wasRecurring = !!(currentDetailTask.recur_interval && currentDetailTask.recur_unit);
     const updated = await api('PATCH', '/tasks/' + currentDetailTask.id + '/status', { status });
     currentDetailTask = updated; tasksMap.set(updated.id, updated);
+    let successMessage = 'Status updated!';
     if (status === 'complete' && wasRecurring) {
       closeDetailModal();
       loadTasks();
-      toast('Task complete! Next occurrence created.');
       if (gamificationEnabled) loadGamificationProfile();
+      successMessage = 'Task complete! Next occurrence created.';
     } else {
-      openDetail(updated); loadTasks(); loadLongTermGoals(); toast('Status updated!');
+      openDetail(updated); loadTasks(); loadLongTermGoals();
       if (status === 'complete' && gamificationEnabled) loadGamificationProfile();
+      if (status === 'complete') successMessage = 'Task complete!';
     }
-    if (status === 'complete' && updated && updated.doubleXpAwarded) {
-      toast('Double XP earned!');
-    }
+    if (status === 'complete' && updated && updated.doubleXpAwarded) successMessage += ' Double XP earned!';
+    toast(successMessage);
     // If a loot drop was included in the response, show the modal
     if (status === 'complete' && updated && updated.drop) {
       openLootDropModal(updated.drop);

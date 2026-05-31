@@ -1330,7 +1330,8 @@
       </div>
 
       <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #e5e7eb">
-        <p style="font-weight:600;color:#1a1a2e;margin-bottom:10px;font-size:.95rem">🖥️ Popup Reminders (Browser)</p>
+        <p style="font-weight:600;color:#1a1a2e;margin-bottom:6px;font-size:.95rem">🖥️ Popup Reminders (Browser)</p>
+        <div id="pushStatusBanner" style="font-size:.82rem;padding:8px 10px;border-radius:6px;margin-bottom:10px;background:#f3f4f6;color:#6b7280">Checking push notification status…</div>
         <div style="display:flex;flex-direction:column;gap:8px">
           <label style="display:flex;align-items:center;gap:8px;font-size:.9rem">
             <input type="checkbox" id="notifPopup7day" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0" />
@@ -2405,6 +2406,11 @@ const POPUP_WINDOW_1D_MIN_MS  = 22 * 3600000;
 const POPUP_WINDOW_1D_MAX_MS  = 50 * 3600000;
 const POPUP_WINDOW_0D_MIN_MS  = 0;
 const POPUP_WINDOW_0D_MAX_MS  = 25 * 3600000;
+
+// Milliseconds to wait for the service worker to become ready before giving up.
+// Used by subscribeToPush() and refreshPushStatusBanner() — defined once here
+// so both functions stay in sync if the value ever needs to change.
+const SW_READY_TIMEOUT_MS = 3000;
 
 // ========== Mobile detection ==========
 function isMobileDevice() {
@@ -6066,10 +6072,10 @@ async function subscribeToPush() {
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
-    // Wait up to 3 s for the SW registration to be ready.
+    // Wait up to SW_READY_TIMEOUT_MS for the SW registration to be ready.
     const reg = await Promise.race([
       navigator.serviceWorker.ready,
-      new Promise((_r, rej) => setTimeout(() => rej(new Error('SW timeout')), 3000)),
+      new Promise((_r, rej) => setTimeout(() => rej(new Error('SW timeout')), SW_READY_TIMEOUT_MS)),
     ]);
 
     // Fetch the VAPID public key from the server.
@@ -6082,6 +6088,23 @@ async function subscribeToPush() {
     const appServerKey = urlBase64ToUint8Array(publicKey);
 
     let subscription = await reg.pushManager.getSubscription();
+
+    // If an existing subscription was created with a different VAPID key (e.g. after
+    // the admin regenerated keys), the push service will reject sends with a 401/403.
+    // Detect the mismatch by comparing the stored applicationServerKey with the current
+    // VAPID public key, and force a fresh subscription when they differ.
+    if (subscription && subscription.options?.applicationServerKey) {
+      const existingKey = new Uint8Array(subscription.options.applicationServerKey);
+      if (!applicationServerKeysMatch(existingKey, appServerKey)) {
+        const staleEndpoint = subscription.endpoint;
+        await subscription.unsubscribe();
+        // Remove the stale record from the server so the scheduler stops attempting
+        // delivery to an endpoint that will never succeed with the new key.
+        await api('DELETE', '/push/subscribe', { endpoint: staleEndpoint }).catch(() => {});
+        subscription = null;
+      }
+    }
+
     if (!subscription) {
       subscription = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appServerKey });
     }
@@ -6107,7 +6130,7 @@ async function cleanupRevokedPushSubscription() {
     if (Notification.permission !== 'denied') return;
     const reg = await Promise.race([
       navigator.serviceWorker.ready,
-      new Promise((_r, rej) => setTimeout(() => rej(new Error('SW timeout')), 2000)),
+      new Promise((_r, rej) => setTimeout(() => rej(new Error('SW timeout')), SW_READY_TIMEOUT_MS)),
     ]);
     const sub = await reg.pushManager.getSubscription();
     if (!sub) return;
@@ -6122,6 +6145,30 @@ function urlBase64ToUint8Array(base64String) {
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = atob(base64);
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+/**
+ * Returns true when two application server keys (Uint8Array) are identical.
+ * Used by subscribeToPush() to detect whether the stored browser subscription
+ * was created with a different VAPID key than the one the server currently uses.
+ */
+function applicationServerKeysMatch(a, b) {
+  return a.length === b.length && a.every((byte, i) => byte === b[i]);
+}
+
+// ─── Push status banner helpers (called from the inline links in the banner) ─
+
+/** Called when the user clicks "Grant permission" in the push status banner. */
+function pushBannerGrantPermission() {
+  Notification.requestPermission().then(p => {
+    if (p === 'granted') subscribeToPush().then(refreshPushStatusBanner);
+    else refreshPushStatusBanner();
+  });
+}
+
+/** Called when the user clicks "Subscribe now" in the push status banner. */
+function pushBannerSubscribeNow() {
+  subscribeToPush().then(refreshPushStatusBanner);
 }
 
 // Close notif modal when clicking the overlay backdrop
@@ -6259,6 +6306,65 @@ async function loadNotificationPreferences() {
     document.getElementById('notifPopupOnday').checked = !!prefs.popup?.notify_onday;
   } catch (err) {
     console.error('Failed to load notification preferences:', err);
+  }
+  refreshPushStatusBanner();
+}
+
+// Show the current push-notification state in the profile page banner so users
+// can instantly see whether background push is set up on this device.
+async function refreshPushStatusBanner() {
+  const banner = document.getElementById('pushStatusBanner');
+  if (!banner) return;
+
+  const set = (icon, text, bg, color) => {
+    banner.style.background = bg;
+    banner.style.color = color;
+    banner.innerHTML = icon + ' ' + text;
+  };
+
+  // 1. Browser support check
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    set('⚠️', 'Background push notifications are not supported by this browser.', '#fef3c7', '#92400e');
+    return;
+  }
+
+  // 2. Notification permission
+  const perm = ('Notification' in window) ? Notification.permission : 'denied';
+  if (perm === 'denied') {
+    set('🚫', 'Notification permission is <strong>blocked</strong> in your browser. Open your browser/site settings to allow notifications, then reload.', '#fee2e2', '#991b1b');
+    return;
+  }
+  if (perm === 'default') {
+    set('❓', 'Notification permission has not been granted yet. <a href="#" onclick="pushBannerGrantPermission();return false;" style="color:#7c3aed;text-decoration:underline">Grant permission</a> to enable popup and background push reminders.', '#fffbeb', '#78350f');
+    return;
+  }
+
+  // 3. Server VAPID configuration
+  let vapidConfigured = false;
+  try {
+    const resp = await fetch('/api/push/vapid-public-key');
+    vapidConfigured = resp.ok;
+  } catch { /* network error – treat as not configured */ }
+
+  if (!vapidConfigured) {
+    set('⚙️', 'Background push notifications are not yet configured on this server. An administrator needs to set up VAPID keys in Admin → VAPID Settings. Popup reminders still work when your browser tab is open.', '#f3f4f6', '#4b5563');
+    return;
+  }
+
+  // 4. Browser subscription
+  try {
+    const reg = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_r, rej) => setTimeout(() => rej(new Error('SW timeout')), SW_READY_TIMEOUT_MS)),
+    ]);
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      set('✅', 'Background push notifications are <strong>active</strong> on this device. Reminders will arrive even when TaskIt! is not open.', '#d1fae5', '#065f46');
+    } else {
+      set('🔄', 'Push notification permission is granted but this device is not yet subscribed. <a href="#" onclick="pushBannerSubscribeNow();return false;" style="color:#7c3aed;text-decoration:underline">Subscribe now</a> or reload the page.', '#eff6ff', '#1e40af');
+    }
+  } catch {
+    set('⚠️', 'Could not check push subscription status (service worker not ready). Try reloading the page.', '#fef3c7', '#92400e');
   }
 }
 

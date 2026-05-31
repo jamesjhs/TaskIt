@@ -167,6 +167,9 @@ function zonedDateTimeToUtc(year: number, month: number, day: number, hours: num
   const naiveUtc = Date.UTC(year, month - 1, day, hours, minutes, 0, 0);
   const firstOffset = getTimeZoneOffsetMs(naiveUtc, timeZone);
   let resolvedUtc = naiveUtc - firstOffset;
+  // Re-check after applying the first offset so DST boundary cases (where the
+  // same local clock time maps to different UTC instants) settle on the actual
+  // offset for the resolved timestamp.
   const secondOffset = getTimeZoneOffsetMs(resolvedUtc, timeZone);
   if (secondOffset !== firstOffset) {
     resolvedUtc = naiveUtc - secondOffset;

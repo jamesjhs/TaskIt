@@ -6331,7 +6331,7 @@ function waitForServiceWorkerRegistration(reg) {
   });
 }
 
-async function getActiveSwRegistration() {
+async function ensureActiveSwRegistration() {
   let reg = await navigator.serviceWorker.getRegistration();
   if (!reg) {
     reg = await navigator.serviceWorker.register('/sw.js');
@@ -6358,7 +6358,7 @@ async function subscribeToPush() {
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
-    const reg = await getActiveSwRegistration();
+    const reg = await ensureActiveSwRegistration();
 
     // Fetch the VAPID public key from the server.
     const resp = await fetch('/api/push/vapid-public-key');
@@ -6410,7 +6410,7 @@ async function cleanupRevokedPushSubscription() {
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     if (Notification.permission !== 'denied') return;
-    const reg = await getActiveSwRegistration();
+    const reg = await ensureActiveSwRegistration();
     const sub = await reg.pushManager.getSubscription();
     if (!sub) return;
     const endpoint = sub.endpoint;
@@ -6641,7 +6641,7 @@ async function refreshPushStatusBanner() {
 
   // 4. Browser subscription
   try {
-    const reg = await getActiveSwRegistration();
+    const reg = await ensureActiveSwRegistration();
     const sub = await reg.pushManager.getSubscription();
     if (sub) {
       set('✅', 'Background push notifications are <strong>active</strong> on this device. Reminders will arrive even when TaskIt! is not open.', '#d1fae5', '#065f46');

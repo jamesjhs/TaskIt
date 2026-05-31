@@ -50,6 +50,11 @@ const DEFAULT_PUSH_TIME_ZONE = 'UTC';
 
 // Query ranges are intentionally wider than the exact send window so per-user
 // local-time push reminders can be evaluated without missing the correct hour.
+// In particular, the 1-day push window starts at 0h because due dates are
+// stored at local midnight; a user choosing an afternoon/evening reminder time
+// still needs the task to be considered on the previous day, even though the
+// raw `due_date - now` difference is already < 24h. Exact send timing is still
+// enforced later by isPushReminderDueNow()/isEmailReminderDueNow().
 const REMINDER_WINDOWS: ReminderWindow[] = [
   { type: '7_day', label: '7 days', offsetDays: 7, minDueOffsetMs: 6 * DAY_MS, maxDueOffsetMs: 8 * DAY_MS },
   { type: '1_day', label: '1 day', offsetDays: 1, minDueOffsetMs: 0, maxDueOffsetMs: 2 * DAY_MS },
@@ -177,17 +182,28 @@ function zonedDateTimeToUtc(year: number, month: number, day: number, hours: num
   return resolvedUtc;
 }
 
+function shiftCalendarDate(year: number, month: number, day: number, dayDelta: number): { year: number; month: number; day: number } {
+  // Treat the input as a pure calendar date rather than elapsed milliseconds so
+  // DST changes never skew the resulting local day we later convert back into
+  // the user's timezone.
+  const shifted = new Date(Date.UTC(year, month - 1, day));
+  shifted.setUTCDate(shifted.getUTCDate() + dayDelta);
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth() + 1,
+    day: shifted.getUTCDate(),
+  };
+}
+
 function getScheduledPushTimestamp(taskDueDate: number, window: ReminderWindow, user: UserRow): number {
   const timeZone = getSafeTimeZone(user.push_time_zone);
   const dueParts = getZonedDateParts(taskDueDate, timeZone);
-  const reminderDate = new Date(Date.UTC(dueParts.year, dueParts.month - 1, dueParts.day));
-  reminderDate.setUTCDate(reminderDate.getUTCDate() - window.offsetDays);
-
+  const reminderDate = shiftCalendarDate(dueParts.year, dueParts.month, dueParts.day, -window.offsetDays);
   const { hours, minutes } = parseReminderTime(user.push_reminder_time ?? DEFAULT_PUSH_REMINDER_TIME);
   return zonedDateTimeToUtc(
-    reminderDate.getUTCFullYear(),
-    reminderDate.getUTCMonth() + 1,
-    reminderDate.getUTCDate(),
+    reminderDate.year,
+    reminderDate.month,
+    reminderDate.day,
     hours,
     minutes,
     timeZone
@@ -213,6 +229,8 @@ async function sendReminders(): Promise<void> {
     const minDue = now + window.minDueOffsetMs;
     const maxDue = now + window.maxDueOffsetMs;
 
+    // This intentionally over-fetches candidate tasks for push reminders; the
+    // exact per-channel send checks below decide whether a reminder is truly due.
     const tasks = db.prepare(`
       SELECT t.id, t.title, t.due_date, t.created_by,
              t.notify_email, t.notify_7day, t.notify_1day, t.notify_onday,

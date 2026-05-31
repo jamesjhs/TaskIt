@@ -6310,7 +6310,7 @@ async function dismissAlert(alertId) {
 
 function waitForServiceWorkerRegistration(reg) {
   return new Promise((resolve, reject) => {
-    if (reg.active || reg.waiting) { resolve(reg); return; }
+    if (reg.active) { resolve(reg); return; }
     const worker = reg.installing;
     if (!worker) { reject(new Error('No service worker instance available')); return; }
 
@@ -6320,7 +6320,7 @@ function waitForServiceWorkerRegistration(reg) {
     }, SW_READY_TIMEOUT_MS);
 
     function onStateChange() {
-      if (worker.state === 'activated' || reg.active || reg.waiting) {
+      if (worker.state === 'activated' || reg.active) {
         clearTimeout(timeoutId);
         worker.removeEventListener('statechange', onStateChange);
         resolve(reg);
@@ -6337,7 +6337,7 @@ async function ensureActiveSwRegistration() {
     reg = await navigator.serviceWorker.register('/sw.js');
   }
 
-  if (reg.active || reg.waiting) return reg;
+  if (reg.active) return reg;
 
   try {
     return await Promise.race([
@@ -6347,7 +6347,7 @@ async function ensureActiveSwRegistration() {
     ]);
   } catch {
     const refreshed = await navigator.serviceWorker.getRegistration();
-    if (refreshed && (refreshed.active || refreshed.waiting)) return refreshed;
+    if (refreshed && refreshed.active) return refreshed;
     throw new Error('SW timeout');
   }
 }

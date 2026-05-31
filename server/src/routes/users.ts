@@ -367,7 +367,7 @@ router.patch('/me/notification-preferences', (req: Request, res: Response): void
 
   const prefs = { email, popup };
   const resolvedPushReminderTime = pushSchedule?.localTime ?? existing.push_reminder_time ?? DEFAULT_PUSH_REMINDER_TIME;
-  const resolvedPushTimeZone = pushSchedule?.timeZone !== undefined
+  const resolvedPushTimeZone = pushSchedule && 'timeZone' in pushSchedule
     ? (pushSchedule.timeZone || null)
     : (existing.push_time_zone || null);
 

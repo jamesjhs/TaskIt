@@ -1158,6 +1158,16 @@
       </div>
     </div>
 
+    <!-- Significantly Overdue Section -->
+    <section id="significantly-overdue-section" class="sporadic-container significantly-overdue-container">
+      <div class="sporadic-header">
+        <button id="significantly-overdue-toggle" class="toggle-btn significantly-overdue-toggle">
+          <span id="significantly-overdue-arrow">▶</span> Significantly overdue (<span id="significantly-overdue-count">0</span>)
+        </button>
+      </div>
+      <div id="significantly-overdue-list" class="sporadic-tasks" style="display: none;"></div>
+    </section>
+
     <!-- Sporadic Tasks Section -->
     <section id="sporadic-section" class="sporadic-container">
       <div class="sporadic-header">
@@ -3281,18 +3291,21 @@ async function loadTasks() {
 
 function renderTasks(tasks) {
   const grid = document.getElementById('taskGrid');
+  const overdueSection = document.getElementById('significantly-overdue-section');
+  const overdueList = document.getElementById('significantly-overdue-list');
+  const overdueCount = document.getElementById('significantly-overdue-count');
   // Save for re-renders triggered by toggleFarFuture (avoids a network fetch)
   _lastRenderInput = tasks;
   let displayTasks = tasks;
   if (!currentFilter.showGroupTasks) {
     displayTasks = tasks.filter(t => !t.group_id);
   }
-  if (!displayTasks.length) {
-    grid.innerHTML = '<div class="loading"><div style="font-size:3rem;margin-bottom:12px">\ud83d\udccb</div><p>No tasks found. Create your first task!</p></div>';
-    return;
-  }
-
   const now = Date.now();
+  const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+  const overdueThreshold = now - THREE_DAYS_MS;
+  const significantlyOverdueTasks = [...displayTasks].filter(
+    t => t.status !== 'complete' && t.due_date && t.due_date < overdueThreshold
+  );
 
   // Sort: urgent tasks first, then by due date (overdue soonest, then due soonest, then no due date)
   displayTasks = [...displayTasks].sort((a, b) => {
@@ -3314,7 +3327,7 @@ function renderTasks(tasks) {
   const farThreshold = now + TWO_WEEKS_MS;
   // Main task list shows completed tasks or pending tasks with set due dates
   const mainTasks = displayTasks.filter(
-    t => t.status === 'complete' || (t.due_date && t.due_date <= farThreshold)
+    t => t.status === 'complete' || (t.due_date && t.due_date <= farThreshold && t.due_date >= overdueThreshold)
   );
   const farFutureTasks = displayTasks.filter(
     t => t.status !== 'complete' && t.due_date && t.due_date > farThreshold
@@ -3360,6 +3373,16 @@ function renderTasks(tasks) {
         ${subtaskBar}
       </div>
     `;
+  }
+
+  if (overdueSection && overdueList && overdueCount) {
+    overdueCount.textContent = significantlyOverdueTasks.length;
+    overdueList.innerHTML = significantlyOverdueTasks.map(buildCard).join('');
+  }
+
+  if (!displayTasks.length) {
+    grid.innerHTML = '<div class="loading"><div style="font-size:3rem;margin-bottom:12px">\ud83d\udccb</div><p>No tasks found. Create your first task!</p></div>';
+    return;
   }
 
   let html = mainTasks.map(buildCard).join('');
@@ -3481,6 +3504,16 @@ async function confirmEditSporadicLastDone() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  const significantlyOverdueToggle = document.getElementById('significantly-overdue-toggle');
+  if (significantlyOverdueToggle) {
+    significantlyOverdueToggle.addEventListener('click', () => {
+      const list = document.getElementById('significantly-overdue-list');
+      const arrow = document.getElementById('significantly-overdue-arrow');
+      const isOpen = list.style.display !== 'none';
+      list.style.display = isOpen ? 'none' : 'block';
+      if (arrow) arrow.textContent = isOpen ? '▶' : '▼';
+    });
+  }
   const toggle = document.getElementById('sporadic-toggle');
   if (toggle) {
     toggle.addEventListener('click', () => {

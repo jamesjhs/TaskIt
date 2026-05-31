@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.18.0**  
+**Version 1.19.0**  
 **Author:** J Rowson  
 **Generated:** 2026-05-23
 
@@ -380,6 +380,8 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `is_sporadic` | INTEGER NOT NULL DEFAULT 0 | 1 = sporadic (maintenance) task; excluded from active task list ordering (migration) |
 | `last_completed_at` | INTEGER | Epoch ms of the most recent sporadic completion (migration) |
 | `is_long_term_goal` | INTEGER NOT NULL DEFAULT 0 | 1 = long-term goal; excluded from the main active task list until converted (migration) |
+| `started_at` | INTEGER | Epoch ms when the task was last set to 'started'; cleared on complete/not_started (migration) |
+| `time_limit_expires_at` | INTEGER | Epoch ms deadline for the sprint timer; NULL when no timer is active; cleared on complete/not_started (migration) |
 
 #### `task_assignees`
 | Column | Type | Notes |
@@ -963,7 +965,7 @@ Attached to `req.user` by `authMiddleware`.
 | `GET /long-term-goals` | Lists all non-archived long-term goals for the user |
 | `POST /create-long-term-goal` | Creates a long-term goal (`is_long_term_goal=1`, no due date); supports optional xpMultiplier |
 | `PATCH /:id` | Updates any task field; supports `isLongTermGoal` to clear the flag and convert a goal to a regular task; re-validates assignees; preserves completed_at/by sync |
-| `PATCH /:id/status` | Changes status; on `complete`: spawns next recurrence (if any), awards XP/freeze, checks achievements |
+| `PATCH /:id/status` | Changes status; on `started`: accepts optional `timeLimitMinutes` (5/10/15/60) and stores `started_at` + `time_limit_expires_at`; on `complete`: awards double XP if `time_limit_expires_at` is still in the future (`TIMED_TASK_XP_MULTIPLIER = 2`), spawns next recurrence (if any), awards XP/freeze, checks achievements |
 | `PATCH /:id/defer` | Updates due_date only |
 | `PATCH /:id/fast-forward` | Advances recurring due_date by one interval; clears reminder sent records |
 | `PATCH /:id/archive` | Toggles `archived` flag |
@@ -972,7 +974,7 @@ Attached to `req.user` by `authMiddleware`.
 | `POST /:id/notes` | Adds note, calls `checkAndGrantAchievements` |
 
 **XP/gamification calls on status → complete:**
-1. `awardTaskXp(userId, typeId, xpMultiplier)` — skill XP
+1. `awardTaskXp(userId, typeId, xpMultiplier)` — skill XP; if `time_limit_expires_at` was still in the future at completion time, `xpMultiplier` is multiplied by `TIMED_TASK_XP_MULTIPLIER` (= 2) to award double XP. The response includes `doubleXpAwarded: true` when this applies.
 2. `awardFreezeCredit(userId)` — +1 freeze credit
 3. `consumeFreezeCredit(userId)` — if freeze was consumed this completion
 4. `checkAndGrantAchievements(userId)` — achievement unlock check
@@ -2119,4 +2121,4 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.18.0*
+*End of Technical Reference Manual — TaskIt! v1.19.0*

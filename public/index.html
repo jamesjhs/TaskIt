@@ -1091,7 +1091,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.18.1</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
+      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.19.0</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>
@@ -2258,6 +2258,7 @@
         <button type="button" onclick="confirmStartTaskWithLimit(60)" class="btn btn-primary" style="min-width:84px">60 min</button>
       </div>
       <button id="startTaskBackButton" type="button" onclick="showStartTaskPrompt()" class="btn btn-secondary btn-sm hidden" style="margin-top:14px">← Back</button>
+      <button type="button" onclick="closeStartTaskModal()" class="btn btn-secondary btn-sm" style="margin-top:10px">Cancel</button>
     </div>
   </div>
 </div>
@@ -2422,6 +2423,7 @@ let arcadeDailyPlayMinutes = 5;
 let _farFutureExpanded = false;
 // Start-task modal state.
 let _startTaskModalStep = 'prompt';
+let _startTaskInFlight = false;
 // Last task array passed to renderTasks — used by toggleFarFuture to re-render without a network fetch.
 let _lastRenderInput = [];
 
@@ -3619,8 +3621,12 @@ function refreshTaskTimers() {
   const now = Date.now();
   document.querySelectorAll('.task-card-timer').forEach(el => {
     const expiry = Number(el.dataset.expiresAt || 0);
+    const expired = expiry - now <= 0;
     el.textContent = renderTaskTimerLabel(expiry, now);
-    el.classList.toggle('task-card-timer-expired', expiry - now <= 0);
+    el.classList.toggle('task-card-timer-expired', expired);
+    // Stop the green pulse once the timer has expired so it's clear the bonus window closed.
+    const card = el.closest('.task-card');
+    if (card) card.classList.toggle('task-card-started-timed', !expired);
   });
 
   const detailTimer = document.getElementById('detailTimerBadge');
@@ -3667,6 +3673,7 @@ function closeStartTaskModal() {
   const modal = document.getElementById('startTaskModal');
   if (modal) modal.classList.add('hidden');
   _startTaskModalStep = 'prompt';
+  _startTaskInFlight = false;
 }
 
 function showStartTaskLimitChoices() {
@@ -3680,8 +3687,9 @@ function showStartTaskPrompt() {
 }
 
 async function confirmStartTaskWithLimit(minutes) {
-  if (!currentDetailTask) return;
+  if (!currentDetailTask || _startTaskInFlight) return;
   if (!START_TIME_LIMIT_OPTIONS.includes(minutes)) return;
+  _startTaskInFlight = true;
   try {
     const updated = await api('PATCH', `/tasks/${currentDetailTask.id}/status`, {
       status: 'started',
@@ -3694,10 +3702,12 @@ async function confirmStartTaskWithLimit(minutes) {
     loadTasks();
     toast('Task started with a ' + minutes + '-minute limit!');
   } catch (err) { toast(err.message, 'error'); }
+  finally { _startTaskInFlight = false; }
 }
 
 async function confirmStartTaskNoLimit() {
-  if (!currentDetailTask) return;
+  if (!currentDetailTask || _startTaskInFlight) return;
+  _startTaskInFlight = true;
   try {
     const updated = await api('PATCH', `/tasks/${currentDetailTask.id}/status`, { status: 'started' });
     currentDetailTask = updated;
@@ -3707,6 +3717,7 @@ async function confirmStartTaskNoLimit() {
     loadTasks();
     toast('Task started!');
   } catch (err) { toast(err.message, 'error'); }
+  finally { _startTaskInFlight = false; }
 }
 
 // ========== Filters ==========
@@ -4479,6 +4490,15 @@ async function deleteSubtask(subId) {
 async function quickStatus(status) {
   if (!currentDetailTask) return;
   if (status === 'started') {
+    // If already started with an active (non-expired) timer, don't silently reset it.
+    if (
+      currentDetailTask.status === 'started' &&
+      currentDetailTask.time_limit_expires_at &&
+      Number(currentDetailTask.time_limit_expires_at) > Date.now()
+    ) {
+      toast('Task already started with an active timer.', 'info');
+      return;
+    }
     openStartTaskModal();
     return;
   }

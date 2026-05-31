@@ -1,6 +1,6 @@
 # TaskIt! – How-To Manual
 
-**Version 1.18.0**  
+**Version 1.19.0**  
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -285,6 +285,16 @@ Click any task card to open the **Task Detail** panel, where you can:
 - **Defer** the task — click the *Defer* button to set a new due date without opening the full edit form
 - **Toggle Archive** – hide/unhide the task from the main view
 - **Delete** the task permanently — for group tasks, only the task creator or a group admin can delete; other group members can edit all other details but cannot delete
+
+#### ⏱ Sprint timer (double XP)
+
+When you tap **Started**, a popup asks "Set a time limit?":
+1. **No** — task starts immediately with a solid light-green card.
+2. **Yes** — pick **5**, **10**, **15**, or **60 minutes**. The card shows a pulsing green background and a live countdown in the top-right corner.
+3. Complete the task **before the timer expires** to earn **double XP**.
+4. Tap **Cancel** at any time to close the popup without changing the task's status.
+
+> If the task already has an active timer running, tapping "Started" again shows a notice instead of resetting the timer.
 
 Use the **filter bar** at the top of the Tasks page to filter by:
 
@@ -592,4 +602,4 @@ The Freeze is consumed automatically, the streak is preserved, and the ❄️ is
 
 ---
 
-*TaskIt! v1.18.0 – Copyright J Rowson 2026 | jahosi.co.uk*
+*TaskIt! v1.19.0 – Copyright J Rowson 2026 | jahosi.co.uk*

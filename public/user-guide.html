@@ -54,7 +54,7 @@
   <article class="prose prose-slate dark:prose-invert max-w-none bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 sm:p-8">
 
     <h1>👋 TaskIt! — Complete User Guide</h1>
-    <p class="lead" style="color:#6b7280;font-size:.95rem;margin-top:-4px">v<span class="page-version">1.18.0</span> &nbsp;·&nbsp; Copyright J Rowson and R Shaw, 2026</p>
+    <p class="lead" style="color:#6b7280;font-size:.95rem;margin-top:-4px">v<span class="page-version">1.19.0</span> &nbsp;·&nbsp; Copyright J Rowson and R Shaw, 2026</p>
     <p>TaskIt! is a friendly, self-hosted task manager for individuals and small teams. This guide covers every feature — from your very first login to competing with friends on the XP leaderboard.</p>
 
     <div class="toc">
@@ -183,6 +183,16 @@
       <li><strong>Defer</strong> &#x2014; set a new due date quickly without opening the full edit form</li>
       <li><strong>Archive</strong> &#x2014; hide from the default view (restore via <em>Show Archived</em> filter)</li>
       <li><strong>Delete</strong> &#x2014; permanent. For group tasks only the creator or a group admin can delete.</li>
+    </ul>
+
+    <h3>&#x23F1;&#xFE0F; Sprint timer &amp; double XP</h3>
+    <p>Tapping <strong>Started</strong> opens a popup asking <em>"Set a time limit?"</em></p>
+    <ul>
+      <li><strong>No</strong> &#x2014; task starts with a solid light-green card.</li>
+      <li><strong>Yes</strong> &#x2014; choose 5, 10, 15, or 60 minutes. The card pulses green and shows a live countdown in the top-right corner.</li>
+      <li>Complete the task <strong>before the timer expires</strong> to earn <strong>double XP</strong>. A confirmation toast confirms the bonus.</li>
+      <li>Once the countdown expires the pulse stops; the task can still be completed, just without the bonus.</li>
+      <li>Tap <strong>Cancel</strong> in the popup to dismiss it without changing the task's status.</li>
     </ul>
 
     <h3>&#x1F50D; Filtering tasks</h3>
@@ -335,7 +345,7 @@
         <th style="padding:7px 12px;text-align:left;border:1px solid #e2e8f0">XP (default)</th>
       </tr>
       <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">&#x1F44B; Register / Sign up</td><td style="padding:6px 12px;border:1px solid #e2e8f0">100 XP</td></tr>
-      <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">&#x2705; Complete a task</td><td style="padding:6px 12px;border:1px solid #e2e8f0">50 XP (× any task multiplier)</td></tr>
+      <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">&#x2705; Complete a task</td><td style="padding:6px 12px;border:1px solid #e2e8f0">50 XP (× any task multiplier); <strong>×2 (double XP)</strong> if completed within a sprint timer</td></tr>
       <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">&#x2795; Create a task</td><td style="padding:6px 12px;border:1px solid #e2e8f0">10 XP</td></tr>
       <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">&#x1F465; Create a group</td><td style="padding:6px 12px;border:1px solid #e2e8f0">25 XP</td></tr>
       <tr><td style="padding:6px 12px;border:1px solid #e2e8f0">&#x1F4E7; Send a group invite</td><td style="padding:6px 12px;border:1px solid #e2e8f0">15 XP</td></tr>
@@ -572,7 +582,7 @@
 
     <hr/>
 
-    <p style="font-size:.88rem;color:#6b7280;margin-top:0">TaskIt! v<span class="page-version">1.18.0</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;&#x00B7;&nbsp;
+    <p style="font-size:.88rem;color:#6b7280;margin-top:0">TaskIt! v<span class="page-version">1.19.0</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;&#x00B7;&nbsp;
       <a href="https://jahosi.co.uk" class="text-indigo-500 hover:underline" target="_blank" rel="noopener noreferrer">jahosi.co.uk</a> &nbsp;&#x00B7;&nbsp;
       <a href="/privacy-policy.html" class="text-indigo-500 hover:underline">Privacy Policy</a>
     </p>
@@ -581,7 +591,7 @@
 </main>
 
 <footer class="border-t border-slate-200 dark:border-slate-700 py-4 mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-  <span>TaskIt! v<span class="page-version">1.18.0</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;&#x00B7;&nbsp;
+  <span>TaskIt! v<span class="page-version">1.19.0</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;&#x00B7;&nbsp;
     <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer" class="text-indigo-500 hover:underline">jahosi.co.uk</a>
     &nbsp;&#x00B7;&nbsp;
     <a href="/privacy-policy.html" class="text-indigo-500 hover:underline">Privacy Policy</a>

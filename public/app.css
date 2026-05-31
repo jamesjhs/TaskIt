@@ -3301,6 +3301,20 @@ body.arcade-open { overflow: hidden; }
   background-color: #f0f9ff;
 }
 
+.significantly-overdue-container {
+  border-color: #fca5a5;
+  background-color: #fef2f2;
+}
+
+.significantly-overdue-toggle {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.significantly-overdue-toggle:hover {
+  color: #991b1b;
+}
+
 .sporadic-header {
   display: flex;
   align-items: center;

@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.19.0**  
+**Version 1.19.1**  
 **Author:** J Rowson  
 **Generated:** 2026-05-23
 
@@ -311,6 +311,9 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `friend_key` | TEXT | CamelCase two-word pair e.g. `BraveOcean` (migration) |
 | `arcade_tokens` | INTEGER NOT NULL DEFAULT 0 | Arcade Token balance — spendable to play mini-games (migration) |
 | `daily_play_minutes` | INTEGER NOT NULL DEFAULT 5 | Digital-wellbeing daily arcade play limit in minutes (1–180) (migration) |
+| `notification_preferences` | TEXT NOT NULL | JSON string storing default email/popup reminder flags for new tasks (migration) |
+| `push_reminder_time` | TEXT NOT NULL DEFAULT `'09:00'` | Preferred local delivery time for background push reminders (`HH:MM`, 24-hour) (migration) |
+| `push_time_zone` | TEXT | IANA timezone for the saved push reminder time, e.g. `Europe/London` (migration) |
 
 #### `groups`
 | Column | Type | Notes |
@@ -589,6 +592,15 @@ Seeded on first run:
 | `sent_at` | INTEGER NOT NULL | Unix ms when sent |
 | PK | (`task_id`, `reminder_type`) | Prevents duplicate sends |
 
+#### `task_push_reminders_sent`
+| Column | Type | Notes |
+|---|---|---|
+| `task_id` | TEXT NOT NULL | FK → tasks.id |
+| `reminder_type` | TEXT NOT NULL | `'7_day'`, `'1_day'`, `'on_day'` |
+| `user_id` | TEXT NOT NULL | FK → users.id |
+| `sent_at` | INTEGER NOT NULL | Unix ms when the user's push reminder was delivered |
+| PK | (`task_id`, `reminder_type`, `user_id`) | Prevents duplicate per-user push sends |
+
 #### `task_notes`
 | Column | Type | Notes |
 |---|---|---|
@@ -833,6 +845,8 @@ Attached to `req.user` by `authMiddleware`.
 | `POST` | `/api/task-types` | JWT | authed | Create task type |
 | `DELETE` | `/api/task-types/:id` | JWT | authed | Delete task type |
 | `PATCH` | `/api/users/me/locale` | JWT | authed | Update locale |
+| `GET` | `/api/users/me/notification-preferences` | JWT | authed | Get default reminder flags plus preferred local push time/timezone |
+| `PATCH` | `/api/users/me/notification-preferences` | JWT | authed | Update default reminder flags plus preferred local push time/timezone |
 | `PATCH` | `/api/users/me/password` | JWT | authed | Change password |
 | `DELETE` | `/api/users/me` | JWT | authed | Delete own account (cascade) |
 | `POST` | `/api/users/:id/report` | JWT | authed | Report a user |
@@ -1019,6 +1033,8 @@ Three handlers:
 | Handler | Description |
 |---|---|
 | `PATCH /me/locale` | Validates against `ALLOWED_LOCALES`, updates DB |
+| `GET /me/notification-preferences` | Returns saved default reminder flags plus `{ pushSchedule: { localTime, timeZone } }` |
+| `PATCH /me/notification-preferences` | Validates email/popup boolean flags and optional `pushSchedule`, then updates the user row |
 | `POST /:id/report` | Inserts `user_reports` row |
 | `POST /:id/block` | Idempotent insert into `user_blocks` |
 | `DELETE /:id/block` | Removes block row |
@@ -1235,23 +1251,25 @@ All functions fall back gracefully when SMTP is not configured (`console.warn` +
 **Constants:**
 ```
 REMINDER_WINDOWS = [
-  { type: '7_day',  minMs: 6d,   maxMs: 8d,   label: '7 days' },
-  { type: '1_day',  minMs: 22h,  maxMs: 50h,  label: '1 day'  },
-  { type: 'on_day', minMs: 0,    maxMs: 25h,  label: 'today'  },
+  { type: '7_day', offsetDays: 7, minDueOffsetMs: 6d,  maxDueOffsetMs: 8d,  label: '7 days' },
+  { type: '1_day', offsetDays: 1, minDueOffsetMs: 0,   maxDueOffsetMs: 2d,  label: '1 day'  },
+  { type: 'on_day', offsetDays: 0, minDueOffsetMs: -1d, maxDueOffsetMs: 0,  label: 'today'  },
 ]
 ```
-Windows overlap intentionally to handle scheduler drift; `task_reminders_sent` deduplicates actual sends.
+Candidate windows are intentionally broad enough for per-user local-time push scheduling. Email sends use `task_reminders_sent`; push sends use per-user rows in `task_push_reminders_sent`.
 
 **Functions:**
 | Function | Description |
 |---|---|
 | `sendPushNotificationsForUser(userId, taskId, taskTitle, windowLabel)` | Sends a Web Push payload to all subscriptions for the user; removes stale subscriptions (410/404); returns `true` if at least one delivery succeeded |
-| `sendReminders()` | Async; queries tasks in each reminder window where email or popup notifications are configured; sends email (when `notify_email` and per-window email flag are set) and/or push (when per-window push flag is set) to creator and assignees; records in `task_reminders_sent` |
+| `getScheduledPushTimestamp(taskDueDate, window, user)` | Resolves the exact UTC timestamp for a user's preferred local push reminder time |
+| `isPushReminderDueNow(task, window, user, now)` | Applies the scheduler lookback window to decide whether a user's push reminder should fire on this hourly run |
+| `sendReminders()` | Async; queries candidate tasks for each reminder window; sends email when due and not yet recorded in `task_reminders_sent`; sends push per recipient when the saved local time is due and not yet recorded in `task_push_reminders_sent` |
 | `startScheduler()` | Registers `node-cron` expression `'0 * * * *'` (top of every hour); calls `sendReminders()` and `resetOverdueStreaks()` |
 
 The scheduler resolves both email and push applicability independently per task and per timing window:
 - **Email applicable**: `notify_email = 1` AND the window-specific email flag (e.g. `notify_7day = 1`).
-- **Push applicable**: the window-specific push flag (e.g. `notify_popup_7day = 1`), independent of email settings.
+- **Push applicable**: the window-specific push flag (e.g. `notify_popup_7day = 1`), independent of email settings, then checked against the recipient's saved `push_reminder_time` + `push_time_zone`.
 
 Tasks with any applicable channel are fetched; tasks where neither channel applies for the current window are skipped.
 
@@ -2121,4 +2139,4 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.19.0*
+*End of Technical Reference Manual — TaskIt! v1.19.1*

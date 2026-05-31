@@ -23,6 +23,8 @@ interface TaskRow {
 interface UserRow {
   id: string;
   email: string;
+  push_reminder_time: string | null;
+  push_time_zone: string | null;
 }
 
 interface PushSubscriptionRow {
@@ -32,19 +34,36 @@ interface PushSubscriptionRow {
   keys_auth: string;
 }
 
-// Reminder thresholds: type name → milliseconds before deadline.
-// Windows overlap slightly so that tasks are never missed due to the scheduler
-// running a few minutes late; task_reminders_sent deduplicates actual sends.
-const REMINDER_WINDOWS: Array<{ type: string; minMs: number; maxMs: number; label: string }> = [
-  { type: '7_day',  minMs: 6 * 24 * 60 * 60 * 1000, maxMs: 8 * 24 * 60 * 60 * 1000, label: '7 days'  },
-  { type: '1_day',  minMs: 22 * 60 * 60 * 1000,      maxMs: 50 * 60 * 60 * 1000,     label: '1 day'   },
-  { type: 'on_day', minMs: 0,                         maxMs: 25 * 60 * 60 * 1000,     label: 'today'   },
+interface ReminderWindow {
+  type: '7_day' | '1_day' | 'on_day';
+  label: string;
+  offsetDays: number;
+  minDueOffsetMs: number;
+  maxDueOffsetMs: number;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+const PUSH_LOOKBACK_MS = 70 * 60 * 1000;
+const DEFAULT_PUSH_REMINDER_TIME = '09:00';
+const DEFAULT_PUSH_TIME_ZONE = 'UTC';
+
+// Query ranges are intentionally wider than the exact send window so per-user
+// local-time push reminders can be evaluated without missing the correct hour.
+// In particular, the 1-day push window starts at 0h because due dates are
+// stored at local midnight; a user choosing an afternoon/evening reminder time
+// still needs the task to be considered on the previous day, even though the
+// raw `due_date - now` difference is already < 24h. Exact send timing is still
+// enforced later by isPushReminderDueNow()/isEmailReminderDueNow().
+const REMINDER_WINDOWS: ReminderWindow[] = [
+  { type: '7_day', label: '7 days', offsetDays: 7, minDueOffsetMs: 6 * DAY_MS, maxDueOffsetMs: 8 * DAY_MS },
+  { type: '1_day', label: '1 day', offsetDays: 1, minDueOffsetMs: 0, maxDueOffsetMs: 2 * DAY_MS },
+  { type: 'on_day', label: 'today', offsetDays: 0, minDueOffsetMs: -1 * DAY_MS, maxDueOffsetMs: 0 },
 ];
 
 /**
  * Send web push notifications for a specific task reminder to all subscribed browsers for a user.
- * Returns `true` if at least one push notification was successfully delivered — the caller uses
- * this to decide whether to write the deduplication record in `task_reminders_sent`.
+ * Returns `true` if at least one push notification was successfully delivered.
  */
 async function sendPushNotificationsForUser(userId: string, taskId: string, taskTitle: string, windowLabel: string): Promise<boolean> {
   const { publicKey, privateKey } = getVapidFromDb();
@@ -65,11 +84,6 @@ async function sendPushNotificationsForUser(userId: string, taskId: string, task
     url: `${appUrl}/?task=${taskId}`,
   });
 
-  // Send to all subscriptions in parallel; remove stale/invalid subscription rows.
-  //   410 / 404 → endpoint is gone (browser unsubscribed or push service deleted it)
-  //   401 / 403 → application server key mismatch (VAPID keys were regenerated);
-  //               this subscription can never succeed with the current key pair and
-  //               must be removed so the browser can re-subscribe with the new key.
   const results = await Promise.allSettled(
     subscriptions.map(sub =>
       webpush.sendNotification(
@@ -85,7 +99,7 @@ async function sendPushNotificationsForUser(userId: string, taskId: string, task
         } else {
           console.error(`[scheduler] Failed to send push notification to subscription ${sub.id}:`, err);
         }
-        throw err; // re-throw so allSettled records it as rejected
+        throw err;
       })
     )
   );
@@ -93,13 +107,130 @@ async function sendPushNotificationsForUser(userId: string, taskId: string, task
   return results.some(r => r.status === 'fulfilled');
 }
 
+function isValidPushReminderTime(value: string | null | undefined): value is string {
+  return typeof value === 'string' && /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
+}
+
+function getSafePushReminderTime(value: string | null | undefined): string {
+  return isValidPushReminderTime(value) ? value : DEFAULT_PUSH_REMINDER_TIME;
+}
+
+function isValidTimeZone(value: string | null | undefined): value is string {
+  if (!value) return false;
+  try {
+    Intl.DateTimeFormat('en-US', { timeZone: value }).format(0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getSafeTimeZone(value: string | null | undefined): string {
+  return isValidTimeZone(value) ? value : DEFAULT_PUSH_TIME_ZONE;
+}
+
+function parseReminderTime(value: string): { hours: number; minutes: number } {
+  const [hours, minutes] = getSafePushReminderTime(value).split(':').map(part => parseInt(part, 10));
+  return { hours, minutes };
+}
+
+function getZonedDateParts(timestamp: number, timeZone: string): { year: number; month: number; day: number; hour: number; minute: number; second: number } {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  });
+
+  const parts = formatter.formatToParts(new Date(timestamp));
+  const pick = (type: Intl.DateTimeFormatPartTypes): number => {
+    const value = parts.find(part => part.type === type)?.value;
+    return value ? parseInt(value, 10) : 0;
+  };
+
+  return {
+    year: pick('year'),
+    month: pick('month'),
+    day: pick('day'),
+    hour: pick('hour'),
+    minute: pick('minute'),
+    second: pick('second'),
+  };
+}
+
+function getTimeZoneOffsetMs(timestamp: number, timeZone: string): number {
+  const parts = getZonedDateParts(timestamp, timeZone);
+  const asUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+  return asUtc - timestamp;
+}
+
+function zonedDateTimeToUtc(year: number, month: number, day: number, hours: number, minutes: number, timeZone: string): number {
+  const naiveUtc = Date.UTC(year, month - 1, day, hours, minutes, 0, 0);
+  const firstOffset = getTimeZoneOffsetMs(naiveUtc, timeZone);
+  let resolvedUtc = naiveUtc - firstOffset;
+  // Re-check after applying the first offset so DST boundary cases (where the
+  // same local clock time maps to different UTC instants) settle on the actual
+  // offset for the resolved timestamp.
+  const secondOffset = getTimeZoneOffsetMs(resolvedUtc, timeZone);
+  if (secondOffset !== firstOffset) {
+    resolvedUtc = naiveUtc - secondOffset;
+  }
+  return resolvedUtc;
+}
+
+function shiftCalendarDate(year: number, month: number, day: number, dayDelta: number): { year: number; month: number; day: number } {
+  // Treat the input as a pure calendar date rather than elapsed milliseconds so
+  // DST changes never skew the resulting local day we later convert back into
+  // the user's timezone.
+  const shifted = new Date(Date.UTC(year, month - 1, day));
+  shifted.setUTCDate(shifted.getUTCDate() + dayDelta);
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth() + 1,
+    day: shifted.getUTCDate(),
+  };
+}
+
+function getScheduledPushTimestamp(taskDueDate: number, window: ReminderWindow, user: UserRow): number {
+  const timeZone = getSafeTimeZone(user.push_time_zone);
+  const dueParts = getZonedDateParts(taskDueDate, timeZone);
+  const reminderDate = shiftCalendarDate(dueParts.year, dueParts.month, dueParts.day, -window.offsetDays);
+  const { hours, minutes } = parseReminderTime(user.push_reminder_time ?? DEFAULT_PUSH_REMINDER_TIME);
+  return zonedDateTimeToUtc(
+    reminderDate.year,
+    reminderDate.month,
+    reminderDate.day,
+    hours,
+    minutes,
+    timeZone
+  );
+}
+
+function isPushReminderDueNow(task: TaskRow, window: ReminderWindow, user: UserRow, now: number): boolean {
+  const scheduledAt = getScheduledPushTimestamp(task.due_date, window, user);
+  return scheduledAt <= now && scheduledAt > now - PUSH_LOOKBACK_MS;
+}
+
+function isEmailReminderDueNow(task: TaskRow, window: ReminderWindow, now: number): boolean {
+  const diff = task.due_date - now;
+  if (window.type === '7_day') return diff > 6 * DAY_MS && diff <= 8 * DAY_MS;
+  if (window.type === '1_day') return diff > 22 * HOUR_MS && diff <= 50 * HOUR_MS;
+  return diff <= 0 && diff > -1 * DAY_MS;
+}
+
 async function sendReminders(): Promise<void> {
   const now = Date.now();
 
   for (const window of REMINDER_WINDOWS) {
-    const minDue = now + window.minMs;
-    const maxDue = now + window.maxMs;
+    const minDue = now + window.minDueOffsetMs;
+    const maxDue = now + window.maxDueOffsetMs;
 
+    // This intentionally over-fetches candidate tasks for push reminders; the
+    // exact per-channel send checks below decide whether a reminder is truly due.
     const tasks = db.prepare(`
       SELECT t.id, t.title, t.due_date, t.created_by,
              t.notify_email, t.notify_7day, t.notify_1day, t.notify_onday,
@@ -116,59 +247,69 @@ async function sendReminders(): Promise<void> {
           OR t.notify_popup_1day = 1
           OR t.notify_popup_onday = 1
         )
-        AND NOT EXISTS (
-          SELECT 1 FROM task_reminders_sent trs
-          WHERE trs.task_id = t.id AND trs.reminder_type = ?
-        )
-    `).all(minDue, maxDue, window.type) as TaskRow[];
+    `).all(minDue, maxDue) as TaskRow[];
 
     for (const task of tasks) {
-      // Determine which delivery channels are applicable for this window
       const emailApplicable = task.notify_email === 1 && (
-        (window.type === '7_day'  && task.notify_7day === 1) ||
-        (window.type === '1_day'  && task.notify_1day === 1) ||
+        (window.type === '7_day' && task.notify_7day === 1) ||
+        (window.type === '1_day' && task.notify_1day === 1) ||
         (window.type === 'on_day' && task.notify_onday === 1)
       );
-      const pushApplicable =
-        (window.type === '7_day'  && task.notify_popup_7day === 1) ||
-        (window.type === '1_day'  && task.notify_popup_1day === 1) ||
-        (window.type === 'on_day' && task.notify_popup_onday === 1);
+      const pushApplicable = (
+        (window.type === '7_day' && task.notify_popup_7day === 1) ||
+        (window.type === '1_day' && task.notify_popup_1day === 1) ||
+        (window.type === 'on_day' && task.notify_popup_onday === 1)
+      );
 
       if (!emailApplicable && !pushApplicable) continue;
 
-      const recipientIds = new Set<string>();
-      recipientIds.add(task.created_by);
-
+      const recipientIds = new Set<string>([task.created_by]);
       const assignees = db.prepare(
         'SELECT user_id FROM task_assignees WHERE task_id = ?'
       ).all(task.id) as Array<{ user_id: string }>;
 
-      for (const a of assignees) {
-        recipientIds.add(a.user_id);
+      for (const assignee of assignees) {
+        recipientIds.add(assignee.user_id);
       }
 
-      let anyDelivered = false;
+      const emailReminderAlreadySent = !!db.prepare(
+        'SELECT 1 FROM task_reminders_sent WHERE task_id = ? AND reminder_type = ?'
+      ).get(task.id, window.type);
+      const shouldSendEmail = emailApplicable && !emailReminderAlreadySent && isEmailReminderDueNow(task, window, now);
+
+      let emailDelivered = false;
       for (const userId of recipientIds) {
-        const user = db.prepare('SELECT id, email FROM users WHERE id = ?').get(userId) as UserRow | undefined;
+        const user = db.prepare(
+          'SELECT id, email, push_reminder_time, push_time_zone FROM users WHERE id = ?'
+        ).get(userId) as UserRow | undefined;
         if (!user) continue;
-        if (emailApplicable) {
+
+        if (shouldSendEmail) {
           try {
             await sendTaskReminder(user.email, { title: task.title, due_date: task.due_date }, window.label);
-            anyDelivered = true;
+            emailDelivered = true;
           } catch (err) {
             console.error(`[scheduler] Failed to send reminder to ${user.email}:`, err);
           }
         }
-        // Send web push only when the popup flag is set for this window; counts toward dedup
-        // so a push-only success also prevents re-running the reminder indefinitely when
-        // SMTP is temporarily broken.
-        if (pushApplicable) {
-          const pushed = await sendPushNotificationsForUser(userId, task.id, task.title, window.label);
-          if (pushed) anyDelivered = true;
+
+        if (!pushApplicable) continue;
+
+        const pushReminderAlreadySent = !!db.prepare(
+          'SELECT 1 FROM task_push_reminders_sent WHERE task_id = ? AND reminder_type = ? AND user_id = ?'
+        ).get(task.id, window.type, userId);
+
+        if (pushReminderAlreadySent || !isPushReminderDueNow(task, window, user, now)) continue;
+
+        const pushed = await sendPushNotificationsForUser(userId, task.id, task.title, window.label);
+        if (pushed) {
+          db.prepare(
+            'INSERT OR IGNORE INTO task_push_reminders_sent (task_id, reminder_type, user_id, sent_at) VALUES (?, ?, ?, ?)'
+          ).run(task.id, window.type, userId, now);
         }
       }
 
-      if (anyDelivered) {
+      if (shouldSendEmail && emailDelivered) {
         db.prepare(
           'INSERT OR IGNORE INTO task_reminders_sent (task_id, reminder_type, sent_at) VALUES (?, ?, ?)'
         ).run(task.id, window.type, now);
@@ -178,16 +319,13 @@ async function sendReminders(): Promise<void> {
 }
 
 export function startScheduler(): void {
-  // Run every hour
   cron.schedule('0 * * * *', () => {
     sendReminders().catch(err => console.error('[scheduler] Error in reminder job:', err));
-    // resetOverdueStreaks uses synchronous better-sqlite3 calls — no async needed.
-    // The try/catch guards against unexpected runtime errors (e.g. schema migration lag).
     try {
       resetOverdueStreaks();
     } catch (err) {
       console.error('[scheduler] Error resetting overdue streaks:', err);
     }
   });
-  console.log('[scheduler] Task reminder scheduler started (up to 3 reminders per task)');
+  console.log('[scheduler] Task reminder scheduler started (email + local-time push reminders)');
 }

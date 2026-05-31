@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.19.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.19.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -25,6 +25,7 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - Progress notes on tasks
 - In-app alerts for overdue and due-soon tasks
 - **Per-task notification preferences** — choose whether to receive email reminders and/or browser popup notifications for each task, with a grid selecting 7-day, 1-day, and on-the-day timing
+- **Profile-level push reminder time** — choose a friendly local delivery time for browser push reminders from your Profile page, while keeping task due dates date-only
 - Group member access control — any group member can edit all task fields (title, due date, recurrence, notes, status, defer, archive); only the task creator or a group admin can delete a task
 - **Date-only scheduling** — task due dates are date-only (no time component); all times default to midnight so you never have to think about hours. Native calendar pickers on mobile and desktop for easy date entry
 - **Relative date shortcuts** — on any date field, type a number and choose days/weeks/months and tap "Set" to quickly jump to *n* days/weeks/months from today
@@ -118,6 +119,12 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.19.1
+
+- **🐛 Push status banner fix** — the Profile page now re-checks service worker registration more reliably, so the “Push notification service is still starting up” message clears once background push is actually ready.
+- **🕘 Local-time push scheduling** — users can now choose a preferred local time for browser push reminders in **Profile → Notification Preferences**. The scheduler respects that saved time for 7-day, 1-day, and on-the-day push reminders.
+- **🔢 Version bump** — server package metadata and documentation updated to 1.19.1.
 
 ### v1.19.0
 

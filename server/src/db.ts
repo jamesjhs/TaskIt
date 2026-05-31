@@ -192,6 +192,16 @@ db.exec(`
     FOREIGN KEY (task_id) REFERENCES tasks(id)
   );
 
+  CREATE TABLE IF NOT EXISTS task_push_reminders_sent (
+    task_id TEXT NOT NULL,
+    reminder_type TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    sent_at INTEGER NOT NULL,
+    PRIMARY KEY (task_id, reminder_type, user_id),
+    FOREIGN KEY (task_id) REFERENCES tasks(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
   CREATE TABLE IF NOT EXISTS group_invites (
     token TEXT PRIMARY KEY,
     group_id TEXT NOT NULL,
@@ -446,6 +456,8 @@ addCol('tasks', 'is_sporadic', 'INTEGER NOT NULL DEFAULT 0');
 addCol('tasks', 'last_completed_at', 'INTEGER');
 // User notification preferences: JSON string with default reminder options
 addCol('users', 'notification_preferences', `TEXT NOT NULL DEFAULT '{"email":{"notify_7day":false,"notify_1day":true,"notify_onday":false},"popup":{"notify_7day":false,"notify_1day":false,"notify_onday":false}}'`);
+addCol('users', 'push_reminder_time', "TEXT NOT NULL DEFAULT '09:00'");
+addCol('users', 'push_time_zone', 'TEXT');
 // Collectibles icon: optional filename of a PNG in public/collectables/ that overrides the rarity emoji
 addCol('collectibles', 'icon_filename', 'TEXT');
 // Long-term Goals: aspirational items that live outside the active task list until given a deadline

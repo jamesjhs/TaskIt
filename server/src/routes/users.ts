@@ -6,6 +6,21 @@ import db from '../db';
 import { ALLOWED_LOCALES } from '../constants';
 
 const router = Router();
+const DEFAULT_PUSH_REMINDER_TIME = '09:00';
+
+function isValidPushReminderTime(value: unknown): value is string {
+  return typeof value === 'string' && /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
+}
+
+function isValidTimeZone(value: unknown): value is string {
+  if (typeof value !== 'string' || !value.trim()) return false;
+  try {
+    Intl.DateTimeFormat('en-US', { timeZone: value }).format(0);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 router.use(authMiddleware);
 
@@ -180,6 +195,7 @@ router.delete('/me', (req: Request, res: Response): void => {
   // Delete all user data in dependency order
   const deleteInOrder = db.transaction(() => {
     db.prepare('DELETE FROM task_reminders_sent WHERE task_id IN (SELECT id FROM tasks WHERE created_by = ?)').run(userId);
+    db.prepare('DELETE FROM task_push_reminders_sent WHERE task_id IN (SELECT id FROM tasks WHERE created_by = ?)').run(userId);
     db.prepare('DELETE FROM task_notes WHERE user_id = ?').run(userId);
     db.prepare('DELETE FROM task_notes WHERE task_id IN (SELECT id FROM tasks WHERE created_by = ?)').run(userId);
     db.prepare('DELETE FROM task_assignees WHERE user_id = ?').run(userId);
@@ -197,6 +213,7 @@ router.delete('/me', (req: Request, res: Response): void => {
       if (!otherAdmins) {
         // No other admin — delete the group entirely
         db.prepare('DELETE FROM task_reminders_sent WHERE task_id IN (SELECT id FROM tasks WHERE group_id = ?)').run(g.id);
+        db.prepare('DELETE FROM task_push_reminders_sent WHERE task_id IN (SELECT id FROM tasks WHERE group_id = ?)').run(g.id);
         db.prepare('DELETE FROM task_notes WHERE task_id IN (SELECT id FROM tasks WHERE group_id = ?)').run(g.id);
         db.prepare('DELETE FROM task_assignees WHERE task_id IN (SELECT id FROM tasks WHERE group_id = ?)').run(g.id);
         db.prepare('DELETE FROM tasks WHERE group_id = ?').run(g.id);
@@ -261,8 +278,10 @@ router.post('/me/ics-token/rotate', (req: Request, res: Response): void => {
 // GET /api/users/me/notification-preferences — get user's default reminder preferences
 router.get('/me/notification-preferences', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const user = db.prepare('SELECT notification_preferences FROM users WHERE id = ?').get(userId) as
-    | { notification_preferences: string }
+  const user = db.prepare(
+    'SELECT notification_preferences, push_reminder_time, push_time_zone FROM users WHERE id = ?'
+  ).get(userId) as
+    | { notification_preferences: string; push_reminder_time: string | null; push_time_zone: string | null }
     | undefined;
 
   if (!user) {
@@ -281,13 +300,19 @@ router.get('/me/notification-preferences', (req: Request, res: Response): void =
     console.error('[users/notification-preferences] Failed to parse preferences:', e);
   }
 
-  res.json(prefs);
+  res.json({
+    ...prefs,
+    pushSchedule: {
+      localTime: isValidPushReminderTime(user.push_reminder_time) ? user.push_reminder_time : DEFAULT_PUSH_REMINDER_TIME,
+      timeZone: isValidTimeZone(user.push_time_zone) ? user.push_time_zone : null,
+    },
+  });
 });
 
 // PATCH /api/users/me/notification-preferences — update user's default reminder preferences
 router.patch('/me/notification-preferences', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const { email, popup } = req.body;
+  const { email, popup, pushSchedule } = req.body;
 
   // Validate structure
   if (!email || typeof email !== 'object' || !popup || typeof popup !== 'object') {
@@ -312,13 +337,61 @@ router.patch('/me/notification-preferences', (req: Request, res: Response): void
     }
   }
 
+  if (pushSchedule !== undefined) {
+    if (!pushSchedule || typeof pushSchedule !== 'object') {
+      res.status(400).json({ error: 'pushSchedule must be an object when provided' });
+      return;
+    }
+
+    if (!isValidPushReminderTime(pushSchedule.localTime)) {
+      res.status(400).json({ error: 'pushSchedule.localTime must be a valid HH:MM 24-hour time' });
+      return;
+    }
+
+    if (pushSchedule.timeZone !== null && pushSchedule.timeZone !== undefined && !isValidTimeZone(pushSchedule.timeZone)) {
+      res.status(400).json({ error: 'pushSchedule.timeZone must be a valid IANA time zone or null' });
+      return;
+    }
+  }
+
+  const existing = db.prepare(
+    'SELECT push_reminder_time, push_time_zone FROM users WHERE id = ?'
+  ).get(userId) as
+    | { push_reminder_time: string | null; push_time_zone: string | null }
+    | undefined;
+
+  if (!existing) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
   const prefs = { email, popup };
+  const resolvedPushReminderTime = pushSchedule?.localTime ?? existing.push_reminder_time ?? DEFAULT_PUSH_REMINDER_TIME;
+  const resolvedPushTimeZone = pushSchedule && 'timeZone' in pushSchedule
+    ? (pushSchedule.timeZone || null)
+    : (existing.push_time_zone || null);
+
   db.prepare('UPDATE users SET notification_preferences = ? WHERE id = ?').run(
     JSON.stringify(prefs),
     userId
   );
 
-  res.json({ message: 'Notification preferences updated', prefs });
+  db.prepare('UPDATE users SET push_reminder_time = ?, push_time_zone = ? WHERE id = ?').run(
+    resolvedPushReminderTime,
+    resolvedPushTimeZone,
+    userId
+  );
+
+  res.json({
+    message: 'Notification preferences updated',
+    prefs: {
+      ...prefs,
+      pushSchedule: {
+        localTime: resolvedPushReminderTime,
+        timeZone: resolvedPushTimeZone,
+      },
+    },
+  });
 });
 
 export default router;

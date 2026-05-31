@@ -1,6 +1,6 @@
 # TaskIt! – How-To Manual
 
-**Version 1.19.0**  
+**Version 1.19.1**  
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -40,7 +40,7 @@ Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 - Custom task types per user and per group
 - Progress notes on each task for tracking updates
 - In-app notification bell for overdue and due-soon tasks
-- Per-task notification preferences — a grid to independently enable email and/or browser popup reminders at 7-day, 1-day, and on-the-day intervals
+- Per-task notification preferences — a grid to independently enable email and/or browser popup reminders at 7-day, 1-day, and on-the-day intervals, plus a profile-level local push reminder time
 - Group member access control — any group member can edit all aspects of a task; only the task creator or a group admin can delete a task
 - Calendar integration — subscribe to your tasks as an ICS feed in any calendar app
 - Group creation with admin controls — rename, promote/demote members, email invites, QR invite links, shared join key
@@ -336,6 +336,8 @@ Click the bell to open the notification panel. Click any item to jump to that ta
 
 TaskIt! can send native browser popup notifications when tasks are approaching their deadline. When you first log in, your browser will prompt for **notification permission** — click *Allow* to enable them. Popups fire while the app is open in your browser, using the timing columns you configure in the task's Reminders grid.
 
+In **Profile → Notification Preferences**, you can also choose a **Preferred local push time**. Background push reminders (with VAPID enabled) will aim for that local time on the selected 7-day, 1-day, and on-the-day reminder dates.
+
 #### Reminders grid
 
 When creating or editing a task, the **Reminders** section shows a 2-row, 3-column grid:
@@ -602,4 +604,4 @@ The Freeze is consumed automatically, the streak is preserved, and the ❄️ is
 
 ---
 
-*TaskIt! v1.19.0 – Copyright J Rowson 2026 | jahosi.co.uk*
+*TaskIt! v1.19.1 – Copyright J Rowson 2026 | jahosi.co.uk*

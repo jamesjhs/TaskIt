@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.19.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.19.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -176,6 +176,8 @@ Click the bell to see what needs your attention, and click any item to jump stra
 TaskIt! can send browser popup notifications when a task is approaching its deadline. The first time you log in, your browser will ask for **notification permission** — click *Allow* to enable them.
 
 Popups are fired by the app while it is open in your browser, using the same timing windows you select in the task's notification grid.
+
+If your server has background push configured, open **Profile → Notification Preferences** to choose a **Preferred local push time**. TaskIt! will aim to deliver 7-day, 1-day, and on-the-day push reminders at that local time.
 
 ### Email reminders
 
@@ -482,4 +484,4 @@ Tap the **⭐ Progress** tab in the bottom navigation. You can also enable or di
 
 ---
 
-*TaskIt! v1.19.0 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*TaskIt! v1.19.1 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*

@@ -192,6 +192,8 @@ Once notification permission is granted:
 
 You do **not** need to re-subscribe manually — the subscription persists until you clear browser data, the browser uninstalls it, or the admin regenerates VAPID keys (in which case the next login re-subscribes automatically as of v1.18.2).
 
+The Profile page also keeps re-checking service-worker readiness automatically, so the temporary “Push notification service is still starting up” status should clear on its own once registration finishes.
+
 ### 5.3 Push Notifications as a PWA (Installed App)
 
 If you install TaskIt! as a Progressive Web App (PWA) — e.g. "Add to Home Screen" on Android, or "Install" in Chrome desktop — push notifications work the same way but may appear more like native app notifications, even when the PWA window is closed.
@@ -209,7 +211,8 @@ Push notifications only fire for tasks that have the popup flags turned on. Ther
    - **7 days before**
    - **1 day before**
    - **On the day**
-3. Click **Save Preferences**.
+3. Choose your **Preferred local push time**. Background push reminders will aim for that local time in your current browser timezone.
+4. Click **Save Preferences**.
 
 These defaults are applied automatically when you create a new task.
 
@@ -261,7 +264,7 @@ Open **Profile → Notification Preferences**. Below the "Popup Reminders" headi
 | 🚫 **Notification permission is blocked in your browser** | Go to browser settings and allow notifications for this site. |
 | ❓ **Notification permission has not been granted yet** | Click the "Grant permission" link in the banner. |
 | 🔄 **Push notification permission is granted but this device is not yet subscribed** | Click "Subscribe now" or reload the page. |
-| ⚠️ **Could not check push subscription status** | The service worker is not ready. Try reloading the page. |
+| ℹ️ **Push notification service is still starting up** | TaskIt! is still waiting for the service worker to finish registering. The page re-checks automatically, or you can click "Check again". |
 | ⚠️ **Background push notifications are not supported by this browser** | Use a modern browser such as Chrome, Edge, or Firefox. |
 
 ---
@@ -274,13 +277,13 @@ Open **Profile → Notification Preferences**. Below the "Popup Reminders" headi
    - **Network:** The server cannot reach the push relay (FCM, Mozilla, etc.). Verify outbound HTTPS is allowed.
    - **Subject mismatch:** The `subject` field is not a valid `mailto:` or `https://` URI.
 
-2. **Check the browser console** (F12 → Console) after logging in. Look for `[push]` messages. If you see `Failed to register push subscription: SW timeout`, the service worker is not installing in time — try reloading the page.
+2. **Check the browser console** (F12 → Console) after logging in. Look for `[push]` messages. If you see `Failed to register push subscription: SW timeout`, the service worker is not installing in time. The Profile banner will now keep retrying automatically, but a manual reload is still the fastest reset.
 
 3. **Verify the subscription exists** in the Admin panel. There is currently no subscription count UI, but the server logs a removal message when a broken subscription is deleted.
 
 4. **Ensure tasks have popup flags set** for the relevant window, AND have a due date within a reminder window.
 
-5. **Ensure the server clock is accurate.** The scheduler uses `Date.now()` to calculate reminder windows. A clock that is many hours off will cause reminders to miss their windows.
+5. **Ensure the server clock is accurate.** The scheduler uses `Date.now()` plus each user's saved push reminder time and timezone to calculate delivery windows. A clock that is many hours off will cause reminders to miss their windows.
 
 ### "I regenerated VAPID keys and now push stopped working"
 

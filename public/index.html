@@ -1091,7 +1091,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.19.0</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
+      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.19.1</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>
@@ -2445,7 +2445,7 @@ let _startTaskInFlight = false;
 // Last task array passed to renderTasks — used by toggleFarFuture to re-render without a network fetch.
 let _lastRenderInput = [];
 
-// ========== Reminder window constants (must match server/src/services/scheduler.ts) ==========
+// ========== In-tab popup reminder window constants ==========
 const POPUP_WINDOW_7D_MIN_MS  = 6  * 24 * 3600000;
 const POPUP_WINDOW_7D_MAX_MS  = 8  * 24 * 3600000;
 const POPUP_WINDOW_1D_MIN_MS  = 22 * 3600000;

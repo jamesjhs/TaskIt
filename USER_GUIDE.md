@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.18.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.19.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -81,6 +81,19 @@ Click any task card to open the detail panel. From here you can:
 - **Defer** the task — click *Defer* to set a new due date without opening the full edit form. You can enter the date directly or use the *"or in X days/weeks/months from now"* shortcut below the date picker
 - **Archive** it to tidy your view (archived tasks can always be brought back)
 - **Delete** it permanently — note that for group tasks, only the task creator or a group admin can delete; other group members can edit all other details but not delete
+
+### ⏱ Sprint Timer & Double XP
+
+When you tap **Started** on a task, a popup asks **"Set a time limit?"**
+
+- Tap **No** — the task is marked Started immediately. Its card turns light green so it stands out at a glance.
+- Tap **Yes** — choose a countdown: **5**, **10**, **15**, or **60 minutes**. The task is marked Started and:
+  - The card shows a **pulsing light-green background** while the timer is active.
+  - A **live countdown** appears in the top-right corner of the card.
+  - If you complete the task *before the timer runs out*, you earn **double XP** for that task. A "Double XP earned!" banner confirms the bonus.
+  - Once the countdown expires the pulse stops, indicating the bonus window has closed (you can still complete the task — just without the double XP).
+
+> 💡 **Tip:** If you open a task that already has an active timer running, tapping "Started" again shows a notice rather than accidentally resetting your timer.
 
 ### Sporadic Tasks
 
@@ -319,6 +332,8 @@ When gamification is enabled, a slim **XP/level strip** also appears at the top 
 
 Every time you complete a task, you earn **50 XP** in the *skill* that matches the task type. For example, completing a Household task earns Household XP; completing a Financial task earns Financial XP.
 
+> 🏅 **Sprint bonus:** If you start a task with a time limit (see [Sprint Timer](#-sprint-timer--double-xp) above) and complete it before the countdown expires, you earn **double XP** for that task — 100 XP instead of 50.
+
 **Your overall Level is based on the total of all XP you have ever earned**, regardless of which skill it came from. Complete tasks in any category and they all count toward the same single level. A progress bar shows how far through the current level you are and how much XP remains until the next level.
 
 Level milestones use a triangular curve — each level costs more XP than the last:
@@ -467,4 +482,4 @@ Tap the **⭐ Progress** tab in the bottom navigation. You can also enable or di
 
 ---
 
-*TaskIt! v1.18.0 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*TaskIt! v1.19.0 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*

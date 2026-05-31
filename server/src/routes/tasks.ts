@@ -18,6 +18,8 @@ const router = Router();
 // Allowed values for validated enum fields
 const ALLOWED_STATUSES = new Set(['not_started', 'started', 'complete']);
 const ALLOWED_RECUR_UNITS = new Set(['days', 'weeks', 'months', 'years']);
+const ALLOWED_START_LIMITS = new Set([5, 10, 15, 60]);
+const TIMED_TASK_XP_MULTIPLIER = 2;
 
 // The system task type that is always sorted to the top of the task list
 const URGENT_TASK_TYPE = 'urgent';
@@ -926,15 +928,34 @@ router.patch('/:id', (req: Request, res: Response): void => {
 router.patch('/:id/status', (req: Request, res: Response): void => {
   const userId = req.user!.id;
   const taskId = req.params.id;
-  const { status } = req.body;
+  const { status, timeLimitMinutes } = req.body;
 
   if (!status || !ALLOWED_STATUSES.has(status)) {
     res.status(400).json({ error: 'status must be one of: not_started, started, complete' });
     return;
   }
 
+  let resolvedTimeLimitMinutes: number | null = null;
+  if (status === 'started' && timeLimitMinutes != null) {
+    const parsedLimit = parseInt(String(timeLimitMinutes), 10);
+    if (!Number.isInteger(parsedLimit) || !ALLOWED_START_LIMITS.has(parsedLimit)) {
+      res.status(400).json({ error: 'timeLimitMinutes must be one of: 5, 10, 15, 60' });
+      return;
+    }
+    resolvedTimeLimitMinutes = parsedLimit;
+  }
+
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string; group_id: string | null; created_at: number; xp_claimed: number; recur_interval: number | null }
+    | {
+        id: string;
+        created_by: string;
+        group_id: string | null;
+        created_at: number;
+        xp_claimed: number;
+        recur_interval: number | null;
+        started_at: number | null;
+        time_limit_expires_at: number | null;
+      }
     | undefined;
 
   if (!task) {
@@ -953,6 +974,10 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
   }
 
   const now = Date.now();
+  const wasTimedStartActive = status === 'complete'
+    && task.started_at != null
+    && task.time_limit_expires_at != null
+    && now <= task.time_limit_expires_at;
 
   // Anti-farming: tasks completed within ANTI_FARM_TIMEGATE_MS of creation (non-recurring only) earn no XP/Loot.
   const isTimegated = status === 'complete' && (now - task.created_at < ANTI_FARM_TIMEGATE_MS) && task.recur_interval === null;
@@ -963,17 +988,22 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
   // When completing: record who completed it and when (for accurate achievement logic).
   // When completing with a fresh XP claim: atomically set xp_claimed = 1.
   // When reverting from complete: clear those fields.
-  if (status === 'complete') {
+  if (status === 'started') {
+    const timeLimitExpiresAt = resolvedTimeLimitMinutes ? now + (resolvedTimeLimitMinutes * 60 * 1000) : null;
+    db.prepare(
+      'UPDATE tasks SET status = ?, updated_at = ?, completed_at = NULL, completed_by = NULL, started_at = ?, time_limit_expires_at = ? WHERE id = ?'
+    ).run(status, now, now, timeLimitExpiresAt, taskId);
+  } else if (status === 'complete') {
     const xpClaimedClause = shouldAwardXp ? ', xp_claimed = 1' : '';
     // Completing a task also archives it so it disappears from the active list.
     // Recurring tasks will be re-archived by the spawn-and-archive transaction below;
     // non-recurring tasks are archived here directly.
     db.prepare(
-      `UPDATE tasks SET status = ?, archived = 1, updated_at = ?, completed_at = ?, completed_by = ?${xpClaimedClause} WHERE id = ?`
+      `UPDATE tasks SET status = ?, archived = 1, updated_at = ?, completed_at = ?, completed_by = ?, started_at = NULL, time_limit_expires_at = NULL${xpClaimedClause} WHERE id = ?`
     ).run(status, now, now, userId, taskId);
   } else {
     db.prepare(
-      'UPDATE tasks SET status = ?, updated_at = ?, completed_at = NULL, completed_by = NULL WHERE id = ?'
+      'UPDATE tasks SET status = ?, updated_at = ?, completed_at = NULL, completed_by = NULL, started_at = NULL, time_limit_expires_at = NULL WHERE id = ?'
     ).run(status, now, taskId);
   }
 
@@ -1050,7 +1080,10 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
       if (completedTask) {
         if (shouldAwardXp) {
-          const xpResult = awardTaskXp(userId, completedTask.type_id, completedTask.xp_multiplier ?? 1.0);
+          const xpMultiplier = wasTimedStartActive
+            ? (completedTask.xp_multiplier ?? 1.0) * TIMED_TASK_XP_MULTIPLIER
+            : (completedTask.xp_multiplier ?? 1.0);
+          const xpResult = awardTaskXp(userId, completedTask.type_id, xpMultiplier);
           if (xpResult) lootDrop = xpResult.drop;
           awardFreezeCredit(userId);
         }
@@ -1076,6 +1109,7 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
   const statusResponsePayload: Record<string, unknown> = { ...updated, archived: updated.archived === 1 };
   if (lootDrop) statusResponsePayload.drop = lootDrop;
+  statusResponsePayload.doubleXpAwarded = status === 'complete' && shouldAwardXp && wasTimedStartActive;
   res.json(statusResponsePayload);
 });
 

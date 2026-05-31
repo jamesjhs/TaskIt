@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.18.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.19.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -118,6 +118,12 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.19.0
+
+- **⏱ Task sprint timer with double XP** — clicking the "Started" button on a task card now shows a popup asking "Set a time limit?" with [Yes] / [No] options. Choosing **No** marks the task as Started with a solid light-green card background. Choosing **Yes** presents time limits of 5, 10, 15, or 60 minutes; the card then shows a pulsing light-green background and a live countdown in the top-right corner. Completing the task within the time limit awards **double XP**. The timer widget stops pulsing once the countdown expires to make it clear the bonus window has closed.
+- **🛡 Timer robustness fixes** — added a Cancel button to the time-limit popup so it can be dismissed without starting the task; added an in-flight guard preventing double-submission on rapid clicks; and guarded against accidentally resetting an already-active timer.
+- **🔢 Version bump** — server package metadata and documentation updated to 1.19.0.
 
 ### v1.18.0
 

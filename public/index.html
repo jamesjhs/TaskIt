@@ -1091,7 +1091,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.18.1</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
+      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.19.0</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>
@@ -2144,6 +2144,7 @@
       <div class="task-card-badges" style="margin-bottom:12px">
         <span id="detailTypeBadge" class="badge badge-blue"></span>
         <span id="detailStatusBadge" class="badge"></span>
+        <span id="detailTimerBadge" class="badge badge-started hidden"></span>
         <span id="detailArchivedBadge" class="badge badge-warn hidden">Archived</span>
       </div>
       <p id="detailNotes" style="font-size:.9rem;color:#6b7280;white-space:pre-wrap;margin-bottom:12px"></p>
@@ -2234,6 +2235,30 @@
       <button onclick="editCurrentTask()" class="btn btn-outline btn-sm" style="flex:1">Edit</button>
       <button id="detailDeleteBtn" onclick="deleteCurrentTask()" class="btn btn-danger btn-sm" style="flex:1">Delete</button>
       <button onclick="closeDetailModal()" class="btn btn-secondary btn-sm">✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== START TASK TIMER MODAL ===== -->
+<div id="startTaskModal" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-body" style="text-align:center">
+      <h2 id="startTaskModalTitle" class="modal-title">Set a time limit?</h2>
+      <p id="startTaskModalCopy" style="font-size:.9rem;color:#6b7280;line-height:1.6;margin-bottom:16px">
+        Start this task now, or add a countdown timer for the sprint.
+      </p>
+      <div id="startTaskPromptButtons" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+        <button type="button" onclick="confirmStartTaskNoLimit()" class="btn btn-secondary" style="min-width:110px">No</button>
+        <button type="button" onclick="showStartTaskLimitChoices()" class="btn btn-primary" style="min-width:110px">Yes</button>
+      </div>
+      <div id="startTaskLimitButtons" class="hidden" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+        <button type="button" onclick="confirmStartTaskWithLimit(5)" class="btn btn-primary" style="min-width:84px">5 min</button>
+        <button type="button" onclick="confirmStartTaskWithLimit(10)" class="btn btn-primary" style="min-width:84px">10 min</button>
+        <button type="button" onclick="confirmStartTaskWithLimit(15)" class="btn btn-primary" style="min-width:84px">15 min</button>
+        <button type="button" onclick="confirmStartTaskWithLimit(60)" class="btn btn-primary" style="min-width:84px">60 min</button>
+      </div>
+      <button id="startTaskBackButton" type="button" onclick="showStartTaskPrompt()" class="btn btn-secondary btn-sm hidden" style="margin-top:14px">← Back</button>
+      <button type="button" onclick="closeStartTaskModal()" class="btn btn-secondary btn-sm" style="margin-top:10px">Cancel</button>
     </div>
   </div>
 </div>
@@ -2396,6 +2421,9 @@ let arcadeTokens = 0;
 let arcadeDailyPlayMinutes = 5;
 // Far-future task list collapse state.
 let _farFutureExpanded = false;
+// Start-task modal state.
+let _startTaskModalStep = 'prompt';
+let _startTaskInFlight = false;
 // Last task array passed to renderTasks — used by toggleFarFuture to re-render without a network fetch.
 let _lastRenderInput = [];
 
@@ -2406,6 +2434,7 @@ const POPUP_WINDOW_1D_MIN_MS  = 22 * 3600000;
 const POPUP_WINDOW_1D_MAX_MS  = 50 * 3600000;
 const POPUP_WINDOW_0D_MIN_MS  = 0;
 const POPUP_WINDOW_0D_MAX_MS  = 25 * 3600000;
+const START_TIME_LIMIT_OPTIONS = [5, 10, 15, 60];
 
 // Milliseconds to wait for the service worker to become ready before giving up.
 // Used by subscribeToPush() and refreshPushStatusBanner() — defined once here
@@ -2878,6 +2907,7 @@ function initApp() {
   showPage('tasks'); checkVersion();
   setInterval(checkVersion, 5 * 60 * 1000);
   setInterval(refreshNotifications, 5 * 60 * 1000);
+  setInterval(refreshTaskTimers, 1000);
   // Background-load gamification state so the strip and streak panel work immediately;
   // then check if the user should see the gamification opt-in prompt
   loadGamificationProfile().then(() => maybeShowGamifOptIn());
@@ -3243,7 +3273,7 @@ async function loadTasks() {
     if (currentFilter.assignedToMe) params.set('assignedToMe', 'true');
     const tasks = await api('GET', '/tasks?' + params.toString());
     tasksMap = new Map(tasks.map(t => [t.id, t]));
-    renderTasks(tasks); refreshNotifications();
+    renderTasks(tasks); refreshNotifications(); refreshTaskTimers();
   } catch (err) {
     grid.innerHTML = '<div class="loading" style="color:#dc2626">' + escHtml(err.message) + '</div>';
   }
@@ -3295,7 +3325,15 @@ function renderTasks(tasks) {
     const overdue = t.due_date && t.due_date < now && t.status !== 'complete';
     const dueSoon = t.due_date && t.status !== 'complete' && t.due_date > now && t.due_date <= now + 24 * 60 * 60 * 1000;
     const isUrgent = (t.type_name || '').toLowerCase() === 'urgent';
-    const cardClass = dueSoon ? 'task-card task-card-due-soon' : (isUrgent ? 'task-card task-card-urgent' : 'task-card');
+    const hasTimer = t.status === 'started' && !!t.time_limit_expires_at;
+    let cardClass = 'task-card';
+    if (t.status === 'started') {
+      cardClass += hasTimer ? ' task-card-started task-card-started-timed task-card-has-timer' : ' task-card-started';
+    } else if (dueSoon) {
+      cardClass += ' task-card-due-soon';
+    } else if (isUrgent) {
+      cardClass += ' task-card-urgent';
+    }
     const hasSubtasks = t.subtask_total > 0;
     const subtaskPct = hasSubtasks ? Math.round((t.subtask_done / t.subtask_total) * 100) : 0;
     const subtaskBar = hasSubtasks ? `
@@ -3305,8 +3343,10 @@ function renderTasks(tasks) {
       <div class="subtask-progress-bar">
         <div class="subtask-progress-bar-fill" style="width:${subtaskPct}%"></div>
       </div>` : '';
+    const timerHtml = hasTimer ? `<div class="task-card-timer" data-expires-at="${Number(t.time_limit_expires_at)}">${renderTaskTimerLabel(t.time_limit_expires_at, now)}</div>` : '';
     return `
       <div onclick="openDetailById('${escHtml(t.id)}')" class="${cardClass}">
+        ${timerHtml}
         <div class="task-card-title${t.group_id ? ' task-card-title-group' : ''}">${escHtml(t.title)}</div>
         <div class="task-card-badges">
           <span class="badge badge-blue">${escHtml(t.type_name || '')}</span>
@@ -3563,6 +3603,121 @@ function statusMeta(status) {
     case 'complete':    return { label: 'Complete',    cls: 'badge-complete' };
     default:            return { label: status,        cls: 'badge-gray' };
   }
+}
+
+function formatCountdown(ms) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function renderTaskTimerLabel(expiresAt, now = Date.now()) {
+  const remaining = Number(expiresAt) - now;
+  return remaining > 0 ? `⏳ ${formatCountdown(remaining)}` : '⏳ Expired';
+}
+
+function refreshTaskTimers() {
+  const now = Date.now();
+  document.querySelectorAll('.task-card-timer').forEach(el => {
+    const expiry = Number(el.dataset.expiresAt || 0);
+    const expired = expiry - now <= 0;
+    el.textContent = renderTaskTimerLabel(expiry, now);
+    el.classList.toggle('task-card-timer-expired', expired);
+    // Stop the green pulse once the timer has expired so it's clear the bonus window closed.
+    const card = el.closest('.task-card');
+    if (card) card.classList.toggle('task-card-started-timed', !expired);
+  });
+
+  const detailTimer = document.getElementById('detailTimerBadge');
+  if (detailTimer && currentDetailTask && currentDetailTask.status === 'started' && currentDetailTask.time_limit_expires_at) {
+    detailTimer.textContent = renderTaskTimerLabel(currentDetailTask.time_limit_expires_at, now);
+    detailTimer.classList.remove('hidden');
+    detailTimer.classList.toggle('task-card-timer-expired', Number(currentDetailTask.time_limit_expires_at) - now <= 0);
+  } else if (detailTimer) {
+    detailTimer.classList.add('hidden');
+  }
+}
+
+function renderStartTaskModal() {
+  const promptButtons = document.getElementById('startTaskPromptButtons');
+  const limitButtons = document.getElementById('startTaskLimitButtons');
+  const backButton = document.getElementById('startTaskBackButton');
+  const title = document.getElementById('startTaskModalTitle');
+  const copy = document.getElementById('startTaskModalCopy');
+  if (!promptButtons || !limitButtons || !backButton || !title || !copy) return;
+
+  if (_startTaskModalStep === 'limits') {
+    title.textContent = 'Pick a time limit';
+    copy.textContent = 'Choose a countdown before starting this task.';
+    promptButtons.classList.add('hidden');
+    limitButtons.classList.remove('hidden');
+    backButton.classList.remove('hidden');
+  } else {
+    title.textContent = 'Set a time limit?';
+    copy.textContent = 'Start this task now, or add a countdown timer for the sprint.';
+    promptButtons.classList.remove('hidden');
+    limitButtons.classList.add('hidden');
+    backButton.classList.add('hidden');
+  }
+}
+
+function openStartTaskModal() {
+  if (!currentDetailTask) return;
+  _startTaskModalStep = 'prompt';
+  renderStartTaskModal();
+  document.getElementById('startTaskModal').classList.remove('hidden');
+}
+
+function closeStartTaskModal() {
+  const modal = document.getElementById('startTaskModal');
+  if (modal) modal.classList.add('hidden');
+  _startTaskModalStep = 'prompt';
+  _startTaskInFlight = false;
+}
+
+function showStartTaskLimitChoices() {
+  _startTaskModalStep = 'limits';
+  renderStartTaskModal();
+}
+
+function showStartTaskPrompt() {
+  _startTaskModalStep = 'prompt';
+  renderStartTaskModal();
+}
+
+async function confirmStartTaskWithLimit(minutes) {
+  if (!currentDetailTask || _startTaskInFlight) return;
+  if (!START_TIME_LIMIT_OPTIONS.includes(minutes)) return;
+  _startTaskInFlight = true;
+  try {
+    const updated = await api('PATCH', `/tasks/${currentDetailTask.id}/status`, {
+      status: 'started',
+      timeLimitMinutes: minutes,
+    });
+    currentDetailTask = updated;
+    tasksMap.set(updated.id, updated);
+    closeStartTaskModal();
+    openDetail(updated);
+    loadTasks();
+    toast('Task started with a ' + minutes + '-minute limit!');
+  } catch (err) { toast(err.message, 'error'); }
+  finally { _startTaskInFlight = false; }
+}
+
+async function confirmStartTaskNoLimit() {
+  if (!currentDetailTask || _startTaskInFlight) return;
+  _startTaskInFlight = true;
+  try {
+    const updated = await api('PATCH', `/tasks/${currentDetailTask.id}/status`, { status: 'started' });
+    currentDetailTask = updated;
+    tasksMap.set(updated.id, updated);
+    closeStartTaskModal();
+    openDetail(updated);
+    loadTasks();
+    toast('Task started!');
+  } catch (err) { toast(err.message, 'error'); }
+  finally { _startTaskInFlight = false; }
 }
 
 // ========== Filters ==========
@@ -4008,6 +4163,17 @@ function openDetail(task) {
   const statusBadge = document.getElementById('detailStatusBadge');
   statusBadge.textContent = statusInfo.label;
   statusBadge.className = 'badge ' + statusInfo.cls;
+  const timerBadge = document.getElementById('detailTimerBadge');
+  if (timerBadge) {
+    if (task.status === 'started' && task.time_limit_expires_at) {
+      timerBadge.classList.remove('hidden');
+      timerBadge.textContent = renderTaskTimerLabel(task.time_limit_expires_at, Date.now());
+      timerBadge.classList.toggle('task-card-timer-expired', Number(task.time_limit_expires_at) - Date.now() <= 0);
+    } else {
+      timerBadge.classList.add('hidden');
+      timerBadge.textContent = '';
+    }
+  }
   document.getElementById('detailArchivedBadge').classList.toggle('hidden', !task.archived);
   document.getElementById('detailNotes').textContent = task.details || 'No notes.';
   const dueDateEl = document.getElementById('detailDueDate');
@@ -4046,6 +4212,7 @@ function openDetail(task) {
   loadTaskNotes(task.id);
   loadSubtasks(task.id);
   renderStreakInDetail(task);
+  refreshTaskTimers();
 }
 
 async function loadTaskNotes(taskId) {
@@ -4086,6 +4253,7 @@ async function submitNote() {
 function closeDetailModal() {
   document.getElementById('taskDetailModal').classList.add('hidden');
   document.getElementById('deferSection').classList.add('hidden');
+  closeStartTaskModal();
   currentDetailTask = null;
 }
 
@@ -4322,6 +4490,19 @@ async function deleteSubtask(subId) {
 
 async function quickStatus(status) {
   if (!currentDetailTask) return;
+  if (status === 'started') {
+    // If already started with an active (non-expired) timer, don't silently reset it.
+    if (
+      currentDetailTask.status === 'started' &&
+      currentDetailTask.time_limit_expires_at &&
+      Number(currentDetailTask.time_limit_expires_at) > Date.now()
+    ) {
+      toast('Task already started with an active timer.', 'info');
+      return;
+    }
+    openStartTaskModal();
+    return;
+  }
   if (status === 'complete') {
     if (!confirm('Mark this task as complete? It will be moved out of your active list.')) return;
   }
@@ -4329,15 +4510,20 @@ async function quickStatus(status) {
     const wasRecurring = !!(currentDetailTask.recur_interval && currentDetailTask.recur_unit);
     const updated = await api('PATCH', '/tasks/' + currentDetailTask.id + '/status', { status });
     currentDetailTask = updated; tasksMap.set(updated.id, updated);
+    const earnedDoubleXp = status === 'complete' && !!updated && !!updated.doubleXpAwarded;
+    let successMessage = 'Status updated!';
     if (status === 'complete' && wasRecurring) {
       closeDetailModal();
       loadTasks();
-      toast('Task complete! Next occurrence created.');
       if (gamificationEnabled) loadGamificationProfile();
+      successMessage = 'Task complete! Next occurrence created.';
     } else {
-      openDetail(updated); loadTasks(); loadLongTermGoals(); toast('Status updated!');
+      openDetail(updated); loadTasks(); loadLongTermGoals();
       if (status === 'complete' && gamificationEnabled) loadGamificationProfile();
+      if (status === 'complete') successMessage = 'Task complete!';
     }
+    if (earnedDoubleXp) successMessage += ' Double XP earned!';
+    toast(successMessage);
     // If a loot drop was included in the response, show the modal
     if (status === 'complete' && updated && updated.drop) {
       openLootDropModal(updated.drop);

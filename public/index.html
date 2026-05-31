@@ -1356,6 +1356,14 @@
             <span>On the day</span>
           </label>
         </div>
+        <div style="margin-top:12px;padding:12px;border-radius:10px;background:#f8fafc;border:1px solid #e5e7eb">
+          <label for="notifPushLocalTime" style="display:block;font-weight:600;color:#1a1a2e;margin-bottom:6px;font-size:.9rem">Preferred local push time</label>
+          <input id="notifPushLocalTime" type="time" class="input" value="09:00" style="max-width:180px" />
+          <p style="font-size:.82rem;color:#6b7280;line-height:1.5;margin:8px 0 0">
+            Background push reminders will aim for this local time in your current browser timezone
+            (<span id="notifPushTimeZoneLabel">Detecting…</span>).
+          </p>
+        </div>
       </div>
 
       <button onclick="saveNotificationPreferences()" class="btn btn-primary btn-full">Save Preferences</button>
@@ -2450,6 +2458,21 @@ const START_TIME_LIMIT_OPTIONS = [5, 10, 15, 60];
 // Used by subscribeToPush() and refreshPushStatusBanner() — defined once here
 // so both functions stay in sync if the value ever needs to change.
 const SW_READY_TIMEOUT_MS = 10000;
+const DEFAULT_PUSH_REMINDER_TIME = '09:00';
+let pushStatusRetryTimer = null;
+
+function getBrowserPushTimeZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
+function updatePushTimeZoneLabel(timeZone) {
+  const label = document.getElementById('notifPushTimeZoneLabel');
+  if (label) label.textContent = timeZone || 'current device timezone';
+}
 
 // ========== Mobile detection ==========
 function isMobileDevice() {
@@ -6285,31 +6308,48 @@ async function dismissAlert(alertId) {
   } catch (err) { toast(err.message, 'error'); }
 }
 
-/**
- * Returns the active ServiceWorkerRegistration, or throws if one cannot be
- * obtained within SW_READY_TIMEOUT_MS.
- *
- * Fast path: when a service worker is already controlling this page (i.e. any
- * visit after the first), navigator.serviceWorker.controller is set and we can
- * resolve the registration immediately via getRegistration() — no timeout
- * needed.  The slow path (navigator.serviceWorker.ready + timeout) only runs
- * on the very first page load while the worker is still installing/activating,
- * or after performAppUpdate() has unregistered the previous worker.
- */
+function waitForServiceWorkerRegistration(reg) {
+  return new Promise((resolve, reject) => {
+    if (reg.active || reg.waiting) { resolve(reg); return; }
+    const worker = reg.installing;
+    if (!worker) { reject(new Error('No service worker instance available')); return; }
+
+    const timeoutId = setTimeout(() => {
+      worker.removeEventListener('statechange', onStateChange);
+      reject(new Error('SW timeout'));
+    }, SW_READY_TIMEOUT_MS);
+
+    function onStateChange() {
+      if (worker.state === 'activated' || reg.active || reg.waiting) {
+        clearTimeout(timeoutId);
+        worker.removeEventListener('statechange', onStateChange);
+        resolve(reg);
+      }
+    }
+
+    worker.addEventListener('statechange', onStateChange);
+  });
+}
+
 async function getActiveSwRegistration() {
-  if (navigator.serviceWorker.controller) {
-    const reg = await navigator.serviceWorker.getRegistration('/');
-    if (reg) return reg;
-    // controller is set but getRegistration('/') returned null — this is an
-    // unusual state (scope mismatch or transient browser inconsistency).
-    // Fall through to navigator.serviceWorker.ready, which will resolve
-    // immediately because controller being non-null guarantees an active
-    // worker exists.
+  let reg = await navigator.serviceWorker.getRegistration();
+  if (!reg) {
+    reg = await navigator.serviceWorker.register('/sw.js');
   }
-  return Promise.race([
-    navigator.serviceWorker.ready,
-    new Promise((_r, rej) => setTimeout(() => rej(new Error('SW timeout')), SW_READY_TIMEOUT_MS)),
-  ]);
+
+  if (reg.active || reg.waiting) return reg;
+
+  try {
+    return await Promise.race([
+      navigator.serviceWorker.ready,
+      waitForServiceWorkerRegistration(reg),
+      new Promise((_r, rej) => setTimeout(() => rej(new Error('SW timeout')), SW_READY_TIMEOUT_MS)),
+    ]);
+  } catch {
+    const refreshed = await navigator.serviceWorker.getRegistration();
+    if (refreshed && (refreshed.active || refreshed.waiting)) return refreshed;
+    throw new Error('SW timeout');
+  }
 }
 
 // Subscribe this browser to background push notifications.
@@ -6535,6 +6575,8 @@ async function rotateIcsToken() {
 
 // Load notification preferences when profile page is shown
 async function loadNotificationPreferences() {
+  const browserTimeZone = getBrowserPushTimeZone();
+  updatePushTimeZoneLabel(browserTimeZone);
   try {
     const prefs = await api('GET', '/users/me/notification-preferences');
     document.getElementById('notifEmail7day').checked = !!prefs.email?.notify_7day;
@@ -6543,8 +6585,11 @@ async function loadNotificationPreferences() {
     document.getElementById('notifPopup7day').checked = !!prefs.popup?.notify_7day;
     document.getElementById('notifPopup1day').checked = !!prefs.popup?.notify_1day;
     document.getElementById('notifPopupOnday').checked = !!prefs.popup?.notify_onday;
+    document.getElementById('notifPushLocalTime').value = prefs.pushSchedule?.localTime || DEFAULT_PUSH_REMINDER_TIME;
+    updatePushTimeZoneLabel(prefs.pushSchedule?.timeZone || browserTimeZone);
   } catch (err) {
     console.error('Failed to load notification preferences:', err);
+    document.getElementById('notifPushLocalTime').value = DEFAULT_PUSH_REMINDER_TIME;
   }
   refreshPushStatusBanner();
 }
@@ -6554,6 +6599,10 @@ async function loadNotificationPreferences() {
 async function refreshPushStatusBanner() {
   const banner = document.getElementById('pushStatusBanner');
   if (!banner) return;
+  if (pushStatusRetryTimer) {
+    clearTimeout(pushStatusRetryTimer);
+    pushStatusRetryTimer = null;
+  }
 
   const set = (icon, text, bg, color) => {
     banner.style.background = bg;
@@ -6600,10 +6649,10 @@ async function refreshPushStatusBanner() {
       set('🔄', 'Push notification permission is granted but this device is not yet subscribed. <a href="#" onclick="pushBannerSubscribeNow();return false;" style="color:#7c3aed;text-decoration:underline">Subscribe now</a> or reload the page.', '#eff6ff', '#1e40af');
     }
   } catch {
-    // The service worker is still starting up (e.g. first load on a slow
-    // connection, or right after an app update reset the worker). This is
-    // transient and will resolve itself — show a soft info message instead
-    // of a warning, with a link to re-check once the worker is ready.
+    pushStatusRetryTimer = setTimeout(() => {
+      pushStatusRetryTimer = null;
+      refreshPushStatusBanner();
+    }, 1500);
     set('ℹ️', 'Push notification service is still starting up. <a href="#" onclick="refreshPushStatusBanner();return false;" style="color:#1d4ed8;text-decoration:underline">Check again</a> once the page has fully loaded, or try reloading.', '#eff6ff', '#1e3a8a');
   }
 }
@@ -6611,6 +6660,8 @@ async function refreshPushStatusBanner() {
 // Save notification preferences
 async function saveNotificationPreferences() {
   try {
+    const localTime = document.getElementById('notifPushLocalTime').value || DEFAULT_PUSH_REMINDER_TIME;
+    const timeZone = getBrowserPushTimeZone();
     const prefs = {
       email: {
         notify_7day: document.getElementById('notifEmail7day').checked,
@@ -6622,8 +6673,13 @@ async function saveNotificationPreferences() {
         notify_1day: document.getElementById('notifPopup1day').checked,
         notify_onday: document.getElementById('notifPopupOnday').checked,
       },
+      pushSchedule: {
+        localTime,
+        timeZone,
+      },
     };
     await api('PATCH', '/users/me/notification-preferences', prefs);
+    updatePushTimeZoneLabel(timeZone);
     toast('Notification preferences saved!');
   } catch (err) {
     toast('Failed to save preferences: ' + err.message, 'error');

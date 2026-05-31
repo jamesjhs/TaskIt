@@ -1221,6 +1221,7 @@ router.patch('/:id/fast-forward', (req: Request, res: Response): void => {
 
   // Clear sent-reminders so the scheduler will re-evaluate against the new date
   db.prepare('DELETE FROM task_reminders_sent WHERE task_id = ?').run(taskId);
+  db.prepare('DELETE FROM task_push_reminders_sent WHERE task_id = ?').run(taskId);
 
   const updated = db.prepare(`
     SELECT t.*, tt.name AS type_name
@@ -1370,6 +1371,7 @@ router.delete('/:id', (req: Request, res: Response): void => {
       db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(taskId);
       db.prepare('DELETE FROM task_notes WHERE task_id = ?').run(taskId);
       db.prepare('DELETE FROM task_reminders_sent WHERE task_id = ?').run(taskId);
+      db.prepare('DELETE FROM task_push_reminders_sent WHERE task_id = ?').run(taskId);
       db.prepare('DELETE FROM task_subtasks WHERE task_id = ?').run(taskId);
       db.prepare('DELETE FROM task_history WHERE task_id = ?').run(taskId);
       db.prepare('DELETE FROM tasks WHERE id = ?').run(taskId);
@@ -1383,6 +1385,7 @@ router.delete('/:id', (req: Request, res: Response): void => {
   db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(taskId);
   db.prepare('DELETE FROM task_notes WHERE task_id = ?').run(taskId);
   db.prepare('DELETE FROM task_reminders_sent WHERE task_id = ?').run(taskId);
+  db.prepare('DELETE FROM task_push_reminders_sent WHERE task_id = ?').run(taskId);
   db.prepare('DELETE FROM task_subtasks WHERE task_id = ?').run(taskId);
   db.prepare('DELETE FROM task_history WHERE task_id = ?').run(taskId);
   db.prepare('DELETE FROM tasks WHERE id = ?').run(taskId);

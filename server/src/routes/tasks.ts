@@ -1109,7 +1109,7 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
   const statusResponsePayload: Record<string, unknown> = { ...updated, archived: updated.archived === 1 };
   if (lootDrop) statusResponsePayload.drop = lootDrop;
-  if (status === 'complete') statusResponsePayload.doubleXpAwarded = shouldAwardXp && wasTimedStartActive;
+  statusResponsePayload.doubleXpAwarded = status === 'complete' && shouldAwardXp && wasTimedStartActive;
   res.json(statusResponsePayload);
 });
 

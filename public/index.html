@@ -4167,7 +4167,8 @@ function openDetail(task) {
   if (timerBadge) {
     if (task.status === 'started' && task.time_limit_expires_at) {
       timerBadge.classList.remove('hidden');
-      timerBadge.textContent = '⏳ ' + formatCountdown(Number(task.time_limit_expires_at) - Date.now());
+      timerBadge.textContent = renderTaskTimerLabel(task.time_limit_expires_at, Date.now());
+      timerBadge.classList.toggle('task-card-timer-expired', Number(task.time_limit_expires_at) - Date.now() <= 0);
     } else {
       timerBadge.classList.add('hidden');
       timerBadge.textContent = '';

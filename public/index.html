@@ -2410,7 +2410,7 @@ const POPUP_WINDOW_0D_MAX_MS  = 25 * 3600000;
 // Milliseconds to wait for the service worker to become ready before giving up.
 // Used by subscribeToPush() and refreshPushStatusBanner() — defined once here
 // so both functions stay in sync if the value ever needs to change.
-const SW_READY_TIMEOUT_MS = 3000;
+const SW_READY_TIMEOUT_MS = 10000;
 
 // ========== Mobile detection ==========
 function isMobileDevice() {
@@ -6533,9 +6533,7 @@ function onLongTermGoalChange() {
 
 // ========== Service Worker ==========
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  });
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
 // ========== TaskIt! Arcade — Stage 1: Overlay & Routing ==========

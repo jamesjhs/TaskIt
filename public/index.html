@@ -3341,8 +3341,7 @@ function renderTasks(tasks) {
       <div class="subtask-progress-bar">
         <div class="subtask-progress-bar-fill" style="width:${subtaskPct}%"></div>
       </div>` : '';
-    const remaining = hasTimer ? Number(t.time_limit_expires_at) - now : 0;
-    const timerHtml = hasTimer ? `<div class="task-card-timer" data-expires-at="${Number(t.time_limit_expires_at)}">${remaining > 0 ? `⏳ ${formatCountdown(remaining)}` : '⏳ Expired'}</div>` : '';
+    const timerHtml = hasTimer ? `<div class="task-card-timer" data-expires-at="${Number(t.time_limit_expires_at)}">${renderTaskTimerLabel(t.time_limit_expires_at, now)}</div>` : '';
     return `
       <div onclick="openDetailById('${escHtml(t.id)}')" class="${cardClass}">
         ${timerHtml}
@@ -3611,21 +3610,24 @@ function formatCountdown(ms) {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
+function renderTaskTimerLabel(expiresAt, now = Date.now()) {
+  const remaining = Number(expiresAt) - now;
+  return remaining > 0 ? `⏳ ${formatCountdown(remaining)}` : '⏳ Expired';
+}
+
 function refreshTaskTimers() {
   const now = Date.now();
   document.querySelectorAll('.task-card-timer').forEach(el => {
     const expiry = Number(el.dataset.expiresAt || 0);
-    const remaining = expiry - now;
-    el.textContent = remaining > 0 ? `⏳ ${formatCountdown(remaining)}` : '⏳ Expired';
-    el.classList.toggle('task-card-timer-expired', remaining <= 0);
+    el.textContent = renderTaskTimerLabel(expiry, now);
+    el.classList.toggle('task-card-timer-expired', expiry - now <= 0);
   });
 
   const detailTimer = document.getElementById('detailTimerBadge');
   if (detailTimer && currentDetailTask && currentDetailTask.status === 'started' && currentDetailTask.time_limit_expires_at) {
-    const remaining = Number(currentDetailTask.time_limit_expires_at) - now;
-    detailTimer.textContent = remaining > 0 ? `⏳ ${formatCountdown(remaining)}` : '⏳ Expired';
+    detailTimer.textContent = renderTaskTimerLabel(currentDetailTask.time_limit_expires_at, now);
     detailTimer.classList.remove('hidden');
-    detailTimer.classList.toggle('task-card-timer-expired', remaining <= 0);
+    detailTimer.classList.toggle('task-card-timer-expired', Number(currentDetailTask.time_limit_expires_at) - now <= 0);
   } else if (detailTimer) {
     detailTimer.classList.add('hidden');
   }
@@ -3681,7 +3683,7 @@ async function confirmStartTaskWithLimit(minutes) {
   if (!currentDetailTask) return;
   if (!START_TIME_LIMIT_OPTIONS.includes(minutes)) return;
   try {
-    const updated = await api('PATCH', '/tasks/' + currentDetailTask.id + '/status', {
+    const updated = await api('PATCH', `/tasks/${currentDetailTask.id}/status`, {
       status: 'started',
       timeLimitMinutes: minutes,
     });
@@ -3697,7 +3699,7 @@ async function confirmStartTaskWithLimit(minutes) {
 async function confirmStartTaskNoLimit() {
   if (!currentDetailTask) return;
   try {
-    const updated = await api('PATCH', '/tasks/' + currentDetailTask.id + '/status', { status: 'started' });
+    const updated = await api('PATCH', `/tasks/${currentDetailTask.id}/status`, { status: 'started' });
     currentDetailTask = updated;
     tasksMap.set(updated.id, updated);
     closeStartTaskModal();
@@ -4487,6 +4489,7 @@ async function quickStatus(status) {
     const wasRecurring = !!(currentDetailTask.recur_interval && currentDetailTask.recur_unit);
     const updated = await api('PATCH', '/tasks/' + currentDetailTask.id + '/status', { status });
     currentDetailTask = updated; tasksMap.set(updated.id, updated);
+    const earnedDoubleXp = status === 'complete' && !!updated && !!updated.doubleXpAwarded;
     let successMessage = 'Status updated!';
     if (status === 'complete' && wasRecurring) {
       closeDetailModal();
@@ -4498,7 +4501,7 @@ async function quickStatus(status) {
       if (status === 'complete' && gamificationEnabled) loadGamificationProfile();
       if (status === 'complete') successMessage = 'Task complete!';
     }
-    if (status === 'complete' && updated && updated.doubleXpAwarded) successMessage += ' Double XP earned!';
+    if (earnedDoubleXp) successMessage += ' Double XP earned!';
     toast(successMessage);
     // If a loot drop was included in the response, show the modal
     if (status === 'complete' && updated && updated.drop) {

@@ -1080,7 +1080,9 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
       if (completedTask) {
         if (shouldAwardXp) {
-          const xpMultiplier = (completedTask.xp_multiplier ?? 1.0) * (wasTimedStartActive ? TIMED_TASK_XP_MULTIPLIER : 1);
+          const xpMultiplier = wasTimedStartActive
+            ? (completedTask.xp_multiplier ?? 1.0) * TIMED_TASK_XP_MULTIPLIER
+            : (completedTask.xp_multiplier ?? 1.0);
           const xpResult = awardTaskXp(userId, completedTask.type_id, xpMultiplier);
           if (xpResult) lootDrop = xpResult.drop;
           awardFreezeCredit(userId);

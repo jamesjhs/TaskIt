@@ -93,6 +93,8 @@ db.exec(`
     archived INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
+    started_at INTEGER,
+    time_limit_expires_at INTEGER,
     FOREIGN KEY (created_by) REFERENCES users(id),
     FOREIGN KEY (type_id) REFERENCES task_types(id)
   );
@@ -417,6 +419,9 @@ addCol('tasks', 'completed_by', 'TEXT');
 // Gamification Step 2: streak counters carried forward through recurring spawns
 addCol('tasks', 'streak_current', 'INTEGER NOT NULL DEFAULT 0');
 addCol('tasks', 'streak_longest', 'INTEGER NOT NULL DEFAULT 0');
+// Task start timer support: track the start timestamp and optional expiry
+addCol('tasks', 'started_at', 'INTEGER');
+addCol('tasks', 'time_limit_expires_at', 'INTEGER');
 // streak_frozen = 1 means a Freeze has been pre-applied to protect this occurrence
 addCol('tasks', 'streak_frozen', 'INTEGER NOT NULL DEFAULT 0');
 // Gamification Step 2: secondary currency for purchasing Freezes

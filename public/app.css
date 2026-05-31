@@ -430,6 +430,7 @@ a:hover { text-decoration: underline; }
   background: #fff;
   border-radius: 14px;
   padding: 16px;
+  position: relative;
   box-shadow: 0 2px 12px rgba(124,58,237,.08), 0 1px 3px rgba(0,0,0,.05);
   margin-bottom: 12px;
   cursor: pointer;
@@ -443,6 +444,26 @@ a:hover { text-decoration: underline; }
 .task-card-title-group { color: #7c3aed; }
 .task-card-meta { font-size: .82rem; color: #6b7280; margin-top: 6px; }
 .task-card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.task-card-has-timer { padding-right: 96px; }
+.task-card-timer {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  font-size: .74rem;
+  font-weight: 700;
+  white-space: nowrap;
+  z-index: 1;
+}
+.task-card-timer-expired {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
 
 /* Status badges */
 .badge-not-started { background: #f1f5f9; color: #475569; }
@@ -671,6 +692,18 @@ a:hover { text-decoration: underline; }
 /* Task card urgency / due-soon highlights */
 .task-card-urgent   { background: #fff0f0; }
 .task-card-due-soon { border: 2px solid #dc2626; }
+.task-card-started {
+  background: #ecfdf5;
+  border-left-color: #22c55e;
+}
+.task-card-started-timed {
+  animation: task-card-started-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes task-card-started-pulse {
+  0%, 100% { box-shadow: 0 2px 12px rgba(34,197,94,.10), 0 1px 3px rgba(0,0,0,.05); }
+  50% { box-shadow: 0 4px 18px rgba(34,197,94,.18), 0 1px 3px rgba(0,0,0,.05); }
+}
 
 /* Far-future tasks collapsible toggle button */
 .task-far-future-toggle {

@@ -6300,6 +6300,11 @@ async function getActiveSwRegistration() {
   if (navigator.serviceWorker.controller) {
     const reg = await navigator.serviceWorker.getRegistration('/');
     if (reg) return reg;
+    // controller is set but getRegistration('/') returned null — this is an
+    // unusual state (scope mismatch or transient browser inconsistency).
+    // Fall through to navigator.serviceWorker.ready, which will resolve
+    // immediately because controller being non-null guarantees an active
+    // worker exists.
   }
   return Promise.race([
     navigator.serviceWorker.ready,

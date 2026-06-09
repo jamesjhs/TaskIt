@@ -279,9 +279,9 @@ router.post('/me/ics-token/rotate', (req: Request, res: Response): void => {
 router.get('/me/notification-preferences', (req: Request, res: Response): void => {
   const userId = req.user!.id;
   const user = db.prepare(
-    'SELECT notification_preferences, push_reminder_time, push_time_zone FROM users WHERE id = ?'
+    'SELECT notification_preferences, push_notifications_enabled, push_reminder_time, push_time_zone FROM users WHERE id = ?'
   ).get(userId) as
-    | { notification_preferences: string; push_reminder_time: string | null; push_time_zone: string | null }
+    | { notification_preferences: string; push_notifications_enabled: number; push_reminder_time: string | null; push_time_zone: string | null }
     | undefined;
 
   if (!user) {
@@ -306,13 +306,14 @@ router.get('/me/notification-preferences', (req: Request, res: Response): void =
       localTime: isValidPushReminderTime(user.push_reminder_time) ? user.push_reminder_time : DEFAULT_PUSH_REMINDER_TIME,
       timeZone: isValidTimeZone(user.push_time_zone) ? user.push_time_zone : null,
     },
+    pushNotificationsEnabled: user.push_notifications_enabled !== 0,
   });
 });
 
 // PATCH /api/users/me/notification-preferences — update user's default reminder preferences
 router.patch('/me/notification-preferences', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const { email, popup, pushSchedule } = req.body;
+  const { email, popup, pushSchedule, pushNotificationsEnabled } = req.body;
 
   // Validate structure
   if (!email || typeof email !== 'object' || !popup || typeof popup !== 'object') {
@@ -354,10 +355,15 @@ router.patch('/me/notification-preferences', (req: Request, res: Response): void
     }
   }
 
+  if (pushNotificationsEnabled !== undefined && typeof pushNotificationsEnabled !== 'boolean') {
+    res.status(400).json({ error: 'pushNotificationsEnabled must be a boolean when provided' });
+    return;
+  }
+
   const existing = db.prepare(
-    'SELECT push_reminder_time, push_time_zone FROM users WHERE id = ?'
+    'SELECT push_notifications_enabled, push_reminder_time, push_time_zone FROM users WHERE id = ?'
   ).get(userId) as
-    | { push_reminder_time: string | null; push_time_zone: string | null }
+    | { push_notifications_enabled: number; push_reminder_time: string | null; push_time_zone: string | null }
     | undefined;
 
   if (!existing) {
@@ -370,17 +376,23 @@ router.patch('/me/notification-preferences', (req: Request, res: Response): void
   const resolvedPushTimeZone = pushSchedule && 'timeZone' in pushSchedule
     ? (pushSchedule.timeZone || null)
     : (existing.push_time_zone || null);
+  const resolvedPushEnabled = pushNotificationsEnabled ?? (existing.push_notifications_enabled !== 0);
 
   db.prepare('UPDATE users SET notification_preferences = ? WHERE id = ?').run(
     JSON.stringify(prefs),
     userId
   );
 
-  db.prepare('UPDATE users SET push_reminder_time = ?, push_time_zone = ? WHERE id = ?').run(
+  db.prepare('UPDATE users SET push_notifications_enabled = ?, push_reminder_time = ?, push_time_zone = ? WHERE id = ?').run(
+    resolvedPushEnabled ? 1 : 0,
     resolvedPushReminderTime,
     resolvedPushTimeZone,
     userId
   );
+
+  if (!resolvedPushEnabled) {
+    db.prepare('DELETE FROM push_subscriptions WHERE user_id = ?').run(userId);
+  }
 
   res.json({
     message: 'Notification preferences updated',
@@ -390,6 +402,7 @@ router.patch('/me/notification-preferences', (req: Request, res: Response): void
         localTime: resolvedPushReminderTime,
         timeZone: resolvedPushTimeZone,
       },
+      pushNotificationsEnabled: resolvedPushEnabled,
     },
   });
 });

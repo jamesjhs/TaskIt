@@ -23,6 +23,7 @@ interface TaskRow {
 interface UserRow {
   id: string;
   email: string;
+  push_notifications_enabled: number;
   push_reminder_time: string | null;
   push_time_zone: string | null;
 }
@@ -76,11 +77,13 @@ async function sendPushNotificationsForUser(userId: string, taskId: string, task
   if (subscriptions.length === 0) return false;
 
   const appUrl = BASE_URL || '';
+  const iconUrl = appUrl ? `${appUrl}/icons/icon-192x192.png` : '/icons/icon-192x192.png';
+  const badgeUrl = appUrl ? `${appUrl}/icons/icon-96x96.png` : '/icons/icon-96x96.png';
   const payload = JSON.stringify({
     title: 'TaskIt! Reminder',
     body: `"${taskTitle}" is due in ${windowLabel}.`,
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-96x96.png',
+    icon: iconUrl,
+    badge: badgeUrl,
     url: `${appUrl}/?task=${taskId}`,
   });
 
@@ -88,7 +91,8 @@ async function sendPushNotificationsForUser(userId: string, taskId: string, task
     subscriptions.map(sub =>
       webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.keys_p256dh, auth: sub.keys_auth } },
-        payload
+        payload,
+        { TTL: 60 * 60 * 24, urgency: 'normal' }
       ).catch((err: unknown) => {
         const httpStatus = (err as { statusCode?: number }).statusCode;
         if (httpStatus === 410 || httpStatus === 404 || httpStatus === 401 || httpStatus === 403) {
@@ -280,7 +284,7 @@ async function sendReminders(): Promise<void> {
       let emailDelivered = false;
       for (const userId of recipientIds) {
         const user = db.prepare(
-          'SELECT id, email, push_reminder_time, push_time_zone FROM users WHERE id = ?'
+          'SELECT id, email, push_notifications_enabled, push_reminder_time, push_time_zone FROM users WHERE id = ?'
         ).get(userId) as UserRow | undefined;
         if (!user) continue;
 
@@ -293,7 +297,7 @@ async function sendReminders(): Promise<void> {
           }
         }
 
-        if (!pushApplicable) continue;
+        if (!pushApplicable || user.push_notifications_enabled === 0) continue;
 
         const pushReminderAlreadySent = !!db.prepare(
           'SELECT 1 FROM task_push_reminders_sent WHERE task_id = ? AND reminder_type = ? AND user_id = ?'

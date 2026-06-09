@@ -96,6 +96,8 @@ self.addEventListener('push', event => {
       icon: data.icon,
       badge: data.badge,
       data: { url: data.url },
+      requireInteraction: false,
+      timestamp: Date.now(),
       // Tag groups notifications by URL so repeated reminders for the same
       // task replace the previous one rather than stacking in the tray.
       tag: data.url,

@@ -1091,7 +1091,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.19.1</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
+      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.19.3</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>
@@ -1342,6 +1342,10 @@
       <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #e5e7eb">
         <p style="font-weight:600;color:#1a1a2e;margin-bottom:6px;font-size:.95rem">🖥️ Popup Reminders (Browser)</p>
         <div id="pushStatusBanner" style="font-size:.82rem;padding:8px 10px;border-radius:6px;margin-bottom:10px;background:#f3f4f6;color:#6b7280">Checking push notification status…</div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:.9rem;margin-bottom:12px;font-weight:600;color:#1a1a2e">
+          <input type="checkbox" id="notifPushEnabled" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0" />
+          <span>Enable background push notifications</span>
+        </label>
         <div style="display:flex;flex-direction:column;gap:8px">
           <label style="display:flex;align-items:center;gap:8px;font-size:.9rem">
             <input type="checkbox" id="notifPopup7day" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0" />
@@ -2460,6 +2464,7 @@ const START_TIME_LIMIT_OPTIONS = [5, 10, 15, 60];
 const SW_READY_TIMEOUT_MS = 10000;
 const DEFAULT_PUSH_REMINDER_TIME = '09:00';
 let pushStatusRetryTimer = null;
+let pushNotificationsEnabled = true;
 
 function getBrowserPushTimeZone() {
   try {
@@ -2944,21 +2949,7 @@ function initApp() {
   // Background-load gamification state so the strip and streak panel work immediately;
   // then check if the user should see the gamification opt-in prompt
   loadGamificationProfile().then(() => maybeShowGamifOptIn());
-  // Request browser notification permission so popup reminders can fire,
-  // then register for background push notifications if supported.
-  if ('Notification' in window) {
-    if (Notification.permission === 'default') {
-      Notification.requestPermission().then(perm => {
-        if (perm === 'granted') subscribeToPush();
-      });
-    } else if (Notification.permission === 'granted') {
-      subscribeToPush();
-    } else {
-      // Permission is 'denied' — clean up any stale subscription so the scheduler
-      // stops trying to deliver push notifications to this browser.
-      cleanupRevokedPushSubscription();
-    }
-  }
+  syncPushSubscriptionFromPreferences();
   // On mobile, enhance date inputs for better touch UX
   if (isMobileDevice()) {
     enhanceMobileDatetimePickers();
@@ -6397,9 +6388,28 @@ async function subscribeToPush() {
       endpoint: sub.endpoint,
       keys: { p256dh: sub.keys?.p256dh, auth: sub.keys?.auth },
     });
+    pushNotificationsEnabled = true;
   } catch (err) {
     // Non-critical path; log for developer visibility but don't surface to the user.
     console.warn('[push] Failed to register push subscription:', err);
+  }
+}
+
+// Unsubscribe this browser and remove all server-side endpoints for the user.
+// The server-side preference patch deletes stored rows, so this still works when
+// the local browser subscription was already cleared.
+async function unsubscribeFromPush() {
+  try {
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = reg ? await reg.pushManager.getSubscription() : null;
+      if (sub) {
+        await sub.unsubscribe();
+        await api('DELETE', '/push/subscribe', { endpoint: sub.endpoint }).catch(() => {});
+      }
+    }
+  } catch (err) {
+    console.warn('[push] Failed to unregister local push subscription:', err);
   }
 }
 
@@ -6439,6 +6449,9 @@ function applicationServerKeysMatch(a, b) {
 
 /** Called when the user clicks "Grant permission" in the push status banner. */
 function pushBannerGrantPermission() {
+  pushNotificationsEnabled = true;
+  const toggle = document.getElementById('notifPushEnabled');
+  if (toggle) toggle.checked = true;
   Notification.requestPermission().then(p => {
     if (p === 'granted') subscribeToPush().then(refreshPushStatusBanner);
     else refreshPushStatusBanner();
@@ -6447,7 +6460,29 @@ function pushBannerGrantPermission() {
 
 /** Called when the user clicks "Subscribe now" in the push status banner. */
 function pushBannerSubscribeNow() {
+  pushNotificationsEnabled = true;
+  const toggle = document.getElementById('notifPushEnabled');
+  if (toggle) toggle.checked = true;
   subscribeToPush().then(refreshPushStatusBanner);
+}
+
+async function syncPushSubscriptionFromPreferences() {
+  try {
+    const prefs = await api('GET', '/users/me/notification-preferences');
+    pushNotificationsEnabled = prefs?.pushNotificationsEnabled !== false;
+    if (!('Notification' in window)) return;
+    if (!pushNotificationsEnabled) {
+      await unsubscribeFromPush();
+      return;
+    }
+    if (Notification.permission === 'granted') {
+      await subscribeToPush();
+    } else if (Notification.permission === 'denied') {
+      await cleanupRevokedPushSubscription();
+    }
+  } catch (err) {
+    console.warn('[push] Failed to sync push preference:', err);
+  }
 }
 
 // Close notif modal when clicking the overlay backdrop
@@ -6585,11 +6620,14 @@ async function loadNotificationPreferences() {
     document.getElementById('notifPopup7day').checked = !!prefs.popup?.notify_7day;
     document.getElementById('notifPopup1day').checked = !!prefs.popup?.notify_1day;
     document.getElementById('notifPopupOnday').checked = !!prefs.popup?.notify_onday;
+    pushNotificationsEnabled = prefs.pushNotificationsEnabled !== false;
+    document.getElementById('notifPushEnabled').checked = pushNotificationsEnabled;
     document.getElementById('notifPushLocalTime').value = prefs.pushSchedule?.localTime || DEFAULT_PUSH_REMINDER_TIME;
     updatePushTimeZoneLabel(prefs.pushSchedule?.timeZone || browserTimeZone);
   } catch (err) {
     console.error('Failed to load notification preferences:', err);
     document.getElementById('notifPushLocalTime').value = DEFAULT_PUSH_REMINDER_TIME;
+    document.getElementById('notifPushEnabled').checked = pushNotificationsEnabled;
   }
   refreshPushStatusBanner();
 }
@@ -6613,6 +6651,11 @@ async function refreshPushStatusBanner() {
   // 1. Browser support check
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     set('⚠️', 'Background push notifications are not supported by this browser.', '#fef3c7', '#92400e');
+    return;
+  }
+
+  if (!pushNotificationsEnabled) {
+    set('⏸️', 'Background push notifications are turned off in your Profile preferences.', '#f3f4f6', '#4b5563');
     return;
   }
 
@@ -6662,6 +6705,7 @@ async function saveNotificationPreferences() {
   try {
     const localTime = document.getElementById('notifPushLocalTime').value || DEFAULT_PUSH_REMINDER_TIME;
     const timeZone = getBrowserPushTimeZone();
+    const wantsPush = document.getElementById('notifPushEnabled').checked;
     const prefs = {
       email: {
         notify_7day: document.getElementById('notifEmail7day').checked,
@@ -6677,9 +6721,25 @@ async function saveNotificationPreferences() {
         localTime,
         timeZone,
       },
+      pushNotificationsEnabled: wantsPush,
     };
     await api('PATCH', '/users/me/notification-preferences', prefs);
+    pushNotificationsEnabled = wantsPush;
+    if (wantsPush) {
+      if ('Notification' in window && Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          refreshPushStatusBanner();
+          toast('Preferences saved. Browser notification permission was not granted.', 'info');
+          return;
+        }
+      }
+      await subscribeToPush();
+    } else {
+      await unsubscribeFromPush();
+    }
     updatePushTimeZoneLabel(timeZone);
+    refreshPushStatusBanner();
     toast('Notification preferences saved!');
   } catch (err) {
     toast('Failed to save preferences: ' + err.message, 'error');

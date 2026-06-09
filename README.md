@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.19.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.19.3** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -119,6 +119,12 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.19.3
+
+- **🐛 Push notification controls** — Profile now includes a background push on/off toggle. Turning it off disables server sends for the user and removes stored push subscriptions.
+- **📱 Mobile push delivery hardening** — reminder push payloads now use absolute icon/badge URLs plus explicit TTL/urgency options, and the app no longer prompts for notification permission automatically after login.
+- **🔢 Version bump** — package metadata and documentation updated to 1.19.3.
 
 ### v1.19.1
 

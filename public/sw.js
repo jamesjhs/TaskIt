@@ -37,6 +37,12 @@ self.addEventListener('activate', event => {
   );
 });
 
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
@@ -53,12 +59,19 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For SPA navigation requests, always serve the precached root shell ('/').
-  // Static info pages are excluded so they can be served directly from cache.
+  // For SPA navigation requests, prefer the network so already-installed PWAs
+  // can recover from stale cached shells after an app update. Fall back to the
+  // cached shell only when offline.
   const STANDALONE_PAGES = ['/privacy-policy.html', '/user-guide.html', '/howto.html'];
   if (event.request.mode === 'navigate' && !STANDALONE_PAGES.includes(url.pathname)) {
     event.respondWith(
-      caches.match('/').then(cached => cached || fetch('/'))
+      fetch(event.request).then(response => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put('/', clone));
+        }
+        return response;
+      }).catch(() => caches.match('/').then(cached => cached || fetch('/')))
     );
     return;
   }

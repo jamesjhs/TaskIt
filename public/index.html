@@ -2462,8 +2462,11 @@ const START_TIME_LIMIT_OPTIONS = [5, 10, 15, 60];
 // Used by subscribeToPush() and refreshPushStatusBanner() — defined once here
 // so both functions stay in sync if the value ever needs to change.
 const SW_READY_TIMEOUT_MS = 10000;
+const PUSH_STATUS_MAX_STARTUP_RETRIES = 3;
+const PUSH_SW_REPAIR_ATTEMPT_KEY = 'taskit_push_sw_repair_attempted';
 const DEFAULT_PUSH_REMINDER_TIME = '09:00';
 let pushStatusRetryTimer = null;
+let pushStatusStartupRetries = 0;
 let pushNotificationsEnabled = true;
 
 function getBrowserPushTimeZone() {
@@ -6302,50 +6305,143 @@ async function dismissAlert(alertId) {
 function waitForServiceWorkerRegistration(reg) {
   return new Promise((resolve, reject) => {
     if (reg.active) { resolve(reg); return; }
-    const worker = reg.installing;
-    if (!worker) { reject(new Error('No service worker instance available')); return; }
+    const worker = reg.installing || reg.waiting;
 
     const timeoutId = setTimeout(() => {
-      worker.removeEventListener('statechange', onStateChange);
+      cleanup();
       reject(new Error('SW timeout'));
     }, SW_READY_TIMEOUT_MS);
 
-    function onStateChange() {
-      if (worker.state === 'activated' || reg.active) {
-        clearTimeout(timeoutId);
-        worker.removeEventListener('statechange', onStateChange);
-        resolve(reg);
-      }
+    function cleanup() {
+      clearTimeout(timeoutId);
+      if (worker) worker.removeEventListener('statechange', onStateChange);
+      reg.removeEventListener('updatefound', onUpdateFound);
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
     }
 
-    worker.addEventListener('statechange', onStateChange);
+    function resolveIfActive() {
+      if (reg.active) {
+        cleanup();
+        resolve(reg);
+        return true;
+      }
+      return false;
+    }
+
+    function onStateChange() {
+      if (worker.state === 'activated') {
+        cleanup();
+        resolve(reg);
+        return;
+      }
+      if (worker.state === 'redundant') {
+        cleanup();
+        reject(new Error('Service worker became redundant before activation'));
+        return;
+      }
+      resolveIfActive();
+    }
+
+    function onUpdateFound() {
+      const installing = reg.installing;
+      if (installing) installing.addEventListener('statechange', resolveIfActive);
+    }
+
+    function onControllerChange() {
+      resolveIfActive();
+    }
+
+    if (worker) {
+      worker.addEventListener('statechange', onStateChange);
+      if (worker.state === 'installed' && reg.waiting) {
+        worker.postMessage({ type: 'SKIP_WAITING' });
+      }
+      resolveIfActive();
+    } else {
+      reg.addEventListener('updatefound', onUpdateFound);
+    }
+
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+    reg.update().catch(() => {});
   });
 }
 
 async function ensureActiveSwRegistration() {
-  let reg = await navigator.serviceWorker.getRegistration();
+  let reg = await navigator.serviceWorker.getRegistration('/');
   if (!reg) {
-    reg = await navigator.serviceWorker.register('/sw.js');
+    reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+  } else {
+    reg.update().catch(() => {});
   }
 
   if (reg.active) return reg;
 
   try {
-    return await Promise.race([
+    const readyReg = await Promise.race([
       navigator.serviceWorker.ready,
       waitForServiceWorkerRegistration(reg),
       new Promise((_r, rej) => setTimeout(() => rej(new Error('SW timeout')), SW_READY_TIMEOUT_MS)),
     ]);
-  } catch {
-    const refreshed = await navigator.serviceWorker.getRegistration();
+    return readyReg || reg;
+  } catch (err) {
+    const refreshed = await navigator.serviceWorker.getRegistration('/');
     if (refreshed && refreshed.active) return refreshed;
-    throw new Error('SW timeout');
+    if (sessionStorage.getItem(PUSH_SW_REPAIR_ATTEMPT_KEY) !== 'true') {
+      sessionStorage.setItem(PUSH_SW_REPAIR_ATTEMPT_KEY, 'true');
+      const repaired = await repairPushServiceWorker();
+      if (repaired?.active) {
+        sessionStorage.removeItem(PUSH_SW_REPAIR_ATTEMPT_KEY);
+        return repaired;
+      }
+    }
+    throw err;
+  }
+}
+
+async function repairPushServiceWorker() {
+  if (!('serviceWorker' in navigator)) return null;
+
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  for (const registration of registrations) {
+    try {
+      const sub = registration.pushManager ? await registration.pushManager.getSubscription() : null;
+      if (sub?.endpoint) {
+        await api('DELETE', '/push/subscribe', { endpoint: sub.endpoint }).catch(() => {});
+      }
+    } catch { /* best-effort stale subscription cleanup */ }
+    await registration.unregister().catch(() => {});
+  }
+
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(key => key.startsWith('taskit-')).map(key => caches.delete(key)));
+  }
+
+  const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+  await waitForServiceWorkerRegistration(registration);
+  return registration;
+}
+
+async function getPushSubscriptionWithRepair(reg) {
+  if (!reg?.pushManager) {
+    throw new Error('PushManager is not available on the service worker registration');
+  }
+  try {
+    return await reg.pushManager.getSubscription();
+  } catch (err) {
+    if (sessionStorage.getItem(PUSH_SW_REPAIR_ATTEMPT_KEY) === 'true') throw err;
+    sessionStorage.setItem(PUSH_SW_REPAIR_ATTEMPT_KEY, 'true');
+    const repaired = await repairPushServiceWorker();
+    if (!repaired?.pushManager) throw err;
+    const subscription = await repaired.pushManager.getSubscription();
+    sessionStorage.removeItem(PUSH_SW_REPAIR_ATTEMPT_KEY);
+    return subscription;
   }
 }
 
 // Subscribe this browser to background push notifications.
 // Silently does nothing if the server has no VAPID keys configured.
-async function subscribeToPush() {
+async function subscribeToPush(allowRepair = true) {
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
@@ -6360,7 +6456,7 @@ async function subscribeToPush() {
     // Convert the base64url key to a Uint8Array that PushManager expects.
     const appServerKey = urlBase64ToUint8Array(publicKey);
 
-    let subscription = await reg.pushManager.getSubscription();
+    let subscription = await getPushSubscriptionWithRepair(reg);
 
     // If an existing subscription was created with a different VAPID key (e.g. after
     // the admin regenerated keys), the push service will reject sends with a 401/403.
@@ -6390,6 +6486,16 @@ async function subscribeToPush() {
     });
     pushNotificationsEnabled = true;
   } catch (err) {
+    if (allowRepair && 'serviceWorker' in navigator && sessionStorage.getItem(PUSH_SW_REPAIR_ATTEMPT_KEY) !== 'true') {
+      try {
+        sessionStorage.setItem(PUSH_SW_REPAIR_ATTEMPT_KEY, 'true');
+        await repairPushServiceWorker();
+        sessionStorage.removeItem(PUSH_SW_REPAIR_ATTEMPT_KEY);
+        return subscribeToPush(false);
+      } catch (repairErr) {
+        console.warn('[push] Failed to repair push subscription path:', repairErr);
+      }
+    }
     // Non-critical path; log for developer visibility but don't surface to the user.
     console.warn('[push] Failed to register push subscription:', err);
   }
@@ -6445,6 +6551,115 @@ function applicationServerKeysMatch(a, b) {
   return a.length === b.length && a.every((byte, i) => byte === b[i]);
 }
 
+function isCurrentUserAdmin() {
+  return currentUser && currentUser.role === 'admin';
+}
+
+function describePushError(err) {
+  if (!err) return 'Unknown error';
+  const name = err.name ? err.name + ': ' : '';
+  const message = err.message || String(err);
+  return name + message;
+}
+
+async function fetchPushDebugUrl(url) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  try {
+    const resp = await fetch(url, { cache: 'no-store', signal: controller.signal });
+    const text = await resp.clone().text().catch(() => '');
+    return {
+      ok: resp.ok,
+      status: resp.status,
+      url: resp.url,
+      type: resp.type,
+      contentType: resp.headers.get('content-type') || '',
+      cacheControl: resp.headers.get('cache-control') || '',
+      serviceWorkerAllowed: resp.headers.get('service-worker-allowed') || '',
+      bodyPreview: text.slice(0, 180),
+    };
+  } catch (err) {
+    return { error: describePushError(err) };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function buildAdminPushDebugReport(err) {
+  const report = {
+    generatedAt: new Date().toISOString(),
+    error: describePushError(err),
+    origin: window.location.origin,
+    href: window.location.href,
+    isSecureContext: window.isSecureContext,
+    displayModeStandalone: window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true,
+    notificationPermission: ('Notification' in window) ? Notification.permission : 'Notification API unavailable',
+    serviceWorkerSupported: 'serviceWorker' in navigator,
+    pushManagerSupported: 'PushManager' in window,
+    userAgent: navigator.userAgent,
+    controllerScriptURL: navigator.serviceWorker?.controller?.scriptURL || null,
+    repairAttemptedThisSession: sessionStorage.getItem(PUSH_SW_REPAIR_ATTEMPT_KEY) === 'true',
+    startupRetries: pushStatusStartupRetries,
+    endpoints: {
+      sw: await fetchPushDebugUrl('/sw.js'),
+      version: await fetchPushDebugUrl('/api/version'),
+      vapidPublicKey: await fetchPushDebugUrl('/api/push/vapid-public-key'),
+    },
+    registrations: [],
+    caches: [],
+  };
+
+  if ('serviceWorker' in navigator) {
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      report.registrations = await Promise.all(regs.map(async reg => {
+        let subscription = null;
+        let subscriptionError = null;
+        try {
+          const sub = reg.pushManager ? await reg.pushManager.getSubscription() : null;
+          subscription = sub ? {
+            endpointOrigin: new URL(sub.endpoint).origin,
+            hasP256dh: !!sub.toJSON().keys?.p256dh,
+            hasAuth: !!sub.toJSON().keys?.auth,
+          } : null;
+        } catch (subErr) {
+          subscriptionError = describePushError(subErr);
+        }
+        return {
+          scope: reg.scope,
+          active: reg.active ? { scriptURL: reg.active.scriptURL, state: reg.active.state } : null,
+          installing: reg.installing ? { scriptURL: reg.installing.scriptURL, state: reg.installing.state } : null,
+          waiting: reg.waiting ? { scriptURL: reg.waiting.scriptURL, state: reg.waiting.state } : null,
+          subscription,
+          subscriptionError,
+        };
+      }));
+    } catch (regErr) {
+      report.registrationsError = describePushError(regErr);
+    }
+  }
+
+  if ('caches' in window) {
+    try {
+      report.caches = await caches.keys();
+    } catch (cacheErr) {
+      report.cachesError = describePushError(cacheErr);
+    }
+  }
+
+  return report;
+}
+
+function renderAdminPushDebug(report) {
+  if (!isCurrentUserAdmin() || !report) return '';
+  const json = JSON.stringify(report, null, 2);
+  return `
+    <details style="margin-top:8px">
+      <summary style="cursor:pointer;font-weight:600">Admin debug details</summary>
+      <pre style="white-space:pre-wrap;overflow:auto;max-height:320px;margin:8px 0 0;padding:8px;background:rgba(255,255,255,.65);border:1px solid rgba(146,64,14,.25);border-radius:6px;color:#111827;font-size:.72rem">${escHtml(json)}</pre>
+    </details>`;
+}
+
 // ─── Push status banner helpers (called from the inline links in the banner) ─
 
 /** Called when the user clicks "Grant permission" in the push status banner. */
@@ -6464,6 +6679,19 @@ function pushBannerSubscribeNow() {
   const toggle = document.getElementById('notifPushEnabled');
   if (toggle) toggle.checked = true;
   subscribeToPush().then(refreshPushStatusBanner);
+}
+
+/** Called when the user clicks "Repair push" in the push status banner. */
+function pushBannerRepairService() {
+  pushStatusStartupRetries = 0;
+  sessionStorage.removeItem(PUSH_SW_REPAIR_ATTEMPT_KEY);
+  repairPushServiceWorker()
+    .then(() => subscribeToPush(false))
+    .then(() => refreshPushStatusBanner(true))
+    .catch(err => {
+      console.warn('[push] Manual push service repair failed:', err);
+      refreshPushStatusBanner(true);
+    });
 }
 
 async function syncPushSubscriptionFromPreferences() {
@@ -6634,9 +6862,10 @@ async function loadNotificationPreferences() {
 
 // Show the current push-notification state in the profile page banner so users
 // can instantly see whether background push is set up on this device.
-async function refreshPushStatusBanner() {
+async function refreshPushStatusBanner(resetStartupRetries = false) {
   const banner = document.getElementById('pushStatusBanner');
   if (!banner) return;
+  if (resetStartupRetries) pushStatusStartupRetries = 0;
   if (pushStatusRetryTimer) {
     clearTimeout(pushStatusRetryTimer);
     pushStatusRetryTimer = null;
@@ -6685,18 +6914,29 @@ async function refreshPushStatusBanner() {
   // 4. Browser subscription
   try {
     const reg = await ensureActiveSwRegistration();
-    const sub = await reg.pushManager.getSubscription();
+    const sub = await getPushSubscriptionWithRepair(reg);
     if (sub) {
+      pushStatusStartupRetries = 0;
       set('✅', 'Background push notifications are <strong>active</strong> on this device. Reminders will arrive even when TaskIt! is not open.', '#d1fae5', '#065f46');
     } else {
+      pushStatusStartupRetries = 0;
       set('🔄', 'Push notification permission is granted but this device is not yet subscribed. <a href="#" onclick="pushBannerSubscribeNow();return false;" style="color:#7c3aed;text-decoration:underline">Subscribe now</a> or reload the page.', '#eff6ff', '#1e40af');
     }
-  } catch {
-    pushStatusRetryTimer = setTimeout(() => {
-      pushStatusRetryTimer = null;
-      refreshPushStatusBanner();
-    }, 1500);
-    set('ℹ️', 'Push notification service is still starting up. <a href="#" onclick="refreshPushStatusBanner();return false;" style="color:#1d4ed8;text-decoration:underline">Check again</a> once the page has fully loaded, or try reloading.', '#eff6ff', '#1e3a8a');
+  } catch (err) {
+    console.warn('[push] Service worker registration is not ready:', err);
+    if (pushStatusStartupRetries < PUSH_STATUS_MAX_STARTUP_RETRIES) {
+      pushStatusStartupRetries += 1;
+      pushStatusRetryTimer = setTimeout(() => {
+        pushStatusRetryTimer = null;
+        refreshPushStatusBanner();
+      }, 1500);
+      set('ℹ️', 'Push notification service is still starting up. <a href="#" onclick="refreshPushStatusBanner(true);return false;" style="color:#1d4ed8;text-decoration:underline">Check again</a> once the page has fully loaded, or try reloading.', '#eff6ff', '#1e3a8a');
+      return;
+    }
+    const adminDebug = isCurrentUserAdmin()
+      ? renderAdminPushDebug(await buildAdminPushDebugReport(err))
+      : '';
+    set('⚠️', 'Push notification service could not start in this browser session. <a href="#" onclick="pushBannerRepairService();return false;" style="color:#92400e;text-decoration:underline">Repair push</a> or <a href="#" onclick="refreshPushStatusBanner(true);return false;" style="color:#92400e;text-decoration:underline">check again</a>.' + adminDebug, '#fef3c7', '#92400e');
   }
 }
 

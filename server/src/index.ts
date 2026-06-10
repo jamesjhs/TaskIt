@@ -140,6 +140,7 @@ app.use(helmet({
       connectSrc: ["'self'", "https://challenges.cloudflare.com"],
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
+      workerSrc: ["'self'"],
       frameSrc: ["https://challenges.cloudflare.com"],
       childSrc: ["https://challenges.cloudflare.com"],
     },

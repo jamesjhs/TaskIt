@@ -244,10 +244,11 @@ function isOriginalAdmin(userId: string): boolean {
 router.get('/users', (_req: Request, res: Response): void => {
   const now = Date.now();
   const users = db.prepare(
-    'SELECT id, username, role, failed_logins, locked_until, created_at FROM users ORDER BY created_at ASC'
+    'SELECT id, username, email, role, failed_logins, locked_until, created_at FROM users ORDER BY created_at ASC'
   ).all() as Array<{
     id: string;
     username: string;
+    email: string;
     role: string;
     failed_logins: number;
     locked_until: number | null;
@@ -276,7 +277,7 @@ router.get('/users', (_req: Request, res: Response): void => {
 router.get('/locked', (_req: Request, res: Response): void => {
   const now = Date.now();
   const users = db.prepare(
-    'SELECT id, username, role, failed_logins, locked_until, created_at FROM users WHERE locked_until > ? ORDER BY locked_until ASC'
+    'SELECT id, username, email, role, failed_logins, locked_until, created_at FROM users WHERE locked_until > ? ORDER BY locked_until ASC'
   ).all(now);
   res.json(users);
 });

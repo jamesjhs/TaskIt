@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.19.8** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.19.9** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -119,6 +119,11 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.19.9
+
+- **🐛 Admin user search fix** — User Management now includes email data in admin user responses and guards the search filter so the All tab no longer crashes when searching users.
+- **🔢 Version bump** — package metadata, pages, and documentation updated to 1.19.9.
 
 ### v1.19.8
 

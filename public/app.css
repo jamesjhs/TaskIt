@@ -518,6 +518,18 @@ a:hover { text-decoration: underline; }
 .notif-item-sub { font-size: .8rem; color: #6b7280; }
 .notif-item-sub.overdue { color: #dc2626; font-weight: 700; }
 .notif-item-sub.soon    { color: #d97706; font-weight: 600; }
+.notif-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.notif-defer-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 
 /* Note item */
 .note-item {

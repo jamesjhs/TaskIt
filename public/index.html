@@ -6323,6 +6323,13 @@ async function refreshNotifications() {
           <p class="notif-item-sub ${overdue ? 'overdue' : 'soon'}">
             ${overdue ? '\u26a0\ufe0f Overdue \u2014 was due ' : '\u23f0 Due '} ${fmtDate(t.due_date)}
           </p>
+          <div class="notif-item-actions" onclick="event.stopPropagation()">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="toggleNotificationDefer('${escHtml(t.id)}', event)">Defer</button>
+            <div id="notifDefer-${escHtml(t.id)}" class="notif-defer-options hidden">
+              <button type="button" class="btn btn-sm btn-primary" onclick="deferNotificationTask('${escHtml(t.id)}', 1, event)">1 day</button>
+              <button type="button" class="btn btn-sm btn-primary" onclick="deferNotificationTask('${escHtml(t.id)}', 7, event)">1 week</button>
+            </div>
+          </div>
         </div>`;
     }).join('');
     listEl.innerHTML = alertsHtml + taskHtml;
@@ -6337,6 +6344,34 @@ async function dismissAlert(alertId) {
     await api('PATCH', '/users/me/alerts/' + alertId + '/read');
     refreshNotifications();
   } catch (err) { toast(err.message, 'error'); }
+}
+
+function toggleNotificationDefer(taskId, event) {
+  if (event) event.stopPropagation();
+  const el = document.getElementById('notifDefer-' + taskId);
+  if (el) el.classList.toggle('hidden');
+}
+
+async function deferNotificationTask(taskId, days, event) {
+  if (event) event.stopPropagation();
+  const due = new Date();
+  due.setHours(0, 0, 0, 0);
+  due.setDate(due.getDate() + days);
+
+  try {
+    const updated = await api('PATCH', '/tasks/' + taskId + '/defer', { dueDate: due.getTime() });
+    if (updated) {
+      tasksMap.set(updated.id, updated);
+      if (currentDetailTask && currentDetailTask.id === updated.id) currentDetailTask = updated;
+    }
+    await Promise.all([
+      loadTasks(),
+      loadLongTermGoals()
+    ]);
+    toast(days === 1 ? 'Task deferred by 1 day' : 'Task deferred by 1 week');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
 }
 
 function waitForServiceWorkerRegistration(reg) {

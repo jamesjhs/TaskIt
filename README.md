@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.19.3** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.19.8** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -119,6 +119,11 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.19.8
+
+- **🐛 Sporadic task conversion fix** — editing a sporadic task can now correctly convert it back to a regular task, recurring task, or long-term goal without leaving the original card behind.
+- **🔢 Version bump** — package metadata, pages, and documentation updated to 1.19.8.
 
 ### v1.19.3
 

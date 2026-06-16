@@ -3368,6 +3368,52 @@ body.arcade-open { overflow: hidden; }
   color: #dc2626;
 }
 
+.sporadic-history-toggle {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sporadic-history-toggle:hover {
+  background: #dbeafe;
+}
+
+.sporadic-history {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.sporadic-history-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #4b5563;
+  margin-bottom: 5px;
+}
+
+.sporadic-history ol {
+  margin: 0;
+  padding-left: 18px;
+  color: #4b5563;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.sporadic-history-empty {
+  list-style: none;
+  margin-left: -18px;
+  color: #6b7280;
+}
+
 .sporadic-actions {
   display: flex;
   gap: 8px;

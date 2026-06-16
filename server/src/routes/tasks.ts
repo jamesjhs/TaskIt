@@ -387,7 +387,27 @@ router.get('/sporadic', (req: Request, res: Response): void => {
     ORDER BY t.last_completed_at ASC NULLS FIRST, t.created_at ASC
   `).all(userId, userId) as Array<Record<string, unknown>>;
 
-  // Add friendly timestamp for last_completed_at
+  const taskIds = tasks.map((t) => String(t.id));
+  const historyByTaskId = new Map<string, number[]>();
+
+  if (taskIds.length > 0) {
+    const placeholders = taskIds.map(() => '?').join(',');
+    const historyRows = db.prepare(`
+      SELECT task_id, timestamp
+      FROM task_history
+      WHERE action = 'completed_sporadic'
+        AND task_id IN (${placeholders})
+      ORDER BY timestamp DESC
+    `).all(...taskIds) as Array<{ task_id: string; timestamp: number }>;
+
+    for (const row of historyRows) {
+      const existing = historyByTaskId.get(row.task_id) || [];
+      existing.push(row.timestamp);
+      historyByTaskId.set(row.task_id, existing);
+    }
+  }
+
+  // Add friendly timestamp for last_completed_at and completion history
   const result = tasks.map((t) => {
     let lastCompletedFriendly = 'Never';
     let lastCompletedLabel = 'Never done';
@@ -405,6 +425,7 @@ router.get('/sporadic', (req: Request, res: Response): void => {
       is_sporadic: t.is_sporadic === 1,
       last_completed_friendly: lastCompletedFriendly,
       last_completed_label: lastCompletedLabel,
+      completion_history: historyByTaskId.get(String(t.id)) || [],
     };
   });
 
@@ -740,14 +761,37 @@ router.patch('/:id', (req: Request, res: Response): void => {
     return;
   }
 
-  const { title, details, typeId, status, assigneeIds, dueDate, recurInterval, recurUnit,
-          notifyEmail, notify7day, notify1day, notifyOnday,
-          notifyPopup7day, notifyPopup1day, notifyPopupOnday,
-          xpMultiplier, isLongTermGoal, groupId, lastCompletedAt } = req.body;
+  const {
+    title,
+    status,
+    assigneeIds,
+    dueDate,
+    recurInterval,
+    recurUnit,
+    notifyEmail,
+    notify7day,
+    notify1day,
+    notifyOnday,
+    notifyPopup7day,
+    notifyPopup1day,
+    notifyPopupOnday,
+    xpMultiplier,
+    isLongTermGoal,
+    isSporadic,
+    groupId,
+    lastCompletedAt,
+  } = req.body;
+  const details = req.body.details !== undefined ? req.body.details : req.body.description;
+  const typeId = req.body.typeId !== undefined ? req.body.typeId : req.body.taskTypeId;
 
   // Validate status if provided
   if (status !== undefined && !ALLOWED_STATUSES.has(status as string)) {
     res.status(400).json({ error: 'Invalid status value' });
+    return;
+  }
+
+  if (isSporadic === true && isLongTermGoal === true) {
+    res.status(400).json({ error: 'Task cannot be both sporadic and a long-term goal' });
     return;
   }
 
@@ -828,6 +872,7 @@ router.patch('/:id', (req: Request, res: Response): void => {
   }
 
   const now = Date.now();
+  const shouldClearScheduledFields = isSporadic === true || isLongTermGoal === true;
 
   // All SET clause fragments are hardcoded string literals — no user input is
   // interpolated into the SQL structure; only values use ? placeholders.
@@ -849,9 +894,24 @@ router.patch('/:id', (req: Request, res: Response): void => {
       setClauses.push('completed_by = ?'); vals.push(null);
     }
   }
-  if (dueDate !== undefined) { setClauses.push('due_date = ?'); vals.push(dueDate || null); }
-  if (recurInterval !== undefined) { setClauses.push('recur_interval = ?'); vals.push(recurInterval ? parseInt(String(recurInterval), 10) : null); }
-  if (recurUnit !== undefined) { setClauses.push('recur_unit = ?'); vals.push(recurUnit || null); }
+  if (dueDate !== undefined) {
+    setClauses.push('due_date = ?'); vals.push(dueDate || null);
+  } else if (shouldClearScheduledFields) {
+    setClauses.push('due_date = ?'); vals.push(null);
+  }
+  if (shouldClearScheduledFields) {
+    setClauses.push('original_due_date = ?'); vals.push(null);
+  }
+  if (recurInterval !== undefined) {
+    setClauses.push('recur_interval = ?'); vals.push(recurInterval ? parseInt(String(recurInterval), 10) : null);
+  } else if (shouldClearScheduledFields) {
+    setClauses.push('recur_interval = ?'); vals.push(null);
+  }
+  if (recurUnit !== undefined) {
+    setClauses.push('recur_unit = ?'); vals.push(recurUnit || null);
+  } else if (shouldClearScheduledFields) {
+    setClauses.push('recur_unit = ?'); vals.push(null);
+  }
   if (resolvedPatchMultiplier !== undefined) {
     setClauses.push('xp_multiplier = ?'); vals.push(resolvedPatchMultiplier);
   }
@@ -862,7 +922,14 @@ router.patch('/:id', (req: Request, res: Response): void => {
   if (notifyPopup7day !== undefined) { setClauses.push('notify_popup_7day = ?'); vals.push(notifyPopup7day === false || notifyPopup7day === 0 ? 0 : 1); }
   if (notifyPopup1day !== undefined) { setClauses.push('notify_popup_1day = ?'); vals.push(notifyPopup1day === false || notifyPopup1day === 0 ? 0 : 1); }
   if (notifyPopupOnday !== undefined) { setClauses.push('notify_popup_onday = ?'); vals.push(notifyPopupOnday === false || notifyPopupOnday === 0 ? 0 : 1); }
-   if (isLongTermGoal !== undefined) { setClauses.push('is_long_term_goal = ?'); vals.push(isLongTermGoal ? 1 : 0); }
+  if (isSporadic !== undefined) { setClauses.push('is_sporadic = ?'); vals.push(isSporadic ? 1 : 0); }
+  if (isLongTermGoal !== undefined) { setClauses.push('is_long_term_goal = ?'); vals.push(isLongTermGoal ? 1 : 0); }
+  if (isSporadic === true && isLongTermGoal === undefined) {
+    setClauses.push('is_long_term_goal = ?'); vals.push(0);
+  }
+  if (isLongTermGoal === true && isSporadic === undefined) {
+    setClauses.push('is_sporadic = ?'); vals.push(0);
+  }
   if (groupId !== undefined) { setClauses.push('group_id = ?'); vals.push(groupId || null); }
   if (lastCompletedAt !== undefined) { setClauses.push('last_completed_at = ?'); vals.push(lastCompletedAt || null); }
   setClauses.push('updated_at = ?');

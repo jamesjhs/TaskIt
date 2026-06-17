@@ -50,11 +50,42 @@ const staticLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const authLimiter = rateLimit({
+const authReadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLoginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const ip = ipKeyGenerator(req.ip ?? req.socket?.remoteAddress ?? '0.0.0.0');
+    return email ? `login:${email}:${ip}` : `login:${ip}`;
+  },
+});
+
+const authOtpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authEmailLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const ip = ipKeyGenerator(req.ip ?? req.socket?.remoteAddress ?? '0.0.0.0');
+    return email ? `auth-email:${email}:${ip}` : `auth-email:${ip}`;
+  },
 });
 
 // Per-user rate limiter for authenticated API routes.
@@ -274,7 +305,16 @@ app.get('/calendar/:token/tasks.ics', generalLimiter, (req, res): void => {
 });
 
 // API routes
-app.use('/api/auth', authLimiter, authRoutes);
+// Auth endpoints use separate buckets so harmless reads or repeated password-reset
+// requests cannot exhaust the password-login quota for the same client.
+app.use('/api/auth/turnstile', authReadLimiter);
+app.use('/api/auth/login', authLoginLimiter);
+app.use('/api/auth/verify-otp', authOtpLimiter);
+app.use('/api/auth/register', authEmailLimiter);
+app.use('/api/auth/magic-link', authEmailLimiter);
+app.use('/api/auth/forgot-password', authEmailLimiter);
+app.use('/api/auth/reset-password', authEmailLimiter);
+app.use('/api/auth', authRoutes);
 app.use('/api/groups', authenticatedLimiter, groupRoutes);
 app.use('/api/tasks', authenticatedLimiter, taskRoutes);
 app.use('/api/task-types', authenticatedLimiter, taskTypeRoutes);

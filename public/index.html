@@ -146,15 +146,15 @@
   <style>
     .hidden { display: none !important; }
   </style>
-  <link rel="stylesheet" href="/app.css?v=1.20.2" type="text/css" />
+  <link rel="stylesheet" href="/app.css?v=1.20.3" type="text/css" />
   <!-- PWA / installable web app -->
-  <link rel="manifest" href="/manifest.json?v=1.20.2" />
+  <link rel="manifest" href="/manifest.json?v=1.20.3" />
   <meta name="theme-color" content="#7c3aed" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="TaskIt!" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1.20.2" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=1.20.2" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1.20.3" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=1.20.3" />
   <!-- Cloudflare Turnstile for CAPTCHA security (explicit render; onload callback fires when ready) -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit" async defer></script>
 </head>
@@ -195,7 +195,7 @@
     <div class="lp-hero-float lp-float-achievement" aria-hidden="true">🏆 Achievement Unlocked!</div>
     <div class="lp-hero-float lp-float-streak" aria-hidden="true">🔥 14-day streak!</div>
     <div style="position:relative;z-index:1">
-      <img class="lp-hero-logo" src="/RKlogo.png?v=1.20.2" width="900" height="900" alt="TaskIt! logo: a checklist with a star and tick" decoding="async" fetchpriority="high" />
+      <img class="lp-hero-logo" src="/RKlogo.png?v=1.20.3" width="900" height="900" alt="TaskIt! logo: a checklist with a star and tick" decoding="async" fetchpriority="high" />
       <h1>Gamify your life and compete with friends!</h1>
       <p class="lp-hero-sub">Run recurring work, household jobs, sporadic maintenance, long-term goals, and group collaboration from one privacy-first app. Add reminders, calendar sync, and optional gamification — without subscriptions or vendor lock-in.</p>
       <div class="lp-hero-ctas">
@@ -961,10 +961,8 @@
 <div id="authPage" class="auth-page hidden" data-nosnippet>
   <div class="auth-card">
     <div class="auth-logo">
-      <div class="auth-logo-icon">
-        <svg width="36" height="36" fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-        </svg>
+      <div class="auth-logo-icon auth-logo-icon-brand">
+        <img src="/RKlogo.png?v=1.20.3" width="900" height="900" alt="TaskIt! logo" decoding="async" />
       </div>
       <h1>TaskIt!</h1>
       <p>🎮 Gamified task management</p>
@@ -1092,7 +1090,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.20.2</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
+      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.20.3</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>
@@ -1899,7 +1897,7 @@
 <div id="pwaInstallModal" class="modal-overlay hidden">
   <div class="modal-sheet">
     <div class="modal-body" style="text-align:center">
-      <img src="/RKlogo.png?v=1.20.2" width="900" height="900" alt="" aria-hidden="true" style="width:92px;height:auto;margin:0 auto 12px;display:block" />
+      <img src="/RKlogo.png?v=1.20.3" width="900" height="900" alt="" aria-hidden="true" style="width:92px;height:auto;margin:0 auto 12px;display:block" />
       <h2 class="modal-title">Install TaskIt!</h2>
       <p style="font-size:.9rem;color:#6b7280;line-height:1.6;margin-bottom:20px">
         Add TaskIt! to your home screen for a cleaner app-style launch, faster access, and better notification behaviour.
@@ -6391,7 +6389,7 @@ async function refreshNotifications() {
           if (!fired[k]) {
             fired[k] = day;
             try {
-              new Notification('TaskIt! Reminder', { body: t.title, icon: '/icons/icon-192x192.png?v=1.20.2', badge: '/icons/notification-badge-96x96.png?v=1.20.2', tag: k });
+              new Notification('TaskIt! Reminder', { body: t.title, icon: '/icons/icon-192x192.png?v=1.20.3', badge: '/icons/notification-badge-96x96.png?v=1.20.3', tag: k });
             } catch { /* Notification API unavailable or permission revoked */ }
           }
         };

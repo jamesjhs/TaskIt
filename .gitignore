@@ -14,6 +14,12 @@ captures/
 .cxx/
 *.png
 !public/og-image.png
+!public/RKlogo.png
+!public/android.png
+!public/apple-touch-icon.png
+!public/favicon.png
+!public/icons/
+!public/icons/*.png
 *.aab
 *.apk
 public/collectables/

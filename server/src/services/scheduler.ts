@@ -4,7 +4,7 @@ import db from '../db';
 import { sendTaskReminder } from './mail';
 import { resetOverdueStreaks } from './gamification';
 import { getVapidFromDb } from '../webpush-config';
-import { BASE_URL } from '../config';
+import { APP_VERSION, BASE_URL } from '../config';
 
 interface TaskRow {
   id: string;
@@ -77,8 +77,10 @@ async function sendPushNotificationsForUser(userId: string, taskId: string, task
   if (subscriptions.length === 0) return false;
 
   const appUrl = BASE_URL || '';
-  const iconUrl = appUrl ? `${appUrl}/icons/icon-192x192.png` : '/icons/icon-192x192.png';
-  const badgeUrl = appUrl ? `${appUrl}/icons/icon-96x96.png` : '/icons/icon-96x96.png';
+  const iconPath = `/icons/icon-192x192.png?v=${APP_VERSION}`;
+  const badgePath = `/icons/notification-badge-96x96.png?v=${APP_VERSION}`;
+  const iconUrl = appUrl ? `${appUrl}${iconPath}` : iconPath;
+  const badgeUrl = appUrl ? `${appUrl}${badgePath}` : badgePath;
   const payload = JSON.stringify({
     title: 'TaskIt! Reminder',
     body: `"${taskTitle}" is due in ${windowLabel}.`,

@@ -293,7 +293,7 @@ let swContent: string;
 try {
   swContent = fs
     .readFileSync(path.join(__dirname, '..', '..', 'public', 'sw.js'), 'utf8')
-    .replace(/'taskit-__APP_VERSION__'/g, `'taskit-${APP_VERSION}'`);
+    .replace(/__APP_VERSION__/g, APP_VERSION);
 } catch (err) {
   console.error('Failed to read public/sw.js:', err);
   swContent = '/* sw.js not found */';

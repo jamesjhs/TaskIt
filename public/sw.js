@@ -4,12 +4,21 @@
    ============================================================ */
 
 const CACHE_NAME = 'taskit-__APP_VERSION__'; // replaced with the real version by the server at runtime
+const APP_VERSION = '__APP_VERSION__';
+const ASSET_VERSION = `?v=${APP_VERSION}`;
 
 const STATIC_ASSETS = [
   '/',
   '/app.css',
   '/tailwind.css',
-  '/manifest.json',
+  `/manifest.json${ASSET_VERSION}`,
+  `/apple-touch-icon.png${ASSET_VERSION}`,
+  `/favicon.png${ASSET_VERSION}`,
+  `/icons/icon-192x192.png${ASSET_VERSION}`,
+  `/icons/icon-512x512.png${ASSET_VERSION}`,
+  `/icons/maskable-icon-192x192.png${ASSET_VERSION}`,
+  `/icons/maskable-icon-512x512.png${ASSET_VERSION}`,
+  `/icons/notification-badge-96x96.png${ASSET_VERSION}`,
   '/js/version.js',
   '/js/qrcode.js',
   '/privacy-policy.html',
@@ -98,7 +107,7 @@ self.addEventListener('fetch', event => {
 // ============================================================
 
 self.addEventListener('push', event => {
-  let data = { title: 'TaskIt!', body: 'You have a new notification.', icon: '/icons/icon-192x192.png', badge: '/icons/icon-96x96.png', url: '/' };
+  let data = { title: 'TaskIt!', body: 'You have a new notification.', icon: `/icons/icon-192x192.png${ASSET_VERSION}`, badge: `/icons/notification-badge-96x96.png${ASSET_VERSION}`, url: '/' };
   if (event.data) {
     try { data = { ...data, ...JSON.parse(event.data.text()) }; } catch { /* use defaults */ }
   }

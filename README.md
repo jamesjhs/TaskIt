@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.19.9** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.20.0** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -119,6 +119,11 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.20.0
+
+- **🎨 PWA icon refresh** — install icons now use the RK logo, Android notification badges use the Android badge source, and versioned icon URLs force installed PWAs to refresh stored artwork on upgrade.
+- **🔢 Version bump** — package metadata, pages, and documentation updated to 1.20.0.
 
 ### v1.19.9
 

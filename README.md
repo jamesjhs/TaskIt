@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.20.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.20.2** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -119,6 +119,11 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.20.2
+
+- **🐛 XP multiplier edit fix** — editing an existing task into a gamification-enhanced group now validates against the target group instead of the task's previous group.
+- **🔢 Version bump** — package metadata, pages, and documentation updated to 1.20.2.
 
 ### v1.20.1
 

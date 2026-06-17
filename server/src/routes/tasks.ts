@@ -747,7 +747,7 @@ router.patch('/:id', (req: Request, res: Response): void => {
   const taskId = req.params.id;
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
-    | { id: string; created_by: string; group_id: string | null; archived: number; due_date: number | null }
+    | { id: string; created_by: string; group_id: string | null; archived: number; due_date: number | null; xp_multiplier?: number | null }
     | undefined;
 
   if (!task) {
@@ -849,17 +849,20 @@ router.patch('/:id', (req: Request, res: Response): void => {
     }
   }
 
-  // Validate xpMultiplier if provided, resolving the value for later use in the SET clause
+  const effectiveGroupId = groupId !== undefined ? (groupId || null) : task.group_id;
+  let effectiveGroupGamificationEnhanced = false;
+  if (effectiveGroupId) {
+    const groupRow = db.prepare(
+      'SELECT gamification_enhanced FROM groups WHERE id = ?'
+    ).get(effectiveGroupId) as { gamification_enhanced: number } | undefined;
+    effectiveGroupGamificationEnhanced = !!groupRow?.gamification_enhanced;
+  }
+
+  // Validate xpMultiplier against the effective target group for this patch,
+  // not only the task's currently persisted group.
   let resolvedPatchMultiplier: number | undefined;
   if (xpMultiplier !== undefined && xpMultiplier !== null) {
-    const taskGroup = db.prepare(`
-      SELECT t.group_id, g.gamification_enhanced
-      FROM tasks t
-      LEFT JOIN groups g ON g.id = t.group_id
-      WHERE t.id = ?
-    `).get(taskId) as { group_id: string | null; gamification_enhanced: number | null } | undefined;
-    const grpGamEnabled = !!(taskGroup?.group_id && taskGroup?.gamification_enhanced);
-    if (!grpGamEnabled) {
+    if (!effectiveGroupGamificationEnhanced) {
       res.status(400).json({ error: 'xpMultiplier can only be set for tasks in a group with gamification enhancements enabled' });
       return;
     }
@@ -869,6 +872,8 @@ router.patch('/:id', (req: Request, res: Response): void => {
       return;
     }
     resolvedPatchMultiplier = parsed;
+  } else if (groupId !== undefined && !effectiveGroupGamificationEnhanced && task.xp_multiplier !== 1.0) {
+    resolvedPatchMultiplier = 1.0;
   }
 
   const now = Date.now();

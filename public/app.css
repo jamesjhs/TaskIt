@@ -881,6 +881,13 @@ a:hover { text-decoration: underline; }
   background: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='40' cy='40' r='1' fill='rgba(255,255,255,.06)'/%3E%3C/svg%3E") repeat;
   pointer-events: none;
 }
+.lp-hero-logo {
+  display: block;
+  width: clamp(112px, 18vw, 172px);
+  height: auto;
+  margin: 0 auto 18px;
+  filter: drop-shadow(0 18px 34px rgba(0,0,0,.28));
+}
 .lp-hero h1 {
   font-size: clamp(2rem, 6vw, 3.4rem);
   font-weight: 900;

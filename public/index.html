@@ -146,7 +146,7 @@
   <style>
     .hidden { display: none !important; }
   </style>
-  <link rel="stylesheet" href="/app.css?v=2" type="text/css" />
+  <link rel="stylesheet" href="/app.css?v=1.20.0" type="text/css" />
   <!-- PWA / installable web app -->
   <link rel="manifest" href="/manifest.json?v=1.20.0" />
   <meta name="theme-color" content="#7c3aed" />
@@ -195,6 +195,7 @@
     <div class="lp-hero-float lp-float-achievement" aria-hidden="true">🏆 Achievement Unlocked!</div>
     <div class="lp-hero-float lp-float-streak" aria-hidden="true">🔥 14-day streak!</div>
     <div style="position:relative;z-index:1">
+      <img class="lp-hero-logo" src="/RKlogo.png?v=1.20.0" width="900" height="900" alt="TaskIt! logo: a checklist with a star and tick" decoding="async" fetchpriority="high" />
       <h1>Gamify your life and compete with friends!</h1>
       <p class="lp-hero-sub">Run recurring work, household jobs, sporadic maintenance, long-term goals, and group collaboration from one privacy-first app. Add reminders, calendar sync, and optional gamification — without subscriptions or vendor lock-in.</p>
       <div class="lp-hero-ctas">
@@ -957,7 +958,7 @@
 </main><!-- end #landingPage -->
 
 <!-- ===== AUTH PAGE ===== -->
-<div id="authPage" class="auth-page hidden">
+<div id="authPage" class="auth-page hidden" data-nosnippet>
   <div class="auth-card">
     <div class="auth-logo">
       <div class="auth-logo-icon">
@@ -1097,7 +1098,7 @@
 </div>
 
 <!-- ===== MAIN APP ===== -->
-<div id="appPage" class="hidden">
+<div id="appPage" class="hidden" data-nosnippet>
 
   <!-- ===== TASKS PAGE ===== -->
   <div id="tasksPage" class="view">
@@ -1894,6 +1895,21 @@
   </div>
 </div>
 
+<!-- ===== PWA INSTALL PROMPT MODAL ===== -->
+<div id="pwaInstallModal" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-body" style="text-align:center">
+      <img src="/RKlogo.png?v=1.20.0" width="900" height="900" alt="" aria-hidden="true" style="width:92px;height:auto;margin:0 auto 12px;display:block" />
+      <h2 class="modal-title">Install TaskIt!</h2>
+      <p style="font-size:.9rem;color:#6b7280;line-height:1.6;margin-bottom:20px">
+        Add TaskIt! to your home screen for a cleaner app-style launch, faster access, and better notification behaviour.
+      </p>
+      <button type="button" onclick="startPwaInstall()" class="btn btn-primary btn-full" style="margin-bottom:10px">Install App</button>
+      <button type="button" onclick="dismissPwaInstallPrompt()" class="btn btn-secondary btn-full">Maybe Later</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== LOOT-DROP MODAL ===== -->
 <div id="lootDropModal" class="modal-overlay hidden">
   <div class="modal-sheet">
@@ -2426,6 +2442,8 @@
 // ========== State ==========
 let token = localStorage.getItem('taskitToken') || sessionStorage.getItem('taskitToken') || '';
 let currentUser = JSON.parse(localStorage.getItem('taskitUser') || sessionStorage.getItem('taskitUser') || 'null');
+const PWA_INSTALL_PROMPTED_KEY = 'taskitPwaInstallPrompted';
+let deferredPwaInstallPrompt = null;
 let taskTypes = [];
 let groups = [];
 let tasksMap = new Map();
@@ -2894,6 +2912,86 @@ async function handleChangePassword() {
   } catch (err) { toast(err.message, 'error'); }
 }
 
+// ========== PWA install prompt ==========
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  deferredPwaInstallPrompt = event;
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPwaInstallPrompt = null;
+  localStorage.setItem(PWA_INSTALL_PROMPTED_KEY, 'installed');
+  const modal = document.getElementById('pwaInstallModal');
+  if (modal) modal.classList.add('hidden');
+  refreshNotifications();
+});
+
+function isRunningAsPwa() {
+  return window.matchMedia?.('(display-mode: standalone)').matches ||
+    window.matchMedia?.('(display-mode: fullscreen)').matches ||
+    window.matchMedia?.('(display-mode: minimal-ui)').matches ||
+    navigator.standalone === true ||
+    document.referrer.startsWith('android-app://');
+}
+
+function shouldShowPwaInstallReminder() {
+  return Boolean(token && currentUser && !isRunningAsPwa() && localStorage.getItem(PWA_INSTALL_PROMPTED_KEY) !== 'installed');
+}
+
+function getPwaInstallPromptKey() {
+  const userKey = currentUser?.id || currentUser?.email || 'user';
+  return `${PWA_INSTALL_PROMPTED_KEY}:${userKey}`;
+}
+
+function maybeShowPwaInstallPrompt() {
+  if (!shouldShowPwaInstallReminder()) return;
+  const promptKey = getPwaInstallPromptKey();
+  if (localStorage.getItem(promptKey)) return;
+  localStorage.setItem(promptKey, String(Date.now()));
+  const modal = document.getElementById('pwaInstallModal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function dismissPwaInstallPrompt() {
+  const modal = document.getElementById('pwaInstallModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function startPwaInstall() {
+  if (!shouldShowPwaInstallReminder()) {
+    dismissPwaInstallPrompt();
+    return;
+  }
+  if (!deferredPwaInstallPrompt) {
+    toast('Use your browser menu to install TaskIt! or add it to your home screen.', 'info');
+    dismissPwaInstallPrompt();
+    return;
+  }
+
+  try {
+    deferredPwaInstallPrompt.prompt();
+    const choice = await deferredPwaInstallPrompt.userChoice;
+    deferredPwaInstallPrompt = null;
+    if (choice && choice.outcome === 'accepted') {
+      localStorage.setItem(PWA_INSTALL_PROMPTED_KEY, 'installed');
+      dismissPwaInstallPrompt();
+      refreshNotifications();
+    }
+  } catch {
+    toast('Use your browser menu to install TaskIt! or add it to your home screen.', 'info');
+  }
+}
+
+function buildPwaInstallReminderHtml() {
+  if (!shouldShowPwaInstallReminder()) return '';
+  return `
+      <div class="notif-item" style="border-left:3px solid #7c3aed;background:#f5f3ff">
+        <p class="notif-item-title">📲 Install TaskIt!</p>
+        <p class="notif-item-sub" style="color:#6b7280">Add TaskIt! to your home screen for app-style launch and faster access.</p>
+        <button type="button" onclick="startPwaInstall()" class="btn btn-sm btn-primary" style="margin-top:8px">Install App</button>
+      </div>`;
+}
+
 // ========== App init ==========
 function initApp() {
   document.getElementById('landingPage').classList.add('hidden');
@@ -2952,6 +3050,7 @@ function initApp() {
   // Background-load gamification state so the strip and streak panel work immediately;
   // then check if the user should see the gamification opt-in prompt
   loadGamificationProfile().then(() => maybeShowGamifOptIn());
+  setTimeout(maybeShowPwaInstallPrompt, 700);
   syncPushSubscriptionFromPreferences();
   // On mobile, enhance date inputs for better touch UX
   if (isMobileDevice()) {
@@ -6262,7 +6361,8 @@ async function refreshNotifications() {
       (t.due_date < now || t.due_date <= in24h)
     );
     const unreadAlerts = userAlerts.filter(a => !a.read_at);
-    const totalBadge = taskAlerts.length + unreadAlerts.length;
+    const showInstallReminder = shouldShowPwaInstallReminder();
+    const totalBadge = taskAlerts.length + unreadAlerts.length + (showInstallReminder ? 1 : 0);
     const badge = document.getElementById('notifBadge');
     if (totalBadge > 0) {
       badge.textContent = totalBadge > 9 ? '9+' : String(totalBadge);
@@ -6305,10 +6405,11 @@ async function refreshNotifications() {
     }
 
     const listEl = document.getElementById('notificationList');
-    if (!taskAlerts.length && !unreadAlerts.length) {
+    if (!taskAlerts.length && !unreadAlerts.length && !showInstallReminder) {
       listEl.innerHTML = '<div class="loading">No outstanding alerts</div>';
       return;
     }
+    const installHtml = buildPwaInstallReminderHtml();
     const alertsHtml = unreadAlerts.map(a => `
       <div class="notif-item" style="border-left:3px solid #7c3aed;background:#f5f3ff">
         <p class="notif-item-title">💬 ${escHtml(a.message)}</p>
@@ -6332,7 +6433,7 @@ async function refreshNotifications() {
           </div>
         </div>`;
     }).join('');
-    listEl.innerHTML = alertsHtml + taskHtml;
+    listEl.innerHTML = installHtml + alertsHtml + taskHtml;
   } catch (err) {
     const listEl = document.getElementById('notificationList');
     listEl.innerHTML = '<div class="loading">No outstanding alerts</div>';

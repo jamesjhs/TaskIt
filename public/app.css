@@ -3441,6 +3441,39 @@ body.arcade-open { overflow: hidden; }
   line-height: 1.45;
 }
 
+.sporadic-history li {
+  padding: 2px 0;
+}
+
+.sporadic-history li:not(.sporadic-history-empty) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sporadic-history-delete-btn {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sporadic-history-delete-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
 .sporadic-history-empty {
   list-style: none;
   margin-left: -18px;

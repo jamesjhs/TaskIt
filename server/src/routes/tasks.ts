@@ -388,21 +388,21 @@ router.get('/sporadic', (req: Request, res: Response): void => {
   `).all(userId, userId) as Array<Record<string, unknown>>;
 
   const taskIds = tasks.map((t) => String(t.id));
-  const historyByTaskId = new Map<string, number[]>();
+  const historyByTaskId = new Map<string, Array<{ id: string; timestamp: number }>>();
 
   if (taskIds.length > 0) {
     const placeholders = taskIds.map(() => '?').join(',');
     const historyRows = db.prepare(`
-      SELECT task_id, timestamp
+      SELECT id, task_id, timestamp
       FROM task_history
       WHERE action = 'completed_sporadic'
         AND task_id IN (${placeholders})
       ORDER BY timestamp DESC
-    `).all(...taskIds) as Array<{ task_id: string; timestamp: number }>;
+    `).all(...taskIds) as Array<{ id: string; task_id: string; timestamp: number }>;
 
     for (const row of historyRows) {
       const existing = historyByTaskId.get(row.task_id) || [];
-      existing.push(row.timestamp);
+      existing.push({ id: row.id, timestamp: row.timestamp });
       historyByTaskId.set(row.task_id, existing);
     }
   }
@@ -558,6 +558,69 @@ router.put('/:id/complete-sporadic', (req: Request, res: Response): void => {
   const response: Record<string, unknown> = { ...updated, archived: updated.archived === 1, is_sporadic: updated.is_sporadic === 1 };
   if (lootDrop) response.drop = lootDrop;
   res.json(response);
+});
+
+// DELETE /api/tasks/:id/sporadic-history/:historyId — Remove one "Mark done" history entry
+router.delete('/:id/sporadic-history/:historyId', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const taskId = req.params.id;
+  const historyId = req.params.historyId;
+
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
+    | {
+        id: string;
+        is_sporadic: number;
+        created_by: string;
+        group_id: string | null;
+      }
+    | undefined;
+
+  if (!task) {
+    res.status(404).json({ error: 'Task not found' });
+    return;
+  }
+
+  if (task.is_sporadic !== 1) {
+    res.status(400).json({ error: 'Task is not sporadic' });
+    return;
+  }
+
+  if (!hasTaskAccess(task, userId)) {
+    res.status(403).json({ error: 'Not authorized' });
+    return;
+  }
+
+  const historyRow = db.prepare(`
+    SELECT id, task_id, timestamp
+    FROM task_history
+    WHERE id = ?
+      AND task_id = ?
+      AND action = 'completed_sporadic'
+  `).get(historyId, taskId) as { id: string; task_id: string; timestamp: number } | undefined;
+
+  if (!historyRow) {
+    res.status(404).json({ error: 'History entry not found' });
+    return;
+  }
+
+  const now = Date.now();
+  const deleteTx = db.transaction(() => {
+    db.prepare('DELETE FROM task_history WHERE id = ?').run(historyId);
+    const latest = db.prepare(`
+      SELECT timestamp
+      FROM task_history
+      WHERE task_id = ?
+        AND action = 'completed_sporadic'
+      ORDER BY timestamp DESC
+      LIMIT 1
+    `).get(taskId) as { timestamp: number } | undefined;
+
+    db.prepare('UPDATE tasks SET last_completed_at = ?, updated_at = ? WHERE id = ?')
+      .run(latest?.timestamp ?? null, now, taskId);
+  });
+
+  deleteTx();
+  res.json({ success: true });
 });
 
 // PATCH /api/tasks/:id/sporadic-last-done — Update last_completed_at for a sporadic task

@@ -14,8 +14,12 @@
  * The player types one character per answer box and submits. The answer checker
  * awards score bonuses or removes a life, then either advances the challenge,
  * advances the level after 15 survived challenges, or shows a summary screen
- * when all lives are lost. Word and letter choices use shuffled bags so prompts
- * arrive in a random order without immediate repeats.
+ * when all lives are lost. Each level-up increases the next level's life limit
+ * by one, and the player can spend a spare life on a three-choice hint.
+ *
+ * Word and letter choices use shuffled bags so prompts arrive in a random order
+ * without immediate repeats. Hints do not consume from those bags; they sample
+ * decoy answers from the same-length source list and shuffle them with the truth.
  *
  * unmount() is the cleanup gate used by TaskIt!: it stops pending timers, sound,
  * and references so the game can be reopened without duplicate state.
@@ -178,6 +182,7 @@
   var level = 1;
   var challenge = 1;
   var lives = LIVES_PER_LEVEL;
+  var maxLives = LIVES_PER_LEVEL;
   var score = 0;
   var streak = 0;
   var totalCorrect = 0;
@@ -190,6 +195,8 @@
   var started = false;
   var muted = false;
   var resultMode = false;
+  var hintUsed = false;
+  var hintOptions = [];
 
   /**
    * Stop any scheduled Morse playback work and any tones that are currently
@@ -301,6 +308,17 @@
   }
 
   /**
+   * Pick two plausible wrong answers that match the current answer length. These
+   * are used only for hints and do not remove words from the normal challenge bags.
+   */
+  function decoyAnswers() {
+    var len = levelLength();
+    var pool = len === 1 ? LETTERS : (WORDS_BY_LENGTH[len] || WORDS_BY_LENGTH[MAX_WORD_LENGTH]);
+    var options = shuffledCopy(pool).filter(function (item) { return item !== currentAnswer; });
+    return options.slice(0, 2);
+  }
+
+  /**
    * Clear the randomized letter and word queues. A fresh game starts with fresh
    * shuffle order rather than continuing the previous session's remaining bag.
    */
@@ -325,6 +343,8 @@
     });
     replaysLeft = REPLAYS_PER_CHALLENGE;
     resultMode = false;
+    hintUsed = false;
+    hintOptions = [];
   }
 
   /**
@@ -335,6 +355,7 @@
     level = 1;
     challenge = 1;
     lives = LIVES_PER_LEVEL;
+    maxLives = LIVES_PER_LEVEL;
     score = 0;
     streak = 0;
     totalCorrect = 0;
@@ -372,6 +393,9 @@
       '.ss-box{width:42px;height:48px;border:2px solid #cbd5e1;border-radius:8px;text-align:center;font-size:1.35rem;font-weight:900;text-transform:uppercase;color:#111827;background:#fff;caret-color:var(--ss-primary);}',
       '.ss-box:focus{outline:none;border-color:var(--ss-primary);box-shadow:0 0 0 3px rgba(79,70,229,.16);}',
       '.ss-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;}',
+      '.ss-hint-options{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;min-height:40px;}',
+      '.ss-choice{border:1px solid #c7d2fe;border-radius:8px;background:#eef2ff;color:#312e81;font-weight:900;padding:8px 12px;min-height:38px;min-width:58px;cursor:pointer;font-family:inherit;}',
+      '.ss-choice:hover{background:#dbe4ff;border-color:#818cf8;}',
       '.ss-btn{border:0;border-radius:8px;background:var(--ss-primary);color:#fff;font-weight:800;padding:9px 12px;min-height:40px;cursor:pointer;font-family:inherit;}',
       '.ss-btn:hover{background:var(--ss-primary-dark);}',
       '.ss-btn:disabled{opacity:.45;cursor:not-allowed;}',
@@ -476,6 +500,7 @@
     signalPanel.appendChild(buildSignalDisplay());
     signalPanel.appendChild(buildAnswerBoxes());
     signalPanel.appendChild(buildControls());
+    signalPanel.appendChild(buildHintOptions());
 
     var message = document.createElement('p');
     message.id = 'ss-message';
@@ -496,7 +521,7 @@
     hud.className = 'ss-hud';
     addStat(hud, level, 'Level');
     addStat(hud, challenge + ' / ' + CHALLENGES_PER_LEVEL, 'Challenge');
-    addStat(hud, lives + ' / ' + LIVES_PER_LEVEL, 'Lives');
+    addStat(hud, lives + ' / ' + maxLives, 'Lives');
     addStat(hud, score, 'Score');
     return hud;
   }
@@ -576,8 +601,8 @@
   }
 
   /**
-   * Build the replay, submit, and mute controls for an active challenge. Replay
-   * availability follows the two-replay limit and disables during playback.
+   * Build the replay, submit, hint, and mute controls for an active challenge.
+   * Replay and hint availability follow their current limits and disabled states.
    */
   function buildControls() {
     var wrap = document.createElement('div');
@@ -601,6 +626,12 @@
     submit.disabled = resultMode;
     submit.addEventListener('click', submitAnswer);
 
+    var hint = document.createElement('button');
+    hint.className = 'ss-btn ss-btn--light';
+    hint.textContent = 'Hint (-1 life)';
+    hint.disabled = resultMode || playing || hintUsed || lives <= 1;
+    hint.addEventListener('click', buyHint);
+
     var mute = document.createElement('button');
     mute.className = 'ss-btn ss-btn--light';
     mute.textContent = muted ? 'Sound On' : 'Mute';
@@ -612,7 +643,30 @@
 
     wrap.appendChild(replay);
     wrap.appendChild(submit);
+    wrap.appendChild(hint);
     wrap.appendChild(mute);
+    return wrap;
+  }
+
+  /**
+   * Build the three multiple-choice hint answers after a hint is bought. The
+   * choices are hidden until the player spends a life on the Hint button.
+   */
+  function buildHintOptions() {
+    var wrap = document.createElement('div');
+    wrap.className = 'ss-hint-options';
+    if (!hintOptions.length || resultMode) return wrap;
+
+    hintOptions.forEach(function (answer) {
+      var choice = document.createElement('button');
+      choice.className = 'ss-choice';
+      choice.textContent = answer;
+      choice.addEventListener('click', function () {
+        chooseHintAnswer(answer);
+      });
+      wrap.appendChild(choice);
+    });
+
     return wrap;
   }
 
@@ -643,6 +697,7 @@
     addPill(meta, isAudioOnlyLevel() ? 'Audio only' : 'Visual + audio');
     addPill(meta, 'Enter submits');
     addPill(meta, '2 replays');
+    addPill(meta, 'Hints cost 1 life');
 
     side.appendChild(top);
     side.appendChild(meta);
@@ -733,6 +788,34 @@
   }
 
   /**
+   * Spend one spare life to reveal three answer choices. The correct answer is
+   * mixed with two same-length decoys, then the hint area is refreshed in place.
+   */
+  function buyHint() {
+    if (resultMode || playing || hintUsed || lives <= 1) return;
+    lives--;
+    hintUsed = true;
+    hintOptions = shuffledCopy([currentAnswer].concat(decoyAnswers()));
+    updateHudOnly();
+    updateControls();
+    updateHintOptionsOnly();
+    setMessage('Hint bought for 1 life. Pick carefully.', '');
+  }
+
+  /**
+   * Fill the answer boxes from a clicked hint choice and immediately submit it.
+   * A wrong hint choice still counts as a wrong answer, so the decoys matter.
+   */
+  function chooseHintAnswer(answer) {
+    if (resultMode) return;
+    for (var i = 0; i < currentAnswer.length; i++) {
+      var box = document.getElementById('ss-box-' + i);
+      if (box) box.value = answer[i] || '';
+    }
+    submitAnswer();
+  }
+
+  /**
    * Read the current answer boxes into a single uppercase string. The submit
    * logic uses this to compare the player's answer with the selected challenge.
    */
@@ -775,6 +858,7 @@
     }
 
     showAnswerState(correct);
+    updateHintOptionsOnly();
     renderAfterAnswerControls();
   }
 
@@ -828,7 +912,7 @@
       var levelScore = lives * 200 + level * 120 + streak * 15;
       score += levelScore;
       bestLevel = Math.max(bestLevel, level + 1);
-      setMessage('Level clear! +' + levelScore + ' level bonus.', 'good');
+      setMessage('Level clear! +' + levelScore + ' level bonus. Next level adds 1 life.', 'good');
       updateHudOnly();
 
       var nextLevel = document.createElement('button');
@@ -858,13 +942,14 @@
   }
 
   /**
-   * Start the next level after the player survives 15 challenges. Lives refill,
-   * answer length may increase, and the next level's signal begins immediately.
+   * Start the next level after the player survives 15 challenges. The life limit
+   * grows by one, lives refill to that new limit, and the next signal begins.
    */
   function advanceLevel() {
     level++;
     challenge = 1;
-    lives = LIVES_PER_LEVEL;
+    maxLives++;
+    lives = maxLives;
     bestLevel = Math.max(bestLevel, level);
     pickChallenge();
     render();
@@ -958,8 +1043,8 @@
   }
 
   /**
-   * Play one smooth Morse tone for a dot or dash. The tiny gain fade prevents
-   * harsh clicks at the start and end of the sound.
+   * Play one constant-volume pure sine tone for a dot or dash. The tone stays
+   * at the same gain for the full Morse symbol duration.
    */
   function playTone(context, durationMs) {
     if (!context || muted) return;
@@ -967,9 +1052,7 @@
     var gain = context.createGain();
     osc.frequency.value = TONE_FREQUENCY;
     osc.type = 'sine';
-    gain.gain.setValueAtTime(0.0001, context.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.7, context.currentTime + 0.012);
-    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + Math.max(0.02, durationMs / 1000 - 0.018));
+    gain.gain.value = 0.7;
     osc.connect(gain);
     gain.connect(masterGain || context.destination);
     osc.start();
@@ -1027,6 +1110,16 @@
     if (!controls || resultMode) return;
     var replacement = buildControls();
     controls.replaceWith(replacement);
+  }
+
+  /**
+   * Refresh only the hint choice row after a hint is bought or an answer ends.
+   * This avoids rebuilding the whole screen while keeping choices in sync.
+   */
+  function updateHintOptionsOnly() {
+    var options = document.querySelector('.ss-hint-options');
+    if (!options) return;
+    options.replaceWith(buildHintOptions());
   }
 
   /**

@@ -63,3 +63,4 @@ server/dist/
 .DS_Store
 Thumbs.db
 server/package-lock.json
+.vscode/settings.json

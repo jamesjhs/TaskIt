@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.21.4** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.21.5** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -120,6 +120,12 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.21.5
+
+- **🐛 Signal Sprint audio timing fix** — Morse tones now use the Web Audio render clock so short tones do not soften when UI timers lag.
+- **🎛 Signal Sprint controls** — removed the Mute button and kept Hint as the third active control.
+- **🔢 Version bump** — package metadata, pages, manifest cache keys, and documentation updated to 1.21.5.
 
 ### v1.21.4
 
@@ -613,7 +619,7 @@ User passwords are **never stored in plaintext**. They are hashed using **bcrypt
 ### Version 1.16.2 (2026-05-09)
 
 **Arcade — achievement-count game unlocking:**
-- **Current workflow note:** As of v1.21.4, the unlock order is stored in the admin-managed `arcade_games` database catalogue rather than a hard-coded frontend array. Use **Admin > Gamify > Arcade Games** to change order, enabled state, metadata, or script file.
+- **Current workflow note:** As of v1.21.5, the unlock order is stored in the admin-managed `arcade_games` database catalogue rather than a hard-coded frontend array. Use **Admin > Gamify > Arcade Games** to change order, enabled state, metadata, or script file.
 - **`ARCADE_GAME_ORDER`** — a new explicit ordered array that defines the canonical unlock sequence for all arcade games. Position N in the list = game N+1 (1-indexed).
 - **Count-based unlock logic** — a user with N total achievements earned (any achievements) may play the first N games in `ARCADE_GAME_ORDER`. The *identity* of the achievements does not matter, only the count. This ensures users who unlock achievements faster than games are created always have games to play.
 - **Automatic catch-up on new game creation** — when a new game is added to `ARCADE_GAME_ORDER` at position N, every user with ≥ N achievements gains access immediately with no database changes.

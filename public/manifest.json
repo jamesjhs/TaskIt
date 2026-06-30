@@ -9,25 +9,25 @@
   "theme_color": "#7c3aed",
   "lang": "en-GB",
   "icons": [
-    { "src": "/icons/icon-72x72.png?v=1.21.4", "sizes": "72x72", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-96x96.png?v=1.21.4", "sizes": "96x96", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-128x128.png?v=1.21.4", "sizes": "128x128", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-144x144.png?v=1.21.4", "sizes": "144x144", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-152x152.png?v=1.21.4", "sizes": "152x152", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-192x192.png?v=1.21.4", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-384x384.png?v=1.21.4", "sizes": "384x384", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512x512.png?v=1.21.4", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/maskable-icon-192x192.png?v=1.21.4", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "/icons/maskable-icon-512x512.png?v=1.21.4", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
-    { "src": "/icons/notification-badge-72x72.png?v=1.21.4", "sizes": "72x72", "type": "image/png", "purpose": "monochrome" },
-    { "src": "/icons/notification-badge-96x96.png?v=1.21.4", "sizes": "96x96", "type": "image/png", "purpose": "monochrome" },
-    { "src": "/icons/notification-badge-128x128.png?v=1.21.4", "sizes": "128x128", "type": "image/png", "purpose": "monochrome" }
+    { "src": "/icons/icon-72x72.png?v=1.21.5", "sizes": "72x72", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-96x96.png?v=1.21.5", "sizes": "96x96", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-128x128.png?v=1.21.5", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-144x144.png?v=1.21.5", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-152x152.png?v=1.21.5", "sizes": "152x152", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-192x192.png?v=1.21.5", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-384x384.png?v=1.21.5", "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512x512.png?v=1.21.5", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-icon-192x192.png?v=1.21.5", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/maskable-icon-512x512.png?v=1.21.5", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/notification-badge-72x72.png?v=1.21.5", "sizes": "72x72", "type": "image/png", "purpose": "monochrome" },
+    { "src": "/icons/notification-badge-96x96.png?v=1.21.5", "sizes": "96x96", "type": "image/png", "purpose": "monochrome" },
+    { "src": "/icons/notification-badge-128x128.png?v=1.21.5", "sizes": "128x128", "type": "image/png", "purpose": "monochrome" }
   ],
   "shortcuts": [
     {
       "name": "My Tasks",
       "url": "/?page=tasks",
-      "icons": [{ "src": "/icons/icon-96x96.png?v=1.21.4", "sizes": "96x96", "type": "image/png" }]
+      "icons": [{ "src": "/icons/icon-96x96.png?v=1.21.5", "sizes": "96x96", "type": "image/png" }]
     }
   ],
   "categories": ["productivity", "utilities"]

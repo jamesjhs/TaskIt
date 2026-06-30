@@ -1009,14 +1009,16 @@
     var context = ensureAudio();
     var unit = speedUnit();
     var cursor = 150;
+    var audioStart = context ? context.currentTime + (cursor / 1000) : 0;
     var showVisual = forceVisual || !isAudioOnlyLevel();
 
     currentMorse.forEach(function (item, letterIndex) {
       item.code.split('').forEach(function (symbol, symbolIndex) {
         var duration = symbol === '-' ? unit * 3 : unit;
+        var toneStart = audioStart + ((cursor - 150) / 1000);
+        playTone(context, toneStart, duration);
         schedule(function () {
           if (showVisual) activateSymbol(letterIndex, symbolIndex, true);
-          playTone(context, duration);
         }, cursor);
         schedule(function () {
           if (showVisual) activateSymbol(letterIndex, symbolIndex, false);
@@ -1043,30 +1045,31 @@
   }
 
   /**
-   * Play one constant-volume pure sine tone for a dot or dash. The tone stays
-   * at the same gain for the full Morse symbol duration.
+   * Play one constant-volume pure sine tone for a dot or dash. Audio timing uses
+   * the Web Audio render clock so UI thread delays cannot soften short symbols.
    */
-  function playTone(context, durationMs) {
+  function playTone(context, startTime, durationMs) {
     if (!context || muted) return;
     var osc = context.createOscillator();
     var gain = context.createGain();
     osc.frequency.value = TONE_FREQUENCY;
     osc.type = 'sine';
-    gain.gain.value = 0.7;
+    gain.gain.setValueAtTime(0.7, startTime);
     osc.connect(gain);
     gain.connect(masterGain || context.destination);
-    osc.start();
-    var stopId = setTimeout(function () {
+    osc.start(startTime);
+    osc.stop(startTime + (durationMs / 1000));
+
+    var stop = function () {
       try { osc.stop(); } catch (err) {}
-      osc.disconnect();
-      gain.disconnect();
-    }, durationMs + 30);
-    oscillatorStops.push(function () {
-      clearTimeout(stopId);
-      try { osc.stop(); } catch (err) {}
-      osc.disconnect();
-      gain.disconnect();
-    });
+      try { osc.disconnect(); } catch (err2) {}
+      try { gain.disconnect(); } catch (err3) {}
+    };
+    osc.onended = function () {
+      stop();
+      oscillatorStops = oscillatorStops.filter(function (candidate) { return candidate !== stop; });
+    };
+    oscillatorStops.push(stop);
   }
 
   /**

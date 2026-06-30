@@ -1593,8 +1593,8 @@ For unauthenticated users, the top of the file renders the public marketing / la
 | Function | Description |
 |---|---|
 | `setArcadeCatalogue(games)` | Converts enabled rows from `/gamification/arcade/games` into `ARCADE_GAME_ORDER` and `ARCADE_GAMES` |
-| `arcadeScriptSrc(game)` | Builds a dynamic script URL with a version query from `updatedAt` |
-| `arcadeEnsureGameScript(game)` | Lazily injects the configured game script once per game/path/version |
+| `arcadeScriptSrc(game)` | Builds a dynamic script URL with a version query from `APP_VERSION` plus the catalogue row `updatedAt` |
+| `arcadeEnsureGameScript(game)` | Lazily injects the configured game script once per game/path/app-version/catalogue-version |
 | `openArcade(badgeKey)` | Opens arcade modal; authorises via `unlockedArcadeKeys`; loads the configured script; calls `window.TaskItArcade.get(gameId).mount(frame, context)` |
 | `arcadeSpendToken()` | POST `/api/gamification/arcade/spend-token`; updates token balance and calls active game `addTime(seconds)` when available |
 | `closeArcade()` | Dispatches legacy `arcade:close`, calls active game `unmount()`, clears timers, and hides the modal |

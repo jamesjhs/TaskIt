@@ -7619,13 +7619,15 @@ window.TaskItArcade = window.TaskItArcade || {
 
 function arcadeScriptSrc(game) {
   if (!game || !game.scriptPath) return '';
-  const version = game.updatedAt || window.APP_VERSION || window._serverVersion || Date.now();
+  const appVersion = window.APP_VERSION || window._serverVersion || 'dev';
+  const version = appVersion + '-' + (game.updatedAt || Date.now());
   return game.scriptPath + (game.scriptPath.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(version);
 }
 
 function arcadeEnsureGameScript(game) {
   if (!game || !game.scriptPath) return Promise.resolve();
-  const key = game.gameId + ':' + game.scriptPath + ':' + (game.updatedAt || '');
+  const appVersion = window.APP_VERSION || window._serverVersion || 'dev';
+  const key = game.gameId + ':' + game.scriptPath + ':' + appVersion + ':' + (game.updatedAt || '');
   if (arcadeLoadedScripts.has(key)) return arcadeLoadedScripts.get(key);
 
   const promise = new Promise((resolve, reject) => {

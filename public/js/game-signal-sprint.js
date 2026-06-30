@@ -193,7 +193,6 @@
   var replaysLeft = REPLAYS_PER_CHALLENGE;
   var playing = false;
   var started = false;
-  var muted = false;
   var resultMode = false;
   var hintUsed = false;
   var hintOptions = [];
@@ -229,7 +228,6 @@
    * Browsers block autoplay, so all sound begins from that user action.
    */
   function ensureAudio() {
-    if (muted) return null;
     if (!audioContext) {
       var Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return null;
@@ -550,7 +548,7 @@
     if (isAudioOnlyLevel()) {
       var hidden = document.createElement('div');
       hidden.className = 'ss-hidden-signal';
-      hidden.textContent = muted ? 'Sound is muted' : 'Audio-only signal';
+      hidden.textContent = 'Audio-only signal';
       return hidden;
     }
 
@@ -1039,7 +1037,7 @@
    * the Web Audio render clock so UI thread delays cannot soften short symbols.
    */
   function playTone(context, startTime, durationMs) {
-    if (!context || muted) return;
+    if (!context) return;
     var osc = context.createOscillator();
     var gain = context.createGain();
     osc.frequency.value = TONE_FREQUENCY;

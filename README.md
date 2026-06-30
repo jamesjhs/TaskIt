@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.21.3** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.21.4** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -121,12 +121,12 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 
 ## Changelog
 
-### v1.21.3
+### v1.21.4
 
 - **🎮 Dynamic Arcade game catalogue** — Arcade games are now stored in an admin-managed `arcade_games` catalogue instead of hard-coded arrays and script tags.
 - **🧩 Game module wrapper contract** — game files now register with `window.TaskItArcade.register({ gameId, mount, unmount, addTime })`, allowing compatible JavaScript files to be enabled from Admin.
 - **📘 Arcade creator guide** — added `/arcade-game-guide.html`, linked from Admin > Gamify > Arcade Games, with implementation, testing, design, and AI-agent guidance.
-- **🔢 Version bump** — package metadata, pages, and documentation updated to 1.21.3.
+- **🔢 Version bump** — package metadata, pages, and documentation updated to 1.21.4.
 
 ### v1.20.3
 
@@ -613,7 +613,7 @@ User passwords are **never stored in plaintext**. They are hashed using **bcrypt
 ### Version 1.16.2 (2026-05-09)
 
 **Arcade — achievement-count game unlocking:**
-- **Current workflow note:** As of v1.21.3, the unlock order is stored in the admin-managed `arcade_games` database catalogue rather than a hard-coded frontend array. Use **Admin > Gamify > Arcade Games** to change order, enabled state, metadata, or script file.
+- **Current workflow note:** As of v1.21.4, the unlock order is stored in the admin-managed `arcade_games` database catalogue rather than a hard-coded frontend array. Use **Admin > Gamify > Arcade Games** to change order, enabled state, metadata, or script file.
 - **`ARCADE_GAME_ORDER`** — a new explicit ordered array that defines the canonical unlock sequence for all arcade games. Position N in the list = game N+1 (1-indexed).
 - **Count-based unlock logic** — a user with N total achievements earned (any achievements) may play the first N games in `ARCADE_GAME_ORDER`. The *identity* of the achievements does not matter, only the count. This ensures users who unlock achievements faster than games are created always have games to play.
 - **Automatic catch-up on new game creation** — when a new game is added to `ARCADE_GAME_ORDER` at position N, every user with ≥ N achievements gains access immediately with no database changes.

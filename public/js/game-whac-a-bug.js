@@ -350,32 +350,25 @@
     frame.appendChild(root);
   }
 
-  // ── Arcade event wiring ───────────────────────────────────────────────────
+  // ── Arcade module registration ───────────────────────────────────────────
 
-  document.addEventListener('DOMContentLoaded', function () {
-    var overlay = document.getElementById('arcadeOverlay');
-    if (!overlay) return;
-
-    overlay.addEventListener('arcade:open', function (e) {
-      if (e.detail.gameId !== 'whac_a_bug') return;
+  window.TaskItArcade.register({
+    gameId: 'whac_a_bug',
+    mount: function () {
       _active = true;
       startGame();
-    });
-
-    overlay.addEventListener('arcade:close', function () {
+    },
+    unmount: function () {
       if (!_active && !_over) return;
       _active = false;
       stopTimers();
-    });
-
-    // Token economy: inject extra seconds into the running timer
-    overlay.addEventListener('arcade:addTime', function (e) {
-      if (overlay.dataset.activeGameId !== 'whac_a_bug') return;
+    },
+    addTime: function (seconds) {
       if (!_active || _over) return;
-      var extra = (e.detail && e.detail.seconds) ? e.detail.seconds : 30;
+      var extra = seconds || 30;
       _timeLeft = Math.min(_timeLeft + extra, 999);
       updateHud();
-    });
+    },
   });
 
 }());

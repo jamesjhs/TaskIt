@@ -13,9 +13,11 @@ TaskIt is a free, open-source, self-hosted task manager for individuals, househo
 - Landing page: https://taskit.jahosi.co.uk/
 - User guide: https://taskit.jahosi.co.uk/user-guide.html
 - Deployment guide: https://taskit.jahosi.co.uk/howto.html
+- Arcade game creator guide: https://taskit.jahosi.co.uk/arcade-game-guide.html
 - Privacy policy: https://taskit.jahosi.co.uk/privacy-policy.html
 
 ## Accuracy notes
 - TaskIt installs as a PWA, but live task data still requires a connection to the hosted server
 - Gamification is opt-in, not mandatory
+- Arcade games are admin-managed modules registered with the TaskItArcade JavaScript wrapper
 - TaskIt is free and open source, with no subscription tier

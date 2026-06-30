@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arcade Game Creator Guide - TaskIt!</title>
+  <meta name="description" content="Guide for creating, testing, and registering TaskIt! Arcade game modules using the TaskItArcade wrapper contract." />
+  <meta name="robots" content="index, follow" />
+  <link rel="stylesheet" href="/tailwind.css" type="text/css" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <style>
+    .toc { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px 20px; margin:16px 0 24px; }
+    .toc ol { margin:8px 0 0 16px; padding:0; }
+    .toc li { margin-bottom:4px; font-size:.9rem; }
+    .toc a { color:#7c3aed; text-decoration:none; }
+    .toc a:hover { text-decoration:underline; }
+    .info-box { background:#f0fdf4; border-left:4px solid #16a34a; border-radius:0 8px 8px 0; padding:11px 15px; margin:12px 0; font-size:.9rem; color:#15803d; }
+    .warn-box { background:#fef3c7; border-left:4px solid #f59e0b; border-radius:0 8px 8px 0; padding:11px 15px; margin:12px 0; font-size:.9rem; color:#92400e; }
+    .tip-box { background:#f5f3ff; border-left:4px solid #7c3aed; border-radius:0 8px 8px 0; padding:11px 15px; margin:12px 0; font-size:.9rem; color:#5b21b6; }
+    .checklist li { margin-bottom:6px; }
+    h2[id], h3[id] { scroll-margin-top: 80px; }
+    pre { background:#0f172a; color:#e2e8f0; border-radius:10px; padding:14px; overflow-x:auto; font-size:.82rem; line-height:1.5; }
+    code { font-size:.88em; }
+    table { width:100%; border-collapse:collapse; font-size:.9rem; }
+    th, td { border-bottom:1px solid #e5e7eb; padding:8px 10px; text-align:left; vertical-align:top; }
+    th { background:#f8fafc; color:#374151; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 font-sans min-h-screen flex flex-col">
+
+<header class="bg-indigo-700 shadow-md sticky top-0 z-10">
+  <div class="max-w-5xl mx-auto px-4 flex items-center gap-3 h-14">
+    <a href="/" class="flex items-center gap-3 text-white font-bold text-xl hover:opacity-90 transition-opacity">
+      <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
+               M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+      </div>
+      TaskIt!
+    </a>
+    <span class="ml-auto text-white/70 text-sm hidden sm:block">Arcade Game Creator Guide</span>
+  </div>
+</header>
+
+<main class="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
+  <article class="prose prose-slate dark:prose-invert max-w-none bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 sm:p-8">
+    <h1>TaskIt! Arcade Game Creation and Integration Manual</h1>
+    <p class="lead" style="color:#6b7280;font-size:.95rem;margin-top:-4px">v<span class="page-version">1.21.3</span> · for contributors and AI coding agents</p>
+    <p>This manual explains how to create a compatible TaskIt! Arcade game module, test it locally, and enable it from <strong>Admin &gt; Gamify &gt; Arcade Games</strong>. It is written for a human contributor and for an AI agent that may be asked to build or iterate a game using the repository as reference.</p>
+
+    <div class="toc">
+      <strong>Contents</strong>
+      <ol>
+        <li><a href="#mental-model">Mental Model</a></li>
+        <li><a href="#file-placement">File Placement and Naming</a></li>
+        <li><a href="#contract">Required Wrapper Contract</a></li>
+        <li><a href="#starter-template">Starter Template</a></li>
+        <li><a href="#design-constraints">Design and UX Constraints</a></li>
+        <li><a href="#testing">Local Testing Checklist</a></li>
+        <li><a href="#admin-registration">Admin Registration</a></li>
+        <li><a href="#ai-agent-brief">Brief for an AI Agent</a></li>
+        <li><a href="#review-checklist">Pull Request Review Checklist</a></li>
+        <li><a href="#troubleshooting">Troubleshooting</a></li>
+      </ol>
+    </div>
+
+    <h2 id="mental-model">1. Mental Model</h2>
+    <p>The TaskIt! app owns the Arcade overlay, achievement unlock rules, daily play budget, token spending, and close/back controls. A game module owns only the content inside <code>#arcadeGameFrame</code>.</p>
+    <p>When a user opens a game, TaskIt! fetches the enabled arcade catalogue from the server, dynamically loads the configured JavaScript file, looks up the module by <code>gameId</code>, and calls its <code>mount(frame, context)</code> function. When the overlay closes, TaskIt! calls <code>unmount()</code>.</p>
+
+    <table>
+      <tr><th>Owned by TaskIt!</th><th>Owned by the game module</th></tr>
+      <tr><td>Overlay shell, title, subtitle, back button, token balance, daily limit, achievement access</td><td>Game UI inside <code>#arcadeGameFrame</code>, game state, scoring, input handling, timers within the game</td></tr>
+      <tr><td>Script loading and cache busting using the admin catalogue's <code>updatedAt</code></td><td>Registering itself with <code>window.TaskItArcade.register(...)</code></td></tr>
+    </table>
+
+    <div class="info-box">The game should not navigate away, replace the whole page, edit account data, or assume it is the only JavaScript running on the page.</div>
+
+    <h2 id="file-placement">2. File Placement and Naming</h2>
+    <p>Place game modules in one of these locations:</p>
+    <ul>
+      <li><code>public/js/game-my-game.js</code></li>
+      <li><code>public/js/games/my-game.js</code></li>
+    </ul>
+    <p>The admin file picker lists JavaScript files that either start with <code>game-</code> or live under <code>public/js/games/</code>. Use lowercase, hyphenated filenames. The runtime path selected in Admin should look like <code>/js/game-my-game.js</code> or <code>/js/games/my-game.js</code>.</p>
+
+    <h2 id="contract">3. Required Wrapper Contract</h2>
+    <p>Every game file must register exactly one game definition:</p>
+    <pre><code>(function () {
+  'use strict';
+
+  window.TaskItArcade.register({
+    gameId: 'my_game',
+    mount: function (frame, context) {
+      // Build the game UI inside frame.
+    },
+    unmount: function () {
+      // Stop timers and remove global listeners.
+    },
+    addTime: function (seconds) {
+      // Optional. Extend an in-game countdown if the game has one.
+    },
+  });
+}());</code></pre>
+
+    <h3 id="contract-fields">Contract Fields</h3>
+    <table>
+      <tr><th>Field</th><th>Required</th><th>Purpose</th></tr>
+      <tr><td><code>gameId</code></td><td>Yes</td><td>Must match the Game ID entered in Admin. Use lowercase letters, numbers, and underscores only.</td></tr>
+      <tr><td><code>mount(frame, context)</code></td><td>Yes</td><td>Called each time the game opens. Clear and populate <code>frame</code>.</td></tr>
+      <tr><td><code>unmount()</code></td><td>Yes</td><td>Called when the arcade closes or another game replaces it. Stop intervals, animation frames, audio, and global listeners.</td></tr>
+      <tr><td><code>addTime(seconds)</code></td><td>No</td><td>Called after a user spends an Arcade Token. Implement only if the game has an internal timer.</td></tr>
+    </table>
+
+    <h3 id="context">Context Object</h3>
+    <pre><code>{
+  badgeKey: 'task_50',
+  gameId: 'my_game',
+  title: 'My Game',
+  game: {
+    id: 'database-id',
+    title: 'My Game',
+    icon: '🎮',
+    subtitle: 'Short subtitle',
+    gameId: 'my_game',
+    scriptPath: '/js/games/my-game.js',
+    sortOrder: 3,
+    updatedAt: 1780000000000
+  }
+}</code></pre>
+
+    <h2 id="starter-template">4. Starter Template</h2>
+    <p>This is a minimal compatible game. It demonstrates clean mounting, replay, keyboard handling, and teardown.</p>
+    <pre><code>/**
+ * TaskIt! Arcade - My Game
+ * Game ID: my_game
+ */
+(function () {
+  'use strict';
+
+  var active = false;
+  var score = 0;
+
+  function render(frame) {
+    frame.innerHTML = '';
+
+    var root = document.createElement('div');
+    root.className = 'my-game-root';
+    root.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:100%;height:100%;padding:16px;text-align:center;';
+
+    var scoreEl = document.createElement('p');
+    scoreEl.id = 'my-game-score';
+    scoreEl.textContent = 'Score: ' + score;
+
+    var button = document.createElement('button');
+    button.className = 'hm-replay';
+    button.textContent = 'Score Point';
+    button.addEventListener('click', function () {
+      score++;
+      scoreEl.textContent = 'Score: ' + score;
+    });
+
+    root.appendChild(scoreEl);
+    root.appendChild(button);
+    frame.appendChild(root);
+  }
+
+  function onKeyDown(event) {
+    if (!active) return;
+    if (event.key === ' ') {
+      event.preventDefault();
+      var button = document.querySelector('#arcadeGameFrame button');
+      if (button) button.click();
+    }
+  }
+
+  window.TaskItArcade.register({
+    gameId: 'my_game',
+    mount: function (frame) {
+      active = true;
+      score = 0;
+      render(frame);
+      document.addEventListener('keydown', onKeyDown);
+    },
+    unmount: function () {
+      active = false;
+      document.removeEventListener('keydown', onKeyDown);
+    },
+  });
+}());</code></pre>
+
+    <h2 id="design-constraints">5. Design and UX Constraints</h2>
+    <ul class="checklist">
+      <li>Render only inside the provided <code>frame</code>. Do not append game UI directly to <code>document.body</code> except for temporary browser-native APIs that are cleaned up.</li>
+      <li>Keep the game responsive from narrow mobile screens to desktop. Use <code>width:100%</code>, <code>height:100%</code>, flex/grid, and stable dimensions.</li>
+      <li>Do not cover the Arcade top bar, token display, back button, or daily limit row.</li>
+      <li>Use existing Arcade CSS classes where sensible. Current games use prefixes such as <code>hm-</code>, <code>ws-</code>, <code>wab-</code>, and <code>cb-</code>. New games should use their own unique prefix.</li>
+      <li>Use buttons for actions and make keyboard/touch interaction work. Escape is reserved by TaskIt! to close the overlay.</li>
+      <li>Do not use network calls unless the game explicitly needs them and the endpoint already exists.</li>
+      <li>Do not store sensitive data in localStorage. Small local preferences or high scores are acceptable only if they are non-sensitive.</li>
+      <li>Avoid large assets. If assets are needed, place them under a dedicated public folder and keep load failures graceful.</li>
+      <li>If using timers, pause/stop them in <code>unmount()</code>. If using <code>requestAnimationFrame</code>, cancel it in <code>unmount()</code>.</li>
+      <li>If the game uses audio, default to muted or user-initiated playback and stop it in <code>unmount()</code>.</li>
+    </ul>
+
+    <div class="warn-box">Never depend on <code>DOMContentLoaded</code> to start the game. Game scripts are loaded lazily after the page is already running.</div>
+
+    <h2 id="testing">6. Local Testing Checklist</h2>
+    <ol>
+      <li>Run the app locally with <code>npm run dev</code> from the repository root.</li>
+      <li>Add the game file under <code>public/js/game-my-game.js</code> or <code>public/js/games/my-game.js</code>.</li>
+      <li>Sign in as an admin.</li>
+      <li>Open <strong>Admin &gt; Gamify &gt; Arcade Games</strong>.</li>
+      <li>Click <strong>Refresh</strong> in the Arcade Games card so the file picker rescans available scripts.</li>
+      <li>Create or edit a game entry. Set <strong>Game ID</strong> to the exact <code>gameId</code> from the module.</li>
+      <li>Select the script file and tick <strong>Enabled for users</strong>.</li>
+      <li>Save the entry, then click <strong>Test</strong>.</li>
+      <li>Close the overlay and reopen it several times. Confirm there are no duplicate keyboard events, duplicate intervals, stale UI, or console errors.</li>
+      <li>Test on a narrow mobile viewport and a desktop viewport.</li>
+      <li>If the game has a timer, spend an Arcade Token and confirm <code>addTime(seconds)</code> behaves correctly.</li>
+    </ol>
+
+    <h2 id="admin-registration">7. Admin Registration Fields</h2>
+    <table>
+      <tr><th>Admin field</th><th>How to fill it</th></tr>
+      <tr><td>Achievement Slot</td><td>The badge card where the game appears. Users unlock games by achievement count and game order.</td></tr>
+      <tr><td>Order</td><td>Unlock order. A user with N achievements can play the first N enabled games by this order.</td></tr>
+      <tr><td>Title</td><td>Display title shown on the achievement card and Arcade overlay.</td></tr>
+      <tr><td>Icon</td><td>Short text or emoji shown in the Arcade header.</td></tr>
+      <tr><td>Subtitle</td><td>One-line game description shown below the title.</td></tr>
+      <tr><td>Game ID</td><td>Must exactly match <code>gameId</code> in <code>TaskItArcade.register</code>.</td></tr>
+      <tr><td>Script File</td><td>The runtime path to the game file, such as <code>/js/games/my-game.js</code>.</td></tr>
+      <tr><td>Enabled for users</td><td>Only enabled games appear in the user arcade catalogue.</td></tr>
+    </table>
+
+    <h2 id="ai-agent-brief">8. Brief for an AI Agent</h2>
+    <p>Use this prompt when asking an AI coding agent to create a game:</p>
+    <pre><code>You are adding a TaskIt! Arcade game module.
+
+Read /public/arcade-game-guide.html and inspect the existing game modules in /public/js.
+Create a single compatible JavaScript file under /public/js/games/.
+Use window.TaskItArcade.register({ gameId, mount, unmount, addTime? }).
+Render only inside the frame passed to mount().
+Do not depend on DOMContentLoaded.
+Clean up all timers, requestAnimationFrame loops, audio, and document/window listeners in unmount().
+Use a unique CSS class prefix and either inline scoped styles inside the game root or existing Arcade styles.
+Make it responsive for mobile and desktop.
+Preserve Escape behavior for closing the Arcade.
+After implementation, explain the Admin Arcade Games values needed to register it.</code></pre>
+
+    <h2 id="review-checklist">9. Pull Request Review Checklist</h2>
+    <ul class="checklist">
+      <li>The file is in <code>public/js/games/</code> or starts with <code>game-</code>.</li>
+      <li>The module calls <code>window.TaskItArcade.register</code> exactly once.</li>
+      <li>The admin <code>gameId</code> and module <code>gameId</code> match.</li>
+      <li><code>mount()</code> clears and rebuilds the frame cleanly.</li>
+      <li><code>unmount()</code> removes global listeners and stops all timers/animation loops.</li>
+      <li>The game remains usable at mobile width and does not overlap the Arcade shell.</li>
+      <li>No broad global CSS selectors are introduced.</li>
+      <li>No unrelated app files are changed unless required.</li>
+      <li>The game has been tested through the Admin <strong>Test</strong> button.</li>
+    </ul>
+
+    <h2 id="troubleshooting">10. Troubleshooting</h2>
+    <table>
+      <tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr>
+      <tr><td>File does not appear in Script File dropdown</td><td>Filename/path does not match scanner rules</td><td>Use <code>public/js/game-name.js</code> or <code>public/js/games/name.js</code>, then click Refresh.</td></tr>
+      <tr><td>Overlay shows placeholder instead of game</td><td>Script did not register, or <code>gameId</code> mismatch</td><td>Check browser console and confirm Admin Game ID equals module <code>gameId</code>.</td></tr>
+      <tr><td>Game works once but breaks after reopening</td><td>State or listeners are not reset</td><td>Reset state in <code>mount()</code> and clean up in <code>unmount()</code>.</td></tr>
+      <tr><td>Keyboard controls fire multiple times</td><td>Document listener added repeatedly and not removed</td><td>Use a named listener function and remove it in <code>unmount()</code>.</td></tr>
+      <tr><td>Timer continues after closing Arcade</td><td>Interval or animation loop not cleared</td><td>Store interval/frame IDs and clear/cancel them in <code>unmount()</code>.</td></tr>
+      <tr><td>Updated game file does not appear to change</td><td>Browser/CDN cache</td><td>Save the admin game entry again so <code>updatedAt</code> changes and the loader appends a fresh version query.</td></tr>
+    </table>
+
+    <div class="tip-box">Reference implementations: <code>/public/js/game-hangman.js</code>, <code>/public/js/game-wordsearch.js</code>, <code>/public/js/game-whac-a-bug.js</code>, and <code>/public/js/game-code-breaker.js</code>.</div>
+  </article>
+</main>
+
+<footer class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-6 mt-auto">
+  <div class="max-w-5xl mx-auto px-4 text-center text-sm text-slate-500 dark:text-slate-400">
+    <p>TaskIt! v<span class="page-version">1.21.3</span> · <a href="/user-guide.html" class="text-indigo-600 hover:underline">User Guide</a></p>
+  </div>
+</footer>
+<script src="/js/version.js"></script>
+</body>
+</html>

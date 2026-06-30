@@ -11,6 +11,8 @@ import { getVapidFromDb, reconfigureWebpush } from '../webpush-config';
 
 /** Absolute path to the server-side PNG icons directory. */
 const COLLECTABLES_DIR = path.resolve(__dirname, '..', '..', '..', 'public', 'collectables');
+/** Absolute path to the public JavaScript directory used by arcade modules. */
+const PUBLIC_JS_DIR = path.resolve(__dirname, '..', '..', '..', 'public', 'js');
 
 /**
  * Validates that an icon filename is safe to store and serve.
@@ -50,6 +52,91 @@ function validateIconFilename(raw: unknown): string | null {
   if (!resolved.startsWith(COLLECTABLES_DIR + path.sep)) return null;
   if (!fs.existsSync(resolved)) return null;
   return trimmed;
+}
+
+function validateArcadeScriptPath(raw: unknown, allowEmpty = true): string | null {
+  if ((raw === null || raw === undefined || raw === '') && allowEmpty) return '';
+  if (!raw || typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith('/js/') || !trimmed.toLowerCase().endsWith('.js')) return null;
+  if (trimmed.includes('..') || trimmed.includes('\\')) return null;
+
+  const rel = trimmed.slice('/js/'.length).split('/');
+  if (rel.some(part => !/^[a-zA-Z0-9][a-zA-Z0-9_.\-]*$/.test(part))) return null;
+
+  const resolved = path.join(PUBLIC_JS_DIR, ...rel);
+  if (!resolved.startsWith(PUBLIC_JS_DIR + path.sep)) return null;
+  if (!fs.existsSync(resolved)) return null;
+  return trimmed;
+}
+
+interface ArcadeGamePayload {
+  achievementKey?: string;
+  title?: string;
+  subtitle?: string;
+  icon?: string;
+  gameId?: string;
+  scriptPath?: string | null;
+  sortOrder?: number;
+  enabled?: number;
+  error?: string;
+}
+
+function normaliseArcadeGamePayload(body: Request['body'], partial = false): ArcadeGamePayload {
+  const out: ArcadeGamePayload = {};
+
+  if (!partial || body.achievementKey !== undefined) {
+    if (!body.achievementKey || typeof body.achievementKey !== 'string' || !/^[a-z0-9_]+$/.test(body.achievementKey.trim())) {
+      return { error: 'achievementKey is required and must contain only lowercase letters, numbers, and underscores' };
+    }
+    out.achievementKey = body.achievementKey.trim();
+  }
+  if (!partial || body.title !== undefined) {
+    if (!body.title || typeof body.title !== 'string' || !body.title.trim() || body.title.length > 100) {
+      return { error: 'title is required and must be 1-100 characters' };
+    }
+    out.title = body.title.trim();
+  }
+  if (!partial || body.subtitle !== undefined) {
+    if (!body.subtitle || typeof body.subtitle !== 'string' || !body.subtitle.trim() || body.subtitle.length > 255) {
+      return { error: 'subtitle is required and must be 1-255 characters' };
+    }
+    out.subtitle = body.subtitle.trim();
+  }
+  if (!partial || body.icon !== undefined) {
+    if (!body.icon || typeof body.icon !== 'string' || !body.icon.trim() || body.icon.length > 16) {
+      return { error: 'icon is required and must be short text or an emoji' };
+    }
+    out.icon = body.icon.trim();
+  }
+  if (!partial || body.gameId !== undefined) {
+    if (!body.gameId || typeof body.gameId !== 'string' || !/^[a-z0-9_]+$/.test(body.gameId.trim())) {
+      return { error: 'gameId is required and must contain only lowercase letters, numbers, and underscores' };
+    }
+    out.gameId = body.gameId.trim();
+  }
+  if (!partial || body.scriptPath !== undefined) {
+    const scriptPath = validateArcadeScriptPath(body.scriptPath, true);
+    if (scriptPath === null) {
+      return { error: 'scriptPath must be an existing .js file under /js/' };
+    }
+    out.scriptPath = scriptPath || null;
+  }
+  if (!partial || body.sortOrder !== undefined) {
+    const sortOrder = parseInt(String(body.sortOrder), 10);
+    if (!Number.isInteger(sortOrder) || sortOrder < 1 || sortOrder > 999) {
+      return { error: 'sortOrder must be an integer between 1 and 999' };
+    }
+    out.sortOrder = sortOrder;
+  }
+  if (!partial || body.enabled !== undefined) {
+    if (typeof body.enabled !== 'boolean' && body.enabled !== 0 && body.enabled !== 1) {
+      return { error: 'enabled must be a boolean' };
+    }
+    out.enabled = (body.enabled === false || body.enabled === 0) ? 0 : 1;
+  }
+
+  return out;
 }
 
 const router = Router();
@@ -998,6 +1085,168 @@ router.put('/turnstile', (req: Request, res: Response): void => {
   );
 
   res.json({ message: 'Turnstile settings updated' });
+});
+
+// ─── Arcade Games ────────────────────────────────────────────────────────────
+
+function arcadeGameSelectSql(): string {
+  return `
+    SELECT id, achievement_key AS achievementKey, title, subtitle, icon,
+           game_id AS gameId, script_path AS scriptPath, sort_order AS sortOrder,
+           enabled, created_at AS createdAt, updated_at AS updatedAt
+    FROM arcade_games
+  `;
+}
+
+router.get('/arcade-games', (_req: Request, res: Response): void => {
+  const rows = db.prepare(`
+    ${arcadeGameSelectSql()}
+    ORDER BY sort_order ASC, title ASC
+  `).all();
+  res.json(rows);
+});
+
+router.get('/arcade-game-files', (_req: Request, res: Response): void => {
+  try {
+    if (!fs.existsSync(PUBLIC_JS_DIR)) {
+      res.json([]);
+      return;
+    }
+
+    const results: string[] = [];
+    const walk = (dir: string, prefix = ''): void => {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.name.startsWith('.')) continue;
+        const fullPath = path.join(dir, entry.name);
+        const relPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) {
+          walk(fullPath, relPath);
+        } else if (entry.isFile() && /^[a-zA-Z0-9][a-zA-Z0-9_.\-]*\.js$/i.test(entry.name)) {
+          // Prefer game modules but still expose nested /js/games files. Avoid
+          // generic infrastructure scripts such as qrcode.js and version.js.
+          if (entry.name.startsWith('game-') || relPath.startsWith('games/')) {
+            results.push('/js/' + relPath.replace(/\\/g, '/'));
+          }
+        }
+      }
+    };
+    walk(PUBLIC_JS_DIR);
+    results.sort((a, b) => a.localeCompare(b));
+    res.json(results);
+  } catch {
+    res.status(500).json({ error: 'Could not read arcade game files' });
+  }
+});
+
+router.post('/arcade-games', (req: Request, res: Response): void => {
+  const parsed = normaliseArcadeGamePayload(req.body, false);
+  if (parsed.error) {
+    res.status(400).json({ error: parsed.error });
+    return;
+  }
+
+  const achievement = db.prepare('SELECT key FROM achievements WHERE key = ?').get(parsed.achievementKey);
+  if (!achievement) {
+    res.status(404).json({ error: 'Achievement key not found' });
+    return;
+  }
+
+  const now = Date.now();
+  const id = randomUUID();
+  try {
+    db.prepare(`
+      INSERT INTO arcade_games
+        (id, achievement_key, title, subtitle, icon, game_id, script_path, sort_order, enabled, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      parsed.achievementKey,
+      parsed.title,
+      parsed.subtitle,
+      parsed.icon,
+      parsed.gameId,
+      parsed.scriptPath,
+      parsed.sortOrder,
+      parsed.enabled,
+      now,
+      now
+    );
+  } catch {
+    res.status(409).json({ error: 'A game with that achievement key or gameId already exists' });
+    return;
+  }
+
+  const created = db.prepare(`${arcadeGameSelectSql()} WHERE id = ?`).get(id);
+  res.status(201).json(created);
+});
+
+router.patch('/arcade-games/:id', (req: Request, res: Response): void => {
+  const gameId = req.params.id;
+  const existing = db.prepare('SELECT id FROM arcade_games WHERE id = ?').get(gameId);
+  if (!existing) {
+    res.status(404).json({ error: 'Arcade game not found' });
+    return;
+  }
+
+  const parsed = normaliseArcadeGamePayload(req.body, true);
+  if (parsed.error) {
+    res.status(400).json({ error: parsed.error });
+    return;
+  }
+
+  if (parsed.achievementKey) {
+    const achievement = db.prepare('SELECT key FROM achievements WHERE key = ?').get(parsed.achievementKey);
+    if (!achievement) {
+      res.status(404).json({ error: 'Achievement key not found' });
+      return;
+    }
+  }
+
+  const setClauses: string[] = [];
+  const vals: Array<string | number | null> = [];
+  const add = (column: string, value: string | number | null): void => {
+    setClauses.push(`${column} = ?`);
+    vals.push(value);
+  };
+
+  if (parsed.achievementKey !== undefined) add('achievement_key', parsed.achievementKey);
+  if (parsed.title !== undefined) add('title', parsed.title);
+  if (parsed.subtitle !== undefined) add('subtitle', parsed.subtitle);
+  if (parsed.icon !== undefined) add('icon', parsed.icon);
+  if (parsed.gameId !== undefined) add('game_id', parsed.gameId);
+  if (parsed.scriptPath !== undefined) add('script_path', parsed.scriptPath);
+  if (parsed.sortOrder !== undefined) add('sort_order', parsed.sortOrder);
+  if (parsed.enabled !== undefined) add('enabled', parsed.enabled);
+
+  if (setClauses.length === 0) {
+    res.status(400).json({ error: 'No valid fields to update' });
+    return;
+  }
+
+  add('updated_at', Date.now());
+  vals.push(gameId);
+
+  try {
+    db.prepare(`UPDATE arcade_games SET ${setClauses.join(', ')} WHERE id = ?`).run(...vals);
+  } catch {
+    res.status(409).json({ error: 'A game with that achievement key or gameId already exists' });
+    return;
+  }
+
+  const updated = db.prepare(`${arcadeGameSelectSql()} WHERE id = ?`).get(gameId);
+  res.json(updated);
+});
+
+router.delete('/arcade-games/:id', (req: Request, res: Response): void => {
+  const gameId = req.params.id;
+  const existing = db.prepare('SELECT id FROM arcade_games WHERE id = ?').get(gameId);
+  if (!existing) {
+    res.status(404).json({ error: 'Arcade game not found' });
+    return;
+  }
+  db.prepare('DELETE FROM arcade_games WHERE id = ?').run(gameId);
+  res.status(204).send();
 });
 
 // ─── Arcade Settings ─────────────────────────────────────────────────────────

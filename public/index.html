@@ -143,15 +143,15 @@
   <style>
     .hidden { display: none !important; }
   </style>
-  <link rel="stylesheet" href="/app.css?v=1.20.3" type="text/css" />
+  <link rel="stylesheet" href="/app.css?v=1.21.3" type="text/css" />
   <!-- PWA / installable web app -->
-  <link rel="manifest" href="/manifest.json?v=1.20.3" />
+  <link rel="manifest" href="/manifest.json?v=1.21.3" />
   <meta name="theme-color" content="#7c3aed" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="TaskIt!" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1.20.3" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=1.20.3" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1.21.3" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=1.21.3" />
   <!-- Cloudflare Turnstile for CAPTCHA security (explicit render; onload callback fires when ready) -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit" async defer></script>
 </head>
@@ -192,7 +192,7 @@
     <div class="lp-hero-float lp-float-achievement" aria-hidden="true">🏆 Achievement Unlocked!</div>
     <div class="lp-hero-float lp-float-streak" aria-hidden="true">🔥 14-day streak!</div>
     <div style="position:relative;z-index:1">
-      <img class="lp-hero-logo" src="/RKlogo.png?v=1.20.3" width="900" height="900" alt="TaskIt! logo: a checklist with a star and tick" decoding="async" fetchpriority="high" />
+      <img class="lp-hero-logo" src="/RKlogo.png?v=1.21.3" width="900" height="900" alt="TaskIt! logo: a checklist with a star and tick" decoding="async" fetchpriority="high" />
       <h1>Gamify your life and compete with friends!</h1>
       <p class="lp-hero-sub">Run recurring work, household jobs, sporadic maintenance, long-term goals, and group collaboration from one privacy-first app. Add reminders, calendar sync, and optional gamification — without subscriptions or vendor lock-in.</p>
       <div class="lp-hero-ctas">
@@ -959,7 +959,7 @@
   <div class="auth-card">
     <div class="auth-logo">
       <div class="auth-logo-icon auth-logo-icon-brand">
-        <img src="/RKlogo.png?v=1.20.3" width="900" height="900" alt="TaskIt! logo" decoding="async" />
+        <img src="/RKlogo.png?v=1.21.3" width="900" height="900" alt="TaskIt! logo" decoding="async" />
       </div>
       <h1>TaskIt!</h1>
       <p>🎮 Gamified task management</p>
@@ -1087,7 +1087,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.20.3</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
+      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.21.3</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>
@@ -1710,6 +1710,66 @@
         </div>
       </details>
 
+      <!-- Arcade Games card -->
+      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+        <summary class="admin-collapsible-summary">
+          <span>🎮 Arcade Games</span>
+          <button onclick="event.preventDefault();event.stopPropagation();loadAdminArcadeGames()" class="btn btn-sm btn-secondary">Refresh</button>
+        </summary>
+        <div style="padding-top:12px">
+          <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Register game modules, choose their achievement slot, and enable them without editing the HTML shell. <a href="/arcade-game-guide.html" target="_blank" rel="noopener" style="color:#7c3aed;text-decoration:underline">Open the game creator guide</a>.</p>
+          <div id="arcadeGameForm" style="background:#f5f3ff;border-radius:10px;padding:14px;margin-bottom:14px">
+            <p id="arcadeGameFormTitle" style="font-size:.88rem;font-weight:700;color:#374151;margin-bottom:10px">New Arcade Game</p>
+            <input type="hidden" id="arcadeGameEditId" value="" />
+            <div class="admin-field-row">
+              <div class="form-group">
+                <label>Achievement Slot</label>
+                <select id="arcadeGameAchievementKey" class="select"></select>
+              </div>
+              <div class="form-group">
+                <label>Order</label>
+                <input id="arcadeGameSortOrder" type="number" min="1" max="999" class="input" placeholder="1" />
+              </div>
+            </div>
+            <div class="admin-field-row">
+              <div class="form-group">
+                <label>Title</label>
+                <input id="arcadeGameTitleInput" type="text" class="input" maxlength="100" placeholder="e.g. Productivity Hangman" />
+              </div>
+              <div class="form-group">
+                <label>Icon</label>
+                <input id="arcadeGameIconInput" type="text" class="input" maxlength="16" placeholder="🎮" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Subtitle</label>
+              <input id="arcadeGameSubtitleInput" type="text" class="input" maxlength="255" placeholder="Short description shown in the Arcade overlay" />
+            </div>
+            <div class="admin-field-row">
+              <div class="form-group">
+                <label>Game ID</label>
+                <input id="arcadeGameIdInput" type="text" class="input" placeholder="lowercase_identifier" />
+              </div>
+              <div class="form-group">
+                <label>Script File</label>
+                <select id="arcadeGameScriptSelect" class="select">
+                  <option value="">— No script yet —</option>
+                </select>
+              </div>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:.88rem;color:#374151;margin:4px 0 12px">
+              <input id="arcadeGameEnabledInput" type="checkbox" />
+              Enabled for users
+            </label>
+            <div style="display:flex;gap:8px">
+              <button onclick="adminSaveArcadeGame()" class="btn btn-primary btn-sm" style="flex:1">Save Game</button>
+              <button onclick="adminClearArcadeGameForm()" class="btn btn-secondary btn-sm">Clear</button>
+            </div>
+          </div>
+          <div id="adminArcadeGamesList"><div class="loading">Loading…</div></div>
+        </div>
+      </details>
+
     </div>
   </div>
   <div id="progressPage" class="view hidden">
@@ -1894,7 +1954,7 @@
 <div id="pwaInstallModal" class="modal-overlay hidden">
   <div class="modal-sheet">
     <div class="modal-body" style="text-align:center">
-      <img src="/RKlogo.png?v=1.20.3" width="900" height="900" alt="" aria-hidden="true" style="width:92px;height:auto;margin:0 auto 12px;display:block" />
+      <img src="/RKlogo.png?v=1.21.3" width="900" height="900" alt="" aria-hidden="true" style="width:92px;height:auto;margin:0 auto 12px;display:block" />
       <h2 class="modal-title">Install TaskIt!</h2>
       <p style="font-size:.9rem;color:#6b7280;line-height:1.6;margin-bottom:20px">
         Add TaskIt! to your home screen for a cleaner app-style launch, faster access, and better notification behaviour.
@@ -2469,6 +2529,10 @@ let gamificationEnabled = false;
 // Keys of achievements whose mini-games the current user may play.
 // Populated from the server-fetched profile; admins receive all 13 keys.
 let unlockedArcadeKeys = new Set();
+let ARCADE_GAME_ORDER = [];
+let ARCADE_GAMES = {};
+const arcadeLoadedScripts = new Map();
+let activeArcadeGameInstance = null;
 // Arcade token balance and daily play limit (minutes); refreshed with the gamification profile.
 let arcadeTokens = 0;
 let arcadeDailyPlayMinutes = 5;
@@ -4859,14 +4923,16 @@ async function loadGamificationProfile() {
   const toggleEl = document.getElementById('gamifToggle');
   if (!toggleEl) return;
   try {
-    const [profile, streaks] = await Promise.all([
+    const [profile, streaks, arcadeGames] = await Promise.all([
       api('GET', '/gamification/profile'),
       api('GET', '/gamification/streaks').catch(() => []),
+      api('GET', '/gamification/arcade/games').catch(() => []),
     ]);
     if (!profile) return;
     gamificationEnabled = !!profile.enabled;
     arcadeTokens = profile.arcadeTokens ?? 0;
     arcadeDailyPlayMinutes = profile.dailyPlayMinutes ?? 5;
+    setArcadeCatalogue(arcadeGames);
     // Sync token display if the arcade overlay is currently open
     const tokenEl = document.getElementById('arcadeTokenDisplay');
     if (tokenEl) tokenEl.textContent = '\uD83C\uDFDF\uFE0F ' + arcadeTokens;
@@ -5631,7 +5697,7 @@ function showAdminTab(tab) {
   });
   if (tab === 'users') { loadUsersPanel(); loadLockedAccounts(); loadUserReports(); }
   if (tab === 'feedback') loadAdminFeedback();
-  if (tab === 'gamify') { loadXpEvents(); loadCollectiblesAdmin(); loadArcadeSettings(); }
+  if (tab === 'gamify') { loadXpEvents(); loadCollectiblesAdmin(); loadArcadeSettings(); loadAdminArcadeGames(); }
 }
 
 async function loadAdminPage() {
@@ -5927,6 +5993,10 @@ async function sendFeedbackReply(id) {
   } catch (err) { toast(err.message, 'error'); }
 }
 
+let _adminArcadeGames = [];
+let _adminArcadeFiles = [];
+let _adminArcadeAchievements = [];
+
 async function loadArcadeSettings() {
   try {
     const data = await api('GET', '/admin/arcade-settings');
@@ -5947,6 +6017,153 @@ async function saveArcadeSettings(e) {
     arcadeDailyPlayMinutes = minutes;
     toast('Arcade play limit updated to ' + minutes + ' min for all users', 'success');
   } catch (err) { toast('Failed to save arcade settings: ' + err.message, 'error'); }
+}
+
+async function loadAdminArcadeGames() {
+  const listEl = document.getElementById('adminArcadeGamesList');
+  if (listEl) listEl.innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    const [games, files, achievements] = await Promise.all([
+      api('GET', '/admin/arcade-games'),
+      api('GET', '/admin/arcade-game-files').catch(() => []),
+      api('GET', '/gamification/achievements').catch(() => []),
+    ]);
+    _adminArcadeGames = Array.isArray(games) ? games : [];
+    _adminArcadeFiles = Array.isArray(files) ? files : [];
+    _adminArcadeAchievements = Array.isArray(achievements) ? achievements : [];
+    renderAdminArcadeGameControls();
+  } catch (err) {
+    if (listEl) listEl.innerHTML = '<p style="font-size:.85rem;color:#ef4444">Failed to load arcade games.</p>';
+    toast('Failed to load arcade games: ' + err.message, 'error');
+  }
+}
+
+function renderAdminArcadeGameControls() {
+  const achievementSelect = document.getElementById('arcadeGameAchievementKey');
+  if (achievementSelect) {
+    achievementSelect.innerHTML = _adminArcadeAchievements.length
+      ? _adminArcadeAchievements.map(a => `<option value="${escHtml(a.key)}">${escHtml(a.name)} (${escHtml(a.key)})</option>`).join('')
+      : '<option value="">No achievements available</option>';
+  }
+
+  const scriptSelect = document.getElementById('arcadeGameScriptSelect');
+  if (scriptSelect) {
+    scriptSelect.innerHTML = '<option value="">— No script yet —</option>' +
+      _adminArcadeFiles.map(file => `<option value="${escHtml(file)}">${escHtml(file)}</option>`).join('');
+  }
+
+  const listEl = document.getElementById('adminArcadeGamesList');
+  if (!listEl) return;
+  if (!_adminArcadeGames.length) {
+    listEl.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">No arcade games registered yet.</p>';
+    return;
+  }
+
+  listEl.innerHTML = _adminArcadeGames.map(game => {
+    const enabledBadge = game.enabled
+      ? '<span class="badge badge-green" style="font-size:.72rem">enabled</span>'
+      : '<span class="badge badge-gray" style="font-size:.72rem">disabled</span>';
+    const scriptLabel = game.scriptPath ? escHtml(game.scriptPath) : 'No script selected';
+    const testBtn = game.enabled
+      ? `<button onclick="adminTestArcadeGame('${escHtml(game.achievementKey)}')" class="btn btn-sm btn-secondary" style="white-space:nowrap">Test</button>`
+      : '';
+    return `
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px;background:white">
+        <div style="min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <strong style="font-size:.9rem;color:#374151">${escHtml(game.icon)} ${escHtml(game.title)}</strong>
+            ${enabledBadge}
+            <span class="badge badge-gray" style="font-size:.72rem">#${escHtml(String(game.sortOrder))}</span>
+          </div>
+          <div style="font-size:.78rem;color:#6b7280;margin-top:2px">${escHtml(game.achievementKey)} → ${escHtml(game.gameId)}</div>
+          <div style="font-size:.75rem;color:#9ca3af;margin-top:2px;overflow:hidden;text-overflow:ellipsis">${scriptLabel}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          ${testBtn}
+          <button onclick="adminEditArcadeGame('${escHtml(game.id)}')" class="btn btn-sm btn-outline" style="white-space:nowrap">Edit</button>
+          <button onclick="adminDeleteArcadeGame('${escHtml(game.id)}')" class="btn btn-sm btn-danger" style="white-space:nowrap">Delete</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function adminClearArcadeGameForm() {
+  document.getElementById('arcadeGameEditId').value = '';
+  document.getElementById('arcadeGameFormTitle').textContent = 'New Arcade Game';
+  document.getElementById('arcadeGameTitleInput').value = '';
+  document.getElementById('arcadeGameSubtitleInput').value = '';
+  document.getElementById('arcadeGameIconInput').value = '🎮';
+  document.getElementById('arcadeGameIdInput').value = '';
+  document.getElementById('arcadeGameScriptSelect').value = '';
+  document.getElementById('arcadeGameSortOrder').value = String((_adminArcadeGames.length || 0) + 1);
+  document.getElementById('arcadeGameEnabledInput').checked = false;
+}
+
+function adminEditArcadeGame(id) {
+  const game = _adminArcadeGames.find(g => g.id === id);
+  if (!game) return;
+  document.getElementById('arcadeGameEditId').value = game.id;
+  document.getElementById('arcadeGameFormTitle').textContent = 'Edit Arcade Game';
+  document.getElementById('arcadeGameAchievementKey').value = game.achievementKey;
+  document.getElementById('arcadeGameTitleInput').value = game.title || '';
+  document.getElementById('arcadeGameSubtitleInput').value = game.subtitle || '';
+  document.getElementById('arcadeGameIconInput').value = game.icon || '🎮';
+  document.getElementById('arcadeGameIdInput').value = game.gameId || '';
+  document.getElementById('arcadeGameScriptSelect').value = game.scriptPath || '';
+  document.getElementById('arcadeGameSortOrder').value = game.sortOrder || 1;
+  document.getElementById('arcadeGameEnabledInput').checked = !!game.enabled;
+}
+
+async function adminSaveArcadeGame() {
+  const editId = document.getElementById('arcadeGameEditId').value;
+  const body = {
+    achievementKey: document.getElementById('arcadeGameAchievementKey').value,
+    title: document.getElementById('arcadeGameTitleInput').value.trim(),
+    subtitle: document.getElementById('arcadeGameSubtitleInput').value.trim(),
+    icon: document.getElementById('arcadeGameIconInput').value.trim() || '🎮',
+    gameId: document.getElementById('arcadeGameIdInput').value.trim(),
+    scriptPath: document.getElementById('arcadeGameScriptSelect').value || null,
+    sortOrder: parseInt(document.getElementById('arcadeGameSortOrder').value, 10),
+    enabled: document.getElementById('arcadeGameEnabledInput').checked,
+  };
+  if (!body.achievementKey || !body.title || !body.subtitle || !body.gameId || !body.sortOrder) {
+    toast('Complete the required arcade game fields', 'error');
+    return;
+  }
+  try {
+    if (editId) {
+      await api('PATCH', '/admin/arcade-games/' + editId, body);
+      toast('Arcade game updated');
+    } else {
+      await api('POST', '/admin/arcade-games', body);
+      toast('Arcade game created');
+    }
+    adminClearArcadeGameForm();
+    await loadAdminArcadeGames();
+    await loadGamificationProfile();
+  } catch (err) {
+    toast('Failed to save arcade game: ' + err.message, 'error');
+  }
+}
+
+async function adminDeleteArcadeGame(id) {
+  const game = _adminArcadeGames.find(g => g.id === id);
+  const title = game ? game.title : 'this game';
+  if (!confirm('Delete arcade game "' + title + '"?')) return;
+  try {
+    await api('DELETE', '/admin/arcade-games/' + id);
+    toast('Arcade game deleted');
+    adminClearArcadeGameForm();
+    await loadAdminArcadeGames();
+    await loadGamificationProfile();
+  } catch (err) {
+    toast('Failed to delete arcade game: ' + err.message, 'error');
+  }
+}
+
+async function adminTestArcadeGame(achievementKey) {
+  await loadGamificationProfile();
+  openArcade(achievementKey);
 }
 
 async function loadXpEvents() {
@@ -6452,7 +6669,7 @@ async function refreshNotifications() {
           if (!fired[k]) {
             fired[k] = day;
             try {
-              new Notification('TaskIt! Reminder', { body: t.title, icon: '/icons/icon-192x192.png?v=1.20.3', badge: '/icons/notification-badge-96x96.png?v=1.20.3', tag: k });
+              new Notification('TaskIt! Reminder', { body: t.title, icon: '/icons/icon-192x192.png?v=1.21.3', badge: '/icons/notification-badge-96x96.png?v=1.21.3', tag: k });
             } catch { /* Notification API unavailable or permission revoked */ }
           }
         };
@@ -7371,54 +7588,57 @@ if ('serviceWorker' in navigator) {
 /** Seconds added to the daily play budget when a token is spent. */
 const TOKEN_TIME_EXTENSION_SECONDS = 30;
 
-/**
- * Canonical unlock order for arcade games.
- *
- * A user with N total achievements earned (any achievements) may play the
- * first N games in this list, regardless of *which* achievements they have.
- * Adding a new key here at position N automatically enables that game for
- * every user who already has ≥ N achievements — no database changes needed.
- *
- * Rule: one achievement earns one game slot, in order.
- */
-const ARCADE_GAME_ORDER = [
-  'first_task',
-  'task_10',
-  'task_50',
-  'task_100',
-  'task_500',
-  'detail_oriented',
-  'early_bird',
-  'type_explorer',
-  'skill_level_5',
-  'skill_level_10',
-  'streak_3',
-  'streak_7',
-  'streak_30',
-];
+function setArcadeCatalogue(games) {
+  const enabledGames = Array.isArray(games) ? games : [];
+  ARCADE_GAME_ORDER = enabledGames.map(g => g.achievementKey);
+  ARCADE_GAMES = {};
+  enabledGames.forEach(g => {
+    ARCADE_GAMES[g.achievementKey] = {
+      id: g.id,
+      title: g.title,
+      icon: g.icon,
+      subtitle: g.subtitle,
+      gameId: g.gameId,
+      scriptPath: g.scriptPath,
+      sortOrder: g.sortOrder,
+      updatedAt: g.updatedAt,
+    };
+  });
+}
 
-/**
- * Maps each achievement badge key to display metadata and a gameId
- * that Stage 2 game modules will use to boot the correct mini-game.
- * The key also identifies which achievement card the game is displayed on.
- * Unlock access is governed by ARCADE_GAME_ORDER + achievement count, not
- * by whether the user has specifically earned the paired achievement.
- */
-const ARCADE_GAMES = {
-  first_task:      { title: 'Productivity Hangman', icon: '🥇', subtitle: 'Guess the word — don\u2019t lose your head!',        gameId: 'hangman'      },
-  task_10:         { title: 'Job Search',            icon: '🚀', subtitle: 'Find all six TaskIt! tools hidden in the grid!',     gameId: 'wordsearch'   },
-  task_50:         { title: 'Whac-A-Bug',            icon: '\uD83D\uDC1B', subtitle: 'Squash the bugs before they crash the system!',  gameId: 'whac_a_bug'   },
-  task_100:        { title: 'Code Breaker',          icon: '\uD83D\uDD10', subtitle: 'Crack the secret 4-colour code in 10 attempts!', gameId: 'code_breaker' },
-  task_500:        { title: 'Legendary Quest',    icon: '👑', subtitle: 'Conquer the leaderboard!',             gameId: 'legend'     },
-  detail_oriented: { title: 'Memory Matrix',      icon: '📝', subtitle: 'Match every task-card pair!',          gameId: 'memory'     },
-  early_bird:      { title: 'Early Bird Dash',    icon: '🐦', subtitle: 'Flap your way past the deadlines!',   gameId: 'bird'       },
-  type_explorer:   { title: "Explorer's Maze",    icon: '🗺️', subtitle: 'Navigate through the task maze!',     gameId: 'maze'       },
-  skill_level_5:   { title: 'Bullseye!',          icon: '🎯', subtitle: 'Hit every target with precision!',    gameId: 'target'     },
-  skill_level_10:  { title: 'Quiz Master',        icon: '🎓', subtitle: 'Test your TaskIt! knowledge!',         gameId: 'quiz'       },
-  streak_3:        { title: 'Hat Trick',          icon: '\uD83C\uDFA9', subtitle: 'Follow the hat \u2014 can you find the ball?',       gameId: 'hat_trick'  },
-  streak_7:        { title: 'Lucky Draw',         icon: '\uD83C\uDF40', subtitle: 'Roll the dice and chase the lucky streak!',          gameId: 'lucky_draw' },
-  streak_30:       { title: 'Unstoppable Train',  icon: '🚂', subtitle: 'Keep the train running — no stops!', gameId: 'train'      },
+window.TaskItArcade = window.TaskItArcade || {
+  games: {},
+  register(definition) {
+    if (!definition || !definition.gameId || typeof definition.mount !== 'function') return;
+    this.games[definition.gameId] = definition;
+  },
+  get(gameId) {
+    return this.games[gameId] || null;
+  },
 };
+
+function arcadeScriptSrc(game) {
+  if (!game || !game.scriptPath) return '';
+  const version = game.updatedAt || window.APP_VERSION || window._serverVersion || Date.now();
+  return game.scriptPath + (game.scriptPath.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(version);
+}
+
+function arcadeEnsureGameScript(game) {
+  if (!game || !game.scriptPath) return Promise.resolve();
+  const key = game.gameId + ':' + game.scriptPath + ':' + (game.updatedAt || '');
+  if (arcadeLoadedScripts.has(key)) return arcadeLoadedScripts.get(key);
+
+  const promise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = arcadeScriptSrc(game);
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('Could not load game script: ' + game.scriptPath));
+    document.body.appendChild(script);
+  });
+  arcadeLoadedScripts.set(key, promise);
+  return promise;
+}
 
 /**
  * Opens the Arcade overlay for the given achievement badge key.
@@ -7439,7 +7659,7 @@ const ARCADE_GAMES = {
  *
  * @param {string} badgeKey - One of the keys in ARCADE_GAMES.
  */
-function openArcade(badgeKey) {
+async function openArcade(badgeKey) {
   const game = ARCADE_GAMES[badgeKey];
   if (!game) return;
 
@@ -7530,11 +7750,30 @@ function openArcade(badgeKey) {
   // Start tracking play time: increment once per second while the arcade is open
   arcadeStartPlayTimer(overlay, limitSeconds, playedSeconds);
 
-  // Notify Stage 2 modules
-  overlay.dispatchEvent(new CustomEvent('arcade:open', {
-    bubbles: false,
-    detail: { badgeKey, gameId: game.gameId, title: game.title },
-  }));
+  try {
+    await arcadeEnsureGameScript(game);
+    if (overlay.dataset.activeGame !== badgeKey) return;
+
+    const context = { badgeKey, gameId: game.gameId, title: game.title, game };
+    const registeredGame = window.TaskItArcade && window.TaskItArcade.get(game.gameId);
+    if (registeredGame) {
+      if (activeArcadeGameInstance && typeof activeArcadeGameInstance.unmount === 'function') {
+        activeArcadeGameInstance.unmount();
+      }
+      activeArcadeGameInstance = registeredGame;
+      registeredGame.mount(frame, context);
+      return;
+    }
+
+    // Backward-compatible fallback for older modules that still listen for
+    // arcade:open directly.
+    overlay.dispatchEvent(new CustomEvent('arcade:open', {
+      bubbles: false,
+      detail: context,
+    }));
+  } catch (err) {
+    frame.innerHTML = '<div class="arcade-coming-soon"><p class="arcade-coming-soon-title">Game could not load</p><p class="arcade-coming-soon-sub">' + escHtml(err.message || 'Please try again later.') + '</p></div>';
+  }
 }
 
 /**
@@ -7615,6 +7854,9 @@ async function arcadeSpendToken() {
     // Notify active game modules to inject extra seconds into their own timer
     const overlay = document.getElementById('arcadeOverlay');
     if (overlay && !overlay.classList.contains('hidden')) {
+      if (activeArcadeGameInstance && typeof activeArcadeGameInstance.addTime === 'function') {
+        activeArcadeGameInstance.addTime(TOKEN_TIME_EXTENSION_SECONDS);
+      }
       overlay.dispatchEvent(new CustomEvent('arcade:addTime', {
         bubbles: false,
         detail: { seconds: TOKEN_TIME_EXTENSION_SECONDS },
@@ -7646,6 +7888,10 @@ function closeArcade() {
     bubbles: false,
     detail: { gameId: overlay.dataset.activeGameId },
   }));
+  if (activeArcadeGameInstance && typeof activeArcadeGameInstance.unmount === 'function') {
+    activeArcadeGameInstance.unmount();
+  }
+  activeArcadeGameInstance = null;
 
   // Hide time budget row until next open
   const budgetEl = document.getElementById('arcadeTimeBudget');
@@ -7937,13 +8183,5 @@ async function loadInventory() {
   <p>TaskIt! uses essential browser storage (localStorage) to keep you signed in and save your preferences. No tracking cookies. <a href="/privacy-policy.html" target="_blank" rel="noopener">Privacy Policy</a></p>
   <button class="cookie-notice-close" onclick="dismissCookieNotice()">Got it</button>
 </div>
-<!-- ===== TASKIT! ARCADE — Stage 2 game modules ===== -->
-<!-- Each file is a self-contained IIFE that listens for 'arcade:open' /     -->
-<!-- 'arcade:close' on #arcadeOverlay and boots / tears down its own game.  -->
-<script src="/js/game-hangman.js"></script>
-<script src="/js/game-wordsearch.js"></script>
-<script src="/js/game-whac-a-bug.js"></script>
-<script src="/js/game-code-breaker.js"></script>
-
 </body>
 </html>

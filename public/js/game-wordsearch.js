@@ -600,30 +600,19 @@
     render();
   }
 
-  // ── Arcade event wiring ────────────────────────────────────────────────────
+  // ── Arcade module registration ────────────────────────────────────────────
 
-  /**
-   * Attach 'arcade:open' and 'arcade:close' listeners to #arcadeOverlay
-   * once the DOM is ready.  These are the only entry/exit points for this
-   * module — all state lives in the closure above.
-   */
-  document.addEventListener('DOMContentLoaded', function () {
-    var overlay = document.getElementById('arcadeOverlay');
-    if (!overlay) return;
-
-    // Boot the word-search when the overlay opens for gameId === 'wordsearch'
-    overlay.addEventListener('arcade:open', function (e) {
-      if (e.detail.gameId !== 'wordsearch') return;
+  window.TaskItArcade.register({
+    gameId: 'wordsearch',
+    mount: function () {
       _active = true;
       startGame();
-    });
-
-    // Teardown — clear drag state in case the arcade is closed mid-drag
-    overlay.addEventListener('arcade:close', function () {
+    },
+    unmount: function () {
       if (!_active) return;
       _active   = false;
       _dragging = false;
-    });
+    },
   });
 
 }());

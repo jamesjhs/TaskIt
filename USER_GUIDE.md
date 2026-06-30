@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.20.3** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.21.3** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -366,7 +366,9 @@ Your top-XP skill also earns you a **dynamic title** shown on your profile, base
 
 ### 🕹️ TaskIt! Arcade
 
-Each of the 13 achievement badges has a corresponding **mini-game** in the TaskIt! Arcade. Once you unlock a badge, tap it in the **⭐ Progress** tab to open the Arcade and play its game. Press **Esc** or tap **↩ Back to Tasks** to return to the app at any time.
+The **TaskIt! Arcade** is an admin-managed catalogue of mini-games attached to achievement slots. Once you unlock an arcade slot, tap the game-ready badge in the **⭐ Progress** tab to open the Arcade and play. Press **Esc** or tap **↩ Back to Tasks** to return to the app at any time.
+
+Site administrators can add compatible JavaScript game modules through **Admin → Gamify → Arcade Games**. Contributor instructions are available at `/arcade-game-guide.html`.
 
 #### Daily play limit
 
@@ -484,5 +486,5 @@ Tap the **⭐ Progress** tab in the bottom navigation. You can also enable or di
 
 ---
 
-*TaskIt! v1.20.3 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*TaskIt! v1.21.3 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
 

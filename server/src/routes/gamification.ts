@@ -354,4 +354,21 @@ router.post('/arcade/spend-token', (req: Request, res: Response): void => {
   }
 });
 
+/**
+ * GET /api/gamification/arcade/games
+ * Returns enabled arcade games in unlock order.  The frontend uses this as the
+ * catalogue for achievement-card labels and dynamic game-module loading.
+ */
+router.get('/arcade/games', (_req: Request, res: Response): void => {
+  const rows = db.prepare(`
+    SELECT id, achievement_key AS achievementKey, title, subtitle, icon,
+           game_id AS gameId, script_path AS scriptPath, sort_order AS sortOrder,
+           enabled, updated_at AS updatedAt
+    FROM arcade_games
+    WHERE enabled = 1
+    ORDER BY sort_order ASC, title ASC
+  `).all();
+  res.json(rows);
+});
+
 export default router;

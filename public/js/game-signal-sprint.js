@@ -601,8 +601,8 @@
   }
 
   /**
-   * Build the replay, submit, hint, and mute controls for an active challenge.
-   * Replay and hint availability follow their current limits and disabled states.
+   * Build the replay, submit, and hint controls for an active challenge. Replay
+   * and hint availability follow their current limits and disabled states.
    */
   function buildControls() {
     var wrap = document.createElement('div');
@@ -632,19 +632,9 @@
     hint.disabled = resultMode || playing || hintUsed || lives <= 1;
     hint.addEventListener('click', buyHint);
 
-    var mute = document.createElement('button');
-    mute.className = 'ss-btn ss-btn--light';
-    mute.textContent = muted ? 'Sound On' : 'Mute';
-    mute.addEventListener('click', function () {
-      muted = !muted;
-      if (muted) clearTimers();
-      render();
-    });
-
     wrap.appendChild(replay);
     wrap.appendChild(submit);
     wrap.appendChild(hint);
-    wrap.appendChild(mute);
     return wrap;
   }
 

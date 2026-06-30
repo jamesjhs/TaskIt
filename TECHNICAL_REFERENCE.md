@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.20.3**
+**Version 1.21.3**
 **Author:** J Rowson  
 **Generated:** 2026-05-23
 
@@ -129,15 +129,17 @@ TaskIt/
 │   ├── sitemap.xml             # Public-page XML sitemap
 │   ├── llms.txt                # AI crawler summary / discovery hints
 │   ├── howto.html              # Static how-to page
+│   ├── arcade-game-guide.html  # Contributor guide for TaskItArcade game modules
 │   ├── privacy-policy.html     # Static privacy policy page
 │   ├── user-guide.html         # Static user guide page
 │   └── js/
 │       ├── version.js          # Fetches /api/version and populates .page-version elements
 │       ├── qrcode.js           # QR code generator library
-│       ├── game-hangman.js     # Hangman arcade mini-game (arcade unlock feature)
+│       ├── game-hangman.js     # Hangman arcade mini-game (TaskItArcade module)
 │       ├── game-wordsearch.js  # Wordsearch arcade mini-game
 │       ├── game-code-breaker.js # Code Breaker arcade mini-game
 │       └── game-whac-a-bug.js  # Whac-a-Bug arcade mini-game
+│       └── games/              # Optional folder for contributor game modules
 │   └── icons/                  # PWA icons (72×72 to 512×512 PNG)
 │
 ├── android/                    # Android WebView wrapper app (Gradle/Kotlin)
@@ -583,6 +585,23 @@ Seeded on first run:
 | Key | Default | Description |
 |---|---|---|
 | `arcade_daily_play_minutes` | `'5'` | Global daily arcade play limit (minutes). Applied to all users. Admin-editable via `PUT /api/admin/arcade-settings`. |
+
+#### `arcade_games`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | UUID for the admin registration |
+| `achievement_key` | TEXT UNIQUE NOT NULL | Achievement card/slot where the game is displayed |
+| `title` | TEXT NOT NULL | Display title in Progress and Arcade overlay |
+| `subtitle` | TEXT NOT NULL | Overlay subtitle |
+| `icon` | TEXT NOT NULL | Short text/emoji for the Arcade header |
+| `game_id` | TEXT UNIQUE NOT NULL | Must match `window.TaskItArcade.register({ gameId })` |
+| `script_path` | TEXT NULL | Safe `/js/...js` path selected by admin |
+| `sort_order` | INTEGER NOT NULL DEFAULT 0 | Unlock order for enabled games |
+| `enabled` | INTEGER NOT NULL DEFAULT 1 | 1 = visible in user arcade catalogue |
+| `created_at` | INTEGER NOT NULL | Unix ms |
+| `updated_at` | INTEGER NOT NULL | Unix ms; used for dynamic script cache busting |
+
+The table is seeded with the four implemented games and disabled placeholder slots. `INSERT OR IGNORE` preserves later admin edits.
 
 #### `task_reminders_sent`
 | Column | Type | Notes |
@@ -1064,6 +1083,7 @@ Three handlers:
 | `GET /inventory` | Returns full `user_inventory` joined with collectible and category details, ordered by `acquired_at DESC` |
 | `POST /inventory/claim` | Calls `getPendingDrop()` (non-destructive check), validates collectible still active, then atomically `claimPendingDrop()` + INSERT `user_inventory`; 404 if no pending drop; 410 if dropped item was archived |
 | `POST /inventory/recycle` | Calls `getPendingDrop()`, consumes it via `claimPendingDrop()`, awards `recycle_drop` XP via `awardEventXp()`; 404 if no pending drop |
+| `GET /arcade/games` | Returns enabled rows from `arcade_games` ordered by `sort_order`; frontend uses this to build `ARCADE_GAME_ORDER`, `ARCADE_GAMES`, and dynamic script loading metadata |
 | `PATCH /arcade/daily-limit` | Validates `minutes` is integer 1–180; UPDATE `users.daily_play_minutes` |
 | `POST /arcade/spend-token` | Atomic DB transaction: `UPDATE users SET arcade_tokens = arcade_tokens - 1 WHERE id = ? AND arcade_tokens > 0`; returns new balance; 400 if no tokens |
 
@@ -1101,6 +1121,11 @@ Requires both `authMiddleware` + `adminMiddleware`.
 | `PUT /smtp` | Updates SMTP settings (empty pass = keep existing) |
 | `GET /turnstile` | Returns Turnstile settings (omits `secret_key` for security) |
 | `PUT /turnstile` | Updates Turnstile site key, secret key, and enabled status |
+| `GET /arcade-games` | Lists all arcade game registrations for admin management |
+| `POST /arcade-games` | Creates an arcade game registration; validates achievement key, game ID, sort order, enabled flag, and safe script path |
+| `PATCH /arcade-games/:id` | Updates arcade game metadata/configuration |
+| `DELETE /arcade-games/:id` | Deletes an arcade game registration |
+| `GET /arcade-game-files` | Scans `public/js` for compatible game files (`game-*.js` or files under `public/js/games/`) |
 | `GET /arcade-settings` | Returns `{ arcadeDailyPlayMinutes }` from `site_settings` |
 | `PUT /arcade-settings` | Validates `arcadeDailyPlayMinutes` is integer 1–180; writes to `site_settings` **and** runs `UPDATE users SET daily_play_minutes = ?` so the change is applied to all users immediately |
 | `GET /users` | All users ordered by `created_at`; response includes `is_locked`, `open_reports`, `is_original_admin` |
@@ -1362,7 +1387,11 @@ For unauthenticated users, the top of the file renders the public marketing / la
 | `currentDetailTask` | object\|null | `null` | Task currently open in the detail modal |
 | `blockedUserIds` | Set | `new Set()` | Set of user IDs the current user has blocked |
 | `gamificationEnabled` | boolean | `false` | Mirrors `currentUser.gamification_enabled` in-memory |
-| `unlockedArcadeKeys` | Set | `new Set()` | Keys from `ARCADE_GAME_ORDER` that the current user may open. Populated by achievement **count** (N earned achievements → first N games in order), not by specific achievement identity. Admins get all keys. |
+| `unlockedArcadeKeys` | Set | `new Set()` | Keys from fetched `ARCADE_GAME_ORDER` that the current user may open. Populated by achievement **count** (N earned achievements → first N enabled games in order), not by specific achievement identity. Admins get all keys. |
+| `ARCADE_GAME_ORDER` | array | `[]` | Populated from `GET /api/gamification/arcade/games`; enabled achievement keys in unlock order |
+| `ARCADE_GAMES` | object | `{}` | Populated from the same endpoint; maps achievement key to title/icon/subtitle/gameId/scriptPath metadata |
+| `arcadeLoadedScripts` | Map | `new Map()` | Tracks dynamically loaded game scripts by game ID/path/update timestamp |
+| `activeArcadeGameInstance` | object\|null | `null` | Registered `TaskItArcade` module currently mounted in the Arcade frame |
 | `loginMode` | string | `'magic'` | `'magic'` or `'password'` — auth form mode |
 | `_otpSessionId` | string\|null | `null` | OTP session ID from `/api/auth/login` response |
 | `_resetToken` | string\|null | `null` | Password reset token from URL |
@@ -1534,6 +1563,11 @@ For unauthenticated users, the top of the file renders the public marketing / la
 | `sendFeedbackReply(id)` | POST `/api/admin/feedback/:id/reply` |
 | `loadXpEvents()` | GET `/api/admin/xp-events` — rendered in Gamify tab |
 | `saveXpEvent(key)` | PATCH `/api/admin/xp-events/:key` |
+| `loadAdminArcadeGames()` | GET `/api/admin/arcade-games`, `/api/admin/arcade-game-files`, and `/api/gamification/achievements`; renders Arcade Games admin card |
+| `renderAdminArcadeGameControls()` | Populates achievement/script selects and game registration list |
+| `adminSaveArcadeGame()` | POST/PATCH arcade game registration from Admin > Gamify > Arcade Games |
+| `adminDeleteArcadeGame(id)` | DELETE arcade game registration |
+| `adminTestArcadeGame(achievementKey)` | Refreshes catalogue and opens the selected game as an admin preview |
 
 #### Profile / Settings
 | Function | Description |
@@ -1558,10 +1592,14 @@ For unauthenticated users, the top of the file renders the public marketing / la
 #### Arcade
 | Function | Description |
 |---|---|
-| `openArcade(badgeKey)` | Opens arcade modal; renders game based on badge key; authorises via `unlockedArcadeKeys` (count-based: N achievements → first N games in `ARCADE_GAME_ORDER`); calls `POST /api/gamification/arcade/spend-token` before launching |
-| `closeArcade()` | Hides arcade modal |
+| `setArcadeCatalogue(games)` | Converts enabled rows from `/gamification/arcade/games` into `ARCADE_GAME_ORDER` and `ARCADE_GAMES` |
+| `arcadeScriptSrc(game)` | Builds a dynamic script URL with a version query from `updatedAt` |
+| `arcadeEnsureGameScript(game)` | Lazily injects the configured game script once per game/path/version |
+| `openArcade(badgeKey)` | Opens arcade modal; authorises via `unlockedArcadeKeys`; loads the configured script; calls `window.TaskItArcade.get(gameId).mount(frame, context)` |
+| `arcadeSpendToken()` | POST `/api/gamification/arcade/spend-token`; updates token balance and calls active game `addTime(seconds)` when available |
+| `closeArcade()` | Dispatches legacy `arcade:close`, calls active game `unmount()`, clears timers, and hides the modal |
 
-**Unlock model:** `ARCADE_GAME_ORDER` is an ordered array of all game keys. A user with N total achievements earned (any) may play the first N games in this list — the *identity* of the achievements is irrelevant. Adding a new entry to `ARCADE_GAME_ORDER` at position N automatically enables it for all users who already have ≥ N achievements (no DB change needed).
+**Unlock model:** the server returns enabled games from `arcade_games` ordered by `sort_order`. A user with N total achievements earned (any) may play the first N enabled games in this list; the identity of the achievements is irrelevant. Admins can manage order, metadata, enabled state, and script file from **Admin > Gamify > Arcade Games**.
 
 ---
 
@@ -1708,10 +1746,24 @@ Expiry: 7 days (normal) or 30 days (`rememberMe = true`).
 |---|---|
 | `version.js` | Fetches `/api/version`, populates all `.page-version` elements with the version string |
 | `qrcode.js` | Third-party QR code generator library — exposes global `QRCode` constructor |
-| `game-hangman.js` | Hangman mini-game implementation (loaded lazily when arcade is opened with a hangman badge) |
-| `game-wordsearch.js` | Word search mini-game implementation (loaded lazily for wordsearch badge) |
-| `game-code-breaker.js` | Code Breaker mini-game — number-guessing puzzle with colour-coded hints (loaded lazily for code-breaker badge) |
-| `game-whac-a-bug.js` | Whac-a-Bug mini-game — timed reaction game; tap bugs before they disappear (loaded lazily for whac-a-bug badge) |
+| `game-hangman.js` | Hangman mini-game implementation; registers with `window.TaskItArcade.register({ gameId:'hangman', mount, unmount })` |
+| `game-wordsearch.js` | Word search mini-game implementation; registers with `TaskItArcade` |
+| `game-code-breaker.js` | Code Breaker mini-game — colour-code puzzle; registers with `TaskItArcade` |
+| `game-whac-a-bug.js` | Whac-a-Bug mini-game — timed reaction game; implements `addTime(seconds)` for token extensions |
+| `games/*.js` | Optional contributor game modules listed by Admin > Gamify > Arcade Games |
+
+Arcade game module contract:
+
+```js
+window.TaskItArcade.register({
+  gameId: 'my_game',
+  mount(frame, context) {},
+  unmount() {},
+  addTime(seconds) {}, // optional
+});
+```
+
+Game scripts are loaded after the app is already running, so modules must not rely on `DOMContentLoaded` for startup. The detailed contributor workflow lives at `/arcade-game-guide.html`.
 
 ---
 
@@ -1802,7 +1854,7 @@ Both functions compare the **overall level** (computed from total XP across all 
 | `streak_7` | Lucky Streak | Recurring task streak of 7 | Lucky Draw *(in development, slot 12)* |
 | `streak_30` | Unstoppable | Recurring task streak of 30 | *(in development, slot 13)* |
 
-**Arcade unlock model:** games unlock by achievement *count*, not identity. A user with N achievements earned (any) may play the first N games in `ARCADE_GAME_ORDER`. The "Arcade Game" column shows which achievement card the game is displayed on; the user need not have earned that specific achievement — only enough achievements in total. When a new game is released at slot N, all users with ≥ N achievements gain access automatically.  
+**Arcade unlock model:** games unlock by achievement *count*, not identity. A user with N achievements earned (any) may play the first N enabled games returned from `arcade_games` by `sort_order`. The "Arcade Game" column shows the seeded/default slot; admins can change titles, enabled state, order, and script file from **Admin > Gamify > Arcade Games**. When a new enabled game is released at slot N, all users with >= N achievements gain access automatically.  
 Each achievement card displays the associated game title so users know what they are working toward. A purple "game available" badge is shown on cards where the slot is accessible but the specific achievement is not yet earned.
 
 The `skill_level_5` and `skill_level_10` achievements check the user's **overall level** (computed from total XP across all skills), not any individual skill's level.
@@ -2139,5 +2191,5 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.20.3*
+*End of Technical Reference Manual — TaskIt! v1.21.3*
 

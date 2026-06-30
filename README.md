@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.20.3** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.21.3** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -37,6 +37,7 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - Admin panel: stats dashboard, SMTP configuration, locked accounts, user reports, feedback management
 - **Database encryption** — full SQLite file encryption at rest via SQLCipher (set `DB_ENCRYPTION_KEY` env var)
 - **Gamification Engine** — opt-in XP system, overall level progression, XP breakdown by skill, dynamic titles, personal achievements, streak tracking, and freeze mechanic (see below)
+- **Admin-managed Arcade games** — arcade games are registered through Admin > Gamify > Arcade Games, loaded dynamically from compatible JavaScript modules, and documented for contributors in `/arcade-game-guide.html`
 - **Friends & Leaderboards** — connect with other users via invite link, QR code, or username + friend key; compete on XP leaderboards per group and across friends
 - **Persistent login** — optional "Remember me" session storage (30-day JWT in localStorage vs session-only)
 - **Sporadic Tasks** — maintenance tasks with no fixed schedule that reappear after completion and show how long ago they were last done in friendly format with dd/mm/yyyy date (e.g. Haircut, Car service). Fully editable like regular tasks: change title, type, group, delete, or archive. Always visible at the top of the task list, collapsed by default
@@ -119,6 +120,13 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.21.3
+
+- **🎮 Dynamic Arcade game catalogue** — Arcade games are now stored in an admin-managed `arcade_games` catalogue instead of hard-coded arrays and script tags.
+- **🧩 Game module wrapper contract** — game files now register with `window.TaskItArcade.register({ gameId, mount, unmount, addTime })`, allowing compatible JavaScript files to be enabled from Admin.
+- **📘 Arcade creator guide** — added `/arcade-game-guide.html`, linked from Admin > Gamify > Arcade Games, with implementation, testing, design, and AI-agent guidance.
+- **🔢 Version bump** — package metadata, pages, and documentation updated to 1.21.3.
 
 ### v1.20.3
 
@@ -531,6 +539,13 @@ Open `http://localhost:3000` after starting the server. No separate build step n
 | POST   | /api/admin/feedback/:id/reply            | Send in-app reply to user            |
 | GET    | /api/admin/xp-events                     | List XP event catalogue              |
 | PATCH  | /api/admin/xp-events/:key                | Update XP event value/enabled        |
+| GET    | /api/admin/arcade-games                  | List admin-managed arcade games      |
+| POST   | /api/admin/arcade-games                  | Register an arcade game              |
+| PATCH  | /api/admin/arcade-games/:id              | Update arcade game metadata/config   |
+| DELETE | /api/admin/arcade-games/:id              | Delete arcade game registration      |
+| GET    | /api/admin/arcade-game-files             | List compatible arcade JS files      |
+| GET    | /api/admin/arcade-settings               | Read global arcade play limit        |
+| PUT    | /api/admin/arcade-settings               | Update global arcade play limit      |
 | GET    | /api/admin/collectible-categories        | List active collectible categories   |
 | POST   | /api/admin/collectible-categories        | Create collectible category          |
 | PATCH  | /api/admin/collectible-categories/:id    | Rename collectible category          |
@@ -598,6 +613,7 @@ User passwords are **never stored in plaintext**. They are hashed using **bcrypt
 ### Version 1.16.2 (2026-05-09)
 
 **Arcade — achievement-count game unlocking:**
+- **Current workflow note:** As of v1.21.3, the unlock order is stored in the admin-managed `arcade_games` database catalogue rather than a hard-coded frontend array. Use **Admin > Gamify > Arcade Games** to change order, enabled state, metadata, or script file.
 - **`ARCADE_GAME_ORDER`** — a new explicit ordered array that defines the canonical unlock sequence for all arcade games. Position N in the list = game N+1 (1-indexed).
 - **Count-based unlock logic** — a user with N total achievements earned (any achievements) may play the first N games in `ARCADE_GAME_ORDER`. The *identity* of the achievements does not matter, only the count. This ensures users who unlock achievements faster than games are created always have games to play.
 - **Automatic catch-up on new game creation** — when a new game is added to `ARCADE_GAME_ORDER` at position N, every user with ≥ N achievements gains access immediately with no database changes.

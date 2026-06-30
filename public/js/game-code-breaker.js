@@ -434,26 +434,19 @@
     if (replayEl) replayEl.style.display = 'inline-block';
   }
 
-  // ── Arcade event wiring ───────────────────────────────────────────────────
+  // ── Arcade module registration ───────────────────────────────────────────
 
-  document.addEventListener('DOMContentLoaded', function () {
-    var overlay = document.getElementById('arcadeOverlay');
-    if (!overlay) return;
-
-    overlay.addEventListener('arcade:open', function (e) {
-      if (e.detail.gameId !== 'code_breaker') return;
+  window.TaskItArcade.register({
+    gameId: 'code_breaker',
+    mount: function () {
       _active = true;
       startGame();
-    });
-
-    overlay.addEventListener('arcade:close', function () {
+    },
+    unmount: function () {
       if (!_active && !_over) return;
       _active = false;
       _over   = true; // prevent any pending interaction from firing
-    });
-
-    // Code Breaker has no countdown timer, so arcade:addTime only extends
-    // the daily budget (handled in the shell) — no local action needed here.
+    },
   });
 
 }());

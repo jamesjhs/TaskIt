@@ -368,10 +368,56 @@ db.exec(`
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+
+  -- Arcade: admin-managed game catalogue.  The game module itself is a JS
+  -- file under public/js; this table controls display metadata, unlock order,
+  -- and whether a game is available to users.
+  CREATE TABLE IF NOT EXISTS arcade_games (
+    id TEXT PRIMARY KEY,
+    achievement_key TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    subtitle TEXT NOT NULL,
+    icon TEXT NOT NULL,
+    game_id TEXT UNIQUE NOT NULL,
+    script_path TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
 `);
 
 // Seed site-wide defaults (INSERT OR IGNORE so existing values are never overwritten)
 db.prepare("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('arcade_daily_play_minutes', '5')").run();
+
+// Seed the existing arcade catalogue. INSERT OR IGNORE preserves any admin edits
+// made after the first migration run.
+{
+  const now = Date.now();
+  const seedArcadeGame = db.prepare(`
+    INSERT OR IGNORE INTO arcade_games
+      (id, achievement_key, title, subtitle, icon, game_id, script_path, sort_order, enabled, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const defaultArcadeGames = [
+    { achievementKey: 'first_task',      title: 'Productivity Hangman', subtitle: "Guess the word - don't lose your head!",             icon: '🥇', gameId: 'hangman',      scriptPath: '/js/game-hangman.js',       sortOrder: 1,  enabled: 1 },
+    { achievementKey: 'task_10',         title: 'Job Search',            subtitle: 'Find all six TaskIt! tools hidden in the grid!',    icon: '🚀', gameId: 'wordsearch',   scriptPath: '/js/game-wordsearch.js',    sortOrder: 2,  enabled: 1 },
+    { achievementKey: 'task_50',         title: 'Whac-A-Bug',            subtitle: 'Squash the bugs before they crash the system!',     icon: '🐛', gameId: 'whac_a_bug',   scriptPath: '/js/game-whac-a-bug.js',    sortOrder: 3,  enabled: 1 },
+    { achievementKey: 'task_100',        title: 'Code Breaker',          subtitle: 'Crack the secret 4-colour code in 10 attempts!',    icon: '🔐', gameId: 'code_breaker', scriptPath: '/js/game-code-breaker.js',   sortOrder: 4,  enabled: 1 },
+    { achievementKey: 'task_500',        title: 'Legendary Quest',       subtitle: 'Conquer the leaderboard!',                         icon: '👑', gameId: 'legend',       scriptPath: null,                         sortOrder: 5,  enabled: 0 },
+    { achievementKey: 'detail_oriented', title: 'Memory Matrix',         subtitle: 'Match every task-card pair!',                      icon: '📝', gameId: 'memory',       scriptPath: null,                         sortOrder: 6,  enabled: 0 },
+    { achievementKey: 'early_bird',      title: 'Early Bird Dash',       subtitle: 'Flap your way past the deadlines!',                 icon: '🐦', gameId: 'bird',         scriptPath: null,                         sortOrder: 7,  enabled: 0 },
+    { achievementKey: 'type_explorer',   title: "Explorer's Maze",       subtitle: 'Navigate through the task maze!',                  icon: '🗺️', gameId: 'maze',         scriptPath: null,                         sortOrder: 8,  enabled: 0 },
+    { achievementKey: 'skill_level_5',   title: 'Bullseye!',             subtitle: 'Hit every target with precision!',                 icon: '🎯', gameId: 'target',       scriptPath: null,                         sortOrder: 9,  enabled: 0 },
+    { achievementKey: 'skill_level_10',  title: 'Quiz Master',           subtitle: 'Test your TaskIt! knowledge!',                     icon: '🎓', gameId: 'quiz',         scriptPath: null,                         sortOrder: 10, enabled: 0 },
+    { achievementKey: 'streak_3',        title: 'Hat Trick',             subtitle: 'Follow the hat - can you find the ball?',           icon: '🎩', gameId: 'hat_trick',    scriptPath: null,                         sortOrder: 11, enabled: 0 },
+    { achievementKey: 'streak_7',        title: 'Lucky Draw',            subtitle: 'Roll the dice and chase the lucky streak!',         icon: '🍀', gameId: 'lucky_draw',   scriptPath: null,                         sortOrder: 12, enabled: 0 },
+    { achievementKey: 'streak_30',       title: 'Unstoppable Train',     subtitle: 'Keep the train running - no stops!',               icon: '🚂', gameId: 'train',        scriptPath: null,                         sortOrder: 13, enabled: 0 },
+  ];
+  for (const g of defaultArcadeGames) {
+    seedArcadeGame.run(randomUUID(), g.achievementKey, g.title, g.subtitle, g.icon, g.gameId, g.scriptPath, g.sortOrder, g.enabled, now, now);
+  }
+}
 
 // Runtime migrations — add columns if they don't exist yet
 const VALID_IDENTIFIER = /^[a-zA-Z_][a-zA-Z0-9_]*$/;

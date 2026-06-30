@@ -390,34 +390,20 @@
     }
   }
 
-  // ── Arcade event wiring ────────────────────────────────────────────────────
+  // ── Arcade module registration ─────────────────────────────────────────────
 
-  /**
-   * Attach 'arcade:open' and 'arcade:close' listeners to #arcadeOverlay
-   * after the DOM is ready.  These handlers are the sole entry/exit points
-   * for the hangman module.
-   */
-  document.addEventListener('DOMContentLoaded', function () {
-    const overlay = document.getElementById('arcadeOverlay');
-    if (!overlay) return;
-
-    // Boot the game when the overlay opens for gameId === 'hangman'
-    overlay.addEventListener('arcade:open', function (e) {
-      if (e.detail.gameId !== 'hangman') return;
+  window.TaskItArcade.register({
+    gameId: 'hangman',
+    mount: function () {
       _active = true;
       startGame();
-      // Register physical keyboard support for the duration of this session
       document.addEventListener('keydown', onKeyDown);
-    });
-
-    // Teardown — remove the keyboard listener so it cannot ghost-fire after
-    // the arcade is closed.  This handler fires for ALL game closes, but
-    // removeEventListener is a no-op if onKeyDown was never added.
-    overlay.addEventListener('arcade:close', function () {
+    },
+    unmount: function () {
       if (!_active) return;
       _active = false;
       document.removeEventListener('keydown', onKeyDown);
-    });
+    },
   });
 
 }());

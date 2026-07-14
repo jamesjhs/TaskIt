@@ -3784,7 +3784,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const list = document.getElementById('significantly-overdue-list');
       const arrow = document.getElementById('significantly-overdue-arrow');
       const isOpen = list.style.display !== 'none';
-      list.style.display = isOpen ? 'none' : 'block';
+      list.style.display = isOpen ? 'none' : 'flex';
       if (arrow) arrow.textContent = isOpen ? '▶' : '▼';
     });
   }
@@ -3794,7 +3794,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const list = document.getElementById('sporadic-list');
       const arrow = document.getElementById('sporadic-arrow');
       const isOpen = list.style.display !== 'none';
-      list.style.display = isOpen ? 'none' : 'block';
+      list.style.display = isOpen ? 'none' : 'flex';
       if (arrow) arrow.textContent = isOpen ? '▶' : '▼';
     });
   }
@@ -3804,7 +3804,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const list = document.getElementById('goals-list');
       const arrow = document.getElementById('goals-arrow');
       const isOpen = list.style.display !== 'none';
-      list.style.display = isOpen ? 'none' : 'block';
+      list.style.display = isOpen ? 'none' : 'flex';
       if (arrow) arrow.textContent = isOpen ? '▶' : '▼';
     });
   }

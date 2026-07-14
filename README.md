@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.21.5** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.21.6** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -120,6 +120,11 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.21.6
+
+- **🐛 Uniform task-card spacing** — Sporadic Tasks, Long-term Goals, and significantly overdue task sections now reopen as column layouts, preserving the same 12px card separation used by the far-future task section.
+- **🔢 Version bump** — package metadata, lockfiles, manifest cache keys, and documentation updated to 1.21.6.
 
 ### v1.21.5
 

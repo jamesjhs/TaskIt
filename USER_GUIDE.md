@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.21.5** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.21.6** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -109,6 +109,7 @@ You can also tap **`+`**, choose **📋 New Task**, and tick the **Sporadic (mai
 **How they work:**
 - Sporadic tasks appear in the **Sporadic Tasks** section at the top of the Tasks page, always visible and collapsed by default.
 - The section shows **(0)** when you have no sporadic tasks, so it's always easy to find.
+- Cards in this section use the same vertical spacing as regular task sections, including tasks due more than two weeks from now.
 - Each card shows how long ago the task was last completed (e.g. *3 months ago (15/04/2026)*) or *Never* if it hasn't been done yet. Cards overdue (90+ days) are highlighted.
 - Tap **✓ Mark done** to record a completion — the card resets and the timer starts again. You earn XP just as you would completing a regular task.
 - Tap **📅 Edit** to update the task — you can change the title, description, task type, group assignment, set a new "Last Completed" date, delete, or archive the sporadic task at any time.
@@ -128,6 +129,7 @@ You can also tap **`+`**, choose **📋 New Task**, and tick the **Long-term Goa
 **The Long-term Goals section:**
 - Sits at the **bottom of the Tasks page**, collapsed by default, showing **(0)** when empty.
 - Tap the header to expand it and see all your goals.
+- Goal cards use the same vertical spacing as the rest of the Tasks page, so expanded sections scan consistently.
 - Each goal card shows the title, optional notes, group badge, and XP multiplier (if set).
 
 **Converting a goal to a deadline task:**
@@ -486,5 +488,5 @@ Tap the **⭐ Progress** tab in the bottom navigation. You can also enable or di
 
 ---
 
-*TaskIt! v1.21.5 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*TaskIt! v1.21.6 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
 

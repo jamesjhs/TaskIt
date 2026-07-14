@@ -3372,7 +3372,7 @@ body.arcade-open { overflow: hidden; }
 .sporadic-tasks {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .sporadic-task-card {

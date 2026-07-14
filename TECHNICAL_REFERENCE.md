@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.21.5**
+**Version 1.21.6**
 **Author:** J Rowson  
 **Generated:** 2026-05-23
 
@@ -1485,7 +1485,7 @@ For unauthenticated users, the top of the file renders the public marketing / la
 | Function | Description |
 |---|---|
 | `loadTasks()` | GET `/api/tasks` with current filter params; populates `tasksMap` |
-| `renderTasks(tasks)` | Renders task cards sorted by urgency/due-date |
+| `renderTasks(tasks)` | Renders task cards sorted by urgency/due-date; far-future cards use the same 12px vertical separation as other card lists |
 | `statusMeta(status)` | Returns `{ label, cls }` for a status string |
 | `toggleFilterPanel()` | Expands/collapses filter panel |
 | `updateFilterBadge()` | Updates active-filter count badge |
@@ -1518,6 +1518,8 @@ For unauthenticated users, the top of the file renders the public marketing / la
 | `saveRecurChange()` | PATCH recurrence fields |
 | `toggleRecurFields()` | Shows/hides recur interval/unit fields based on checkbox |
 | `setNotesPanel(open)` | Opens or closes the collapsible Notes panel; updates `aria-expanded` and toggle icon |
+
+Collapsible task sections (`significantly-overdue-list`, `sporadic-list`, and `goals-list`) are reopened with `display: flex` so their shared `.sporadic-tasks` column gap remains active. Keep this behavior if adding new card sections, otherwise vertical spacing will drift from regular task cards.
 | `toggleNotesPanel()` | Toggles the Notes panel open/closed; focuses the textarea when opening |
 
 #### Gamification
@@ -2191,5 +2193,5 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.21.5*
+*End of Technical Reference Manual — TaskIt! v1.21.6*
 

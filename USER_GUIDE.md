@@ -83,7 +83,7 @@ Click any task card to open the detail panel. From here you can:
 - **Delete** it permanently — note that for group tasks, only the task creator or a group admin can delete; other group members can edit all other details but not delete
 - Or use the **bin icon** at the top-right of a task card to delete directly from the list; TaskIt asks for confirmation first.
 
-The browser/PWA **Back** button is app-aware: it closes an open task detail panel or task editor first, then steps back through previous TaskIt! pages instead of immediately closing the app or leaving the site.
+The browser/PWA **Back** button is app-aware: it closes the active popup first, working from the topmost popup down if several are open, then steps back through previous TaskIt! pages instead of immediately closing the app or leaving the site.
 
 ### ⏱ Sprint Timer & Double XP
 

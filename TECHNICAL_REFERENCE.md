@@ -1600,6 +1600,8 @@ Collapsible task sections (`significantly-overdue-list`, `sporadic-list`, and `g
 | `writeAppHistory(state, options)` | Pushes or replaces lightweight TaskIt! app state in browser history after login |
 | `restoreAppState(state)` | Restores a page, task detail panel, or task editor from `popstate` history |
 | `showPage(page, options)` | Toggles the main SPA pages and writes page state unless history updates are skipped |
+| `initOverlayHistoryTracking()` | Observes `.modal-overlay` visibility changes and pushes overlay stack states into browser history |
+| `closeTopOpenOverlay()` | Closes the most recently opened visible popup before app-page history is restored |
 | `openDetail(task, options)` | Opens the task detail modal and pushes `{ detailTaskId }` into history |
 | `closeDetailModal(options)` | Closes the task detail modal, using `history.back()` when it represents the current history state |
 | `openTaskModal(task, options)` | Opens the task create/edit modal and pushes modal state into history |
@@ -1719,7 +1721,7 @@ The SPA has 5 main pages toggled by `showPage(page)`:
 
 Additionally there are overlay pages: `landingPage`, `authPage`.
 
-Browser history is part of the app state after authentication. `showPage(page)` pushes or replaces `{ app:'taskit', page }`; task details add `{ detailTaskId }`; task create/edit modals add `{ modal:'task', modalTaskId }`. The global `popstate` listener calls `restoreAppState()` so Back/Forward closes overlays or returns to previous TaskIt! pages before the browser leaves the app shell.
+Browser history is part of the app state after authentication. `showPage(page)` pushes or replaces `{ app:'taskit', page }`; task details add `{ detailTaskId }`; task create/edit modals add `{ modal:'task', modalTaskId }`; other `.modal-overlay` popups add an `overlays` stack. The global `popstate` listener closes the topmost visible overlay before calling `restoreAppState()`, so Back/Forward unwinds popup windows before returning to previous TaskIt! pages or leaving the app shell.
 
 ---
 

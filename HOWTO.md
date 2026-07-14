@@ -286,7 +286,7 @@ Click any task card to open the **Task Detail** panel, where you can:
 - **Toggle Archive** – hide/unhide the task from the main view
 - **Delete** the task permanently — for group tasks, only the task creator or a group admin can delete; other group members can edit all other details but cannot delete
 
-The browser/PWA **Back** button is app-aware: it closes an open task detail panel or task editor first, then steps back through previous TaskIt! pages instead of immediately closing the app or leaving the site.
+The browser/PWA **Back** button is app-aware: it closes the active popup first, working from the topmost popup down if several are open, then steps back through previous TaskIt! pages instead of immediately closing the app or leaving the site.
 
 #### ⏱ Sprint timer (double XP)
 

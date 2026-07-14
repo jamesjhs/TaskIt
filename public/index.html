@@ -2545,6 +2545,9 @@ let _startTaskInFlight = false;
 let _lastRenderInput = [];
 const APP_PAGES = ['tasks', 'groups', 'profile', 'admin', 'progress'];
 let currentAppPage = 'tasks';
+let openOverlayStack = [];
+let overlayHistoryObserver = null;
+let suppressOverlayHistory = false;
 
 // ========== In-tab popup reminder window constants ==========
 const POPUP_WINDOW_7D_MIN_MS  = 6  * 24 * 3600000;
@@ -3077,6 +3080,7 @@ function initApp() {
   document.getElementById('landingPage').classList.add('hidden');
   document.getElementById('authPage').classList.add('hidden');
   document.getElementById('appPage').classList.remove('hidden');
+  initOverlayHistoryTracking();
   if (currentUser) {
     document.getElementById('profileUsername').textContent = currentUser.username;
     document.getElementById('profileEmail').textContent = currentUser.email;
@@ -3305,14 +3309,92 @@ function writeAppHistory(state, options = {}) {
   history[method](nextState, '', appUrlForState(nextState));
 }
 
+function isOverlayOpen(el) {
+  return !!(el && el.classList && el.classList.contains('modal-overlay') && !el.classList.contains('hidden'));
+}
+
+function getOpenOverlayIds() {
+  const openIds = Array.from(document.querySelectorAll('.modal-overlay'))
+    .filter(isOverlayOpen)
+    .map(el => el.id)
+    .filter(Boolean);
+  openOverlayStack = openOverlayStack.filter(id => openIds.includes(id));
+  openIds.forEach(id => {
+    if (!openOverlayStack.includes(id)) openOverlayStack.push(id);
+  });
+  return openOverlayStack.slice();
+}
+
+function isOverlayRepresentedInHistory(id) {
+  const state = history.state || {};
+  return (id === 'taskModal' && state.modal === 'task') ||
+    (id === 'taskDetailModal' && !!state.detailTaskId) ||
+    (Array.isArray(state.overlays) && state.overlays.includes(id));
+}
+
+function pushOverlayHistory(id) {
+  if (suppressOverlayHistory || !token || !currentUser || !id || isOverlayRepresentedInHistory(id)) return;
+  const currentState = history.state && history.state.app === 'taskit' ? history.state : {};
+  const overlays = getOpenOverlayIds();
+  writeAppHistory({
+    ...currentState,
+    page: currentAppPage || currentState.page || 'tasks',
+    overlays,
+    overlayId: id,
+  });
+}
+
+function closeOverlayById(id) {
+  const el = document.getElementById(id);
+  if (!isOverlayOpen(el)) return false;
+  suppressOverlayHistory = true;
+  try {
+    if (id === 'taskModal') closeTaskModal({ updateHistory: false });
+    else if (id === 'taskDetailModal') closeDetailModal({ updateHistory: false });
+    else if (id === 'startTaskModal') closeStartTaskModal();
+    else if (id === 'lootDropModal') closeLootDropModal();
+    else if (id === 'pwaInstallModal') dismissPwaInstallPrompt();
+    else if (id === 'gamifOptInModal') el.classList.add('hidden');
+    else el.classList.add('hidden');
+  } finally {
+    suppressOverlayHistory = false;
+    openOverlayStack = openOverlayStack.filter(overlayId => overlayId !== id);
+  }
+  return true;
+}
+
+function closeTopOpenOverlay() {
+  const openIds = getOpenOverlayIds();
+  const topId = openIds[openIds.length - 1];
+  return topId ? closeOverlayById(topId) : false;
+}
+
+function initOverlayHistoryTracking() {
+  if (overlayHistoryObserver) return;
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    if (isOverlayOpen(el) && el.id && !openOverlayStack.includes(el.id)) openOverlayStack.push(el.id);
+  });
+  overlayHistoryObserver = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+      const el = mutation.target;
+      if (!el || !el.id || !el.classList || !el.classList.contains('modal-overlay')) return;
+      if (isOverlayOpen(el)) {
+        if (!openOverlayStack.includes(el.id)) openOverlayStack.push(el.id);
+        pushOverlayHistory(el.id);
+      } else {
+        openOverlayStack = openOverlayStack.filter(id => id !== el.id);
+      }
+    });
+  });
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    overlayHistoryObserver.observe(el, { attributes: true, attributeFilter: ['class'] });
+  });
+}
+
 function closeOpenAppOverlays() {
   closeFabMenu(true);
-  const taskModal = document.getElementById('taskModal');
-  if (taskModal) taskModal.classList.add('hidden');
-  resetSubtaskPanel();
-  const taskDetailModal = document.getElementById('taskDetailModal');
-  if (taskDetailModal && !taskDetailModal.classList.contains('hidden')) {
-    closeDetailModal({ updateHistory: false });
+  while (closeTopOpenOverlay()) {
+    // Close every visible modal before rendering a different app state.
   }
 }
 
@@ -3333,6 +3415,7 @@ function restoreAppState(state) {
 
 window.addEventListener('popstate', event => {
   if (!token || !currentUser) return;
+  if (closeTopOpenOverlay()) return;
   restoreAppState(event.state);
 });
 

@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.21.7** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.21.8** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -29,6 +29,7 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - Group member access control — any group member can edit all task fields (title, due date, recurrence, notes, status, defer, archive); only the task creator or a group admin can delete a task
 - **Date-only scheduling** — task due dates are date-only (no time component); all times default to midnight so you never have to think about hours. Native calendar pickers on mobile and desktop for easy date entry
 - **Relative date shortcuts** — on any date field, type a number and choose days/weeks/months and tap "Set" to quickly jump to *n* days/weeks/months from today
+- **In-app Back/Forward navigation** — browser, Android, and PWA Back now returns to the previous TaskIt! page or closes the visible task detail/editor state before leaving the app
 - Calendar integration — private ICS feed for any calendar app
 - Date locale preference per user
 - User reporting and blocking
@@ -120,6 +121,11 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.21.8
+
+- **🐛 In-app Back button fix** — web/PWA navigation now records TaskIt! pages, task detail panels, and task editor modals in browser history so Back/Forward restores the previous app state instead of closing the app or leaving the site.
+- **🔢 Version bump** — package metadata, lockfiles, public cache keys, pages, and documentation updated to 1.21.8.
 
 ### v1.21.7
 

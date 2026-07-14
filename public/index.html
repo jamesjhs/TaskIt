@@ -143,15 +143,15 @@
   <style>
     .hidden { display: none !important; }
   </style>
-  <link rel="stylesheet" href="/app.css?v=1.21.5" type="text/css" />
+  <link rel="stylesheet" href="/app.css?v=1.21.8" type="text/css" />
   <!-- PWA / installable web app -->
-  <link rel="manifest" href="/manifest.json?v=1.21.5" />
+  <link rel="manifest" href="/manifest.json?v=1.21.8" />
   <meta name="theme-color" content="#7c3aed" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="TaskIt!" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1.21.5" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=1.21.5" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1.21.8" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=1.21.8" />
   <!-- Cloudflare Turnstile for CAPTCHA security (explicit render; onload callback fires when ready) -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit" async defer></script>
 </head>
@@ -192,7 +192,7 @@
     <div class="lp-hero-float lp-float-achievement" aria-hidden="true">🏆 Achievement Unlocked!</div>
     <div class="lp-hero-float lp-float-streak" aria-hidden="true">🔥 14-day streak!</div>
     <div style="position:relative;z-index:1">
-      <img class="lp-hero-logo" src="/RKlogo.png?v=1.21.5" width="900" height="900" alt="TaskIt! logo: a checklist with a star and tick" decoding="async" fetchpriority="high" />
+      <img class="lp-hero-logo" src="/RKlogo.png?v=1.21.8" width="900" height="900" alt="TaskIt! logo: a checklist with a star and tick" decoding="async" fetchpriority="high" />
       <h1>Gamify your life and compete with friends!</h1>
       <p class="lp-hero-sub">Run recurring work, household jobs, sporadic maintenance, long-term goals, and group collaboration from one privacy-first app. Add reminders, calendar sync, and optional gamification — without subscriptions or vendor lock-in.</p>
       <div class="lp-hero-ctas">
@@ -959,7 +959,7 @@
   <div class="auth-card">
     <div class="auth-logo">
       <div class="auth-logo-icon auth-logo-icon-brand">
-        <img src="/RKlogo.png?v=1.21.5" width="900" height="900" alt="TaskIt! logo" decoding="async" />
+        <img src="/RKlogo.png?v=1.21.8" width="900" height="900" alt="TaskIt! logo" decoding="async" />
       </div>
       <h1>TaskIt!</h1>
       <p>🎮 Gamified task management</p>
@@ -1087,7 +1087,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.21.5</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
+      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.21.8</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>
@@ -1954,7 +1954,7 @@
 <div id="pwaInstallModal" class="modal-overlay hidden">
   <div class="modal-sheet">
     <div class="modal-body" style="text-align:center">
-      <img src="/RKlogo.png?v=1.21.5" width="900" height="900" alt="" aria-hidden="true" style="width:92px;height:auto;margin:0 auto 12px;display:block" />
+      <img src="/RKlogo.png?v=1.21.8" width="900" height="900" alt="" aria-hidden="true" style="width:92px;height:auto;margin:0 auto 12px;display:block" />
       <h2 class="modal-title">Install TaskIt!</h2>
       <p style="font-size:.9rem;color:#6b7280;line-height:1.6;margin-bottom:20px">
         Add TaskIt! to your home screen for a cleaner app-style launch, faster access, and better notification behaviour.
@@ -2543,6 +2543,8 @@ let _startTaskModalStep = 'prompt';
 let _startTaskInFlight = false;
 // Last task array passed to renderTasks — used by toggleFarFuture to re-render without a network fetch.
 let _lastRenderInput = [];
+const APP_PAGES = ['tasks', 'groups', 'profile', 'admin', 'progress'];
+let currentAppPage = 'tasks';
 
 // ========== In-tab popup reminder window constants ==========
 const POPUP_WINDOW_7D_MIN_MS  = 6  * 24 * 3600000;
@@ -2904,6 +2906,7 @@ function logout() {
   sessionStorage.removeItem('taskitToken'); sessionStorage.removeItem('taskitUser');
   unlockedArcadeKeys.clear();
   closeArcade();
+  closeDetailModal({ updateHistory: false });
   document.getElementById('appPage').classList.add('hidden');
   document.getElementById('authPage').classList.remove('hidden');
   document.getElementById('landingPage').classList.add('hidden');
@@ -3120,7 +3123,9 @@ function initApp() {
       .catch(err => toast('Friend invite error: ' + err.message, 'error'));
   }
   loadTypes(); loadGroups(); loadBlockedUsers();
-  showPage('tasks'); checkVersion();
+  const initialPage = getPageFromLocation() || 'tasks';
+  showPage(initialPage, { replaceHistory: true });
+  checkVersion();
   setInterval(checkVersion, 5 * 60 * 1000);
   setInterval(refreshNotifications, 5 * 60 * 1000);
   setInterval(refreshTaskTimers, 1000);
@@ -3271,8 +3276,71 @@ async function confirmDeleteAccount() {
 }
 
 // ========== Navigation ==========
-function showPage(page) {
-  ['tasks', 'groups', 'profile', 'admin', 'progress'].forEach(p => {
+function getPageFromLocation() {
+  const fromHash = (window.location.hash || '').replace(/^#\/?/, '');
+  if (APP_PAGES.includes(fromHash)) return fromHash;
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery = params.get('page');
+  return APP_PAGES.includes(fromQuery) ? fromQuery : null;
+}
+
+function appUrlForState(state = {}) {
+  const page = APP_PAGES.includes(state.page) ? state.page : 'tasks';
+  const hash = page === 'tasks' ? '' : '#' + page;
+  return window.location.pathname + hash;
+}
+
+function buildAppHistoryState(extra = {}) {
+  return {
+    app: 'taskit',
+    page: APP_PAGES.includes(currentAppPage) ? currentAppPage : 'tasks',
+    ...extra,
+  };
+}
+
+function writeAppHistory(state, options = {}) {
+  if (!window.history || !token || !currentUser) return;
+  const nextState = buildAppHistoryState(state);
+  const method = options.replace ? 'replaceState' : 'pushState';
+  history[method](nextState, '', appUrlForState(nextState));
+}
+
+function closeOpenAppOverlays() {
+  closeFabMenu(true);
+  const taskModal = document.getElementById('taskModal');
+  if (taskModal) taskModal.classList.add('hidden');
+  resetSubtaskPanel();
+  const taskDetailModal = document.getElementById('taskDetailModal');
+  if (taskDetailModal && !taskDetailModal.classList.contains('hidden')) {
+    closeDetailModal({ updateHistory: false });
+  }
+}
+
+function restoreAppState(state) {
+  if (!token || !currentUser) return;
+  const page = state && APP_PAGES.includes(state.page) ? state.page : (getPageFromLocation() || 'tasks');
+  closeOpenAppOverlays();
+  showPage(page, { skipHistory: true });
+  if (state && state.detailTaskId) {
+    openDetailById(state.detailTaskId, { skipHistory: true });
+  } else if (state && state.modal === 'task') {
+    const task = state.modalTaskId
+      ? (tasksMap.get(state.modalTaskId) || goalsMap.get(state.modalTaskId) || sporadicMap.get(state.modalTaskId) || null)
+      : null;
+    openTaskModal(task, { skipHistory: true });
+  }
+}
+
+window.addEventListener('popstate', event => {
+  if (!token || !currentUser) return;
+  restoreAppState(event.state);
+});
+
+function showPage(page, options = {}) {
+  if (!APP_PAGES.includes(page)) page = 'tasks';
+  const previousPage = currentAppPage;
+  currentAppPage = page;
+  APP_PAGES.forEach(p => {
     document.getElementById(p + 'Page').classList.toggle('hidden', p !== page);
     const btn = document.getElementById('nav' + p.charAt(0).toUpperCase() + p.slice(1));
     if (btn) {
@@ -3299,6 +3367,10 @@ function showPage(page) {
     loadProfileTaskTypes();
   }
   if (page === 'progress') loadGamificationProfile();
+  if (!options.skipHistory && (options.replaceHistory || page !== previousPage)) {
+    closeOpenAppOverlays();
+    writeAppHistory({ page }, { replace: !!options.replaceHistory });
+  }
 }
 
 // ========== Task Types ==========
@@ -4151,7 +4223,7 @@ function openTaskModalWithMode(mode) {
 }
 
 // ========== Task Modal ==========
-function openTaskModal(task = null) {
+function openTaskModal(task = null, options = {}) {
   resetSubtaskPanel();
   const typeSelect = document.getElementById('taskType');
   typeSelect.innerHTML = '<option value="">Select type\u2026</option>';
@@ -4255,9 +4327,28 @@ function openTaskModal(task = null) {
   }
   updateTaskMode();
   document.getElementById('taskModal').classList.remove('hidden');
+  if (!options.skipHistory && history.state?.modal !== 'task') {
+    writeAppHistory({ page: currentAppPage || 'tasks', modal: 'task', modalTaskId: task ? task.id : null });
+  }
 }
 
-function closeTaskModal() { resetSubtaskPanel(); document.getElementById('taskModal').classList.add('hidden'); }
+function closeTaskModal(options = {}) {
+  const modal = document.getElementById('taskModal');
+  const wasOpen = modal && !modal.classList.contains('hidden');
+  if (wasOpen && options.updateHistory !== false && history.state?.modal === 'task') {
+    history.back();
+    return;
+  }
+  resetSubtaskPanel();
+  if (modal) modal.classList.add('hidden');
+}
+
+function closeTaskModalAndReplaceHistory() {
+  closeTaskModal({ updateHistory: false });
+  if (history.state?.modal === 'task') {
+    writeAppHistory({ page: currentAppPage || 'tasks' }, { replace: true });
+  }
+}
 
 async function loadGroupMembersForTask(selectedIds = []) {
   const groupId = document.getElementById('taskGroup').value;
@@ -4327,7 +4418,7 @@ async function handleTaskSubmit(e) {
       if (result && result.goalId) await createPendingSubtasks(result.goalId);
       toast('Long-term goal created!');
       resetSubtaskPanel();
-      closeTaskModal();
+      closeTaskModalAndReplaceHistory();
       loadLongTermGoals();
     } catch (err) {
       toast(err.message, 'error');
@@ -4354,7 +4445,7 @@ async function handleTaskSubmit(e) {
       });
       toast('Sporadic task created!');
       resetSubtaskPanel();
-      closeTaskModal();
+      closeTaskModalAndReplaceHistory();
       loadSporadicTasks();
       loadTasks();
     } catch (err) {
@@ -4391,7 +4482,7 @@ async function handleTaskSubmit(e) {
       await api('PATCH', '/tasks/' + editId, body);
       toast('Sporadic task updated!');
       resetSubtaskPanel();
-      closeTaskModal();
+      closeTaskModalAndReplaceHistory();
       loadSporadicTasks();
       loadTasks();
       loadLongTermGoals();
@@ -4457,18 +4548,18 @@ async function handleTaskSubmit(e) {
       toast('Task created!');
     }
     resetSubtaskPanel();
-    closeTaskModal(); loadTasks(); loadSporadicTasks(); loadLongTermGoals();
+    closeTaskModalAndReplaceHistory(); loadTasks(); loadSporadicTasks(); loadLongTermGoals();
   } catch (err) { toast(err.message, 'error'); }
   restoreBtn();
 }
 
 // ========== Task Detail ==========
-function openDetailById(id) {
+function openDetailById(id, options = {}) {
   const task = tasksMap.get(id) || goalsMap.get(id) || sporadicMap.get(id);
-  if (task) { openDetail(task); } else { console.warn('openDetailById: task not found for id', id); }
+  if (task) { openDetail(task, options); } else { console.warn('openDetailById: task not found for id', id); }
 }
 
-function openDetail(task) {
+function openDetail(task, options = {}) {
   currentDetailTask = task;
   document.getElementById('detailTitle').textContent = task.title;
   document.getElementById('detailTypeBadge').textContent = task.type_name || '';
@@ -4526,6 +4617,9 @@ function openDetail(task) {
   loadSubtasks(task.id);
   renderStreakInDetail(task);
   refreshTaskTimers();
+  if (!options.skipHistory && history.state?.detailTaskId !== task.id) {
+    writeAppHistory({ page: currentAppPage || 'tasks', detailTaskId: task.id });
+  }
 }
 
 async function loadTaskNotes(taskId) {
@@ -4563,11 +4657,23 @@ async function submitNote() {
   } catch (err) { toast(err.message, 'error'); }
 }
 
-function closeDetailModal() {
+function closeDetailModal(options = {}) {
+  const wasOpen = !document.getElementById('taskDetailModal').classList.contains('hidden');
+  if (wasOpen && options.updateHistory !== false && history.state?.detailTaskId) {
+    history.back();
+    return;
+  }
   document.getElementById('taskDetailModal').classList.add('hidden');
   document.getElementById('deferSection').classList.add('hidden');
   closeStartTaskModal();
   currentDetailTask = null;
+}
+
+function closeDetailModalAndReplaceHistory() {
+  closeDetailModal({ updateHistory: false });
+  if (history.state?.detailTaskId) {
+    writeAppHistory({ page: currentAppPage || 'tasks' }, { replace: true });
+  }
 }
 
 // ========== Sub-tasks ==========
@@ -4826,7 +4932,7 @@ async function quickStatus(status) {
     const earnedDoubleXp = status === 'complete' && !!updated && !!updated.doubleXpAwarded;
     let successMessage = 'Status updated!';
     if (status === 'complete' && wasRecurring) {
-      closeDetailModal();
+      closeDetailModalAndReplaceHistory();
       loadTasks();
       if (gamificationEnabled) loadGamificationProfile();
       successMessage = 'Task complete! Next occurrence created.';
@@ -4846,7 +4952,7 @@ async function quickStatus(status) {
 
 function editCurrentTask() {
   const task = currentDetailTask; if (!task) return;
-  closeDetailModal(); openTaskModal(task);
+  closeDetailModalAndReplaceHistory(); openTaskModal(task);
 }
 
 async function archiveCurrentTask() {
@@ -4917,7 +5023,7 @@ async function deleteTaskWithConfirmation(task, options = {}) {
   if (!confirm(msg)) return;
   try {
     await api('DELETE', '/tasks/' + task.id);
-    if (options.closeDetail) closeDetailModal();
+    if (options.closeDetail) closeDetailModalAndReplaceHistory();
     loadTasks();
     loadSporadicTasks();
     loadLongTermGoals();
@@ -6694,7 +6800,7 @@ async function refreshNotifications() {
           if (!fired[k]) {
             fired[k] = day;
             try {
-              new Notification('TaskIt! Reminder', { body: t.title, icon: '/icons/icon-192x192.png?v=1.21.5', badge: '/icons/notification-badge-96x96.png?v=1.21.5', tag: k });
+              new Notification('TaskIt! Reminder', { body: t.title, icon: '/icons/icon-192x192.png?v=1.21.8', badge: '/icons/notification-badge-96x96.png?v=1.21.8', tag: k });
             } catch { /* Notification API unavailable or permission revoked */ }
           }
         };

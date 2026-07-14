@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.21.7** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.21.8** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -82,6 +82,8 @@ Click any task card to open the detail panel. From here you can:
 - **Archive** it to tidy your view (archived tasks can always be brought back)
 - **Delete** it permanently — note that for group tasks, only the task creator or a group admin can delete; other group members can edit all other details but not delete
 - Or use the **bin icon** at the top-right of a task card to delete directly from the list; TaskIt asks for confirmation first.
+
+The browser/PWA **Back** button is app-aware: it closes an open task detail panel or task editor first, then steps back through previous TaskIt! pages instead of immediately closing the app or leaving the site.
 
 ### ⏱ Sprint Timer & Double XP
 
@@ -489,5 +491,5 @@ Tap the **⭐ Progress** tab in the bottom navigation. You can also enable or di
 
 ---
 
-*TaskIt! v1.21.7 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*TaskIt! v1.21.8 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
 

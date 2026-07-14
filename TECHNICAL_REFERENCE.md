@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.21.7**
+**Version 1.21.8**
 **Author:** J Rowson  
 **Generated:** 2026-05-23
 
@@ -1593,6 +1593,18 @@ Collapsible task sections (`significantly-overdue-list`, `sporadic-list`, and `g
 | `performAppUpdate()` | Calls `registration.update()` then `window.location.reload()` |
 | `checkVersion()` | GET `/api/version`; if mismatch shows update banner |
 
+#### Navigation / History
+| Function | Description |
+|---|---|
+| `getPageFromLocation()` | Reads `#page` or `?page=` and returns a supported SPA page key |
+| `writeAppHistory(state, options)` | Pushes or replaces lightweight TaskIt! app state in browser history after login |
+| `restoreAppState(state)` | Restores a page, task detail panel, or task editor from `popstate` history |
+| `showPage(page, options)` | Toggles the main SPA pages and writes page state unless history updates are skipped |
+| `openDetail(task, options)` | Opens the task detail modal and pushes `{ detailTaskId }` into history |
+| `closeDetailModal(options)` | Closes the task detail modal, using `history.back()` when it represents the current history state |
+| `openTaskModal(task, options)` | Opens the task create/edit modal and pushes modal state into history |
+| `closeTaskModal(options)` | Closes the task modal, using `history.back()` when it represents the current history state |
+
 #### Arcade
 | Function | Description |
 |---|---|
@@ -1706,6 +1718,8 @@ The SPA has 5 main pages toggled by `showPage(page)`:
 | `'admin'` | `adminPage` | `loadAdminPage()` (only if `currentUser.role === 'admin'`) |
 
 Additionally there are overlay pages: `landingPage`, `authPage`.
+
+Browser history is part of the app state after authentication. `showPage(page)` pushes or replaces `{ app:'taskit', page }`; task details add `{ detailTaskId }`; task create/edit modals add `{ modal:'task', modalTaskId }`. The global `popstate` listener calls `restoreAppState()` so Back/Forward closes overlays or returns to previous TaskIt! pages before the browser leaves the app shell.
 
 ---
 
@@ -2195,5 +2209,5 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.21.7*
+*End of Technical Reference Manual — TaskIt! v1.21.8*
 

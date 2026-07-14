@@ -1,6 +1,6 @@
 # TaskIt! – How-To Manual
 
-**Version 1.21.7**
+**Version 1.21.8**
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -285,6 +285,8 @@ Click any task card to open the **Task Detail** panel, where you can:
 - **Defer** the task — click the *Defer* button to set a new due date without opening the full edit form
 - **Toggle Archive** – hide/unhide the task from the main view
 - **Delete** the task permanently — for group tasks, only the task creator or a group admin can delete; other group members can edit all other details but cannot delete
+
+The browser/PWA **Back** button is app-aware: it closes an open task detail panel or task editor first, then steps back through previous TaskIt! pages instead of immediately closing the app or leaving the site.
 
 #### ⏱ Sprint timer (double XP)
 
@@ -604,5 +606,5 @@ The Freeze is consumed automatically, the streak is preserved, and the ❄️ is
 
 ---
 
-*TaskIt! v1.21.7 – Copyright J Rowson 2026 | jahosi.co.uk*
+*TaskIt! v1.21.8 – Copyright J Rowson 2026 | jahosi.co.uk*
 

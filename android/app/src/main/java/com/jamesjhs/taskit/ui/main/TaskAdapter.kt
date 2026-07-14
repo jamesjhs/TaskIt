@@ -16,7 +16,8 @@ import java.util.*
 class TaskAdapter(
     private val tasks: List<Task>,
     private val onTaskClick: (Task) -> Unit,
-    private val onStatusChange: (Task) -> Unit
+    private val onStatusChange: (Task) -> Unit,
+    private val onDeleteClick: (Task) -> Unit
 ) : RecyclerView.Adapter<TaskAdapter.TaskViewHolder>() {
 
     class TaskViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -26,6 +27,7 @@ class TaskAdapter(
         val group: TextView = view.findViewById(R.id.taskGroup)
         val dueDate: TextView = view.findViewById(R.id.taskDueDate)
         val btnStatus: ImageButton = view.findViewById(R.id.btnChangeStatus)
+        val btnDelete: ImageButton = view.findViewById(R.id.btnDeleteTask)
         val iconRecurring: ImageView = view.findViewById(R.id.iconRecurring)
     }
 
@@ -86,6 +88,7 @@ class TaskAdapter(
         holder.btnStatus.setColorFilter(iconTint)
 
         holder.btnStatus.setOnClickListener { onStatusChange(task) }
+        holder.btnDelete.setOnClickListener { onDeleteClick(task) }
         holder.itemView.setOnClickListener { onTaskClick(task) }
 
         // Recurring icon

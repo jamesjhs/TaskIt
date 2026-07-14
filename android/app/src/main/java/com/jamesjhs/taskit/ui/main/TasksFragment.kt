@@ -1,5 +1,6 @@
 package com.jamesjhs.taskit.ui.main
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -159,8 +160,37 @@ class TasksFragment : Fragment() {
             },
             onStatusChange = { task ->
                 toggleTaskStatus(task)
+            },
+            onDeleteClick = { task ->
+                showDeleteConfirmation(task)
             }
         )
+    }
+
+    private fun showDeleteConfirmation(task: Task) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Delete this task?")
+            .setMessage("Just checking before we remove \"${task.title}\". This can't be undone.")
+            .setPositiveButton("Delete") { _, _ -> deleteTask(task) }
+            .setNegativeButton("Keep it", null)
+            .show()
+    }
+
+    private fun deleteTask(task: Task) {
+        lifecycleScope.launch {
+            val token = tokenManager.token.first() ?: return@launch
+            try {
+                val response = ApiClient.apiService.deleteTask("Bearer $token", task.id)
+                if (response.isSuccessful) {
+                    Toast.makeText(context, "Task deleted", Toast.LENGTH_SHORT).show()
+                    loadTasks()
+                } else {
+                    Toast.makeText(context, "Failed to delete task", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Delete failed", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun toggleTaskStatus(task: Task) {

@@ -58,6 +58,16 @@
                 app:tint="@color/text_secondary"
                 android:contentDescription="Mark as complete"/>
 
+            <ImageButton
+                android:id="@+id/btnDeleteTask"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_delete"
+                app:tint="@color/danger"
+                android:contentDescription="Delete task"/>
+
         </LinearLayout>
 
         <LinearLayout

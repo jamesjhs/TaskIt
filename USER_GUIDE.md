@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.21.6** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.21.7** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -81,6 +81,7 @@ Click any task card to open the detail panel. From here you can:
 - **Defer** the task — click *Defer* to set a new due date without opening the full edit form. You can enter the date directly or use the *"or in X days/weeks/months from now"* shortcut below the date picker
 - **Archive** it to tidy your view (archived tasks can always be brought back)
 - **Delete** it permanently — note that for group tasks, only the task creator or a group admin can delete; other group members can edit all other details but not delete
+- Or use the **bin icon** at the top-right of a task card to delete directly from the list; TaskIt asks for confirmation first.
 
 ### ⏱ Sprint Timer & Double XP
 
@@ -488,5 +489,5 @@ Tap the **⭐ Progress** tab in the bottom navigation. You can also enable or di
 
 ---
 
-*TaskIt! v1.21.6 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*TaskIt! v1.21.7 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
 

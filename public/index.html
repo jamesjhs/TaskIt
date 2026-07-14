@@ -3553,6 +3553,7 @@ function renderTasks(tasks) {
     return `
       <div onclick="openDetailById('${escHtml(t.id)}')" class="${cardClass}">
         ${timerHtml}
+        <button type="button" class="task-card-delete-btn" onclick="deleteTaskFromCard(event, ${jsArg(t.id)})" aria-label="Delete ${escHtml(t.title)}" title="Delete task">&#128465;</button>
         <div class="task-card-title${t.group_id ? ' task-card-title-group' : ''}">${escHtml(t.title)}</div>
         <div class="task-card-badges">
           <span class="badge badge-blue">${escHtml(t.type_name || '')}</span>
@@ -3630,7 +3631,6 @@ function renderSporadicTasks(tasks) {
     return;
   }
 
-  const jsArg = value => escHtml(JSON.stringify(String(value)));
   let html = '';
   tasks.forEach(task => {
     const lastDone = task.last_completed_at ? new Date(task.last_completed_at).toLocaleDateString(userLocale()) : 'Never';
@@ -3658,6 +3658,7 @@ function renderSporadicTasks(tasks) {
     
     html += `
       <div class="sporadic-task-card">
+        <button type="button" class="task-card-delete-btn" onclick="deleteTaskFromCard(event, ${jsArg(task.id)})" aria-label="Delete ${escHtml(task.title)}" title="Delete task">&#128465;</button>
         <div class="sporadic-task-title">${escHtml(task.title)}</div>
         ${task.details ? `<p style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">${escHtml(task.details)}</p>` : ''}
         <div class="sporadic-last-done ${overdueClass}">Last done: ${escHtml(label)}</div>
@@ -3850,6 +3851,7 @@ function renderLongTermGoals(goals) {
       : '';
     html += `
       <div class="sporadic-task-card">
+        <button type="button" class="task-card-delete-btn" onclick="deleteTaskFromCard(event, ${jsArg(goal.id)})" aria-label="Delete ${escHtml(goal.title)}" title="Delete goal">&#128465;</button>
         <div class="sporadic-task-title">${escHtml(goal.title)}</div>
         ${goal.details ? `<p style="font-size:0.9rem;color:#666;margin-bottom:0.5rem">${escHtml(goal.details)}</p>` : ''}
         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${groupBadge}${typeBadge}${xpBadge}</div>
@@ -4888,20 +4890,39 @@ async function confirmDefer() {
 
 async function deleteCurrentTask() {
   if (!currentDetailTask) return;
-  const isRecurring = !!(currentDetailTask.recur_interval && currentDetailTask.recur_unit);
-  const isGoal = !!(currentDetailTask.is_long_term_goal);
+  await deleteTaskWithConfirmation(currentDetailTask, { closeDetail: true });
+}
+
+async function deleteTaskFromCard(event, taskId) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  const task = tasksMap.get(taskId) || sporadicMap.get(taskId) || goalsMap.get(taskId);
+  if (!task) {
+    toast('Task not found', 'error');
+    return;
+  }
+  await deleteTaskWithConfirmation(task);
+}
+
+async function deleteTaskWithConfirmation(task, options = {}) {
+  const isRecurring = !!(task.recur_interval && task.recur_unit);
+  const isGoal = !!(task.is_long_term_goal);
+  const isSporadic = !!(task.is_sporadic);
   const itemLabel = isGoal ? 'goal' : 'task';
   const msg = isRecurring
-    ? 'Delete this occurrence? The next recurrence will be scheduled automatically.\n\nTo stop all future recurrences instead, close this dialog and use "⊘ Cancel Future Recurrences".'
-    : `Delete this ${itemLabel} permanently?`;
+    ? `Delete "${task.title}"? The next recurrence will be scheduled automatically.\n\nTo stop all future recurrences instead, close this dialog and use "⊘ Cancel Future Recurrences".`
+    : `Delete "${task.title}" permanently?\n\nNo worries if not — choose Cancel to keep this ${itemLabel}.`;
   if (!confirm(msg)) return;
   try {
-    await api('DELETE', '/tasks/' + currentDetailTask.id);
-    closeDetailModal();
+    await api('DELETE', '/tasks/' + task.id);
+    if (options.closeDetail) closeDetailModal();
     loadTasks();
     loadSporadicTasks();
     loadLongTermGoals();
-    toast(isRecurring ? 'Occurrence deleted — next recurrence scheduled' : `${isGoal ? 'Goal' : 'Task'} deleted`);
+    const deletedLabel = isGoal ? 'Goal' : isSporadic ? 'Sporadic task' : 'Task';
+    toast(isRecurring ? 'Occurrence deleted — next recurrence scheduled' : `${deletedLabel} deleted`);
   } catch (err) { toast(err.message, 'error'); }
 }
 
@@ -4909,6 +4930,10 @@ async function deleteCurrentTask() {
 function escHtml(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function jsArg(value) {
+  return escHtml(JSON.stringify(String(value)));
 }
 
 // ========== Gamification ==========

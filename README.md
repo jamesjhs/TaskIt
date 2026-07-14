@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.21.6** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.21.7** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -120,6 +120,11 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.21.7
+
+- **🗑 Task-card delete button** — web/PWA task cards now show a top-right bin button across regular, far-future, overdue, sporadic, and long-term goal cards, with a friendly confirmation before deletion.
+- **🔢 Version bump** — package metadata, lockfiles, manifest cache keys, and documentation updated to 1.21.7.
 
 ### v1.21.6
 

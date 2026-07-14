@@ -443,7 +443,7 @@ a:hover { text-decoration: underline; }
 .task-card {
   background: #fff;
   border-radius: 14px;
-  padding: 16px;
+  padding: 16px 52px 16px 16px;
   position: relative;
   box-shadow: 0 2px 12px rgba(124,58,237,.08), 0 1px 3px rgba(0,0,0,.05);
   margin-bottom: 12px;
@@ -458,11 +458,11 @@ a:hover { text-decoration: underline; }
 .task-card-title-group { color: #7c3aed; }
 .task-card-meta { font-size: .82rem; color: #6b7280; margin-top: 6px; }
 .task-card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
-.task-card-has-timer { padding-right: 96px; }
+.task-card-has-timer { padding-right: 152px; }
 .task-card-timer {
   position: absolute;
   top: 12px;
-  right: 12px;
+  right: 56px;
   padding: 6px 8px;
   border-radius: 999px;
   background: #dcfce7;
@@ -478,6 +478,30 @@ a:hover { text-decoration: underline; }
   color: #991b1b;
   border-color: #fecaca;
 }
+.task-card-delete-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #dc2626;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .15s, color .15s, transform .1s;
+  z-index: 2;
+}
+.task-card-delete-btn:hover {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.task-card-delete-btn:active { transform: scale(.96); }
 
 /* Status badges */
 .badge-not-started { background: #f1f5f9; color: #475569; }
@@ -3378,9 +3402,10 @@ body.arcade-open { overflow: hidden; }
 .sporadic-task-card {
   background: white;
   border-left: 3px solid #3b82f6;
-  padding: 12px;
+  padding: 12px 52px 12px 12px;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  position: relative;
 }
 
 .sporadic-task-title {

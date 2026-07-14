@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.21.6**
+**Version 1.21.7**
 **Author:** J Rowson  
 **Generated:** 2026-05-23
 
@@ -1511,6 +1511,8 @@ For unauthenticated users, the top of the file renders the public marketing / la
 | `toggleDeferSection()` | Shows/hides defer-date form |
 | `confirmDefer()` | PATCH `/api/tasks/:id/defer` |
 | `deleteCurrentTask()` | DELETE `/api/tasks/:id` |
+| `deleteTaskFromCard(event, taskId)` | Stops card-click propagation and deletes a task from the top-right card bin button |
+| `deleteTaskWithConfirmation(task, options?)` | Shared friendly confirmation and `DELETE /api/tasks/:id` flow used by card and detail deletes |
 | `renderStreakInDetail(task)` | Renders streak section in detail modal |
 | `handleApplyFreeze()` | POST `/api/gamification/streaks/:taskId/freeze` |
 | `stopRecurring()` | PATCH to clear `recur_interval`/`recur_unit` |
@@ -2193,5 +2195,5 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.21.6*
+*End of Technical Reference Manual — TaskIt! v1.21.7*
 

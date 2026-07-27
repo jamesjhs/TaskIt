@@ -683,9 +683,9 @@ export function applyStreakFreeze(
   if (user.freeze_credits < 1) return 'No freeze credits available';
 
   const task = db.prepare(
-    'SELECT id, recur_interval, streak_frozen, created_by FROM tasks WHERE id = ?'
+    'SELECT id, recur_interval, streak_frozen, created_by, group_id FROM tasks WHERE id = ?'
   ).get(taskId) as {
-    id: string; recur_interval: number | null; streak_frozen: number; created_by: string;
+    id: string; recur_interval: number | null; streak_frozen: number; created_by: string; group_id: string | null;
   } | undefined;
 
   if (!task) return 'Task not found';
@@ -693,14 +693,12 @@ export function applyStreakFreeze(
   if (task.streak_frozen) return 'A freeze is already active on this task';
 
   // Verify the user has access to this task
-  const hasAccess = task.created_by === userId || !!db.prepare(
+  const hasAccess = task.created_by === userId || (task.group_id !== null && !!db.prepare(
     `SELECT 1 FROM task_assignees WHERE task_id = ? AND user_id = ?
      UNION ALL
-     SELECT 1 FROM group_members gm
-       JOIN tasks t ON t.group_id = gm.group_id
-       WHERE t.id = ? AND gm.user_id = ?
+     SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?
      LIMIT 1`
-  ).get(taskId, userId, taskId, userId);
+  ).get(taskId, userId, task.group_id, userId));
 
   if (!hasAccess) return 'Not authorized';
 
@@ -751,7 +749,9 @@ export function getStreaksForUser(userId: string): Array<{
       AND t.archived = 0
       AND (
         t.created_by = ?
-        OR EXISTS (SELECT 1 FROM task_assignees ta WHERE ta.task_id = t.id AND ta.user_id = ?)
+        OR (t.group_id IS NOT NULL AND EXISTS (
+          SELECT 1 FROM task_assignees ta WHERE ta.task_id = t.id AND ta.user_id = ?
+        ))
         OR (t.group_id IS NOT NULL AND EXISTS (
           SELECT 1 FROM group_members gm WHERE gm.group_id = t.group_id AND gm.user_id = ?
         ))

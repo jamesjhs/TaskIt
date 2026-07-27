@@ -46,6 +46,27 @@ function hasTaskAccess(task: { created_by: string; group_id: string | null }, us
   return false;
 }
 
+function isGroupTaskAssignee(task: { group_id: string | null }, taskId: string, userId: string): boolean {
+  if (!task.group_id) return false;
+  return !!db.prepare(
+    'SELECT 1 FROM task_assignees WHERE task_id = ? AND user_id = ?'
+  ).get(taskId, userId);
+}
+
+function resolveAssigneeIdsForGroup(groupId: string | null, assigneeIds: unknown): Set<string> {
+  if (!groupId || !Array.isArray(assigneeIds)) return new Set();
+
+  const ids = assigneeIds.filter((id): id is string => typeof id === 'string');
+  if (ids.length === 0) return new Set();
+
+  const placeholders = ids.map(() => '?').join(',');
+  const rows = db.prepare(
+    `SELECT user_id FROM group_members WHERE group_id = ? AND user_id IN (${placeholders})`
+  ).all(groupId, ...ids) as Array<{ user_id: string }>;
+
+  return new Set(rows.map((row) => row.user_id));
+}
+
 function computeNextDue(dueDateMs: number, interval: number, unit: string): number {
   const d = new Date(dueDateMs);
   switch (unit) {
@@ -96,7 +117,9 @@ router.get('/', (req: Request, res: Response): void => {
   // User must be the creator OR an assignee OR group member
   whereConditions.push(`(
     t.created_by = ?
-    OR EXISTS (SELECT 1 FROM task_assignees ta WHERE ta.task_id = t.id AND ta.user_id = ?)
+    OR (t.group_id IS NOT NULL AND EXISTS (
+      SELECT 1 FROM task_assignees ta WHERE ta.task_id = t.id AND ta.user_id = ?
+    ))
     OR (t.group_id IS NOT NULL AND EXISTS (
       SELECT 1 FROM group_members gm WHERE gm.group_id = t.group_id AND gm.user_id = ?
     ))
@@ -322,20 +345,9 @@ router.post('/', (req: Request, res: Response): void => {
     console.error('[tasks/create] Failed to award create_task XP:', xpErr);
   }
 
-  // Insert assignees — validate each ID refers to a real user before inserting
-  // to avoid a FK constraint exception (and a 500 response) on bad input.
-  // Batch-validate all IDs in a single query to avoid N+1 round trips.
-  const ids: string[] = (Array.isArray(assigneeIds) ? assigneeIds : []).filter(
-    (id): id is string => typeof id === 'string'
-  );
-  const validAssigneeIds: Set<string> = new Set();
-  if (ids.length > 0) {
-    const placeholders = ids.map(() => '?').join(',');
-    const validRows = db.prepare(
-      `SELECT id FROM users WHERE id IN (${placeholders})`
-    ).all(...ids) as Array<{ id: string }>;
-    for (const r of validRows) validAssigneeIds.add(r.id);
-  }
+  // Personal tasks deliberately have no assignees; for group tasks, assignees
+  // must be members of the selected group.
+  const validAssigneeIds = resolveAssigneeIdsForGroup(groupId || null, assigneeIds);
 
   const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
   const insertAlert = db.prepare('INSERT INTO user_alerts (id, user_id, message, created_at) VALUES (?, ?, ?, ?)');
@@ -1027,18 +1039,13 @@ router.patch('/:id', (req: Request, res: Response): void => {
     patchTx();
   }
 
-  if (Array.isArray(assigneeIds)) {
+  if (Array.isArray(assigneeIds) || groupId !== undefined) {
     db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(taskId);
-    // Batch-validate all assignee IDs in a single query
-    const validIds = (assigneeIds as unknown[]).filter((id): id is string => typeof id === 'string');
-    if (validIds.length > 0) {
-      const placeholders = validIds.map(() => '?').join(',');
-      const validRows = db.prepare(
-        `SELECT id FROM users WHERE id IN (${placeholders})`
-      ).all(...validIds) as Array<{ id: string }>;
+    if (Array.isArray(assigneeIds) && effectiveGroupId) {
+      const validAssigneeIds = resolveAssigneeIdsForGroup(effectiveGroupId, assigneeIds);
       const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
-      for (const row of validRows) {
-        insertAssignee.run(taskId, row.id);
+      for (const assigneeId of validAssigneeIds) {
+        insertAssignee.run(taskId, assigneeId);
       }
     }
   }
@@ -1098,10 +1105,8 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
     return;
   }
 
-  // Allow creator, assignee, or any group member to update status
-  const isAssignee = !!db.prepare(
-    'SELECT 1 FROM task_assignees WHERE task_id = ? AND user_id = ?'
-  ).get(taskId, userId);
+  // Personal tasks remain creator-only; group task assignees and members may update status.
+  const isAssignee = isGroupTaskAssignee(task, taskId, userId);
 
   if (!hasTaskAccess(task, userId) && !isAssignee) {
     res.status(403).json({ error: 'Not authorized' });
@@ -1534,7 +1539,7 @@ router.get('/:id/notes', (req: Request, res: Response): void => {
   const userId = req.user!.id;
   const taskId = req.params.id;
 
-  // Check access: creator, assignee, or group member
+  // Check access: creator, or group task assignee/member.
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
     | { id: string; created_by: string; group_id: string | null }
     | undefined;
@@ -1545,9 +1550,7 @@ router.get('/:id/notes', (req: Request, res: Response): void => {
   }
 
   const isCreator = task.created_by === userId;
-  const isAssignee = !!db.prepare(
-    'SELECT 1 FROM task_assignees WHERE task_id = ? AND user_id = ?'
-  ).get(taskId, userId);
+  const isAssignee = isGroupTaskAssignee(task, taskId, userId);
   const isGroupMember = task.group_id ? !!db.prepare(
     'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
   ).get(task.group_id, userId) : false;
@@ -1593,9 +1596,7 @@ router.post('/:id/notes', (req: Request, res: Response): void => {
   }
 
   const isCreator = task.created_by === userId;
-  const isAssignee = !!db.prepare(
-    'SELECT 1 FROM task_assignees WHERE task_id = ? AND user_id = ?'
-  ).get(taskId, userId);
+  const isAssignee = isGroupTaskAssignee(task, taskId, userId);
   const isGroupMember = task.group_id ? !!db.prepare(
     'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
   ).get(task.group_id, userId) : false;
@@ -1642,9 +1643,7 @@ router.get('/:id/subtasks', (req: Request, res: Response): void => {
 
   if (!task) { res.status(404).json({ error: 'Task not found' }); return; }
 
-  const isAssignee = !!db.prepare(
-    'SELECT 1 FROM task_assignees WHERE task_id = ? AND user_id = ?'
-  ).get(taskId, userId);
+  const isAssignee = isGroupTaskAssignee(task, taskId, userId);
 
   if (!hasTaskAccess(task, userId) && !isAssignee) {
     res.status(403).json({ error: 'Not authorized' }); return;
@@ -1714,9 +1713,7 @@ router.patch('/:id/subtasks/:subId', (req: Request, res: Response): void => {
 
   if (!task) { res.status(404).json({ error: 'Task not found' }); return; }
 
-  const isAssignee = !!db.prepare(
-    'SELECT 1 FROM task_assignees WHERE task_id = ? AND user_id = ?'
-  ).get(taskId, userId);
+  const isAssignee = isGroupTaskAssignee(task, taskId, userId);
 
   if (!hasTaskAccess(task, userId) && !isAssignee) {
     res.status(403).json({ error: 'Not authorized' }); return;

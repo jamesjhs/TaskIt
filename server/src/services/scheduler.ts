@@ -11,6 +11,7 @@ interface TaskRow {
   title: string;
   due_date: number;
   created_by: string;
+  group_id: string | null;
   notify_email: number;
   notify_7day: number;
   notify_1day: number;
@@ -238,7 +239,7 @@ async function sendReminders(): Promise<void> {
     // This intentionally over-fetches candidate tasks for push reminders; the
     // exact per-channel send checks below decide whether a reminder is truly due.
     const tasks = db.prepare(`
-      SELECT t.id, t.title, t.due_date, t.created_by,
+      SELECT t.id, t.title, t.due_date, t.created_by, t.group_id,
              t.notify_email, t.notify_7day, t.notify_1day, t.notify_onday,
              t.notify_popup_7day, t.notify_popup_1day, t.notify_popup_onday
       FROM tasks t
@@ -270,12 +271,14 @@ async function sendReminders(): Promise<void> {
       if (!emailApplicable && !pushApplicable) continue;
 
       const recipientIds = new Set<string>([task.created_by]);
-      const assignees = db.prepare(
-        'SELECT user_id FROM task_assignees WHERE task_id = ?'
-      ).all(task.id) as Array<{ user_id: string }>;
+      if (task.group_id) {
+        const assignees = db.prepare(
+          'SELECT user_id FROM task_assignees WHERE task_id = ?'
+        ).all(task.id) as Array<{ user_id: string }>;
 
-      for (const assignee of assignees) {
-        recipientIds.add(assignee.user_id);
+        for (const assignee of assignees) {
+          recipientIds.add(assignee.user_id);
+        }
       }
 
       const emailReminderAlreadySent = !!db.prepare(

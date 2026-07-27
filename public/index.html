@@ -4441,6 +4441,7 @@ async function loadGroupMembersForTask(selectedIds = []) {
   if (!groupId) {
     if (assigneeRow) assigneeRow.classList.add('hidden');
     if (xpMultiplierRow) xpMultiplierRow.classList.add('hidden');
+    if (container) container.innerHTML = '';
     return;
   }
   if (assigneeRow) assigneeRow.classList.remove('hidden');

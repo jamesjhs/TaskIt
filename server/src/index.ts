@@ -227,7 +227,9 @@ app.get('/calendar/:token/tasks.ics', generalLimiter, (req, res): void => {
       AND t.due_date IS NOT NULL
       AND (
         t.created_by = ?
-        OR EXISTS (SELECT 1 FROM task_assignees ta WHERE ta.task_id = t.id AND ta.user_id = ?)
+        OR (t.group_id IS NOT NULL AND EXISTS (
+          SELECT 1 FROM task_assignees ta WHERE ta.task_id = t.id AND ta.user_id = ?
+        ))
         OR (t.group_id IS NOT NULL AND EXISTS (
           SELECT 1 FROM group_members gm WHERE gm.group_id = t.group_id AND gm.user_id = ?
         ))

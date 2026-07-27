@@ -61,14 +61,19 @@
 
       window.__labyrinthVersionRefreshPromise = checkLabyrinthVersion();
 
-      function preventMultiTouchGestures(e) {
-        if (e && e.touches && e.touches.length > 1) e.preventDefault();
+      function preventLabyrinthTouchDefaults(e) {
+        if (e && typeof e.preventDefault === "function") e.preventDefault();
       }
-      document.addEventListener("touchstart", preventMultiTouchGestures, { passive: false });
-      document.addEventListener("touchmove", preventMultiTouchGestures, { passive: false });
-      document.addEventListener("gesturestart", (e) => e.preventDefault(), { passive: false });
-      document.addEventListener("gesturechange", (e) => e.preventDefault(), { passive: false });
-      document.addEventListener("gestureend", (e) => e.preventDefault(), { passive: false });
+      const touchGuardOptions = { passive: false, capture: true };
+      window.addEventListener("touchstart", preventLabyrinthTouchDefaults, touchGuardOptions);
+      window.addEventListener("touchmove", preventLabyrinthTouchDefaults, touchGuardOptions);
+      window.addEventListener("touchcancel", preventLabyrinthTouchDefaults, touchGuardOptions);
+      document.addEventListener("touchstart", preventLabyrinthTouchDefaults, touchGuardOptions);
+      document.addEventListener("touchmove", preventLabyrinthTouchDefaults, touchGuardOptions);
+      document.addEventListener("touchcancel", preventLabyrinthTouchDefaults, touchGuardOptions);
+      document.addEventListener("gesturestart", preventLabyrinthTouchDefaults, touchGuardOptions);
+      document.addEventListener("gesturechange", preventLabyrinthTouchDefaults, touchGuardOptions);
+      document.addEventListener("gestureend", preventLabyrinthTouchDefaults, touchGuardOptions);
     })();
   </script>
   <style>
@@ -102,6 +107,11 @@
       height: 100%;
       margin: 0;
       overflow: hidden;
+      position: fixed;
+      inset: 0;
+      overscroll-behavior: none;
+      touch-action: none;
+      -ms-touch-action: none;
       background:
         radial-gradient(circle at 50% 18%, rgba(255, 225, 126, 0.22) 0%, rgba(255, 182, 82, 0.12) 18%, rgba(255, 182, 82, 0) 42%),
         radial-gradient(circle at 20% 15%, #233382 0%, #0b1032 40%, #050714 100%);
@@ -113,15 +123,23 @@
       position: fixed;
       inset: 0;
       overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: none;
+      -ms-touch-action: none;
     }
 
     #sceneHost {
       position: absolute;
       inset: 0;
+      overscroll-behavior: none;
+      touch-action: none;
+      -ms-touch-action: none;
     }
 
     canvas {
       display: block;
+      touch-action: none;
+      -ms-touch-action: none;
     }
 
     #loading {
@@ -964,17 +982,15 @@
        *
        * 1. boot()
        *    This is the entry point at the bottom of the script. It checks device
-       *    quality, tries to load Three.js, falls back to a simple canvas renderer
-       *    if Three.js fails, connects all controls, opens the menu, then starts
+       *    quality, loads TaskIt's self-hosted Three.js copy, connects all
+       *    controls, opens the menu, then starts
        *    tick(), the main game loop.
        *
        * 2. detectQualityProfile(), loadThreeWithProgress(), initThree(),
        *    initRayRenderer(), onResize()
        *    These functions prepare graphics. The game prefers Three.js because it
-       *    can draw a richer 3D world. If that library is unavailable, the game
-       *    switches to a raycasting renderer that draws a simpler 3D-like view on
-       *    a normal canvas. This fallback is why the game can still run when the
-       *    network or CDN is unavailable.
+       *    can draw a richer 3D world. A raycasting renderer is retained as an
+       *    emergency renderer, but TaskIt launches do not select it silently.
        *
        * 3. setupInput(), setupUIEvents(), bindJoystick()
        *    These functions connect the player to the game. Keyboard, mouse,
@@ -1899,17 +1915,14 @@
       /*
        * loadThreeWithProgress() tries to load the Three.js graphics library.
        *
-       * The game first tries local files, which are best for offline or PWA-style
-       * use. If those fail, it tries CDN URLs. Each attempt gets a portion of the
-       * loading bar so the player sees progress instead of a frozen screen.
-       * If every source fails, boot() catches the error and uses the fallback
-       * canvas renderer instead.
+       * The game loads TaskIt's self-hosted Three.js copy from the same origin.
+       * Each configured source gets a portion of the loading bar so the player
+       * sees progress instead of a frozen screen.
        */
       async function loadThreeWithProgress() {
         /*
-         * Try local Three.js first for offline/PWA use, then CDN URLs for plain
-         * static hosting. Each source owns a slice of the progress bar so the
-         * loader still feels responsive during retries.
+         * Each same-origin source owns a slice of the progress bar so the loader
+         * still feels responsive during retries.
          */
         const localSources = CFG.THREE_LOCAL_PATHS.map((url) => ({ url, label: "local" }));
         const cdnSources = CFG.THREE_CDN_PATHS.map((url) => ({ url, label: "cdn" }));
@@ -3145,6 +3158,7 @@
         }
 
         zone.addEventListener("touchstart", (e) => {
+          e.preventDefault();
           if (activeId !== null) return;
           const t = e.changedTouches[0];
           activeId = t.identifier;
@@ -3158,9 +3172,10 @@
           stick.style.left = cx + "px";
           stick.style.top = cy + "px";
           callback(0, 0);
-        }, { passive: true });
+        }, { passive: false });
 
         zone.addEventListener("touchmove", (e) => {
+          e.preventDefault();
           if (activeId === null) return;
           for (let i = 0; i < e.changedTouches.length; i++) {
             const t = e.changedTouches[i];
@@ -3179,7 +3194,7 @@
             callback((sx - cx) / maxR, (sy - cy) / maxR);
             break;
           }
-        }, { passive: true });
+        }, { passive: false });
 
         /*
          * endTouch() checks whether the ending touch is the one controlling this
@@ -3187,6 +3202,7 @@
          * this joystick ignores it.
          */
         function endTouch(e) {
+          e.preventDefault();
           if (activeId === null) return;
           for (let i = 0; i < e.changedTouches.length; i++) {
             if (e.changedTouches[i].identifier === activeId) {
@@ -3196,8 +3212,8 @@
           }
         }
 
-        zone.addEventListener("touchend", endTouch, { passive: true });
-        zone.addEventListener("touchcancel", endTouch, { passive: true });
+        zone.addEventListener("touchend", endTouch, { passive: false });
+        zone.addEventListener("touchcancel", endTouch, { passive: false });
       }
 
       /*
@@ -4227,17 +4243,10 @@
         try {
           window.__labyrinthVersionRefreshPromise = Promise.resolve(false);
           detectQualityProfile();
-          try {
-            await loadThreeWithProgress();
-            renderMode = "three";
-            setBar(100, "Launching 3D...");
-            initThree();
-          } catch (engineErr) {
-            renderMode = "ray";
-            setBar(100, "Launching local renderer...");
-            initRayRenderer();
-            console.warn("THREE load failed, using built-in fallback renderer:", engineErr);
-          }
+          await loadThreeWithProgress();
+          renderMode = "three";
+          setBar(100, "Launching 3D...");
+          initThree();
 
           setupInput();
           setupUIEvents();

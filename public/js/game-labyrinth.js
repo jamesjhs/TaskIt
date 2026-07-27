@@ -21,6 +21,11 @@
       (payload.mode || '');
   }
 
+  function frameSrcWithVersion() {
+    const appVersion = window.APP_VERSION || window._serverVersion || 'dev';
+    return FRAME_SRC + '?v=' + encodeURIComponent(appVersion);
+  }
+
   function sendToFrame(id, ok, payload, error) {
     if (!iframe || !iframe.contentWindow) return;
     iframe.contentWindow.postMessage({
@@ -106,13 +111,15 @@
 
     iframe = document.createElement('iframe');
     iframe.title = 'TaskIt Labyrinth game';
-    iframe.src = FRAME_SRC;
+    iframe.src = frameSrcWithVersion();
     iframe.setAttribute('allow', 'fullscreen; pointer-lock');
     iframe.style.width = '100%';
     iframe.style.height = '100%';
     iframe.style.border = '0';
     iframe.style.display = 'block';
     iframe.style.background = '#070b1f';
+    iframe.style.overscrollBehavior = 'none';
+    iframe.style.touchAction = 'none';
 
     frame.appendChild(iframe);
     window.addEventListener('message', onMessage);

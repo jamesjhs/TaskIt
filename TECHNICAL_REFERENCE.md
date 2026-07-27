@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.22.0**
+**Version 1.22.1**
 **Author:** J Rowson  
 **Generated:** 2026-05-23
 
@@ -1660,9 +1660,9 @@ Collapsible task sections (`significantly-overdue-list`, `sporadic-list`, and `g
 
 **Arcade Back behavior:** opening an arcade game pushes an app-history state. Browser/PWA Back first gives the active game a chance to handle the event through `handleBack()`, then closes the arcade and restores the previous TaskIt page/overlay state. This keeps game menu transitions and app navigation in the same Back flow.
 
-**Labyrinth port:** `/js/game-labyrinth.js` registers `gameId: "maze"` and loads `/labyrinth/labyrinth.html` in a same-origin iframe. The iframe preserves the source game's single-page layout and broad page-level CSS without leaking selectors into `public/index.html`. Parent/iframe `postMessage` calls bridge TaskIt-owned operations: `getScores`, `submitScore`, `spendHintToken`, and `stateChanged`. The generic arcade token button calls a game-specific `spendToken()` hook when present, so Labyrinth spends a token for an extra hint instead of adding time. Labyrinth also blocks multi-touch gesture events internally because iframe touch events do not bubble to the parent app shell.
+**Labyrinth port:** `/js/game-labyrinth.js` registers `gameId: "maze"` and loads `/labyrinth/labyrinth.html` in a same-origin iframe with an app-version query string. The iframe preserves the source game's single-page layout and broad page-level CSS without leaking selectors into `public/index.html`. Parent/iframe `postMessage` calls bridge TaskIt-owned operations: `getScores`, `submitScore`, `spendHintToken`, and `stateChanged`. The generic arcade token button calls a game-specific `spendToken()` hook when present, so Labyrinth spends a token for an extra hint instead of adding time. The parent arcade surface and the Labyrinth iframe both block scroll/pinch defaults with capture-phase non-passive touch handlers plus `touch-action: none` / `overscroll-behavior: none`, because iframe touch events do not reliably bubble to the parent app shell on mobile browsers.
 
-**Labyrinth renderer:** Three.js is self-hosted at `/labyrinth/assets/vendor/three.min.js`, copied from exact-pinned `three@0.128.0`. The Labyrinth loader uses a same-origin `<script>` tag and keeps CDN fallback disabled. This avoids widening Helmet CSP to third-party script origins and avoids the source game's older `fetch` + `new Function` path, which would conflict with the no-`unsafe-eval` CSP hardening. The service worker treats `/labyrinth/labyrinth.html` as a standalone static page and precaches the wrapper, page, and renderer asset.
+**Labyrinth renderer:** Three.js is self-hosted at `/labyrinth/assets/vendor/three.min.js`, copied from exact-pinned `three@0.128.0`. The Labyrinth loader uses a same-origin `<script>` tag and keeps CDN fallback disabled. This avoids widening Helmet CSP to third-party script origins and avoids the source game's older `fetch` + `new Function` path, which would conflict with the no-`unsafe-eval` CSP hardening. Normal TaskIt launches require this Three/WebGL path; the older CPU ray renderer remains in the source as an emergency renderer but is no longer selected silently at startup. The service worker treats `/labyrinth/labyrinth.html` as a standalone static page and precaches the wrapper, page, and renderer asset.
 
 ---
 
@@ -2256,5 +2256,5 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.22.0*
+*End of Technical Reference Manual — TaskIt! v1.22.1*
 

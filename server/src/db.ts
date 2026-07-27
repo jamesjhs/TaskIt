@@ -141,6 +141,7 @@ db.exec(`
     code TEXT NOT NULL,
     expires_at INTEGER NOT NULL,
     used INTEGER NOT NULL DEFAULT 0,
+    failed_attempts INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
@@ -466,6 +467,8 @@ addCol('tasks', 'notify_popup_1day', 'INTEGER NOT NULL DEFAULT 0');
 addCol('tasks', 'notify_popup_onday', 'INTEGER NOT NULL DEFAULT 0');
 // purpose column on magic_tokens distinguishes login / verify / reset flows
 addCol('magic_tokens', 'purpose', "TEXT NOT NULL DEFAULT 'login'");
+// Count failed OTP submissions per session so a leaked sessionId cannot be brute-forced for the full token lifetime.
+addCol('otp_tokens', 'failed_attempts', 'INTEGER NOT NULL DEFAULT 0');
 // Gamification opt-in flag on user profiles (off by default)
 addCol('users', 'gamification_enabled', 'INTEGER NOT NULL DEFAULT 0');
 // Gamification Step 1 bugfix: reliable completion timestamp and actor

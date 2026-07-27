@@ -40,6 +40,27 @@ function isValidEmail(email: string): boolean {
 const MAX_USERNAME_LEN = 50;
 const MAX_EMAIL_LEN = 254; // RFC 5321 maximum
 const MAX_PASSWORD_LEN = 128; // bcrypt silently truncates at 72; we enforce a hard cap
+const MAX_OTP_ATTEMPTS = 5;
+const WEB_SESSION_MS = 12 * 60 * 60 * 1000; // 12 hours
+const WEB_REMEMBER_SESSION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const LEGACY_CLIENT_SESSION_MS = 30 * 24 * 60 * 60 * 1000; // Android currently sends no rememberMe flag
+
+function signAuthToken(
+  user: { id: string; username: string; email: string; role: string; locale: string; token_version: number | null },
+  maxAgeMs: number
+) {
+  const expiresAt = Date.now() + maxAgeMs;
+  const token = jwt.sign(
+    { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale, token_version: user.token_version ?? 0 },
+    JWT_SECRET,
+    { algorithm: 'HS256', expiresIn: Math.floor(maxAgeMs / 1000) }
+  );
+  return { token, expiresAt };
+}
+
+function browserSessionMs(rememberMe: unknown): number {
+  return rememberMe === true || rememberMe === 'true' ? WEB_REMEMBER_SESSION_MS : WEB_SESSION_MS;
+}
 
 // Verify Turnstile CAPTCHA token with Cloudflare
 async function verifyTurnstileToken(token: string): Promise<boolean> {
@@ -264,11 +285,17 @@ router.post('/verify-otp', (req: Request, res: Response): void => {
   }
 
   const otpRow = db.prepare('SELECT * FROM otp_tokens WHERE id = ?').get(sessionId) as
-    | { id: string; user_id: string; code: string; expires_at: number; used: number }
+    | { id: string; user_id: string; code: string; expires_at: number; used: number; failed_attempts: number }
     | undefined;
 
   if (!otpRow || otpRow.used === 1 || otpRow.expires_at < Date.now()) {
     res.status(400).json({ error: 'Invalid or expired verification code' });
+    return;
+  }
+
+  if ((otpRow.failed_attempts || 0) >= MAX_OTP_ATTEMPTS) {
+    db.prepare('UPDATE otp_tokens SET used = 1 WHERE id = ?').run(sessionId);
+    res.status(429).json({ error: 'Too many incorrect verification attempts. Please sign in again to request a new code.' });
     return;
   }
 
@@ -279,7 +306,19 @@ router.post('/verify-otp', (req: Request, res: Response): void => {
   const codeMatch = submittedHash.length === storedHash.length &&
     crypto.timingSafeEqual(submittedHash, storedHash);
   if (!codeMatch) {
-    res.status(401).json({ error: 'Incorrect verification code' });
+    const nextFailedAttempts = (otpRow.failed_attempts || 0) + 1;
+    const invalidate = nextFailedAttempts >= MAX_OTP_ATTEMPTS;
+    db.prepare('UPDATE otp_tokens SET failed_attempts = ?, used = ? WHERE id = ?').run(
+      nextFailedAttempts,
+      invalidate ? 1 : 0,
+      sessionId
+    );
+    res.status(invalidate ? 429 : 401).json({
+      error: invalidate
+        ? 'Too many incorrect verification attempts. Please sign in again to request a new code.'
+        : 'Incorrect verification code',
+      attemptsRemaining: Math.max(0, MAX_OTP_ATTEMPTS - nextFailedAttempts),
+    });
     return;
   }
 
@@ -294,13 +333,15 @@ router.post('/verify-otp', (req: Request, res: Response): void => {
     return;
   }
 
-  const tokenExpiry = rememberMe ? '30d' : '7d';
-  const token = jwt.sign(
-    { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale, token_version: user.token_version ?? 0 },
-    JWT_SECRET,
-    { algorithm: 'HS256', expiresIn: tokenExpiry }
-  );
-  res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale }, rememberMe: !!rememberMe });
+  const maxAgeMs = typeof rememberMe === 'undefined' ? LEGACY_CLIENT_SESSION_MS : browserSessionMs(rememberMe);
+  const { token, expiresAt } = signAuthToken(user, maxAgeMs);
+  res.json({
+    token,
+    expiresAt,
+    expiresInSeconds: Math.floor(maxAgeMs / 1000),
+    user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale },
+    rememberMe: rememberMe === true,
+  });
 });
 
 // POST /api/auth/magic-link
@@ -393,14 +434,16 @@ router.get('/magic-link/verify', (req: Request, res: Response): void => {
     return;
   }
 
-  const tokenExpiry = rememberMe === 'true' ? '30d' : '7d';
-  const jwtToken = jwt.sign(
-    { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale, token_version: user.token_version ?? 0 },
-    JWT_SECRET,
-    { algorithm: 'HS256', expiresIn: tokenExpiry }
-  );
+  const maxAgeMs = browserSessionMs(rememberMe);
+  const { token: jwtToken, expiresAt } = signAuthToken(user, maxAgeMs);
 
-  res.json({ token: jwtToken, user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale }, rememberMe: rememberMe === 'true' });
+  res.json({
+    token: jwtToken,
+    expiresAt,
+    expiresInSeconds: Math.floor(maxAgeMs / 1000),
+    user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale },
+    rememberMe: rememberMe === 'true',
+  });
 });
 
 // POST /api/auth/forgot-password

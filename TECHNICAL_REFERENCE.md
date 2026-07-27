@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.21.9**
+**Version 1.21.11**
 **Author:** J Rowson  
 **Generated:** 2026-05-23
 
@@ -169,7 +169,7 @@ Browser / Android WebView
 │  Express.js Server  (Node.js, port 3000 by default) │
 │                                                     │
 │  Middleware pipeline (in order):                    │
-│    1. Trust proxy (app.set 'trust proxy', 1)        │
+│    1. Trust proxy (from TRUST_PROXY config)         │
 │    2. Inline CORS handler                           │
 │    3. Helmet (CSP, security headers)                │
 │    4. express.json() body parser                    │
@@ -241,12 +241,13 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `JWT_SECRET` | string | `taskit-dev-secret-change-before-deploy` | HMAC-SHA256 key for JWT signing. **Must be set in production.** |
 | `PORT` | integer | `3000` | TCP port for the Express server |
 | `DB_PATH` | string | `server/taskit.db` | Override SQLite database file path |
-| `DB_ENCRYPTION_KEY` | string | *(unset)* | SQLCipher passphrase — enables AES encryption at rest. Run `node server/encrypt-db.js` to encrypt an existing plaintext DB before setting this. |
+| `DB_ENCRYPTION_KEY` | string | *(unset)* | SQLCipher passphrase — enables AES encryption at rest. **Must be set in production.** Run `node server/encrypt-db.js` to encrypt an existing plaintext DB before setting this. |
 | `MAX_LOGIN_ATTEMPTS` | integer | `5` | Failed login attempts before account lockout |
 | `LOCKOUT_MINUTES` | integer | `30` | Duration in minutes of account lockout |
 | `ADMIN_EMAIL` | string | *(unset)* | If set, the user who registers with this email receives the `admin` role automatically |
-| `BASE_URL` | string | *(derived from Host header)* | Public-facing URL used in magic links, invite URLs, ICS feeds. E.g. `https://taskit.example.com` |
-| `CORS_ORIGIN` | string (CSV) | *(derived from BASE_URL)* | Comma-separated list of allowed CORS origins. Defaults to `BASE_URL`; `false` if neither is set |
+| `BASE_URL` | string | *(derived from Host header in dev only)* | Public-facing URL used in magic links, invite URLs, ICS feeds. **Must be set to an `https://` URL in production.** E.g. `https://taskit.example.com` |
+| `TRUST_PROXY` | boolean, number, string, CSV | `1` in dev; required in prod | Express `trust proxy` setting. Use `false` for direct Node exposure, `1` for one trusted reverse-proxy hop, or a named/CIDR allowlist such as `loopback`. `true` is rejected in production. |
+| `CORS_ORIGIN` | string (CSV) | *(derived from BASE_URL)* | Comma-separated list of allowed CORS origins. Defaults to `BASE_URL`; `false` if neither is set. Production origins must be explicit `https://` URLs; `*` is rejected. |
 | `SMTP_HOST` | string | `''` | SMTP server hostname — seeds smtp_settings row on first run |
 | `SMTP_PORT` | integer | `587` | SMTP port |
 | `SMTP_SECURE` | `'true'` \| other | `false` | Use TLS (port 465) if `'true'`; use STARTTLS otherwise |
@@ -259,6 +260,8 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `VAPID_SUBJECT` | string | `mailto:admin@<BASE_URL host>` | Contact URI embedded in push requests; falls back to `mailto:admin@localhost` when `BASE_URL` is unset. |
 | `TURNSTILE_SITE_KEY` | string | `''` | Cloudflare Turnstile CAPTCHA site key. Leave unset to disable registration CAPTCHA. |
 | `TURNSTILE_SECRET_KEY` | string | `''` | Cloudflare Turnstile CAPTCHA secret key. Required with `TURNSTILE_SITE_KEY` to enable CAPTCHA verification. |
+
+When `NODE_ENV=production`, `server/src/config.ts` performs a startup readiness check before Express starts. It fails fast when `JWT_SECRET`, `BASE_URL`, `TRUST_PROXY`, or `DB_ENCRYPTION_KEY` are missing, when `BASE_URL` / CORS origins are not HTTPS, when `CORS_ORIGIN=*`, when `TRUST_PROXY=true`, or when paired settings such as SMTP credentials, VAPID keys, or Turnstile keys are only partially configured.
 
 **Exported constants from `config.ts`:**
 
@@ -273,6 +276,7 @@ All variables are parsed in `server/src/config.ts` via `dotenv/config`.
 | `ADMIN_EMAIL` | `string \| null` | `process.env.ADMIN_EMAIL` |
 | `APP_VERSION` | `string` | `package.json.version` |
 | `BASE_URL` | `string \| null` | `process.env.BASE_URL` (trailing `/` stripped) |
+| `TRUST_PROXY` | `boolean \| number \| string \| string[]` | Parsed from `process.env.TRUST_PROXY` |
 | `CORS_ORIGIN` | `string \| string[] \| false` | Derived (see above) |
 | `SMTP` | `object` | `{ host, port, secure, user, pass, from }` |
 | `VAPID` | `object` | `{ publicKey, privateKey, subject }` — empty strings when not configured |
@@ -2214,5 +2218,5 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.21.9*
+*End of Technical Reference Manual — TaskIt! v1.21.11*
 

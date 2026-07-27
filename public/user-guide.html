@@ -54,7 +54,7 @@
   <article class="prose prose-slate dark:prose-invert max-w-none bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 sm:p-8">
 
     <h1>👋 TaskIt! — Complete User Guide</h1>
-    <p class="lead" style="color:#6b7280;font-size:.95rem;margin-top:-4px">v<span class="page-version">1.21.9</span> &nbsp;·&nbsp; Copyright J Rowson and R Shaw, 2026</p>
+    <p class="lead" style="color:#6b7280;font-size:.95rem;margin-top:-4px">v<span class="page-version">1.21.11</span> &nbsp;·&nbsp; Copyright J Rowson and R Shaw, 2026</p>
     <p>TaskIt! is a friendly, self-hosted task manager for individuals and small teams. This guide covers every feature — from your very first login to competing with friends on the XP leaderboard.</p>
 
     <div class="toc">
@@ -110,7 +110,7 @@
       <div class="mockup-field">&#x1F4E7; you@example.com</div>
       <div style="display:flex;align-items:center;gap:8px;margin:8px 0 10px;padding:6px 2px">
         <div style="width:16px;height:16px;border:2px solid #7c3aed;border-radius:3px;flex-shrink:0;background:#f5f3ff"></div>
-        <span style="font-size:.85rem;color:#374151">Keep me signed in for 30 days</span>
+        <span style="font-size:.85rem;color:#374151">Keep me signed in for 7 days</span>
       </div>
       <div class="mockup-btn" style="width:100%;text-align:center">Send Magic Link</div>
       <div style="text-align:center;margin-top:8px;font-size:.82rem;color:#6b7280">or <span style="color:#7c3aed;text-decoration:underline">Use password instead</span></div>
@@ -123,10 +123,10 @@
     </ul>
 
     <h3>&#x1F501; Keep me signed in (Remember me)</h3>
-    <p>Tick <strong>"Keep me signed in for 30 days"</strong> before clicking Send Magic Link or Sign In.</p>
+    <p>Tick <strong>"Keep me signed in for 7 days"</strong> before clicking Send Magic Link or Sign In.</p>
     <ul>
-      <li><strong>Checked</strong> — your session persists in browser storage for 30 days. You won't need to sign in each time you open the app.</li>
-      <li><strong>Unchecked</strong> — your session lasts only until you close the browser tab (session storage only).</li>
+      <li><strong>Checked</strong> — your session persists in browser storage for up to 7 days. You won't need to sign in each time you open the app.</li>
+      <li><strong>Unchecked</strong> — your session is stored only in session storage and expires after 12 hours or when the browser clears the session.</li>
     </ul>
 
     <div class="tip-box">&#x1F4A1; Forgot your password? Click <strong>Forgot password?</strong> on the sign-in screen. You can also change your password from your <strong>Profile</strong> page at any time.</div>
@@ -569,8 +569,9 @@
         <th style="padding:7px 14px 7px 0;text-align:left;border-bottom:2px solid #e5e7eb">Key</th>
         <th style="padding:7px 0;text-align:left;border-bottom:2px solid #e5e7eb">What it stores</th>
       </tr>
-      <tr><td style="padding:5px 14px 5px 0"><code>jbToken</code></td><td style="padding:5px 0">Your login session token</td></tr>
-      <tr><td style="padding:5px 14px 5px 0"><code>jbUser</code></td><td style="padding:5px 0">Your username, email, and locale preference</td></tr>
+      <tr><td style="padding:5px 14px 5px 0"><code>taskitToken</code></td><td style="padding:5px 0">Your login session token</td></tr>
+      <tr><td style="padding:5px 14px 5px 0"><code>taskitTokenExpiresAt</code></td><td style="padding:5px 0">When the browser should discard the session token</td></tr>
+      <tr><td style="padding:5px 14px 5px 0"><code>taskitUser</code></td><td style="padding:5px 0">Your username, email, and locale preference</td></tr>
       <tr><td style="padding:5px 14px 5px 0"><code>taskit_app_version</code></td><td style="padding:5px 0">App version (for update detection)</td></tr>
       <tr><td style="padding:5px 14px 5px 0"><code>jbPopupFired</code></td><td style="padding:5px 0">Which browser popup notifications have fired today</td></tr>
       <tr><td style="padding:5px 14px 5px 0"><code>jbGamifAsked</code></td><td style="padding:5px 0">Whether you've seen the gamification opt-in prompt</td></tr>
@@ -580,7 +581,7 @@
 
     <hr/>
 
-    <p style="font-size:.88rem;color:#6b7280;margin-top:0">TaskIt! v<span class="page-version">1.21.9</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;&#x00B7;&nbsp;
+    <p style="font-size:.88rem;color:#6b7280;margin-top:0">TaskIt! v<span class="page-version">1.21.11</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;&#x00B7;&nbsp;
       <a href="https://jahosi.co.uk" class="text-indigo-500 hover:underline" target="_blank" rel="noopener noreferrer">jahosi.co.uk</a> &nbsp;&#x00B7;&nbsp;
       <a href="/privacy-policy.html" class="text-indigo-500 hover:underline">Privacy Policy</a>
     </p>
@@ -589,7 +590,7 @@
 </main>
 
 <footer class="border-t border-slate-200 dark:border-slate-700 py-4 mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-  <span>TaskIt! v<span class="page-version">1.21.9</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;&#x00B7;&nbsp;
+  <span>TaskIt! v<span class="page-version">1.21.11</span> &nbsp;&#x00B7;&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;&#x00B7;&nbsp;
     <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer" class="text-indigo-500 hover:underline">jahosi.co.uk</a>
     &nbsp;&#x00B7;&nbsp;
     <a href="/privacy-policy.html" class="text-indigo-500 hover:underline">Privacy Policy</a>

@@ -1,17 +1,19 @@
 {
   "name": "taskit",
-  "version": "1.21.9",
+  "version": "1.21.11",
   "private": true,
   "description": "TaskIt! task management application",
   "workspaces": [
     "server"
   ],
   "scripts": {
-    "build": "npm run build -w server",
+    "build": "npm run security:xss-sinks && npm run build -w server",
     "build:css": "npm run build:css -w server",
     "start": "npm run start -w server",
     "dev": "npm run dev -w server",
-    "dev:css": "npm run dev:css -w server"
+    "dev:css": "npm run dev:css -w server",
+    "security:xss-sinks": "node scripts/xss-sink-scan.js",
+    "security:xss-sinks:update": "node scripts/xss-sink-scan.js --update"
   },
   "engines": {
     "node": ">=20.0.0"

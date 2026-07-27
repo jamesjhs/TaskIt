@@ -3,6 +3,14 @@ import db from '../db';
 
 const DEFAULT_FROM = process.env.SMTP_DEFAULT_FROM || 'noreply@taskit.jahosi.co.uk';
 
+type TaskItMailOptions = {
+  from: string;
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+};
+
 /** Strip CR and LF characters from a string to prevent email header injection. */
 function sanitizeHeaderValue(s: string): string {
   return s.replace(/[\r\n]+/g, ' ');
@@ -35,11 +43,25 @@ export async function getTransporter(): Promise<nodemailer.Transporter | null> {
     return null;
   }
   console.debug('[mail] getTransporter: building transporter for', settings.host + ':' + settings.port, '| secure:', settings.secure === 1, '| auth:', !!settings.username);
-  return nodemailer.createTransport({
-    host: settings.host,
-    port: settings.port,
-    secure: settings.secure === 1,
-    auth: settings.username ? { user: settings.username, pass: settings.pass } : undefined,
+  return nodemailer.createTransport(
+    {
+      host: settings.host,
+      port: settings.port,
+      secure: settings.secure === 1,
+      auth: settings.username ? { user: settings.username, pass: settings.pass } : undefined,
+    },
+    {
+      disableFileAccess: true,
+      disableUrlAccess: true,
+    }
+  );
+}
+
+function sendTaskItMail(transporter: nodemailer.Transporter, options: TaskItMailOptions) {
+  return transporter.sendMail({
+    ...options,
+    disableFileAccess: true,
+    disableUrlAccess: true,
   });
 }
 
@@ -64,7 +86,7 @@ export async function sendMagicLink(to: string, token: string, baseUrl: string, 
 
   console.debug('[mail] Sending magic link email to:', to, '| subject:', subject, '| from:', from);
   try {
-    const info = await transporter.sendMail({
+    const info = await sendTaskItMail(transporter, {
       from,
       to,
       subject,
@@ -93,7 +115,7 @@ export async function sendOTP(to: string, code: string): Promise<void> {
 
   console.debug('[mail] Sending OTP email to:', to, '| from:', from);
   try {
-    const info = await transporter.sendMail({
+    const info = await sendTaskItMail(transporter, {
       from,
       to,
       subject: 'Your TaskIt! verification code',
@@ -128,7 +150,7 @@ export async function sendGroupInvite(to: string, groupName: string, inviteUrl: 
   const intro = `${htmlInviterLabel} invited you to join the group <strong>${escHtml(safeGroupName)}</strong> on TaskIt!.`;
   const body = `Click the link below to accept the invitation and join the group (link expires in 7 days):`;
 
-  await transporter.sendMail({
+  await sendTaskItMail(transporter, {
     from,
     to,
     subject,
@@ -149,7 +171,7 @@ export async function sendPasswordReset(to: string, token: string, baseUrl: stri
   const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
   const from = settings?.from_addr || DEFAULT_FROM;
 
-  await transporter.sendMail({
+  await sendTaskItMail(transporter, {
     from,
     to,
     subject: 'Reset your TaskIt! password',
@@ -181,5 +203,5 @@ export async function sendTaskReminder(to: string, task: { title: string; due_da
   const bodyHtml = isOverdue
     ? `<p>The task <strong>${escHtml(task.title)}</strong> was due on <strong>${escHtml(dueStr)}</strong> and has not been completed.</p>`
     : `<p>This is a reminder that the task <strong>${escHtml(task.title)}</strong> is due on <strong>${escHtml(dueStr)}</strong>.</p>`;
-  await transporter.sendMail({ from, to, subject, text: bodyText, html: bodyHtml });
+  await sendTaskItMail(transporter, { from, to, subject, text: bodyText, html: bodyHtml });
 }

@@ -1,0 +1,2873 @@
+{
+  "description": "Reviewed XSS-sensitive frontend sink signatures. Run `npm run security:xss-sinks:update` only after reviewing intentional changes.",
+  "updatedAt": "2026-07-27T16:55:54.610Z",
+  "entries": [
+    {
+      "file": "public/arcade-game-guide.html",
+      "kind": "html-render-sink",
+      "line": "frame.innerHTML = '';",
+      "count": 1,
+      "examples": [
+        147
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "dynamic-script-element",
+      "line": "const script = document.createElement('script');",
+      "count": 1,
+      "examples": [
+        7910
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "dynamic-script-element",
+      "line": "script.src = arcadeScriptSrc(game);",
+      "count": 1,
+      "examples": [
+        7911
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "} catch (err) { listEl.innerHTML = `<div class=\"loading\" style=\"color:#dc2626\">${escHtml(err.message)}</div>`; }",
+      "count": 5,
+      "examples": [
+        5842,
+        6188,
+        6211
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "} catch { listEl.innerHTML = '<div style=\"font-size:.85rem;color:#dc2626\">Failed to load notes.</div>'; }",
+      "count": 1,
+      "examples": [
+        4759
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "achEl.innerHTML = '<p style=\"font-size:.85rem;color:#9ca3af;font-style:italic;grid-column:1/-1\">No achievements yet.</p>';",
+      "count": 1,
+      "examples": [
+        5415
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "achEl.innerHTML = profile.achievements.map(a => {",
+      "count": 1,
+      "examples": [
+        5373
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "achievementSelect.innerHTML = _adminArcadeAchievements.length",
+      "count": 1,
+      "examples": [
+        6320
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "banner.innerHTML = icon + ' ' + text;",
+      "count": 1,
+      "examples": [
+        7604
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "container.innerHTML = '<div class=\"loading\">No groups yet. Create or join one!</div>';",
+      "count": 1,
+      "examples": [
+        3586
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "container.innerHTML = '<p style=\"font-size:.85rem;color:#9ca3af;font-style:italic\">No collectibles available yet — check back after completing some tasks!</p>';",
+      "count": 1,
+      "examples": [
+        8362
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "container.innerHTML = '<p style=\"font-size:.85rem;color:#9ca3af\">Loading collection…</p>';",
+      "count": 1,
+      "examples": [
+        8343
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "container.innerHTML = '<p style=\"font-size:.85rem;color:#9ca3af\">No custom task types yet. Create one above!</p>';",
+      "count": 1,
+      "examples": [
+        3213
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "container.innerHTML = '<p style=\"font-size:.85rem;color:#ef4444\">Failed to load collection.</p>';",
+      "count": 1,
+      "examples": [
+        8415
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "container.innerHTML = '<span style=\"font-size:.9rem;color:#dc2626\">Failed to load members</span>';",
+      "count": 1,
+      "examples": [
+        4498
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "container.innerHTML = editHtml;",
+      "count": 1,
+      "examples": [
+        3250
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "container.innerHTML = groups.map(g => `",
+      "count": 1,
+      "examples": [
+        3589
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "container.innerHTML = html.join('') || '<p style=\"font-size:.85rem;color:#9ca3af;font-style:italic\">Your collection is empty — keep completing tasks!</p>';",
+      "count": 1,
+      "examples": [
+        8413
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "container.innerHTML = members.map(m => `",
+      "count": 1,
+      "examples": [
+        4490
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "container.innerHTML = userTypes",
+      "count": 1,
+      "examples": [
+        3216
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "content.innerHTML = '<p style=\"font-size:.85rem;color:#9ca3af;font-style:italic\">No members have gamification enabled yet.</p>';",
+      "count": 1,
+      "examples": [
+        5477
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "content.innerHTML = renderLeaderboardTable(rows, currentUser && currentUser.id);",
+      "count": 1,
+      "examples": [
+        5479
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "document.getElementById('assigneeContainer').innerHTML = '';",
+      "count": 1,
+      "examples": [
+        4430
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "document.getElementById('profileTaskTypesList').innerHTML = '<p style=\"color:#dc2626\">Error loading task types.</p>';",
+      "count": 1,
+      "examples": [
+        3229
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "el.innerHTML = '<p class=\"detail-section-title\" style=\"margin-top:0;margin-bottom:8px\">Friends Leaderboard</p>' +",
+      "count": 1,
+      "examples": [
+        5574
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "el.innerHTML = '<p style=\"font-size:.85rem;color:#9ca3af;font-style:italic\">Could not load group leaderboards.</p>';",
+      "count": 1,
+      "examples": [
+        5617
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "el.innerHTML = '<p style=\"font-size:.85rem;color:#9ca3af;font-style:italic\">Join a group to see how you rank against members.</p>';",
+      "count": 1,
+      "examples": [
+        5600
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "el.innerHTML = '<p style=\"font-size:.85rem;color:#9ca3af;font-style:italic\">No friends added yet. Share your invite link to start competing!</p>';",
+      "count": 1,
+      "examples": [
+        5571
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "el.innerHTML = html || '<p style=\"font-size:.85rem;color:#9ca3af;font-style:italic\">No group members have gamification enabled yet.</p>';",
+      "count": 1,
+      "examples": [
+        5615
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "frame.innerHTML = '';",
+      "count": 1,
+      "examples": [
+        7986
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "frame.innerHTML = '<div class=\"arcade-coming-soon\"><p class=\"arcade-coming-soon-title\">Game could not load</p><p class=\"arcade-coming-soon-sub\">' + escHtml(err.message || 'Please try again later.') + '</p></div>';",
+      "count": 1,
+      "examples": [
+        8053
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "grid.innerHTML = '<div class=\"loading\" style=\"color:#dc2626\">' + escHtml(err.message) + '</div>';",
+      "count": 1,
+      "examples": [
+        3672
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "grid.innerHTML = '<div class=\"loading\"><div style=\"font-size:3rem;margin-bottom:12px\">\\ud83d\\udccb</div><p>No tasks found. Create your first task!</p></div>';",
+      "count": 1,
+      "examples": [
+        3769
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "grid.innerHTML = '<div class=\"loading\">Loading\\u2026</div>';",
+      "count": 1,
+      "examples": [
+        3660
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "grid.innerHTML = html;",
+      "count": 1,
+      "examples": [
+        3784
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "groupSelect.innerHTML = '<option value=\"\">Personal (no group)</option>';",
+      "count": 1,
+      "examples": [
+        4361
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "iconSel.innerHTML = '<option value=\"\">— No icon (use rarity emoji) —</option>';",
+      "count": 2,
+      "examples": [
+        6637,
+        6735
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "if (!events.length) { listEl.innerHTML = '<div class=\"loading\">No XP events found.</div>'; return; }",
+      "count": 1,
+      "examples": [
+        6451
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "if (!items.length) { listEl.innerHTML = '<div class=\"loading\">No feedback yet.</div>'; return; }",
+      "count": 1,
+      "examples": [
+        6223
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "if (!members.length) { listEl.innerHTML = '<div class=\"loading\">No members found.</div>'; return; }",
+      "count": 1,
+      "examples": [
+        5814
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "if (!reports.length) { listEl.innerHTML = '<div class=\"loading\">No reports.</div>'; return; }",
+      "count": 1,
+      "examples": [
+        6200
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "if (!users.length) { listEl.innerHTML = '<div class=\"loading\">No locked accounts.</div>'; return; }",
+      "count": 1,
+      "examples": [
+        6180
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "if (container) container.innerHTML = '';",
+      "count": 1,
+      "examples": [
+        4480
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "if (list) list.innerHTML = '';",
+      "count": 2,
+      "examples": [
+        4862,
+        4894
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "if (listEl) listEl.innerHTML = '<div class=\"loading\">Loading…</div>';",
+      "count": 1,
+      "examples": [
+        6300
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "if (listEl) listEl.innerHTML = '<p style=\"font-size:.85rem;color:#ef4444\">Failed to load arcade games.</p>';",
+      "count": 1,
+      "examples": [
+        6312
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "list.innerHTML = '';",
+      "count": 2,
+      "examples": [
+        3821,
+        4028
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "list.innerHTML = html;",
+      "count": 2,
+      "examples": [
+        3871,
+        4057
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = _adminArcadeGames.map(game => {",
+      "count": 1,
+      "examples": [
+        6338
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = _adminCats.map(c => `",
+      "count": 1,
+      "examples": [
+        6519
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = '<div class=\"loading\">Loading\\u2026</div>';",
+      "count": 5,
+      "examples": [
+        5787,
+        6054,
+        6448
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = '<div class=\"loading\">No outstanding alerts</div>';",
+      "count": 2,
+      "examples": [
+        6963,
+        6993
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = '<div style=\"font-size:.85rem;color:#9ca3af;font-style:italic\">No progress notes yet.</div>';",
+      "count": 1,
+      "examples": [
+        4750
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = '<p style=\"font-size:.85rem;color:#9ca3af;font-style:italic;padding:8px 0\">No users match the current filter.</p>';",
+      "count": 1,
+      "examples": [
+        6098
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = '<p style=\"font-size:.85rem;color:#9ca3af;font-style:italic\">No arcade games registered yet.</p>';",
+      "count": 1,
+      "examples": [
+        6334
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = '<p style=\"font-size:.85rem;color:#9ca3af;font-style:italic\">No categories yet.</p>';",
+      "count": 1,
+      "examples": [
+        6516
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = '<p style=\"font-size:.85rem;color:#9ca3af;font-style:italic\">No items yet. Add one above or use Bulk Seed.</p>';",
+      "count": 1,
+      "examples": [
+        6570
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = `<div class=\"loading\" style=\"color:#dc2626\">${escHtml(err.message)}</div>`;",
+      "count": 3,
+      "examples": [
+        6059,
+        6526,
+        6610
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = events.map(ev => `",
+      "count": 1,
+      "examples": [
+        6452
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = html.join('');",
+      "count": 1,
+      "examples": [
+        6608
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = installHtml + alertsHtml + taskHtml;",
+      "count": 1,
+      "examples": [
+        6990
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = items.map(f => {",
+      "count": 1,
+      "examples": [
+        6224
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = members.map(m => {",
+      "count": 1,
+      "examples": [
+        5815
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = notes.map(n => `",
+      "count": 1,
+      "examples": [
+        4753
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = reports.map(r => `",
+      "count": 1,
+      "examples": [
+        6201
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = subtasks.map(s => `",
+      "count": 1,
+      "examples": [
+        4975
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = users.map(u => {",
+      "count": 1,
+      "examples": [
+        6104
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "listEl.innerHTML = users.map(u => `",
+      "count": 1,
+      "examples": [
+        6181
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "overdueList.innerHTML = significantlyOverdueTasks.map(buildCard).join('');",
+      "count": 1,
+      "examples": [
+        3765
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "resultEl.innerHTML =",
+      "count": 1,
+      "examples": [
+        6882
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "row.innerHTML = `",
+      "count": 1,
+      "examples": [
+        4831
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "scriptSelect.innerHTML = '<option value=\"\">— No script yet —</option>' +",
+      "count": 1,
+      "examples": [
+        6327
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "section.innerHTML = `",
+      "count": 1,
+      "examples": [
+        5689
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "sel.innerHTML = _adminCats.length",
+      "count": 1,
+      "examples": [
+        6509
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "sel.innerHTML = '<option value=\"\">All Groups</option>';",
+      "count": 1,
+      "examples": [
+        3574
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "sel.innerHTML = '<option value=\"\">All Types</option>';",
+      "count": 1,
+      "examples": [
+        3501
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "skillsEl.innerHTML = '<p style=\"font-size:.85rem;color:#9ca3af;font-style:italic\">Complete tasks to earn XP and see your breakdown.</p>';",
+      "count": 1,
+      "examples": [
+        5354
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "skillsEl.innerHTML = `<div style=\"display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap\">${svgChart}<div style=\"flex:1;min-width:160px\">${legendRows}</div></div>`;",
+      "count": 1,
+      "examples": [
+        5352
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "streaksEl.innerHTML = '<p style=\"font-size:.85rem;color:#9ca3af;font-style:italic\">Create recurring tasks and complete them on time to build streaks.</p>';",
+      "count": 1,
+      "examples": [
+        5433
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "streaksEl.innerHTML = streaks.map(s => `",
+      "count": 1,
+      "examples": [
+        5421
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "html-render-sink",
+      "line": "typeSelect.innerHTML = '<option value=\"\">Select type\\u2026</option>';",
+      "count": 2,
+      "examples": [
+        3530,
+        4348
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": ": '<button onclick=\"handleApplyFreeze()\" class=\"btn btn-outline btn-sm\" style=\"font-size:.8rem;white-space:nowrap\">\\u2744\\uFE0F Apply<br>Freeze</button>'}",
+      "count": 1,
+      "examples": [
+        5698
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "? `<button onclick=\"adminTestArcadeGame('${escHtml(game.achievementKey)}')\" class=\"btn btn-sm btn-secondary\" style=\"white-space:nowrap\">Test</button>`",
+      "count": 1,
+      "examples": [
+        6344
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "? `<button onclick=\"adminToggleUserRole('${escHtml(u.id)}', '${u.role}')\"",
+      "count": 1,
+      "examples": [
+        6128
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "? `<button onclick=\"adminUnlockUser('${escHtml(u.id)}')\" class=\"btn btn-sm btn-secondary\" style=\"white-space:nowrap\">Unlock</button>`",
+      "count": 1,
+      "examples": [
+        6136
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "? `<img src=\"/collectables/${item.icon_filename.split('/').map(encodeURIComponent).join('/')}\" alt=\"\" style=\"width:1.5rem;height:1.5rem;object-fit:contain\" data-fb=\"${escHtml(emojiIcon)}\" onerror=\"this.replaceWith(document.createTextNode(this.dataset.fb))\" />`",
+      "count": 1,
+      "examples": [
+        8386
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "? `<img src=\"/collectables/${item.icon_filename.split('/').map(encodeURIComponent).join('/')}\" alt=\"\" style=\"width:28px;height:28px;object-fit:contain;border-radius:4px;border:1px solid #e5e7eb;background:#f9fafb;flex-shrink:0\" onerror=\"this.style.display='none'\" />`",
+      "count": 1,
+      "examples": [
+        6593
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "'<button onclick=\"removeFriend(' + escHtml(JSON.stringify(r.id)) + ',' + escHtml(JSON.stringify(r.username)) + ')\" ' +",
+      "count": 1,
+      "examples": [
+        5578
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<a class=\"lp-nav-brand\" href=\"#\" onclick=\"return false;\">",
+      "count": 1,
+      "examples": [
+        174
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button class=\"btn btn-sm btn-secondary\" onclick=\"toggleNotifModal()\">Close</button>",
+      "count": 1,
+      "examples": [
+        1996
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button class=\"chip active\" onclick=\"setUserFilter('all')\" id=\"userChipAll\">All</button>",
+      "count": 1,
+      "examples": [
+        1530
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button class=\"chip\" onclick=\"setUserFilter('admins')\" id=\"userChipAdmins\">Admins</button>",
+      "count": 1,
+      "examples": [
+        1531
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button class=\"chip\" onclick=\"setUserFilter('locked')\" id=\"userChipLocked\">🔒 Locked</button>",
+      "count": 1,
+      "examples": [
+        1532
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button class=\"chip\" onclick=\"setUserFilter('reported')\" id=\"userChipReported\">⚠️ Reported</button>",
+      "count": 1,
+      "examples": [
+        1533
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button class=\"cookie-notice-close\" onclick=\"dismissCookieNotice()\">Got it</button>",
+      "count": 1,
+      "examples": [
+        8462
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button class=\"nav-btn active\" id=\"navTasks\" onclick=\"showPage('tasks')\">",
+      "count": 1,
+      "examples": [
+        1914
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button class=\"nav-btn hidden\" id=\"navAdmin\" onclick=\"showPage('admin')\">",
+      "count": 1,
+      "examples": [
+        1931
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button class=\"nav-btn nav-btn-notif\" id=\"navNotifBtn\" onclick=\"toggleNotifModal()\">",
+      "count": 1,
+      "examples": [
+        1920
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button class=\"nav-btn\" id=\"navGroups\" onclick=\"showPage('groups')\">",
+      "count": 1,
+      "examples": [
+        1917
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button class=\"nav-btn\" id=\"navProfile\" onclick=\"showPage('profile')\">",
+      "count": 1,
+      "examples": [
+        1928
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button class=\"nav-btn\" id=\"navProgress\" onclick=\"showPage('progress')\">",
+      "count": 1,
+      "examples": [
+        1925
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button class=\"tab-btn active\" id=\"tabLoginBtn\" onclick=\"showTab('login')\">Login</button>",
+      "count": 1,
+      "examples": [
+        969
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button class=\"tab-btn\" id=\"tabRegisterBtn\" onclick=\"showTab('register')\">Register</button>",
+      "count": 1,
+      "examples": [
+        970
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button id=\"arcadeSpendTokenBtn\" class=\"arcade-spend-token-btn\" onclick=\"arcadeSpendToken()\" disabled>",
+      "count": 1,
+      "examples": [
+        8445
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button id=\"detailDeleteBtn\" onclick=\"deleteCurrentTask()\" class=\"btn btn-danger btn-sm\" style=\"flex:1\">Delete</button>",
+      "count": 1,
+      "examples": [
+        2329
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button id=\"fabNewTask\" onclick=\"toggleFabMenu()\" class=\"fab-btn\" aria-label=\"New Task\" title=\"New Task\">+</button>",
+      "count": 1,
+      "examples": [
+        1896
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button id=\"filterToggleBtn\" onclick=\"toggleFilterPanel()\" class=\"chip\" style=\"display:flex;align-items:center;gap:4px\">",
+      "count": 1,
+      "examples": [
+        1123
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button id=\"groupLeaderboardToggle\" onclick=\"toggleGroupLeaderboard()\" class=\"btn btn-outline btn-sm btn-full\">🏆 Show Leaderboard</button>",
+      "count": 1,
+      "examples": [
+        2504
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button id=\"startTaskBackButton\" type=\"button\" onclick=\"showStartTaskPrompt()\" class=\"btn btn-secondary btn-sm hidden\" style=\"margin-top:14px\">← Back</button>",
+      "count": 1,
+      "examples": [
+        2353
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"${isBlocked ? 'unblockUser' : 'blockUser'}(${escHtml(JSON.stringify(m.id))}, ${escHtml(JSON.stringify(groupId))})\" class=\"btn btn-sm btn-secondary\">",
+      "count": 1,
+      "examples": [
+        5836
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"addFriendByKey()\" class=\"btn btn-primary btn-sm\">Add Friend</button>",
+      "count": 1,
+      "examples": [
+        1864
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"addProfileTaskType()\" class=\"btn btn-primary btn-sm\" style=\"white-space:nowrap\">+ Add</button>",
+      "count": 1,
+      "examples": [
+        1378
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"adminClearArcadeGameForm()\" class=\"btn btn-secondary btn-sm\">Clear</button>",
+      "count": 1,
+      "examples": [
+        1766
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"adminClearCollectibleForm()\" class=\"btn btn-secondary btn-sm\">Clear</button>",
+      "count": 1,
+      "examples": [
+        1659
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"adminCreateCategory()\" class=\"btn btn-primary btn-sm\" style=\"white-space:nowrap\">+ Add</button>",
+      "count": 1,
+      "examples": [
+        1598
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"adminDeleteArcadeGame('${escHtml(game.id)}')\" class=\"btn btn-sm btn-danger\" style=\"white-space:nowrap\">Delete</button>",
+      "count": 1,
+      "examples": [
+        6360
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"adminDeleteCategory('${escHtml(c.id)}', '${escHtml(c.name)}')\" class=\"btn btn-sm btn-danger\" style=\"flex-shrink:0\">Delete</button>",
+      "count": 1,
+      "examples": [
+        6523
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"adminDeleteCollectible('${escHtml(item.id)}', '${escHtml(item.name)}')\" class=\"btn btn-sm btn-danger\" style=\"white-space:nowrap;flex-shrink:0\">Delete</button>",
+      "count": 1,
+      "examples": [
+        6604
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"adminEditArcadeGame('${escHtml(game.id)}')\" class=\"btn btn-sm btn-outline\" style=\"white-space:nowrap\">Edit</button>",
+      "count": 1,
+      "examples": [
+        6359
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"adminEditCollectible('${escHtml(item.id)}')\" class=\"btn btn-sm btn-outline\" style=\"white-space:nowrap;flex-shrink:0\">Edit</button>",
+      "count": 1,
+      "examples": [
+        6603
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"adminRenameCategory('${escHtml(c.id)}')\" class=\"btn btn-sm btn-outline\" style=\"flex-shrink:0\">Rename</button>",
+      "count": 1,
+      "examples": [
+        6522
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"adminSaveArcadeGame()\" class=\"btn btn-primary btn-sm\" style=\"flex:1\">Save Game</button>",
+      "count": 1,
+      "examples": [
+        1765
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"adminSaveCollectible()\" class=\"btn btn-primary btn-sm\" style=\"flex:1\">Save Item</button>",
+      "count": 1,
+      "examples": [
+        1658
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"adminSeedCollectibles()\" class=\"btn btn-primary btn-full\" style=\"margin-top:10px\">🌱 Run Seed</button>",
+      "count": 1,
+      "examples": [
+        1687
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"changeMemberRole('${escHtml(m.id)}', '${m.role === 'admin' ? 'member' : 'admin'}')\" class=\"btn btn-sm btn-outline\">",
+      "count": 1,
+      "examples": [
+        5823
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"closeCreateGroupModal()\" class=\"btn btn-secondary\" style=\"flex:1\">Cancel</button>",
+      "count": 1,
+      "examples": [
+        2195
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"closeDetailModal()\" class=\"btn btn-secondary btn-sm\">✕</button>",
+      "count": 1,
+      "examples": [
+        2330
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"closeFabMenu(true); openTaskModalWithMode('goal')\" class=\"fab-menu-item\" role=\"menuitem\" aria-label=\"Create long-term goal\">",
+      "count": 1,
+      "examples": [
+        1901
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"closeFabMenu(true); openTaskModalWithMode('sporadic')\" class=\"fab-menu-item\" role=\"menuitem\" aria-label=\"Create sporadic task\">",
+      "count": 1,
+      "examples": [
+        1904
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"closeFabMenu(true); openTaskModalWithMode('task')\" class=\"fab-menu-item\" role=\"menuitem\" aria-label=\"Create new task\">",
+      "count": 1,
+      "examples": [
+        1907
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"closeJoinGroupModal()\" class=\"btn btn-secondary\" style=\"flex:1\">Cancel</button>",
+      "count": 1,
+      "examples": [
+        2226
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"completeSporadicTask('${escHtml(task.id)}')\" class=\"sporadic-complete-btn\">✓ Mark done</button>",
+      "count": 1,
+      "examples": [
+        3864
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"confirmDefer()\" class=\"btn btn-primary btn-sm\">Confirm</button>",
+      "count": 1,
+      "examples": [
+        2305
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"confirmDeleteAccount()\" class=\"btn btn-danger btn-full\">Delete My Account</button>",
+      "count": 1,
+      "examples": [
+        1416
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"copyIcsLink()\" class=\"btn btn-secondary btn-sm\">Copy</button>",
+      "count": 1,
+      "examples": [
+        1310
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"copyInviteLink()\" class=\"btn btn-secondary btn-full\" id=\"copyInviteBtn\">",
+      "count": 1,
+      "examples": [
+        1299
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"copyToClipboard(${escHtml(JSON.stringify(g.invite_name))})\" class=\"btn btn-sm btn-secondary\">Copy</button>",
+      "count": 1,
+      "examples": [
+        3600
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"copyToClipboard(${escHtml(JSON.stringify(g.shared_key))})\" class=\"btn btn-sm btn-secondary\">Copy</button>",
+      "count": 1,
+      "examples": [
+        3608
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"copyToClipboard(document.getElementById('friendInviteLink').value)\" class=\"btn btn-sm btn-secondary\">Copy</button>",
+      "count": 1,
+      "examples": [
+        1875
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"copyToClipboard(document.getElementById('friendInviteMessage').value)\" class=\"btn btn-sm btn-secondary\" style=\"align-self:flex-end\">Copy</button>",
+      "count": 1,
+      "examples": [
+        1880
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"copyToClipboard(document.getElementById('friendMyKey').textContent)\" class=\"btn btn-sm btn-secondary\">Copy</button>",
+      "count": 1,
+      "examples": [
+        1854
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"copyToClipboard(document.getElementById('friendMyUsername').textContent)\" class=\"btn btn-sm btn-secondary\">Copy</button>",
+      "count": 1,
+      "examples": [
+        1849
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"copyToClipboard(document.getElementById('groupQRLink').value)\" class=\"btn btn-sm btn-secondary\">Copy</button>",
+      "count": 1,
+      "examples": [
+        2476
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"deleteGroup()\" class=\"btn btn-danger btn-sm btn-full\">Delete Group</button>",
+      "count": 1,
+      "examples": [
+        2480
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"dismissAlert('${escHtml(a.id)}')\" class=\"btn btn-sm btn-secondary\" style=\"margin-top:4px\">Dismiss</button>",
+      "count": 1,
+      "examples": [
+        6971
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"document.getElementById('createGroupForm').requestSubmit()\" class=\"btn btn-primary\" style=\"flex:1\">Create</button>",
+      "count": 1,
+      "examples": [
+        2196
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"document.getElementById('deferSection').classList.add('hidden')\" class=\"btn btn-secondary btn-sm\">✕</button>",
+      "count": 1,
+      "examples": [
+        2306
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"document.getElementById('groupMembersModal').classList.add('hidden')\" class=\"btn btn-secondary btn-full\">Close</button>",
+      "count": 1,
+      "examples": [
+        2509
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"document.getElementById('joinGroupForm').requestSubmit()\" class=\"btn btn-primary\" style=\"flex:1\">Join</button>",
+      "count": 1,
+      "examples": [
+        2227
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"editCurrentTask()\" class=\"btn btn-outline btn-sm\" style=\"flex:1\">Edit</button>",
+      "count": 1,
+      "examples": [
+        2328
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"event.preventDefault();event.stopPropagation();loadAdminArcadeGames()\" class=\"btn btn-sm btn-secondary\">Refresh</button>",
+      "count": 1,
+      "examples": [
+        1717
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"event.preventDefault();event.stopPropagation();loadArcadeSettings()\" class=\"btn btn-sm btn-secondary\">Refresh</button>",
+      "count": 1,
+      "examples": [
+        1696
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"event.preventDefault();event.stopPropagation();loadCollectiblesAdmin()\" class=\"btn btn-sm btn-secondary\">Refresh</button>",
+      "count": 1,
+      "examples": [
+        1592
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"event.preventDefault();event.stopPropagation();loadLockedAccounts()\" class=\"btn btn-sm btn-secondary\">Refresh</button>",
+      "count": 1,
+      "examples": [
+        1543
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"event.preventDefault();event.stopPropagation();loadUserReports()\" class=\"btn btn-sm btn-secondary\">Refresh</button>",
+      "count": 1,
+      "examples": [
+        1554
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"event.preventDefault();event.stopPropagation();loadUsersPanel()\" class=\"btn btn-sm btn-secondary\">Refresh</button>",
+      "count": 1,
+      "examples": [
+        1516
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"event.preventDefault();event.stopPropagation();loadXpEvents()\" class=\"btn btn-sm btn-secondary\">Refresh</button>",
+      "count": 1,
+      "examples": [
+        1580
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"generateFriendInvite()\" class=\"btn btn-outline btn-sm btn-full\" style=\"margin-bottom:10px\">📤 Generate Invite Link &amp; QR Code</button>",
+      "count": 1,
+      "examples": [
+        1869
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"generateGroupQR()\" class=\"btn btn-outline btn-sm btn-full\" style=\"margin-bottom:8px\">📷 Generate QR Code / Invite Link</button>",
+      "count": 1,
+      "examples": [
+        2470
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"goToAuth('login')\" class=\"lp-btn-cta-outline\">Sign In</button>",
+      "count": 1,
+      "examples": [
+        939
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"goToAuth('login')\" class=\"lp-btn-nav-signin\">Sign In</button>",
+      "count": 1,
+      "examples": [
+        183
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"goToAuth('register')\" class=\"lp-btn-cta-white\">🚀 Create Free Account</button>",
+      "count": 1,
+      "examples": [
+        938
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"goToAuth('register')\" class=\"lp-btn-nav-started\">Get Started</button>",
+      "count": 1,
+      "examples": [
+        184
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"goToAuth('register')\" style=\"background:white;color:#4c1d95;font-weight:700;border:none;border-radius:10px;padding:14px 32px;font-size:1rem;cursor:pointer;transition:opacity .15s\" onmouseover=\"this.style.opacity='.9'\" onmouseout=\"this.style.opacity='1'\">🎮 Start Earning XP Today</button>",
+      "count": 1,
+      "examples": [
+        646
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"handleChangePassword()\" class=\"btn btn-primary\" style=\"flex:1\">Update Password</button>",
+      "count": 1,
+      "examples": [
+        1289
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"handleGamifOptInNo()\" class=\"btn btn-secondary btn-full\">Maybe Later</button>",
+      "count": 1,
+      "examples": [
+        1948
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"handleGamifOptInYes()\" class=\"btn btn-primary btn-full\" style=\"margin-bottom:10px\">🚀 Enable Gamification</button>",
+      "count": 1,
+      "examples": [
+        1947
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"handleOTPVerify()\" class=\"btn btn-primary btn-full\">Verify Code</button>",
+      "count": 1,
+      "examples": [
+        2416
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"handleResetPassword()\" class=\"btn btn-primary btn-full\">Set New Password</button>",
+      "count": 1,
+      "examples": [
+        2448
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"keepDrop()\" class=\"btn btn-primary\" style=\"flex:1\">🎒 Keep</button>",
+      "count": 1,
+      "examples": [
+        1984
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"loadAdminFeedback()\" class=\"btn btn-sm btn-secondary\">Refresh</button>",
+      "count": 1,
+      "examples": [
+        1567
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"logout()\" class=\"btn btn-danger btn-full\">Sign Out</button>",
+      "count": 1,
+      "examples": [
+        1212
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"openCreateGroupModal()\" class=\"btn btn-primary btn-sm\">+ New</button>",
+      "count": 1,
+      "examples": [
+        1197
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"openDetailById('${escHtml(goal.id)}')\" class=\"btn btn-outline btn-sm\" style=\"padding:0.5rem 1rem;font-size:0.9rem\">Details</button>",
+      "count": 1,
+      "examples": [
+        4051
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"openGroupMembers(${escHtml(JSON.stringify(g.id))})\" class=\"btn btn-secondary btn-full btn-sm\">${g.role === 'admin' ? 'Manage / Invite' : 'View Members'}</button>",
+      "count": 1,
+      "examples": [
+        3611
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"openJoinGroupModal()\" class=\"btn btn-outline btn-sm\">Join</button>",
+      "count": 1,
+      "examples": [
+        1196
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"openNewGoalModal()\" class=\"btn btn-outline btn-sm\" style=\"margin-left:auto\">+ Add Goal</button>",
+      "count": 1,
+      "examples": [
+        1185
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"openSetDeadlineModal('${escHtml(goal.id)}')\" class=\"btn btn-primary btn-sm\" style=\"padding:0.5rem 1rem;font-size:0.9rem\">📅 Set Deadline</button>",
+      "count": 1,
+      "examples": [
+        4050
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"openTaskModal(sporadicMap.get('${escHtml(task.id)}'))\" class=\"btn btn-outline btn-sm\" style=\"padding: 0.5rem 1rem; font-size: 0.9rem;\">📅 Edit</button>",
+      "count": 1,
+      "examples": [
+        3865
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"performAppUpdate()\">Refresh</button>",
+      "count": 1,
+      "examples": [
+        166
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"quickStatus('complete')\" class=\"status-btn status-btn-complete\">Complete</button>",
+      "count": 1,
+      "examples": [
+        2287
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"quickStatus('not_started')\" class=\"status-btn status-btn-not-started\">Not Started</button>",
+      "count": 1,
+      "examples": [
+        2285
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"quickStatus('started')\" class=\"status-btn status-btn-started\">Started</button>",
+      "count": 1,
+      "examples": [
+        2286
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"recycleDrop()\" class=\"btn btn-secondary\" style=\"flex:1\">♻️ Recycle (+XP)</button>",
+      "count": 1,
+      "examples": [
+        1985
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"renameGroup()\" class=\"btn btn-primary btn-sm\">Rename</button>",
+      "count": 1,
+      "examples": [
+        2464
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"reportUser(${escHtml(JSON.stringify(m.id))}, ${escHtml(JSON.stringify(m.username))})\" class=\"btn btn-sm btn-danger\">Report</button>",
+      "count": 1,
+      "examples": [
+        5835
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"rotateIcsToken()\" class=\"btn btn-outline btn-sm\" style=\"font-size:.8rem\">🔄 Regenerate Link</button>",
+      "count": 1,
+      "examples": [
+        1312
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"saveLocale()\" class=\"btn btn-primary btn-full\">Save Format</button>",
+      "count": 1,
+      "examples": [
+        1266
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"saveNotificationPreferences()\" class=\"btn btn-primary btn-full\">Save Preferences</button>",
+      "count": 1,
+      "examples": [
+        1369
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"saveRecurChange()\" class=\"btn btn-primary btn-sm\">Save</button>",
+      "count": 1,
+      "examples": [
+        2262
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"saveXpEvent('${escHtml(ev.key)}')\" class=\"btn btn-sm btn-primary\" style=\"white-space:nowrap\">Save</button>",
+      "count": 1,
+      "examples": [
+        6467
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"sendEmailInvite()\" class=\"btn btn-primary btn-sm\">Send Invite</button>",
+      "count": 1,
+      "examples": [
+        2468
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"sendFeedbackReply('${escHtml(f.id)}')\" class=\"btn btn-sm btn-primary\">Send</button>",
+      "count": 1,
+      "examples": [
+        6237
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"setFilter('status','')\" id=\"filterAll\" class=\"chip active\">All</button>",
+      "count": 1,
+      "examples": [
+        1131
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"setFilter('status','not_started')\" id=\"filterNotStarted\" class=\"chip\">Not Started</button>",
+      "count": 1,
+      "examples": [
+        1132
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"setFilter('status','started')\" id=\"filterStarted\" class=\"chip\">Started</button>",
+      "count": 1,
+      "examples": [
+        1133
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"showAdminTab('feedback')\" id=\"adminTabFeedback\" class=\"tab-btn\">Feedback</button>",
+      "count": 1,
+      "examples": [
+        1446
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"showAdminTab('gamify')\" id=\"adminTabGamify\" class=\"tab-btn\">🎮 Gamify</button>",
+      "count": 1,
+      "examples": [
+        1447
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"showAdminTab('smtp')\" id=\"adminTabSmtp\" class=\"tab-btn active\">SMTP</button>",
+      "count": 1,
+      "examples": [
+        1444
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"showAdminTab('users')\" id=\"adminTabUsers\" class=\"tab-btn\">👥 Users</button>",
+      "count": 1,
+      "examples": [
+        1445
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"showPage('profile')\" class=\"btn btn-primary btn-full\">Enable in Profile →</button>",
+      "count": 1,
+      "examples": [
+        1783
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"showPage('progress')\" class=\"btn btn-secondary btn-full btn-sm\">⭐ View Progress &amp; Achievements →</button>",
+      "count": 1,
+      "examples": [
+        1393
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"stopRecurring()\" class=\"btn btn-outline btn-sm\" style=\"color:#dc2626;border-color:#dc2626\">⊘ Cancel Future Recurrences</button>",
+      "count": 1,
+      "examples": [
+        2265
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"submitFeedback()\" class=\"btn btn-primary btn-full\">Send Feedback</button>",
+      "count": 1,
+      "examples": [
+        1409
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"submitNote()\" class=\"btn btn-primary btn-sm\" style=\"flex:1\">Save Note</button>",
+      "count": 1,
+      "examples": [
+        2318
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"toggleAddNoteForm()\" class=\"btn btn-secondary btn-sm\" style=\"flex:1\">Cancel</button>",
+      "count": 1,
+      "examples": [
+        2317
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"toggleAddNoteForm()\" class=\"btn btn-sm btn-outline\">+ Add Note</button>",
+      "count": 1,
+      "examples": [
+        2312
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"toggleChangePassword()\" class=\"btn btn-outline btn-full\">Change Password</button>",
+      "count": 1,
+      "examples": [
+        1273
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"toggleChangePassword()\" class=\"btn btn-secondary\" style=\"flex:1\">Cancel</button>",
+      "count": 1,
+      "examples": [
+        1290
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"toggleDeferSection()\" class=\"btn btn-outline btn-sm\" style=\"flex:1\">Defer</button>",
+      "count": 1,
+      "examples": [
+        2327
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"toggleRecurChangeForm()\" class=\"btn btn-secondary btn-sm\">✕</button>",
+      "count": 1,
+      "examples": [
+        2263
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button onclick=\"toggleRecurChangeForm()\" class=\"btn btn-sm btn-outline\">Change</button>",
+      "count": 1,
+      "examples": [
+        2250
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" class=\"btn btn-sm btn-primary\" onclick=\"deferNotificationTask('${escHtml(t.id)}', 1, event)\">1 day</button>",
+      "count": 1,
+      "examples": [
+        6984
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" class=\"btn btn-sm btn-primary\" onclick=\"deferNotificationTask('${escHtml(t.id)}', 7, event)\">1 week</button>",
+      "count": 1,
+      "examples": [
+        6985
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" class=\"btn btn-sm btn-secondary\" onclick=\"toggleNotificationDefer('${escHtml(t.id)}', event)\">Defer</button>",
+      "count": 1,
+      "examples": [
+        6982
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" class=\"subtask-add-item-btn\" onclick=\"addSubtaskFormRow()\">+ Add item</button>",
+      "count": 1,
+      "examples": [
+        2036
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" class=\"subtask-add-toggle\" onclick=\"toggleNotesPanel()\" id=\"notesToggleBtn\" aria-expanded=\"false\" aria-controls=\"notesPanel\">",
+      "count": 1,
+      "examples": [
+        2047
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" class=\"subtask-add-toggle\" onclick=\"toggleSubtaskPanel()\" id=\"subtaskToggleBtn\" aria-expanded=\"false\" aria-controls=\"subtaskFormPanel\">",
+      "count": 1,
+      "examples": [
+        2031
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" class=\"subtask-form-remove\" onclick=\"${deleteHandler}\" title=\"Remove\">✕</button>",
+      "count": 1,
+      "examples": [
+        4837
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" class=\"task-card-delete-btn\" onclick=\"deleteTaskFromCard(event, ${jsArg(goal.id)})\" aria-label=\"Delete ${escHtml(goal.title)}\" title=\"Delete goal\">&#128465;</button>",
+      "count": 1,
+      "examples": [
+        4045
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" class=\"task-card-delete-btn\" onclick=\"deleteTaskFromCard(event, ${jsArg(t.id)})\" aria-label=\"Delete ${escHtml(t.title)}\" title=\"Delete task\">&#128465;</button>",
+      "count": 1,
+      "examples": [
+        3747
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" class=\"task-card-delete-btn\" onclick=\"deleteTaskFromCard(event, ${jsArg(task.id)})\" aria-label=\"Delete ${escHtml(task.title)}\" title=\"Delete task\">&#128465;</button>",
+      "count": 1,
+      "examples": [
+        3852
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" id=\"taskSaveBtn\" onclick=\"document.getElementById('taskForm').requestSubmit()\" class=\"btn btn-primary\" style=\"flex:1\">Save Task</button>",
+      "count": 1,
+      "examples": [
+        2146
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"adminClearCollectibleIcon()\" class=\"btn btn-sm btn-danger\" style=\"padding:2px 8px;font-size:.75rem\">✕ Remove</button>",
+      "count": 1,
+      "examples": [
+        1647
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"adminLoadServerIcons()\" class=\"btn btn-sm btn-secondary\" style=\"white-space:nowrap\">Refresh</button>",
+      "count": 1,
+      "examples": [
+        1642
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"adminUploadCollectibleIcon()\" class=\"btn btn-sm btn-primary\" style=\"white-space:nowrap\">Upload</button>",
+      "count": 1,
+      "examples": [
+        1654
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"cancelAddNewType()\" class=\"btn btn-secondary btn-sm\">✕</button>",
+      "count": 1,
+      "examples": [
+        2020
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"cancelEditTaskType('${typeId}')\" class=\"btn btn-sm btn-secondary\" style=\"padding:4px 8px;font-size:.75rem\">Cancel</button>",
+      "count": 1,
+      "examples": [
+        3247
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"cancelOTP()\" class=\"link-btn\" style=\"font-size:.8rem\">Cancel</button>",
+      "count": 1,
+      "examples": [
+        2419
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"closeDeleteSporadicHistoryModal()\" class=\"btn btn-secondary\" style=\"flex:1\">Keep Date</button>",
+      "count": 1,
+      "examples": [
+        2389
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"closeEditSporadicLastDoneModal()\" class=\"btn btn-secondary\" style=\"flex:1\">Cancel</button>",
+      "count": 1,
+      "examples": [
+        2372
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"closeSetDeadlineModal()\" class=\"btn btn-secondary\" style=\"flex:1\">Cancel</button>",
+      "count": 1,
+      "examples": [
+        2175
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"closeStartTaskModal()\" class=\"btn btn-secondary btn-sm\" style=\"margin-top:10px\">Cancel</button>",
+      "count": 1,
+      "examples": [
+        2354
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"closeTaskModal()\" class=\"btn btn-secondary\" style=\"flex:1\">Cancel</button>",
+      "count": 1,
+      "examples": [
+        2145
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"confirmAddNewType()\" class=\"btn btn-primary btn-sm\">Add</button>",
+      "count": 1,
+      "examples": [
+        2019
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"confirmDeleteSporadicHistory()\" class=\"btn btn-danger\" style=\"flex:1\">Remove</button>",
+      "count": 1,
+      "examples": [
+        2390
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"confirmEditSporadicLastDone()\" class=\"btn btn-primary\" style=\"flex:1\">Save</button>",
+      "count": 1,
+      "examples": [
+        2373
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"confirmSetDeadline()\" class=\"btn btn-primary\" style=\"flex:1\">Convert</button>",
+      "count": 1,
+      "examples": [
+        2176
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"confirmStartTaskNoLimit()\" class=\"btn btn-secondary\" style=\"min-width:110px\">No</button>",
+      "count": 1,
+      "examples": [
+        2344
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"confirmStartTaskWithLimit(10)\" class=\"btn btn-primary\" style=\"min-width:84px\">10 min</button>",
+      "count": 1,
+      "examples": [
+        2349
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"confirmStartTaskWithLimit(15)\" class=\"btn btn-primary\" style=\"min-width:84px\">15 min</button>",
+      "count": 1,
+      "examples": [
+        2350
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"confirmStartTaskWithLimit(5)\" class=\"btn btn-primary\" style=\"min-width:84px\">5 min</button>",
+      "count": 1,
+      "examples": [
+        2348
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"confirmStartTaskWithLimit(60)\" class=\"btn btn-primary\" style=\"min-width:84px\">60 min</button>",
+      "count": 1,
+      "examples": [
+        2351
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"deleteProfileTaskType('${t.id}')\" class=\"btn btn-sm btn-secondary\" style=\"padding:4px 8px;font-size:.75rem\">Delete</button>",
+      "count": 1,
+      "examples": [
+        3223
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"dismissPwaInstallPrompt()\" class=\"btn btn-secondary btn-full\">Maybe Later</button>",
+      "count": 1,
+      "examples": [
+        1963
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"goToAuth('register')\" class=\"lp-btn-hero-primary\">🚀 Create Free Account</button>",
+      "count": 1,
+      "examples": [
+        199
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"handleForgotPassword()\" class=\"btn btn-primary btn-full\">Send Reset Link</button>",
+      "count": 1,
+      "examples": [
+        1013
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"handlePasswordLogin()\" class=\"btn btn-primary btn-full\">Sign In</button>",
+      "count": 1,
+      "examples": [
+        998
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"handleVapidGenerate()\" class=\"btn btn-secondary\">Generate New Keys</button>",
+      "count": 1,
+      "examples": [
+        1504
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"hideForgotPassword()\" class=\"link-btn\">Back to sign in</button>",
+      "count": 1,
+      "examples": [
+        1015
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"saveEditTaskType('${typeId}')\" class=\"btn btn-sm btn-primary\" style=\"padding:4px 8px;font-size:.75rem\">Save</button>",
+      "count": 1,
+      "examples": [
+        3246
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"setRelativeDueDate('setDeadlineDueDate','deadlineRelativeNum','deadlineRelativeUnit')\" class=\"btn btn-secondary btn-sm\">Set</button>",
+      "count": 1,
+      "examples": [
+        2170
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"setRelativeDueDate('taskDueDate','dueDateRelativeNum','dueDateRelativeUnit')\" class=\"btn btn-secondary btn-sm\">Set</button>",
+      "count": 1,
+      "examples": [
+        2066
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"showForgotPassword()\" class=\"link-btn\">Forgot password?</button>",
+      "count": 1,
+      "examples": [
+        1002
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"showStartTaskLimitChoices()\" class=\"btn btn-primary\" style=\"min-width:110px\">Yes</button>",
+      "count": 1,
+      "examples": [
+        2345
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"startPwaInstall()\" class=\"btn btn-primary btn-full\" style=\"margin-bottom:10px\">Install App</button>",
+      "count": 1,
+      "examples": [
+        1962
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"startPwaInstall()\" class=\"btn btn-sm btn-primary\" style=\"margin-top:8px\">Install App</button>",
+      "count": 1,
+      "examples": [
+        3109
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"toggleEditTaskType('${t.id}')\" class=\"btn btn-sm btn-secondary\" style=\"padding:4px 8px;font-size:.75rem\">Edit</button>",
+      "count": 1,
+      "examples": [
+        3222
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"toggleLoginMode()\" class=\"link-btn\">Use magic link instead</button>",
+      "count": 1,
+      "examples": [
+        1000
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"toggleLoginMode()\" class=\"link-btn\">Use password instead</button>",
+      "count": 1,
+      "examples": [
+        986
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<button type=\"button\" onclick=\"toggleSporadicHistory('${escHtml(task.id)}')\" class=\"sporadic-history-toggle\" aria-expanded=\"false\">",
+      "count": 1,
+      "examples": [
+        3856
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<div class=\"notif-item-actions\" onclick=\"event.stopPropagation()\">",
+      "count": 1,
+      "examples": [
+        6981
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<div id=\"fabMenuOverlay\" class=\"fab-menu-overlay hidden\" onclick=\"closeFabMenu()\"></div>",
+      "count": 1,
+      "examples": [
+        1899
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<div id=\"tasksGamifStrip\" class=\"gamif-strip hidden\" onclick=\"showPage('progress')\" role=\"button\" tabindex=\"0\" aria-label=\"View progress\">",
+      "count": 1,
+      "examples": [
+        1106
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<div onclick=\"openDetailById('${escHtml(t.id)}'); toggleNotifModal();\" class=\"notif-item\">",
+      "count": 1,
+      "examples": [
+        6976
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<div onclick=\"openDetailById('${escHtml(t.id)}')\" class=\"${cardClass}\">",
+      "count": 1,
+      "examples": [
+        3745
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<div style=\"margin-top:10px\"><button onclick=\"unlockAccount('${escHtml(u.id)}')\" class=\"btn btn-sm btn-primary\">Unlock</button></div>",
+      "count": 1,
+      "examples": [
+        6186
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<form id=\"createGroupForm\" onsubmit=\"handleCreateGroup(event)\">",
+      "count": 1,
+      "examples": [
+        2187
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<form id=\"joinGroupForm\" onsubmit=\"handleJoinGroup(event)\">",
+      "count": 1,
+      "examples": [
+        2207
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<form id=\"loginForm\" onsubmit=\"handleMagicLinkSend(event)\">",
+      "count": 1,
+      "examples": [
+        974
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<form id=\"registerForm\" class=\"hidden\" onsubmit=\"handleRegister(event)\">",
+      "count": 1,
+      "examples": [
+        1021
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<form id=\"taskForm\" onsubmit=\"handleTaskSubmit(event)\">",
+      "count": 1,
+      "examples": [
+        2008
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<form onsubmit=\"handleSmtpSave(event)\">",
+      "count": 1,
+      "examples": [
+        1452
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<form onsubmit=\"handleVapidSave(event)\">",
+      "count": 1,
+      "examples": [
+        1489
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<form onsubmit=\"saveArcadeSettings(event)\">",
+      "count": 1,
+      "examples": [
+        1700
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<img id=\"collectibleIconPreviewImg\" src=\"\" alt=\"Icon preview\" style=\"width:40px;height:40px;object-fit:contain;border-radius:6px;border:1px solid #e5e7eb;background:#f9fafb\" onerror=\"this.parentElement.style.display='none'\" />",
+      "count": 1,
+      "examples": [
+        1645
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<input id=\"deferRelativeNum\" type=\"number\" min=\"1\" max=\"999\" value=\"1\" class=\"input\" style=\"width:60px;flex-shrink:0;padding:6px 8px\" aria-label=\"Number of time units\" oninput=\"updateDeferRelativeDate()\" />",
+      "count": 1,
+      "examples": [
+        2295
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<input type=\"checkbox\" id=\"filterArchived\" onchange=\"applyFilters()\" />",
+      "count": 1,
+      "examples": [
+        1143
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<input type=\"checkbox\" id=\"filterAssignedToMe\" onchange=\"applyFilters()\" />",
+      "count": 1,
+      "examples": [
+        1147
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<input type=\"checkbox\" id=\"filterShowGroupTasks\" onchange=\"applyFilters()\" checked />",
+      "count": 1,
+      "examples": [
+        1151
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<input type=\"checkbox\" id=\"gamifToggle\" onchange=\"handleGamifToggle(this.checked)\" />",
+      "count": 1,
+      "examples": [
+        1388
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<input type=\"checkbox\" id=\"groupGamifEnhancedToggle\" onchange=\"toggleGroupGamification(this.checked)\" style=\"width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0;margin-top:2px\" aria-label=\"Enable gamification enhancements\" />",
+      "count": 1,
+      "examples": [
+        2484
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<input type=\"checkbox\" id=\"myXpShareToggle\" onchange=\"updateMyXpShare(this.checked)\" style=\"width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0;margin-top:1px\" />",
+      "count": 1,
+      "examples": [
+        2497
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<input type=\"checkbox\" id=\"taskLongTermGoal\" onchange=\"onLongTermGoalChange()\" style=\"width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0\" />",
+      "count": 1,
+      "examples": [
+        2090
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<input type=\"checkbox\" id=\"taskRecurEnabled\" onchange=\"toggleRecurFields()\" style=\"width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0\" />",
+      "count": 1,
+      "examples": [
+        2097
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<input type=\"checkbox\" id=\"taskSporadic\" onchange=\"onSporadicChange()\" style=\"width:16px;height:16px;accent-color:#7c3aed;flex-shrink:0\" />",
+      "count": 1,
+      "examples": [
+        2079
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<select id=\"collectibleIconSelect\" class=\"select\" style=\"flex:1\" onchange=\"adminPreviewCollectibleIcon()\">",
+      "count": 1,
+      "examples": [
+        1639
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<select id=\"deferRelativeUnit\" class=\"select\" style=\"flex:1;min-width:90px\" aria-label=\"Time unit (days, weeks, or months)\" onchange=\"updateDeferRelativeDate()\">",
+      "count": 1,
+      "examples": [
+        2296
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<select id=\"filterGroup\" onchange=\"applyFilters()\" class=\"filter-select\">",
+      "count": 1,
+      "examples": [
+        1136
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<select id=\"filterType\" onchange=\"applyFilters()\" class=\"filter-select\">",
+      "count": 1,
+      "examples": [
+        1139
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<select id=\"taskGroup\" class=\"select\" onchange=\"loadGroupMembersForTask()\">",
+      "count": 1,
+      "examples": [
+        2025
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<select id=\"taskType\" required class=\"select\" onchange=\"handleTypeSelectChange()\"><option value=\"\">Select type…</option></select>",
+      "count": 1,
+      "examples": [
+        2016
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "<select onchange=\"setFeedbackStatus('${escHtml(f.id)}', this.value)\" class=\"select\" style=\"font-size:.85rem;padding:4px 8px;height:auto\">",
+      "count": 1,
+      "examples": [
+        6241
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "${!r.resolved ? `<div style=\"margin-top:10px\"><button onclick=\"resolveReport('${escHtml(r.id)}')\" class=\"btn btn-sm btn-primary\">Resolve</button></div>` : ''}",
+      "count": 1,
+      "examples": [
+        6209
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "${canEdit && !isComplete ? `<button class=\"subtask-delete-btn\" onclick=\"deleteSubtask('${escHtml(s.id)}')\" title=\"Remove sub-task\" aria-label=\"Delete sub-task\">✕</button>` : ''}",
+      "count": 1,
+      "examples": [
+        4982
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "const oneWeek = new Date(); oneWeek.setDate(oneWeek.getDate() + 7);",
+      "count": 1,
+      "examples": [
+        4416
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "html += `<button class=\"task-far-future-toggle\" onclick=\"toggleFarFuture()\">Tasks due more than two weeks from now (${count}) ${arrow}</button>`;",
+      "count": 1,
+      "examples": [
+        3778
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "onchange=\"toggleSubtask('${escHtml(s.id)}', this.checked)\"",
+      "count": 1,
+      "examples": [
+        4979
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "onclick=\"openDeleteSporadicHistoryModal(${jsArg(task.id)}, ${jsArg(historyId)}, ${jsArg(label)})\"",
+      "count": 1,
+      "examples": [
+        3841
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "oninput=\"_pendingSubtasks[${idx}].title = this.value\"",
+      "count": 1,
+      "examples": [
+        4835
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "oninput=\"filterUsersList()\" style=\"font-size:.9rem\" />",
+      "count": 1,
+      "examples": [
+        1526
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "onkeydown=\"if(event.key==='Enter' && !this.disabled){event.preventDefault();addSubtaskFormRow();}\" />",
+      "count": 1,
+      "examples": [
+        4836
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "onkeydown=\"if(event.key==='Enter') handleOTPVerify()\"",
+      "count": 1,
+      "examples": [
+        2413
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "set('⚠️', 'Push notification service could not start in this browser session. <a href=\"#\" onclick=\"pushBannerRepairService();return false;\" style=\"color:#92400e;text-decoration:underline\">Repair push</a> or <a href=\"#\" onclick=\"refreshPushStatusBanner(true);return false;\" style=\"color:#92400e;text-decoration:underline\">check again</a>.' + adminDebug, '#fef3c7', '#92400e');",
+      "count": 1,
+      "examples": [
+        7666
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "set('❓', 'Notification permission has not been granted yet. <a href=\"#\" onclick=\"pushBannerGrantPermission();return false;\" style=\"color:#7c3aed;text-decoration:underline\">Grant permission</a> to enable popup and background push reminders.', '#fffbeb', '#78350f');",
+      "count": 1,
+      "examples": [
+        7625
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "set('🔄', 'Push notification permission is granted but this device is not yet subscribed. <a href=\"#\" onclick=\"pushBannerSubscribeNow();return false;\" style=\"color:#7c3aed;text-decoration:underline\">Subscribe now</a> or reload the page.', '#eff6ff', '#1e40af');",
+      "count": 1,
+      "examples": [
+        7650
+      ]
+    },
+    {
+      "file": "public/index.html",
+      "kind": "inline-event-handler",
+      "line": "set('ℹ️', 'Push notification service is still starting up. <a href=\"#\" onclick=\"refreshPushStatusBanner(true);return false;\" style=\"color:#1d4ed8;text-decoration:underline\">Check again</a> once the page has fully loaded, or try reloading.', '#eff6ff', '#1e3a8a');",
+      "count": 1,
+      "examples": [
+        7660
+      ]
+    },
+    {
+      "file": "public/js/game-code-breaker.js",
+      "kind": "html-render-sink",
+      "line": "board.innerHTML = '';",
+      "count": 1,
+      "examples": [
+        296
+      ]
+    },
+    {
+      "file": "public/js/game-code-breaker.js",
+      "kind": "html-render-sink",
+      "line": "frame.innerHTML = '';",
+      "count": 1,
+      "examples": [
+        175
+      ]
+    },
+    {
+      "file": "public/js/game-hangman.js",
+      "kind": "html-render-sink",
+      "line": "container.innerHTML = '';",
+      "count": 2,
+      "examples": [
+        239,
+        272
+      ]
+    },
+    {
+      "file": "public/js/game-hangman.js",
+      "kind": "html-render-sink",
+      "line": "frame.innerHTML = '';",
+      "count": 1,
+      "examples": [
+        147
+      ]
+    },
+    {
+      "file": "public/js/game-hangman.js",
+      "kind": "html-render-sink",
+      "line": "if (svgCol) svgCol.innerHTML = buildSvg();",
+      "count": 1,
+      "examples": [
+        325
+      ]
+    },
+    {
+      "file": "public/js/game-hangman.js",
+      "kind": "html-render-sink",
+      "line": "svgCol.innerHTML = buildSvg();   // safe — only our own SVG markup",
+      "count": 1,
+      "examples": [
+        158
+      ]
+    },
+    {
+      "file": "public/js/game-signal-sprint.js",
+      "kind": "html-render-sink",
+      "line": "controls.innerHTML = '';",
+      "count": 1,
+      "examples": [
+        888
+      ]
+    },
+    {
+      "file": "public/js/game-signal-sprint.js",
+      "kind": "html-render-sink",
+      "line": "frameEl.innerHTML = '';",
+      "count": 2,
+      "examples": [
+        425,
+        954
+      ]
+    },
+    {
+      "file": "public/js/game-whac-a-bug.js",
+      "kind": "html-render-sink",
+      "line": "frame.innerHTML = '';",
+      "count": 1,
+      "examples": [
+        296
+      ]
+    },
+    {
+      "file": "public/js/game-wordsearch.js",
+      "kind": "html-render-sink",
+      "line": "frame.innerHTML = '';   // wipe Stage-1 placeholder",
+      "count": 1,
+      "examples": [
+        224
+      ]
+    }
+  ]
+}

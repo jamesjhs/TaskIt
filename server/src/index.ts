@@ -5,7 +5,7 @@ import path from 'path';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import db from './db'; // initialize database
-import { APP_VERSION, BASE_URL, CORS_ORIGIN, JWT_SECRET, PORT } from './config';
+import { APP_VERSION, BASE_URL, CORS_ORIGIN, JWT_SECRET, PORT, TRUST_PROXY } from './config';
 import { reconfigureWebpush } from './webpush-config';
 import { startScheduler } from './services/scheduler';
 
@@ -26,9 +26,9 @@ const app = express();
 // endpoint returns 503 and the frontend falls back to the tab-open Notification API).
 reconfigureWebpush();
 
-// Trust the first proxy hop (e.g. nginx/Cloudflare) so that
-// express-rate-limit can correctly read the client IP from X-Forwarded-For
-app.set('trust proxy', 1);
+// Trust proxy configuration is environment-driven so production deployments
+// must explicitly match their reverse-proxy/CDN topology.
+app.set('trust proxy', TRUST_PROXY);
 
 // Rate limiting
 const generalLimiter = rateLimit({
@@ -160,11 +160,12 @@ app.use((req: Request, res: Response, next: NextFunction): void => {
 app.use(helmet({
   // Allow the service worker to load and scripts to run from the same origin.
   // Inline scripts are used by the SPA, so 'unsafe-inline' is kept for scripts.
+  // Do not allow 'unsafe-eval'; the app should not require string-to-code execution.
   // Cloudflare Turnstile CAPTCHA script and iframe are allowed from challenges.cloudflare.com
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://challenges.cloudflare.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://challenges.cloudflare.com"],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", 'data:'],

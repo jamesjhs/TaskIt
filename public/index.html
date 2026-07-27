@@ -143,15 +143,15 @@
   <style>
     .hidden { display: none !important; }
   </style>
-  <link rel="stylesheet" href="/app.css?v=1.21.9" type="text/css" />
+  <link rel="stylesheet" href="/app.css?v=1.21.11" type="text/css" />
   <!-- PWA / installable web app -->
-  <link rel="manifest" href="/manifest.json?v=1.21.9" />
+  <link rel="manifest" href="/manifest.json?v=1.21.11" />
   <meta name="theme-color" content="#7c3aed" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="TaskIt!" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1.21.9" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=1.21.9" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1.21.11" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=1.21.11" />
   <!-- Cloudflare Turnstile for CAPTCHA security (explicit render; onload callback fires when ready) -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit" async defer></script>
 </head>
@@ -192,7 +192,7 @@
     <div class="lp-hero-float lp-float-achievement" aria-hidden="true">🏆 Achievement Unlocked!</div>
     <div class="lp-hero-float lp-float-streak" aria-hidden="true">🔥 14-day streak!</div>
     <div style="position:relative;z-index:1">
-      <img class="lp-hero-logo" src="/RKlogo.png?v=1.21.9" width="900" height="900" alt="TaskIt! logo: a checklist with a star and tick" decoding="async" fetchpriority="high" />
+      <img class="lp-hero-logo" src="/RKlogo.png?v=1.21.11" width="900" height="900" alt="TaskIt! logo: a checklist with a star and tick" decoding="async" fetchpriority="high" />
       <h1>Gamify your life and compete with friends!</h1>
       <p class="lp-hero-sub">Run recurring work, household jobs, sporadic maintenance, long-term goals, and group collaboration from one privacy-first app. Add reminders, calendar sync, and optional gamification — without subscriptions or vendor lock-in.</p>
       <div class="lp-hero-ctas">
@@ -959,7 +959,7 @@
   <div class="auth-card">
     <div class="auth-logo">
       <div class="auth-logo-icon auth-logo-icon-brand">
-        <img src="/RKlogo.png?v=1.21.9" width="900" height="900" alt="TaskIt! logo" decoding="async" />
+        <img src="/RKlogo.png?v=1.21.11" width="900" height="900" alt="TaskIt! logo" decoding="async" />
       </div>
       <h1>TaskIt!</h1>
       <p>🎮 Gamified task management</p>
@@ -979,7 +979,7 @@
       <div id="magicLinkMode">
         <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <input type="checkbox" id="rememberMeMagic" style="width:16px;height:16px;accent-color:#7c3aed" />
-          <label for="rememberMeMagic" style="font-size:.88rem;color:#374151;margin:0;cursor:pointer">Keep me signed in for 30 days</label>
+          <label for="rememberMeMagic" style="font-size:.88rem;color:#374151;margin:0;cursor:pointer">Keep me signed in for 7 days</label>
         </div>
         <button type="submit" class="btn btn-primary btn-full">Send Magic Link</button>
         <p style="text-align:center;margin-top:12px">
@@ -993,7 +993,7 @@
         </div>
         <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <input type="checkbox" id="rememberMePassword" style="width:16px;height:16px;accent-color:#7c3aed" />
-          <label for="rememberMePassword" style="font-size:.88rem;color:#374151;margin:0;cursor:pointer">Keep me signed in for 30 days</label>
+          <label for="rememberMePassword" style="font-size:.88rem;color:#374151;margin:0;cursor:pointer">Keep me signed in for 7 days</label>
         </div>
         <button type="button" onclick="handlePasswordLogin()" class="btn btn-primary btn-full">Sign In</button>
         <p style="text-align:center;margin-top:12px">
@@ -1087,7 +1087,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.21.9</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
+      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.21.11</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>
@@ -1954,7 +1954,7 @@
 <div id="pwaInstallModal" class="modal-overlay hidden">
   <div class="modal-sheet">
     <div class="modal-body" style="text-align:center">
-      <img src="/RKlogo.png?v=1.21.9" width="900" height="900" alt="" aria-hidden="true" style="width:92px;height:auto;margin:0 auto 12px;display:block" />
+      <img src="/RKlogo.png?v=1.21.11" width="900" height="900" alt="" aria-hidden="true" style="width:92px;height:auto;margin:0 auto 12px;display:block" />
       <h2 class="modal-title">Install TaskIt!</h2>
       <p style="font-size:.9rem;color:#6b7280;line-height:1.6;margin-bottom:20px">
         Add TaskIt! to your home screen for a cleaner app-style launch, faster access, and better notification behaviour.
@@ -2513,8 +2513,40 @@
 <script src="/js/qrcode.js"></script>
 <script>
 // ========== State ==========
-let token = localStorage.getItem('taskitToken') || sessionStorage.getItem('taskitToken') || '';
-let currentUser = JSON.parse(localStorage.getItem('taskitUser') || sessionStorage.getItem('taskitUser') || 'null');
+function clearStoredAuth(storage) {
+  storage.removeItem('taskitToken');
+  storage.removeItem('taskitUser');
+  storage.removeItem('taskitTokenExpiresAt');
+}
+
+function readStoredAuth() {
+  const readFrom = (storage) => {
+    const storedToken = storage.getItem('taskitToken');
+    const storedUserRaw = storage.getItem('taskitUser');
+    if (!storedToken || !storedUserRaw) return null;
+
+    const expiresAt = parseInt(storage.getItem('taskitTokenExpiresAt') || '0', 10);
+    if (expiresAt && expiresAt <= Date.now()) {
+      clearStoredAuth(storage);
+      return null;
+    }
+
+    try {
+      return { token: storedToken, user: JSON.parse(storedUserRaw) };
+    } catch {
+      clearStoredAuth(storage);
+      return null;
+    }
+  };
+
+  const persistent = readFrom(localStorage);
+  if (persistent) return persistent;
+  return readFrom(sessionStorage);
+}
+
+const storedAuth = readStoredAuth();
+let token = storedAuth ? storedAuth.token : '';
+let currentUser = storedAuth ? storedAuth.user : null;
 const PWA_INSTALL_PROMPTED_KEY = 'taskitPwaInstallPrompted';
 let deferredPwaInstallPrompt = null;
 let taskTypes = [];
@@ -2886,16 +2918,19 @@ function storeAuth(data, rememberMe) {
   token = data.token; currentUser = data.user;
   // Use the rememberMe flag from the response (server echoes it back) or the parameter
   const persist = rememberMe !== undefined ? rememberMe : (data.rememberMe === true);
+  const expiresAt = data.expiresAt ? String(data.expiresAt) : '';
   if (persist) {
     localStorage.setItem('taskitToken', token);
     localStorage.setItem('taskitUser', JSON.stringify(currentUser));
-    sessionStorage.removeItem('taskitToken');
-    sessionStorage.removeItem('taskitUser');
+    if (expiresAt) localStorage.setItem('taskitTokenExpiresAt', expiresAt);
+    else localStorage.removeItem('taskitTokenExpiresAt');
+    clearStoredAuth(sessionStorage);
   } else {
     sessionStorage.setItem('taskitToken', token);
     sessionStorage.setItem('taskitUser', JSON.stringify(currentUser));
-    localStorage.removeItem('taskitToken');
-    localStorage.removeItem('taskitUser');
+    if (expiresAt) sessionStorage.setItem('taskitTokenExpiresAt', expiresAt);
+    else sessionStorage.removeItem('taskitTokenExpiresAt');
+    clearStoredAuth(localStorage);
   }
   // Hide cookie notice when user enters the app
   const notice = document.getElementById('cookieNotice');
@@ -2905,8 +2940,8 @@ function storeAuth(data, rememberMe) {
 
 function logout() {
   token = ''; currentUser = null;
-  localStorage.removeItem('taskitToken'); localStorage.removeItem('taskitUser');
-  sessionStorage.removeItem('taskitToken'); sessionStorage.removeItem('taskitUser');
+  clearStoredAuth(localStorage);
+  clearStoredAuth(sessionStorage);
   unlockedArcadeKeys.clear();
   closeArcade();
   closeDetailModal({ updateHistory: false });
@@ -3149,7 +3184,8 @@ async function saveLocale() {
   try {
     const data = await api('PATCH', '/users/me/locale', { locale });
     currentUser = { ...currentUser, locale: data.user.locale };
-    localStorage.setItem('taskitUser', JSON.stringify(currentUser));
+    const authStorage = localStorage.getItem('taskitToken') ? localStorage : sessionStorage;
+    authStorage.setItem('taskitUser', JSON.stringify(currentUser));
     toast('Date format saved!');
   } catch (err) {
     toast(err.message, 'error');
@@ -5706,10 +5742,12 @@ async function performAppUpdate() {
     // Preserve auth tokens so "Remember Me" users remain logged in after update
     const savedToken = localStorage.getItem('taskitToken');
     const savedUser = localStorage.getItem('taskitUser');
+    const savedExpiresAt = localStorage.getItem('taskitTokenExpiresAt');
     localStorage.clear();
     if (latestVersion) localStorage.setItem(TASKIT_VERSION_KEY, latestVersion);
     if (savedToken) localStorage.setItem('taskitToken', savedToken);
     if (savedUser) localStorage.setItem('taskitUser', savedUser);
+    if (savedExpiresAt) localStorage.setItem('taskitTokenExpiresAt', savedExpiresAt);
   } catch (e) { /* best-effort */ }
   window.location.reload();
 }
@@ -6907,7 +6945,7 @@ async function refreshNotifications() {
           if (!fired[k]) {
             fired[k] = day;
             try {
-              new Notification('TaskIt! Reminder', { body: t.title, icon: '/icons/icon-192x192.png?v=1.21.9', badge: '/icons/notification-badge-96x96.png?v=1.21.9', tag: k });
+              new Notification('TaskIt! Reminder', { body: t.title, icon: '/icons/icon-192x192.png?v=1.21.11', badge: '/icons/notification-badge-96x96.png?v=1.21.11', tag: k });
             } catch { /* Notification API unavailable or permission revoked */ }
           }
         };
@@ -8420,7 +8458,7 @@ async function loadInventory() {
 <!-- ===== COOKIE / STORAGE NOTICE ===== -->
 <!-- Shown once on landing/auth pages; dismissed state stored in localStorage -->
 <div id="cookieNotice" class="cookie-notice hidden">
-  <p>TaskIt! uses essential browser storage (localStorage) to keep you signed in and save your preferences. No tracking cookies. <a href="/privacy-policy.html" target="_blank" rel="noopener">Privacy Policy</a></p>
+  <p>TaskIt! uses essential browser storage to keep you signed in and save your preferences. No tracking cookies. <a href="/privacy-policy.html" target="_blank" rel="noopener">Privacy Policy</a></p>
   <button class="cookie-notice-close" onclick="dismissCookieNotice()">Got it</button>
 </div>
 </body>

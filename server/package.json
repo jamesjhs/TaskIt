@@ -1,6 +1,6 @@
 {
   "name": "taskit-server",
-  "version": "1.21.9",
+  "version": "1.21.11",
   "description": "TaskIt! task management server",
   "main": "dist/index.js",
   "scripts": {
@@ -23,7 +23,7 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "node-cron": "^4.2.1",
-    "nodemailer": "^8.0.5",
+    "nodemailer": "^9.0.3",
     "web-push": "^3.6.7"
   },
   "devDependencies": {

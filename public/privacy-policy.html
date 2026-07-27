@@ -292,10 +292,10 @@
       We will respond within 30 days.
     </p>
 
-    <h2>10. Browser Storage (localStorage) — No Tracking Cookies</h2>
+    <h2>10. Browser Storage — No Tracking Cookies</h2>
     <p>
       TaskIt! does <strong>not</strong> use tracking or advertising cookies.  We store the following
-      items in your browser's <code>localStorage</code> to make the application function correctly.
+      items in your browser's first-party storage to make the application function correctly.
       All storage is first-party, stored locally in your browser only, and never shared with third
       parties.  You can clear this data at any time via your browser settings or by signing out.
     </p>
@@ -309,12 +309,17 @@
       </thead>
       <tbody>
         <tr class="border-t border-slate-200 dark:border-slate-700">
-          <td class="py-2 px-3 font-mono text-xs">jbToken</td>
+          <td class="py-2 px-3 font-mono text-xs">taskitToken</td>
           <td class="py-2 px-3">JSON Web Token (JWT) — cryptographically signed, no personal data embedded</td>
-          <td class="py-2 px-3"><strong>Strictly necessary</strong> — maintains your authenticated session</td>
+          <td class="py-2 px-3"><strong>Strictly necessary</strong> — maintains your authenticated session; stored in session storage by default or localStorage for remembered sessions</td>
         </tr>
         <tr class="border-t border-slate-200 dark:border-slate-700">
-          <td class="py-2 px-3 font-mono text-xs">jbUser</td>
+          <td class="py-2 px-3 font-mono text-xs">taskitTokenExpiresAt</td>
+          <td class="py-2 px-3">Token expiry timestamp</td>
+          <td class="py-2 px-3"><strong>Strictly necessary</strong> — lets the browser discard expired session tokens before use</td>
+        </tr>
+        <tr class="border-t border-slate-200 dark:border-slate-700">
+          <td class="py-2 px-3 font-mono text-xs">taskitUser</td>
           <td class="py-2 px-3">Username, email, role, locale preference</td>
           <td class="py-2 px-3"><strong>Strictly necessary</strong> — populates the UI and locale formatting without a round-trip to the server on each page load</td>
         </tr>
@@ -341,8 +346,9 @@
       </tbody>
     </table>
     <p>
-      <strong>No cookies</strong> (HTTP <code>Set-Cookie</code> headers) are used by TaskIt!.  All
-      session management relies solely on <code>localStorage</code> as described above.  Because
+      <strong>No cookies</strong> (HTTP <code>Set-Cookie</code> headers) are used by TaskIt!.  Web
+      session management relies on <code>sessionStorage</code> by default and <code>localStorage</code>
+      only when you choose "Keep me signed in" for up to 7 days. Because
       none of the above storage is used for tracking, profiling, or advertising, no consent banner
       is legally required under UK PECR for strictly necessary or purely functional storage.
       We display an informational notice on first visit as a matter of transparency.
@@ -369,7 +375,7 @@
 </main>
 
 <footer class="border-t border-slate-200 dark:border-slate-700 py-4 mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-  <span>TaskIt! v<span class="page-version">1.21.9</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp;
+  <span>TaskIt! v<span class="page-version">1.21.11</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp;
     <a href="https://jahosi.co.uk" target="_blank" rel="noopener noreferrer"
        class="text-indigo-500 hover:underline">jahosi.co.uk</a>
     &nbsp;·&nbsp;

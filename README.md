@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.21.9** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.21.11** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -40,7 +40,7 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - **Gamification Engine** — opt-in XP system, overall level progression, XP breakdown by skill, dynamic titles, personal achievements, streak tracking, and freeze mechanic (see below)
 - **Admin-managed Arcade games** — arcade games are registered through Admin > Gamify > Arcade Games, loaded dynamically from compatible JavaScript modules, and documented for contributors in `/arcade-game-guide.html`
 - **Friends & Leaderboards** — connect with other users via invite link, QR code, or username + friend key; compete on XP leaderboards per group and across friends
-- **Persistent login** — optional "Remember me" session storage (30-day JWT in localStorage vs session-only)
+- **Persistent login** — optional "Remember me" browser storage (7-day web JWT in localStorage vs 12-hour session-only storage; Android uses encrypted app storage)
 - **Sporadic Tasks** — maintenance tasks with no fixed schedule that reappear after completion and show how long ago they were last done in friendly format with dd/mm/yyyy date (e.g. Haircut, Car service). Fully editable like regular tasks: change title, type, group, delete, or archive. Always visible at the top of the task list, collapsed by default
 - **Long-term Goals** — aspirational goals that live in a dedicated collapsible section at the bottom of the task list, outside the active task queue. Support groups, XP multipliers, and notes. Convert any goal to a deadline task with a single tap
 - **Search-ready marketing site** — landing page includes structured FAQ content, comparison copy, richer Open Graph / Twitter metadata, plus `robots.txt`, `sitemap.xml`, and `llms.txt` discovery assets
@@ -120,7 +120,23 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Frontend | Vanilla JS, Tailwind CSS (build-time), `qrcode-generator` (client-side QR) |
 | Android  | Kotlin, Retrofit, DataStore                              |
 
+## Security Checks
+
+Run `npm run security:xss-sinks` before changing frontend rendering code. The scan compares current HTML-rendering sinks, inline event handlers, and dynamic script loaders against `scripts/xss-sink-baseline.json`; new entries fail the check until they are reviewed. Prefer `textContent`, attributes set through DOM APIs, and explicit event listeners for new UI code. Use `npm run security:xss-sinks:update` only after deliberately reviewing an unavoidable sink.
+
 ## Changelog
+
+### v1.21.11
+
+- **🔒 XSS sink guardrail** — added an automated scanner and reviewed baseline for frontend HTML-rendering sinks, inline event handlers, and dynamic script loaders; root builds now fail if new unreviewed sink signatures are introduced.
+- **🔢 Version bump** — package metadata, lockfiles, public cache keys, pages, and documentation updated to 1.21.11.
+
+### v1.21.10
+
+- **🔒 CSP hardening** — removed `'unsafe-eval'` from the Helmet `script-src` directive after confirming the app code does not use `eval(...)` or `new Function(...)`; inline scripts and handlers remain allowed temporarily while the SPA is migrated away from inline event attributes.
+- **🔒 Production configuration guardrails** — production startup now validates HTTPS `BASE_URL`, explicit `TRUST_PROXY`, database encryption, and paired SMTP/VAPID/Turnstile settings before Express starts.
+- **⬆️ Dependency vulnerability fixes** — updated Nodemailer, PostCSS, esbuild, and body-parser paths; `npm audit` now reports zero vulnerabilities.
+- **🔢 Version bump** — package metadata, lockfiles, public cache keys, pages, and documentation updated to 1.21.10.
 
 ### v1.21.9
 
@@ -633,6 +649,73 @@ node server/encrypt-db.js /path/to/taskit.db /path/to/taskit-encrypted.db
 ### Passwords
 
 User passwords are **never stored in plaintext**. They are hashed using **bcrypt** (cost factor 10) before being stored. The database encryption provides an additional layer of protection for all other personal data.
+
+---
+
+## Security & Design Bugfix To-do Log
+
+Audit date: **2026-07-27**. This section records the most common and most concerning vulnerabilities that affect the current dependency set, deployment shape, serving model, and UI design. It is intentionally written as a bugfix log rather than a marketing summary: each item names the weakness, why it matters, what already reduces the risk, and what should be improved next.
+
+### Dependency Vulnerabilities
+
+- [x] **High: upgraded `nodemailer` beyond the vulnerable `<=9.0.0` range.** Fixed on 2026-07-27 by updating the server dependency to `nodemailer@9.0.3`, rebuilding successfully with `npm run build -w server`, and confirming `npm audit --omit=dev` no longer reports GHSA-p6gq-j5cr-w38f. `server/src/services/mail.ts` now sends all application email through a narrow `sendTaskItMail` helper that accepts only the fields TaskIt actually uses (`from`, `to`, `subject`, `text`, `html`) and applies `disableFileAccess: true` plus `disableUrlAccess: true` on every message. The existing call sites continue to build plain text/HTML emails from sanitized application data rather than `raw` messages, attachment paths, or URL-backed content.
+
+- [x] **Low: updated the Express/body-parser chain to clear the `body-parser <1.20.6` denial-of-service advisory.** Fixed on 2026-07-27 with `npm audit fix`, which moved Express' parser dependency to `body-parser@1.20.6`. Verified with `npm audit` returning `found 0 vulnerabilities` and `npm run build -w server` passing.
+
+- [x] **High in development/build tooling: updated `postcss` beyond the vulnerable `<=8.5.17` range.** Fixed on 2026-07-27 with `npm audit fix`, which moved the Tailwind/PostCSS toolchain to `postcss@8.5.23`. Verified with `npm audit` returning `found 0 vulnerabilities` and `npm run build:css -w server` completing successfully. `public/tailwind.css` regenerated without a content diff, so the security update did not alter the compiled UI stylesheet.
+
+- [x] **Low in development tooling on Windows: updated `esbuild` out of the vulnerable `0.27.3 - 0.28.0` range.** Fixed on 2026-07-27 with `npm audit fix`, which moved `tsx` to `4.22.3` and `esbuild` to `0.28.1`. Verified with `npm audit` returning `found 0 vulnerabilities`.
+
+- [ ] **Medium: add a recurring dependency-maintenance gate.** At present the audit result depends on a manual command. Add CI steps for `npm ci`, `npm audit --omit=dev --audit-level=high`, and a separate non-blocking full audit report for dev dependencies. The production gate should fail on high/critical runtime advisories, while the dev audit should be reviewed regularly so build-chain vulnerabilities do not linger unseen.
+
+### Server, Deployment, and Methods of Serving the Code
+
+- [x] **High: kept `BASE_URL`, proxy, and TLS assumptions explicit in production.** Fixed on 2026-07-27 by adding production startup validation in `server/src/config.ts`. When `NODE_ENV=production`, TaskIt now refuses to start unless `JWT_SECRET`, `BASE_URL`, `TRUST_PROXY`, and `DB_ENCRYPTION_KEY` are configured; `BASE_URL` and configured CORS origins must be valid `https://` URLs; `CORS_ORIGIN=*` is rejected; and partial SMTP credential, VAPID key, or Turnstile key configuration fails fast. `HOWTO.md` and `TECHNICAL_REFERENCE.md` now document the required production values and the exact `TRUST_PROXY` choices.
+
+- [x] **High: replaced hard-coded `app.set('trust proxy', 1)` with explicit `TRUST_PROXY` configuration.** Fixed on 2026-07-27 by parsing `TRUST_PROXY` in `server/src/config.ts` and passing it into Express from `server/src/index.ts`. Local development keeps the previous one-hop default, but production must choose deliberately: `false` for direct Node exposure, a numeric hop count such as `1` for a known reverse proxy, or a named/CIDR allowlist such as `loopback`. `TRUST_PROXY=true` is rejected in production because it trusts every `X-Forwarded-For` sender.
+
+- [x] **High: tightened the Content Security Policy by removing `unsafe-eval`.** Fixed on 2026-07-27 after scanning the codebase for `eval(...)` and `new Function(...)` usage and finding no runtime dependency on string-to-code execution. `server/src/index.ts` now omits `'unsafe-eval'` from Helmet's `script-src` directive while retaining `'unsafe-inline'` and `script-src-attr 'unsafe-inline'` temporarily because the current SPA still contains inline scripts and many inline event attributes. The remaining CSP follow-up is to move inline JavaScript out of `public/index.html`, replace `onclick` attributes with delegated event listeners, and then remove the inline allowances.
+
+- [ ] **Medium: revisit static caching and service-worker cache invalidation.** Static JavaScript is served with `Cache-Control: public, max-age=31536000, immutable`, while filenames such as `/js/version.js`, `/js/qrcode.js`, and arcade game scripts are not generally content-hashed. The service worker versioning helps, and `/sw.js` is served with `no-cache`, but long-lived immutable caching on non-fingerprinted JavaScript can leave users running stale client code after a security fix, especially through a CDN or browser cache. Prefer filename fingerprinting for immutable assets, or reduce JavaScript cache lifetime and rely on ETags/revalidation until fingerprinting exists.
+
+- [ ] **Medium: add a security header checklist for hosting layers outside Express.** Helmet covers the Node response, but production deployments may add nginx, Cloudflare, platform static hosting, or Android WebView/browser paths. Ensure outer layers preserve `Content-Type`, `X-Content-Type-Options`, CSP, HSTS, referrer policy, permissions policy, and cache-control headers. Add HSTS at the TLS terminator if it is not already present, and verify redirects from HTTP to HTTPS before login or token-bearing routes are reachable.
+
+- [ ] **Medium: treat public token URLs as credentials.** Calendar feeds, group invites, friend invites, magic links, and reset links are all bearer-style URLs. The code uses strong random tokens and short expiries for auth and invite flows, which is good. The concern is leakage through browser history, screenshots, logs, analytics, referrers, support tickets, and calendar clients. Continue using `Referrer-Policy` from Helmet, avoid logging full tokens in production, rotate ICS tokens on demand, and consider showing users a clearer warning that anyone with an active calendar URL can read dated task summaries until the token is rotated.
+
+- [ ] **Medium: make database encryption mandatory for production.** The README says plaintext SQLite is suitable for development but not recommended for production. That is accurate, but the code currently allows production to start without `DB_ENCRYPTION_KEY`. Because the database contains email addresses, task content, group membership, private calendar tokens, push subscriptions, hashed OTPs, password hashes, invite tokens, and SMTP/VAPID settings, production should either fail without encryption or print a very loud deployment warning that must be intentionally overridden.
+
+- [ ] **Low: set release hardening for Android.** The Android release build currently has `minifyEnabled false`, and `android:allowBackup="true"`. The app stores JWTs in `EncryptedSharedPreferences`, which is a good local control, but release builds should still enable shrinking/obfuscation, review backup behavior for token-adjacent metadata, and add a network security configuration if non-production endpoints are ever introduced. Keep the HTTPS-only production base URL, and avoid BODY-level HTTP logging outside debug builds; the current `BuildConfig.DEBUG` guard is the right pattern.
+
+### Authentication and Authorization Weaknesses
+
+- [x] **High: reduced browser session-token blast radius while retaining bearer-token compatibility.** Fixed on 2026-07-27 by shortening web-issued JWTs from 7 days / 30 days to 12 hours / 7 days and returning explicit `expiresAt` metadata from OTP and magic-link verification. The web client now stores `taskitTokenExpiresAt` next to the token, clears expired browser auth before use, keeps non-remembered sessions in `sessionStorage`, and avoids accidentally moving session-only profile updates into `localStorage`. This does not fully migrate to `HttpOnly` cookies yet, so the next long-term improvement remains a cookie/refresh-token design; however, the XSS blast radius of the current browser bearer-token design is materially smaller.
+
+- [x] **High: rate-limited OTP verification by session as well as route/IP.** Fixed on 2026-07-27 by adding `otp_tokens.failed_attempts` and enforcing `MAX_OTP_ATTEMPTS = 5` in `server/src/routes/auth.ts`. Incorrect OTP submissions now increment the database counter; the fifth wrong code marks the OTP session `used` and returns `429`, so a leaked `sessionId` cannot be brute-forced for the full 10-minute lifetime even from distributed IPs.
+
+- [ ] **Medium: consider requiring OTP for magic-link login or narrowing magic-link privileges.** Magic links are convenient and short-lived, and reset tokens are purpose-bound. However, a mailbox compromise or forwarded link can bypass the password-plus-OTP path completely. If TaskIt positions OTP as strong two-factor authentication, magic-link login should either be treated as passwordless single-factor auth and labelled accordingly, or followed by an additional local confirmation step for high-risk actions such as changing email, changing password, deleting account, creating admin users, or rotating security settings.
+
+- [ ] **Medium: continue hardening admin endpoints as high-value targets.** Admin routes are protected by authenticated rate limiting and role middleware, and recent release notes show GDPR-focused minimization. The admin area still controls SMTP, Turnstile, VAPID, user roles, reports, XP events, arcade game metadata, and collectible catalogue data. Add explicit audit logging for admin changes, require recent re-authentication before role/security settings changes, and consider a separate admin rate limit lower than the general authenticated quota.
+
+### User Interface Design and Frontend Rendering
+
+- [x] **High: reduced XSS risk created by the large inline HTML/JavaScript SPA with an automated sink guardrail.** Fixed on 2026-07-27 by adding `scripts/xss-sink-scan.js`, a reviewed baseline in `scripts/xss-sink-baseline.json`, and `npm run security:xss-sinks`. The scanner tracks HTML-rendering sinks (`innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`), inline event handlers, and dynamic script creation across the public frontend, then fails when new sink signatures appear without an intentional baseline update. The root `npm run build` now runs this scan before the server build. This does not finish the larger modularization work; it prevents the existing risk surface from quietly growing while future refactors move rendering toward `textContent`, DOM construction, and delegated event listeners.
+
+- [ ] **Medium: replace inline event attributes with registered listeners.** `onclick` and other inline handlers force the CSP to allow inline script attributes. That means a future HTML injection bug is more likely to become script execution. Moving handlers to JavaScript modules will both improve maintainability and allow CSP to become meaningfully restrictive. This is also a design quality fix: explicit listeners make it easier to reason about modal stacking, back-button behavior, keyboard handling, disabled states, and accessibility.
+
+- [ ] **Medium: audit accessibility and failure states for security-sensitive flows.** Login, OTP, password reset, group invite acceptance, admin settings, token rotation, and account deletion should have clear loading, disabled, retry, and error states. Ambiguous UI states create security weaknesses because users retry actions, paste tokens into support channels, or misunderstand whether a secret was rotated. Add focused UI tests for auth failures, expired invite links, expired reset links, locked accounts, offline API responses, and service-worker update prompts.
+
+- [ ] **Medium: distinguish client-side motivational limits from server-side enforcement.** The Arcade daily play timer stores local play seconds in `localStorage`, which is appropriate for a wellbeing nudge but not for a security or fairness boundary. Users can reset it locally. Keep any competitive, XP, inventory, token, or leaderboard effects enforced server-side only. The README and admin UI should phrase client timers as user-experience limits, not anti-cheat controls.
+
+- [ ] **Low: reduce visual over-density on the unauthenticated landing page.** The landing page communicates product scope well, but it mixes marketing, demo mockups, gamification callouts, structured data, install messaging, and app shell concerns in one large file. From a security and maintainability perspective, the risk is not the visual style itself; it is that product copy, auth UI, app runtime, and admin markup live together. Separating the landing page from the authenticated application shell would shrink the unauthenticated attack surface and make accidental exposure of hidden authenticated/admin DOM less likely if CSS or JavaScript fails.
+
+### Testing and Verification To-dos
+
+- [ ] Add `npm audit --omit=dev --audit-level=high` to CI and record the expected clean output after dependency updates.
+- [ ] Add tests for OTP brute-force limits, expired magic/reset tokens, used-token replay, locked-account token rejection, password-reset token-version invalidation, and ICS token rotation.
+- [ ] Add response-header tests for CSP, cache-control, `Service-Worker-Allowed`, JSON content type, static CSS/JS content type, and calendar feed `no-store`.
+- [ ] Add a production-startup configuration test that refuses missing `JWT_SECRET`, invalid/non-HTTPS `BASE_URL`, and optionally missing `DB_ENCRYPTION_KEY`.
+- [ ] Add frontend tests or lint rules for unsafe rendering sinks: new `innerHTML`, inline handlers, dynamic script paths, and user-controlled URL construction.
+- [ ] Add Android release checks for `allowBackup`, debug logging, minification, and token persistence behavior.
 
 ---
 

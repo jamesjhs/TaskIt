@@ -1,6 +1,6 @@
 # TaskIt! – How-To Manual
 
-**Version 1.21.9**
+**Version 1.21.11**
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -104,9 +104,11 @@ Create a `.env` file inside the `server/` directory. A template is provided at `
 | `PORT`             | `3000`                         | Port the server listens on                               |
 | `JWT_SECRET`       | *(insecure dev default)*       | **Required in production.** Secret key for JWT tokens   |
 | `DB_PATH`          | `server/taskit.db`             | Path to the SQLite database file                         |
-| `DB_ENCRYPTION_KEY` | *(none — plaintext)*          | Passphrase for full-file SQLite encryption (see below)   |
+| `DB_ENCRYPTION_KEY` | *(none — plaintext)*          | **Required in production.** Passphrase for full-file SQLite encryption (see below) |
 | `ADMIN_EMAIL`      | *(none)*                       | Email address that is automatically granted admin role   |
-| `BASE_URL`         | *(derived from request host)*  | Public base URL used in invite links and magic links     |
+| `BASE_URL`         | *(derived from request host)*  | **Required in production; must be `https://`.** Public base URL used in invite links and magic links |
+| `TRUST_PROXY`      | `1` in dev; required in prod   | Express proxy trust setting: `false` for direct Node, `1` for one trusted proxy hop, or a named/CIDR allowlist such as `loopback` |
+| `CORS_ORIGIN`      | `BASE_URL` or disabled         | Comma-separated allowed browser origins. Production origins must be explicit `https://` URLs; `*` is rejected in production |
 | `MAX_LOGIN_ATTEMPTS` | `5`                          | Failed logins before account lockout                     |
 | `LOCKOUT_MINUTES`  | `30`                           | Duration of account lockout in minutes                   |
 | `SMTP_HOST`        | *(none)*                       | SMTP server hostname                                     |
@@ -126,6 +128,8 @@ PORT=3000
 JWT_SECRET=change-this-to-a-long-random-secret
 ADMIN_EMAIL=admin@example.com
 BASE_URL=https://taskit.example.com
+TRUST_PROXY=1
+DB_ENCRYPTION_KEY=change-this-to-a-long-random-passphrase
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -138,7 +142,7 @@ VAPID_PRIVATE_KEY=your-vapid-private-key
 VAPID_SUBJECT=mailto:admin@example.com
 ```
 
-> **Security note:** Always set a strong, unique `JWT_SECRET` before deploying to production.
+> **Production startup checks:** When `NODE_ENV=production`, TaskIt refuses to start unless `JWT_SECRET`, `BASE_URL`, `TRUST_PROXY`, and `DB_ENCRYPTION_KEY` are set. `BASE_URL` and configured CORS origins must use `https://`; `CORS_ORIGIN=*` and `TRUST_PROXY=true` are rejected in production. SMTP credentials, VAPID keys, and Turnstile keys must be configured as complete pairs when used.
 
 > **BASE_URL note:** Set this to your public-facing URL (e.g. `https://taskit.example.com`) so that invite links, magic links, and QR codes contain the correct address rather than the internal request host.
 
@@ -606,5 +610,5 @@ The Freeze is consumed automatically, the streak is preserved, and the ❄️ is
 
 ---
 
-*TaskIt! v1.21.9 – Copyright J Rowson 2026 | jahosi.co.uk*
+*TaskIt! v1.21.11 – Copyright J Rowson 2026 | jahosi.co.uk*
 

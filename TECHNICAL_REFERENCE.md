@@ -589,6 +589,7 @@ Seeded on first run:
 | Key | Default | Description |
 |---|---|---|
 | `arcade_daily_play_minutes` | `'5'` | Global daily arcade play limit (minutes). Applied to all users. Admin-editable via `PUT /api/admin/arcade-settings`. |
+| `collectible_drop_sensitivity` | `'2'` | Multiplier applied to collectible loot-drop probability. Admin-editable via `PUT /api/admin/arcade-settings`; valid range is 0.1–5. Default `2` doubles the original drop sensitivity. |
 
 #### `arcade_games`
 | Column | Type | Notes |
@@ -1239,7 +1240,7 @@ interface LootDropResult {
 | Constant | Value | Description |
 |---|---|---|
 | `PENDING_DROP_TTL_MS` | `600 000` (10 min) | How long a pending drop stays claimable before it expires |
-| `BASE_DROP_RATE_PER_50_XP` | `0.25` | 25% drop chance per 50 XP earned |
+| `BASE_DROP_RATE_PER_50_XP` | `0.25` | Base 25% drop chance per 50 XP earned before `collectible_drop_sensitivity` is applied |
 | `MAX_DROP_CHANCE` | `0.75` | Drop probability cap (75%) |
 | `XP_SCALE_FACTOR` | `50` | XP unit used to scale drop probability |
 | `TOTAL_RARITY_WEIGHT` | `100` | Sum of all `RARITY_WEIGHTS` entries |

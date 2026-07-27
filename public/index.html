@@ -1697,16 +1697,20 @@
           <button onclick="event.preventDefault();event.stopPropagation();loadArcadeSettings()" class="btn btn-sm btn-secondary">Refresh</button>
         </summary>
         <div style="padding-top:12px">
-          <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Set the global daily arcade play limit. This applies immediately to all users and is the single source of truth for how long players may use the arcade each day.</p>
+          <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Set arcade and collectibles tuning. The daily play limit applies immediately to all users; collectible sensitivity controls how often XP gains roll for a pending loot drop.</p>
           <form onsubmit="saveArcadeSettings(event)">
             <div class="admin-field-row" style="align-items:flex-end">
               <div class="form-group" style="flex:1;margin-bottom:0">
                 <label>Daily Play Limit (minutes)</label>
                 <input id="arcadeDailyLimitInput" type="number" min="1" max="180" class="input" placeholder="5" />
               </div>
+              <div class="form-group" style="flex:1;margin-bottom:0">
+                <label>Collectible Drop Sensitivity</label>
+                <input id="collectibleDropSensitivityInput" type="number" min="0.1" max="5" step="0.1" class="input" placeholder="2.0" />
+              </div>
               <button type="submit" class="btn btn-primary btn-sm" style="margin-bottom:0">Save</button>
             </div>
-            <p style="font-size:.75rem;color:#9ca3af;margin-top:6px">Allowed range: 1–180 minutes. Default is 5 minutes.</p>
+            <p style="font-size:.75rem;color:#9ca3af;margin-top:6px">Daily play range: 1–180 minutes. Drop sensitivity range: 0.1–5. Default is 2.0, which doubles the previous collectible drop rate while keeping the 75% maximum chance cap.</p>
           </form>
         </div>
       </details>
@@ -1804,6 +1808,13 @@
             <div class="gamif-banner-stat">
               <div class="gamif-banner-stat-num credits" id="gamifFreezeCredits">0</div>
               <div class="gamif-banner-stat-label">❄️ Freeze Credits</div>
+            </div>
+            <div class="gamif-banner-stat" title="Arcade tokens are earned automatically when your total XP crosses into a new level. Each level-up grants 3 tokens. Spend them inside arcade games for buybacks such as extra time or lives.">
+              <div class="gamif-banner-stat-num credits" id="gamifArcadeTokens">0</div>
+              <div class="gamif-banner-stat-label">
+                🎟️ Arcade Tokens
+                <span aria-label="Arcade tokens are earned when levelling up from XP. Each level-up grants 3 tokens.">ⓘ</span>
+              </div>
             </div>
           </div>
           <!-- Overall level progress bar -->
@@ -2569,6 +2580,18 @@ let activeArcadeGameInstance = null;
 // Arcade token balance and daily play limit (minutes); refreshed with the gamification profile.
 let arcadeTokens = 0;
 let arcadeDailyPlayMinutes = 5;
+
+function updateArcadeTokenDisplays(count = arcadeTokens) {
+  const safeCount = Number.isFinite(Number(count)) ? Number(count) : 0;
+  const overlayTokenEl = document.getElementById('arcadeTokenDisplay');
+  if (overlayTokenEl) {
+    overlayTokenEl.textContent = '\uD83C\uDFDF\uFE0F ' + safeCount.toLocaleString();
+    overlayTokenEl.setAttribute('aria-label', 'Arcade token balance: ' + safeCount.toLocaleString());
+    overlayTokenEl.title = 'Arcade tokens are earned when your XP crosses into a new level. Each level-up grants 3 tokens.';
+  }
+  const progressTokenEl = document.getElementById('gamifArcadeTokens');
+  if (progressTokenEl) progressTokenEl.textContent = safeCount.toLocaleString();
+}
 // Far-future task list collapse state.
 let _farFutureExpanded = false;
 // Start-task modal state.
@@ -5221,9 +5244,7 @@ async function loadGamificationProfile() {
     arcadeTokens = profile.arcadeTokens ?? 0;
     arcadeDailyPlayMinutes = profile.dailyPlayMinutes ?? 5;
     setArcadeCatalogue(arcadeGames);
-    // Sync token display if the arcade overlay is currently open
-    const tokenEl = document.getElementById('arcadeTokenDisplay');
-    if (tokenEl) tokenEl.textContent = '\uD83C\uDFDF\uFE0F ' + arcadeTokens;
+    updateArcadeTokenDisplays();
     toggleEl.checked = gamificationEnabled;
 
     // Progress page — show correct state
@@ -5302,6 +5323,7 @@ function renderGamificationProfile(profile, streaks) {
   document.getElementById('gamifBannerTitle').textContent = profile.title || '\uD83C\uDF31 Just Getting Started';
   document.getElementById('gamifTotalXp').textContent = (profile.totalXp || 0).toLocaleString();
   document.getElementById('gamifFreezeCredits').textContent = profile.freezeCredits ?? 0;
+  updateArcadeTokenDisplays(profile.arcadeTokens ?? 0);
 
   // Overall level + progress bar
   const level = profile.level || 1;
@@ -6292,20 +6314,30 @@ async function loadArcadeSettings() {
     const data = await api('GET', '/admin/arcade-settings');
     const input = document.getElementById('arcadeDailyLimitInput');
     if (input) input.value = data.arcadeDailyPlayMinutes ?? 5;
+    const sensitivityInput = document.getElementById('collectibleDropSensitivityInput');
+    if (sensitivityInput) sensitivityInput.value = data.collectibleDropSensitivity ?? 2;
   } catch (err) { toast('Failed to load arcade settings: ' + err.message, 'error'); }
 }
 
 async function saveArcadeSettings(e) {
   e.preventDefault();
   const minutes = parseInt(document.getElementById('arcadeDailyLimitInput').value, 10);
+  const sensitivity = parseFloat(document.getElementById('collectibleDropSensitivityInput').value);
   if (isNaN(minutes) || minutes < 1 || minutes > 180) {
     toast('Enter a value between 1 and 180 minutes', 'error');
     return;
   }
+  if (isNaN(sensitivity) || sensitivity < 0.1 || sensitivity > 5) {
+    toast('Enter a collectible drop sensitivity between 0.1 and 5', 'error');
+    return;
+  }
   try {
-    await api('PUT', '/admin/arcade-settings', { arcadeDailyPlayMinutes: minutes });
+    await api('PUT', '/admin/arcade-settings', {
+      arcadeDailyPlayMinutes: minutes,
+      collectibleDropSensitivity: sensitivity,
+    });
     arcadeDailyPlayMinutes = minutes;
-    toast('Arcade play limit updated to ' + minutes + ' min for all users', 'success');
+    toast('Arcade and collectible settings updated', 'success');
   } catch (err) { toast('Failed to save arcade settings: ' + err.message, 'error'); }
 }
 
@@ -7984,8 +8016,7 @@ async function openArcade(badgeKey) {
   const remainingSeconds = Math.max(0, limitSeconds - playedSeconds);
 
   // Sync token display
-  const tokenEl = document.getElementById('arcadeTokenDisplay');
-  if (tokenEl) tokenEl.textContent = '\uD83C\uDFDF\uFE0F ' + arcadeTokens;
+  updateArcadeTokenDisplays();
 
   // Show overlay with animation
   overlay.classList.remove('hidden', 'arcade-animating');
@@ -8132,8 +8163,7 @@ async function arcadeSpendToken() {
     const data = await api('POST', '/gamification/arcade/spend-token');
     if (!data) return;
     arcadeTokens = data.arcadeTokens;
-    const tokenEl = document.getElementById('arcadeTokenDisplay');
-    if (tokenEl) tokenEl.textContent = '\uD83C\uDFDF\uFE0F ' + arcadeTokens;
+    updateArcadeTokenDisplays();
 
     // Extend the stored daily budget by TOKEN_TIME_EXTENSION_SECONDS so the HUD updates immediately
     const today = new Date().toISOString().slice(0, 10);

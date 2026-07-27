@@ -88,12 +88,25 @@ const RARITY_WEIGHTS: Array<{ rarity: string; weight: number }> = [
 /**
  * Base drop probability per 50 XP earned.
  * 25% chance at 50 XP, 50% at 100 XP, capped at MAX_DROP_CHANCE.
+ * The site-wide collectible_drop_sensitivity setting multiplies this rate.
  */
 const BASE_DROP_RATE_PER_50_XP = 0.25;
+const DEFAULT_COLLECTIBLE_DROP_SENSITIVITY = 2;
+const MIN_COLLECTIBLE_DROP_SENSITIVITY = 0.1;
+const MAX_COLLECTIBLE_DROP_SENSITIVITY = 5;
 /** Maximum drop probability regardless of XP earned. */
 const MAX_DROP_CHANCE = 0.75;
 /** XP amount used as the scaling unit for drop probability. */
 const XP_SCALE_FACTOR = 50;
+
+function getCollectibleDropSensitivity(): number {
+  const row = db.prepare(
+    "SELECT value FROM site_settings WHERE key = 'collectible_drop_sensitivity'"
+  ).get() as { value: string } | undefined;
+  const parsed = row ? Number(row.value) : DEFAULT_COLLECTIBLE_DROP_SENSITIVITY;
+  if (!Number.isFinite(parsed)) return DEFAULT_COLLECTIBLE_DROP_SENSITIVITY;
+  return Math.min(MAX_COLLECTIBLE_DROP_SENSITIVITY, Math.max(MIN_COLLECTIBLE_DROP_SENSITIVITY, parsed));
+}
 
 /** Evict entries whose TTL has elapsed. Called before any cache write. */
 function purgeExpiredDrops(): void {
@@ -128,8 +141,13 @@ function rollLootDrop(userId: string, xpGained: number): LootDropResult | null {
   // Prevent overwriting an existing unclaimed drop (anti–ghost-drop guard)
   if (pendingDrops.has(userId)) return null;
 
-  // Probability check: chance scales linearly with XP, capped at MAX_DROP_CHANCE
-  const dropChance = Math.min(MAX_DROP_CHANCE, (xpGained / XP_SCALE_FACTOR) * BASE_DROP_RATE_PER_50_XP);
+  // Probability check: chance scales linearly with XP and admin sensitivity,
+  // capped so boosted settings cannot guarantee runaway drops.
+  const sensitivity = getCollectibleDropSensitivity();
+  const dropChance = Math.min(
+    MAX_DROP_CHANCE,
+    (xpGained / XP_SCALE_FACTOR) * BASE_DROP_RATE_PER_50_XP * sensitivity
+  );
   if (Math.random() >= dropChance) return null;
 
   const rarity = selectWeightedRarity();

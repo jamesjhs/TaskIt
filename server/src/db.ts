@@ -390,6 +390,7 @@ db.exec(`
 
 // Seed site-wide defaults (INSERT OR IGNORE so existing values are never overwritten)
 db.prepare("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('arcade_daily_play_minutes', '5')").run();
+db.prepare("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('collectible_drop_sensitivity', '2')").run();
 
 // Seed the existing arcade catalogue. INSERT OR IGNORE preserves any admin edits
 // made after the first migration run.

@@ -1254,7 +1254,12 @@ router.delete('/arcade-games/:id', (req: Request, res: Response): void => {
 router.get('/arcade-settings', (_req: Request, res: Response): void => {
   const row = db.prepare("SELECT value FROM site_settings WHERE key = 'arcade_daily_play_minutes'").get() as { value: string } | undefined;
   const minutes = row ? (parseInt(row.value, 10) || 5) : 5;
-  res.json({ arcadeDailyPlayMinutes: minutes });
+  const sensitivityRow = db.prepare("SELECT value FROM site_settings WHERE key = 'collectible_drop_sensitivity'").get() as { value: string } | undefined;
+  const parsedSensitivity = sensitivityRow ? Number(sensitivityRow.value) : 2;
+  const collectibleDropSensitivity = Number.isFinite(parsedSensitivity)
+    ? Math.min(5, Math.max(0.1, parsedSensitivity))
+    : 2;
+  res.json({ arcadeDailyPlayMinutes: minutes, collectibleDropSensitivity });
 });
 
 router.put('/arcade-settings', (req: Request, res: Response): void => {
@@ -1264,9 +1269,18 @@ router.put('/arcade-settings', (req: Request, res: Response): void => {
     res.status(400).json({ error: 'arcadeDailyPlayMinutes must be an integer between 1 and 180' });
     return;
   }
+  const rawSensitivity = req.body?.collectibleDropSensitivity;
+  const sensitivity = rawSensitivity === undefined || rawSensitivity === null || rawSensitivity === ''
+    ? 2
+    : Number(rawSensitivity);
+  if (!Number.isFinite(sensitivity) || sensitivity < 0.1 || sensitivity > 5) {
+    res.status(400).json({ error: 'collectibleDropSensitivity must be a number between 0.1 and 5' });
+    return;
+  }
   db.prepare("INSERT OR REPLACE INTO site_settings (key, value) VALUES ('arcade_daily_play_minutes', ?)").run(String(minutes));
+  db.prepare("INSERT OR REPLACE INTO site_settings (key, value) VALUES ('collectible_drop_sensitivity', ?)").run(String(sensitivity));
   db.prepare('UPDATE users SET daily_play_minutes = ?').run(minutes);
-  res.json({ arcadeDailyPlayMinutes: minutes });
+  res.json({ arcadeDailyPlayMinutes: minutes, collectibleDropSensitivity: sensitivity });
 });
 
 export default router;

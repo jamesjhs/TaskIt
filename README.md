@@ -38,6 +38,7 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - Admin panel: stats dashboard, SMTP configuration, locked accounts, user reports, feedback management
 - **Database encryption** — full SQLite file encryption at rest via SQLCipher (set `DB_ENCRYPTION_KEY` env var)
 - **Gamification Engine** — opt-in XP system, overall level progression, XP breakdown by skill, dynamic titles, personal achievements, streak tracking, and freeze mechanic (see below)
+- **Admin-tunable collectible drop sensitivity** — admins can adjust how often XP gains roll for collectible loot drops; default sensitivity is `2.0`, doubling the previous acquisition rate while preserving the 75% maximum drop chance cap
 - **Admin-managed Arcade games** — arcade games are registered through Admin > Gamify > Arcade Games, loaded dynamically from compatible JavaScript modules, and documented for contributors in `/arcade-game-guide.html`
 - **Friends & Leaderboards** — connect with other users via invite link, QR code, or username + friend key; compete on XP leaderboards per group and across friends
 - **Persistent login** — optional "Remember me" browser storage (7-day web JWT in localStorage vs 12-hour session-only storage; Android uses encrypted app storage)

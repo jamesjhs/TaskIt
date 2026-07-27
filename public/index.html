@@ -2289,21 +2289,21 @@
       </div>
       <div id="deferSection" class="detail-section hidden">
         <p class="detail-section-title">Defer Task</p>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <input id="deferDateInput" type="date" class="input" style="flex:1;min-width:140px" aria-label="New due date" />
-          <button onclick="confirmDefer()" class="btn btn-primary btn-sm">Set Date</button>
-          <button onclick="document.getElementById('deferSection').classList.add('hidden')" class="btn btn-secondary btn-sm">✕</button>
-        </div>
+        <input id="deferDateInput" type="hidden" />
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px">
-          <span style="font-size:.85rem;color:#6b7280">or in</span>
-          <input id="deferRelativeNum" type="number" min="1" max="999" value="1" class="input" style="width:60px;flex-shrink:0;padding:6px 8px" aria-label="Number of time units" />
-          <select id="deferRelativeUnit" class="select" style="flex:1;min-width:90px" aria-label="Time unit (days, weeks, or months)">
+          <span style="font-size:.85rem;color:#6b7280">in</span>
+          <input id="deferRelativeNum" type="number" min="1" max="999" value="1" class="input" style="width:60px;flex-shrink:0;padding:6px 8px" aria-label="Number of time units" oninput="updateDeferRelativeDate()" />
+          <select id="deferRelativeUnit" class="select" style="flex:1;min-width:90px" aria-label="Time unit (days, weeks, or months)" onchange="updateDeferRelativeDate()">
             <option value="days">days</option>
-            <option value="weeks">weeks</option>
+            <option value="weeks" selected>weeks</option>
             <option value="months">months</option>
           </select>
           <span style="font-size:.85rem;color:#6b7280">from now</span>
-          <button type="button" onclick="setRelativeDueDate('deferDateInput','deferRelativeNum','deferRelativeUnit')" class="btn btn-secondary btn-sm">Set</button>
+        </div>
+        <div id="deferResolvedDate" style="font-size:.85rem;color:#374151;margin-top:8px;font-weight:600"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px">
+          <button onclick="confirmDefer()" class="btn btn-primary btn-sm">Confirm</button>
+          <button onclick="document.getElementById('deferSection').classList.add('hidden')" class="btn btn-secondary btn-sm">✕</button>
         </div>
       </div>
       <div class="detail-section">
@@ -5053,16 +5053,39 @@ function toggleDeferSection() {
   const section = document.getElementById('deferSection');
   section.classList.toggle('hidden');
   if (!section.classList.contains('hidden')) {
-    const inp = document.getElementById('deferDateInput');
-    if (currentDetailTask && currentDetailTask.due_date) {
-      const d = new Date(currentDetailTask.due_date);
-      const pad = n => String(n).padStart(2, '0');
-      inp.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    } else {
-      inp.value = '';
-    }
-    inp.focus();
+    document.getElementById('deferRelativeNum').value = '1';
+    document.getElementById('deferRelativeUnit').value = 'weeks';
+    updateDeferRelativeDate();
+    document.getElementById('deferRelativeNum').focus();
   }
+}
+
+function updateDeferRelativeDate() {
+  const dateInput = document.getElementById('deferDateInput');
+  const dateText = document.getElementById('deferResolvedDate');
+  const numInput = document.getElementById('deferRelativeNum');
+  const unitInput = document.getElementById('deferRelativeUnit');
+  if (!dateInput || !dateText || !numInput || !unitInput) return;
+
+  let num = parseInt(numInput.value, 10);
+  if (!Number.isInteger(num) || num < 1) num = 1;
+  if (num > 999) num = 999;
+
+  const d = new Date();
+  const unit = unitInput.value;
+  if (unit === 'days') d.setDate(d.getDate() + num);
+  else if (unit === 'weeks') d.setDate(d.getDate() + num * 7);
+  else if (unit === 'months') d.setMonth(d.getMonth() + num);
+  else return;
+
+  const pad = n => String(n).padStart(2, '0');
+  dateInput.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  dateText.textContent = 'New due date: ' + d.toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 async function confirmDefer() {

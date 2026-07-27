@@ -514,6 +514,9 @@ addCol('collectibles', 'icon_filename', 'TEXT');
 addCol('tasks', 'is_long_term_goal', 'INTEGER NOT NULL DEFAULT 0');
 // Task type archival: soft-delete for task types (allows re-enabling if recreated)
 addCol('task_types', 'archived', 'INTEGER NOT NULL DEFAULT 0');
+// Personal tasks are creator-only. Remove legacy assignee rows that could have
+// been left behind before group-to-personal transitions cleared assignments.
+db.prepare('DELETE FROM task_assignees WHERE task_id IN (SELECT id FROM tasks WHERE group_id IS NULL)').run();
 // Backfill: generate a friend_key for any user that doesn't have one yet
 {
   const missingKey = db.prepare("SELECT id FROM users WHERE friend_key IS NULL OR friend_key = ''").all() as Array<{ id: string }>;

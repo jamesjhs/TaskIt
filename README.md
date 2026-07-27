@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.21.11** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.21.12** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -125,6 +125,11 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 Run `npm run security:xss-sinks` before changing frontend rendering code. The scan compares current HTML-rendering sinks, inline event handlers, and dynamic script loaders against `scripts/xss-sink-baseline.json`; new entries fail the check until they are reviewed. Prefer `textContent`, attributes set through DOM APIs, and explicit event listeners for new UI code. Use `npm run security:xss-sinks:update` only after deliberately reviewing an unavoidable sink.
 
 ## Changelog
+
+### v1.21.12
+
+- **🔒 Personal task sharing hardening** — reassessed the group visibility boundary after reports that group members could see tasks believed to be Personal. The server now has an explicit Personal-only task filter (`groupId=__personal__`), ignores and prunes stale assignee metadata for non-group tasks, normalizes incoming `groupId` values before writes, and prevents recurring personal tasks from cloning legacy assignee rows into generated follow-up tasks. The UI now exposes a Personal filter and labels each task card as Personal or shared with its group name, making accidental sharing easier to spot.
+- **🔢 Version bump** — package metadata, lockfiles, public cache keys, pages, and documentation updated to 1.21.12.
 
 ### v1.21.11
 
@@ -497,7 +502,7 @@ Open `http://localhost:3000` after starting the server. No separate build step n
 ### Tasks
 | Method | Path                      | Description                           |
 |--------|---------------------------|---------------------------------------|
-| GET    | /api/tasks                | List tasks (filters: status, groupId, typeId, archived, assignedToMe) |
+| GET    | /api/tasks                | List tasks (filters: status, groupId, typeId, archived, assignedToMe; use `groupId=__personal__` for creator-only Personal tasks) |
 | POST   | /api/tasks                | Create task (supports recurrence)     |
 | PATCH  | /api/tasks/:id            | Update task                           |
 | PATCH  | /api/tasks/:id/status     | Update status only                    |

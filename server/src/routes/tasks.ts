@@ -23,6 +23,7 @@ const TIMED_TASK_XP_MULTIPLIER = 2;
 
 // The system task type that is always sorted to the top of the task list
 const URGENT_TASK_TYPE = 'urgent';
+const PERSONAL_GROUP_FILTER = '__personal__';
 
 // Anti-farming: tasks completed this many ms after creation earn no XP (non-recurring only)
 const ANTI_FARM_TIMEGATE_MS = 60 * 1000; // 60 seconds
@@ -67,6 +68,14 @@ function resolveAssigneeIdsForGroup(groupId: string | null, assigneeIds: unknown
   return new Set(rows.map((row) => row.user_id));
 }
 
+function normalizeGroupId(input: unknown): string | null | undefined {
+  if (input === undefined) return undefined;
+  if (input === null || input === '') return null;
+  if (typeof input !== 'string') return undefined;
+  const trimmed = input.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 function computeNextDue(dueDateMs: number, interval: number, unit: string): number {
   const d = new Date(dueDateMs);
   switch (unit) {
@@ -100,6 +109,11 @@ router.get('/', (req: Request, res: Response): void => {
 
   // Build filters — all condition strings are hardcoded; only values use parameters
   const { groupId, assignedToMe, status, archived, typeId } = req.query;
+  if (groupId !== undefined && typeof groupId !== 'string') {
+    res.status(400).json({ error: 'groupId must be a string' });
+    return;
+  }
+  const groupIdFilter = typeof groupId === 'string' ? groupId.trim() : '';
 
   // Validate status against allowed values to reject garbage before hitting the DB
   if (status && !ALLOWED_STATUSES.has(status as string)) {
@@ -126,9 +140,11 @@ router.get('/', (req: Request, res: Response): void => {
   )`);
   params.push(userId, userId, userId);
 
-  if (groupId) {
+  if (groupIdFilter === PERSONAL_GROUP_FILTER) {
+    whereConditions.push('t.group_id IS NULL');
+  } else if (groupIdFilter) {
     whereConditions.push('t.group_id = ?');
-    params.push(groupId as string);
+    params.push(groupIdFilter);
   }
 
   if (typeId) {
@@ -179,7 +195,9 @@ router.get('/', (req: Request, res: Response): void => {
       SELECT ta.task_id, u.id, u.username, u.email
       FROM task_assignees ta
       JOIN users u ON u.id = ta.user_id
+      JOIN tasks t2 ON t2.id = ta.task_id
       WHERE ta.task_id IN (${placeholders})
+        AND t2.group_id IS NOT NULL
     `).all(...taskIds) as Array<{ task_id: string; id: string; username: string; email: string }>;
 
     for (const a of assignees) {
@@ -219,10 +237,15 @@ router.get('/', (req: Request, res: Response): void => {
 
 router.post('/', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const { title, details, typeId, groupId, assigneeIds, dueDate, recurInterval, recurUnit,
+  const { title, details, typeId, groupId: rawGroupId, assigneeIds, dueDate, recurInterval, recurUnit,
           notifyEmail, notify7day, notify1day, notifyOnday,
           notifyPopup7day, notifyPopup1day, notifyPopupOnday,
           xpMultiplier } = req.body;
+  const groupId = normalizeGroupId(rawGroupId);
+  if (rawGroupId !== undefined && groupId === undefined) {
+    res.status(400).json({ error: 'groupId must be a string or null' });
+    return;
+  }
 
   if (!title || !typeId) {
     res.status(400).json({ error: 'title and typeId are required' });
@@ -447,7 +470,12 @@ router.get('/sporadic', (req: Request, res: Response): void => {
 // POST /api/tasks/create-sporadic — Create a new sporadic task
 router.post('/create-sporadic', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const { title, description, groupId, taskTypeId } = req.body;
+  const { title, description, groupId: rawGroupId, taskTypeId } = req.body;
+  const groupId = normalizeGroupId(rawGroupId);
+  if (rawGroupId !== undefined && groupId === undefined) {
+    res.status(400).json({ error: 'groupId must be a string or null' });
+    return;
+  }
 
   if (!title || typeof title !== 'string' || title.trim().length === 0 || title.length > 255) {
     res.status(400).json({ error: 'title must be between 1 and 255 characters' });
@@ -721,7 +749,9 @@ router.get('/long-term-goals', (req: Request, res: Response): void => {
       SELECT ta.task_id, u2.id, u2.username, u2.email
       FROM task_assignees ta
       JOIN users u2 ON u2.id = ta.user_id
+      JOIN tasks t2 ON t2.id = ta.task_id
       WHERE ta.task_id IN (${placeholders})
+        AND t2.group_id IS NOT NULL
     `).all(...goalIds) as Array<{ task_id: string; id: string; username: string; email: string }>;
     for (const row of assigneeRows) {
       if (!assigneesByGoal[row.task_id]) assigneesByGoal[row.task_id] = [];
@@ -742,7 +772,12 @@ router.get('/long-term-goals', (req: Request, res: Response): void => {
 // POST /api/tasks/create-long-term-goal — Create a new long-term goal
 router.post('/create-long-term-goal', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const { title, description, groupId, taskTypeId, xpMultiplier } = req.body;
+  const { title, description, groupId: rawGroupId, taskTypeId, xpMultiplier } = req.body;
+  const groupId = normalizeGroupId(rawGroupId);
+  if (rawGroupId !== undefined && groupId === undefined) {
+    res.status(400).json({ error: 'groupId must be a string or null' });
+    return;
+  }
 
   if (!title || typeof title !== 'string' || title.trim().length === 0 || title.length > 255) {
     res.status(400).json({ error: 'title must be between 1 and 255 characters' });
@@ -853,11 +888,16 @@ router.patch('/:id', (req: Request, res: Response): void => {
     xpMultiplier,
     isLongTermGoal,
     isSporadic,
-    groupId,
+    groupId: rawGroupId,
     lastCompletedAt,
   } = req.body;
   const details = req.body.details !== undefined ? req.body.details : req.body.description;
   const typeId = req.body.typeId !== undefined ? req.body.typeId : req.body.taskTypeId;
+  const groupId = normalizeGroupId(rawGroupId);
+  if (rawGroupId !== undefined && groupId === undefined) {
+    res.status(400).json({ error: 'groupId must be a string or null' });
+    return;
+  }
 
   // Validate status if provided
   if (status !== undefined && !ALLOWED_STATUSES.has(status as string)) {
@@ -872,10 +912,6 @@ router.patch('/:id', (req: Request, res: Response): void => {
 
   // Validate groupId if provided
   if (groupId !== undefined && groupId !== null) {
-    if (typeof groupId !== 'string') {
-      res.status(400).json({ error: 'groupId must be a string' });
-      return;
-    }
     // Verify membership
     const membership = db.prepare(
       'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
@@ -1190,10 +1226,12 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
           streakResult.newStreak, streakResult.newLongest,
           fullTask.xp_multiplier ?? 1.0);
 
-        const assignees = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(taskId) as Array<{ user_id: string }>;
-        const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
-        for (const a of assignees) {
-          insertAssignee.run(newId, a.user_id);
+        if (fullTask.group_id) {
+          const assignees = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(taskId) as Array<{ user_id: string }>;
+          const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
+          for (const a of assignees) {
+            insertAssignee.run(newId, a.user_id);
+          }
         }
 
         // Copy subtasks to the new occurrence with completion state reset so the
@@ -1420,10 +1458,12 @@ router.patch('/:id/archive', (req: Request, res: Response): void => {
         task.notify_email, task.notify_7day, task.notify_1day, task.notify_onday,
         task.notify_popup_7day, task.notify_popup_1day, task.notify_popup_onday);
 
-      const assignees = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(taskId) as Array<{ user_id: string }>;
-      const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
-      for (const a of assignees) {
-        insertAssignee.run(newId, a.user_id);
+      if (task.group_id) {
+        const assignees = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(taskId) as Array<{ user_id: string }>;
+        const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
+        for (const a of assignees) {
+          insertAssignee.run(newId, a.user_id);
+        }
       }
 
       copySubtasksToNewTask(taskId, newId, now);
@@ -1498,10 +1538,12 @@ router.delete('/:id', (req: Request, res: Response): void => {
         task.notify_email, task.notify_7day, task.notify_1day, task.notify_onday,
         task.notify_popup_7day, task.notify_popup_1day, task.notify_popup_onday);
 
-      const assignees = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(taskId) as Array<{ user_id: string }>;
-      const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
-      for (const a of assignees) {
-        insertAssignee.run(newId, a.user_id);
+      if (task.group_id) {
+        const assignees = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(taskId) as Array<{ user_id: string }>;
+        const insertAssignee = db.prepare('INSERT INTO task_assignees (task_id, user_id) VALUES (?, ?)');
+        for (const a of assignees) {
+          insertAssignee.run(newId, a.user_id);
+        }
       }
 
       // Copy subtasks to the new occurrence with completion state reset so the

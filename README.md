@@ -572,7 +572,7 @@ Open `http://localhost:3000` after starting the server. No separate build step n
 | GET    | /api/gamification/leaderboard/friends      | Friends XP leaderboard                                   |
 | PATCH  | /api/gamification/arcade/daily-limit       | Set daily arcade play limit in minutes (1–180)           |
 | POST   | /api/gamification/arcade/spend-token       | Atomically deduct 1 arcade token from balance            |
-| PUT    | /api/gamification/arcade/pseudonym         | Set anonymous arcade high-score name (2–10 chars)        |
+| PUT/PATCH/POST | /api/gamification/arcade/pseudonym  | Set anonymous arcade high-score name (2–10 chars)        |
 | POST   | /api/gamification/arcade/high-scores       | Submit `{ gameId, score }` using saved arcade pseudonym  |
 | GET    | /api/gamification/arcade/high-scores/:gameId | Public top 20 scores for an enabled game, anonymous   |
 

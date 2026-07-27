@@ -912,7 +912,7 @@ Attached to `req.user` by `authMiddleware`.
 | `POST` | `/api/gamification/inventory/recycle` | JWT | authed | Discard pending drop for XP consolation bonus |
 | `PATCH` | `/api/gamification/arcade/daily-limit` | JWT | authed | Set daily arcade play limit (minutes) |
 | `POST` | `/api/gamification/arcade/spend-token` | JWT | authed | Atomically deduct 1 arcade token |
-| `PUT` | `/api/gamification/arcade/pseudonym` | JWT | gamification enabled | Set anonymous arcade display name |
+| `PUT/PATCH/POST` | `/api/gamification/arcade/pseudonym` | JWT | gamification enabled | Set anonymous arcade display name |
 | `POST` | `/api/gamification/arcade/high-scores` | JWT | gamification enabled + pseudonym | Submit anonymous game score |
 | `GET` | `/api/gamification/arcade/high-scores/:gameId` | JWT | authed | Top 20 anonymous scores for enabled game |
 | `GET` | `/api/friends` | JWT | authed | List friends |
@@ -1113,7 +1113,7 @@ Three handlers:
 | `GET /arcade/games` | Returns enabled rows from `arcade_games` ordered by `sort_order`; frontend uses this to build `ARCADE_GAME_ORDER`, `ARCADE_GAMES`, and dynamic script loading metadata |
 | `PATCH /arcade/daily-limit` | Validates `minutes` is integer 1–180; UPDATE `users.daily_play_minutes` |
 | `POST /arcade/spend-token` | Atomic DB transaction: `UPDATE users SET arcade_tokens = arcade_tokens - 1 WHERE id = ? AND arcade_tokens > 0`; returns new balance; 400 if no tokens |
-| `PUT /arcade/pseudonym` | Validates a 2–10 character anonymous arcade name; rejects contact-info patterns and obvious vulgarity heuristics; UPDATE `users.arcade_pseudonym` |
+| `PUT/PATCH/POST /arcade/pseudonym` | Validates a 2–10 character anonymous arcade name; rejects contact-info patterns and obvious vulgarity heuristics; UPDATE `users.arcade_pseudonym` |
 | `POST /arcade/high-scores` | Requires gamification and saved pseudonym; validates enabled `gameId` and integer score; INSERT `arcade_high_scores` with pseudonym snapshot |
 | `GET /arcade/high-scores/:gameId` | Returns rank, pseudonym, score, createdAt, and `isMine`; deliberately omits account username, email, and user ID |
 
@@ -1575,7 +1575,7 @@ Collapsible task sections (`significantly-overdue-list`, `sporadic-list`, and `g
 | `handleGamifOptInYes()` | PATCH opt-in true |
 | `handleGamifOptInNo()` | Dismisses prompt |
 | `renderArcadePseudonymControls()` | Syncs the Progress/Gamify arcade-name input and current-name badge from `arcadePseudonym` |
-| `saveGamifArcadePseudonym()` | PUT `/api/gamification/arcade/pseudonym` from the Progress/Gamify section |
+| `saveGamifArcadePseudonym()` | Saves `/api/gamification/arcade/pseudonym` from the Progress/Gamify section; client tries PUT then PATCH/POST for compatibility |
 
 #### Notifications
 | Function | Description |

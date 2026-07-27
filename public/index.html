@@ -2686,7 +2686,7 @@ async function saveArcadePseudonymFrom(inputId, errorId, options = {}) {
     return false;
   }
   try {
-    const data = await api('PUT', '/gamification/arcade/pseudonym', { pseudonym: name });
+    const data = await saveArcadePseudonymApi(name);
     arcadePseudonym = data.arcadePseudonym || name;
     renderArcadePseudonymControls();
     if (errorEl) errorEl.textContent = '';
@@ -2702,6 +2702,20 @@ async function saveArcadePseudonymFrom(inputId, errorId, options = {}) {
     if (errorEl) errorEl.textContent = err.message || 'Could not save arcade name.';
     return false;
   }
+}
+
+async function saveArcadePseudonymApi(name) {
+  let lastErr = null;
+  for (const method of ['PUT', 'PATCH', 'POST']) {
+    try {
+      return await api(method, '/gamification/arcade/pseudonym', { pseudonym: name });
+    } catch (err) {
+      lastErr = err;
+      const message = err && err.message ? err.message : '';
+      if (!/HTTP 404|HTTP 405/i.test(message)) throw err;
+    }
+  }
+  throw lastErr || new Error('Could not save arcade name.');
 }
 
 async function saveArcadePseudonym() {

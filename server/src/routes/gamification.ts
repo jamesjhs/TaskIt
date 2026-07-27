@@ -406,7 +406,7 @@ router.post('/arcade/spend-token', (req: Request, res: Response): void => {
  * Sets the anonymous display name used for future public arcade high scores.
  * The account username/email are never exposed on the high-score table.
  */
-router.put('/arcade/pseudonym', (req: Request, res: Response): void => {
+function setArcadePseudonym(req: Request, res: Response): void {
   const userId = req.user!.id;
   const user = requireGamifiedUser(userId);
   if (!user) {
@@ -422,7 +422,11 @@ router.put('/arcade/pseudonym', (req: Request, res: Response): void => {
 
   db.prepare('UPDATE users SET arcade_pseudonym = ? WHERE id = ?').run(result.value, userId);
   res.json({ arcadePseudonym: result.value });
-});
+}
+
+router.put('/arcade/pseudonym', setArcadePseudonym);
+router.patch('/arcade/pseudonym', setArcadePseudonym);
+router.post('/arcade/pseudonym', setArcadePseudonym);
 
 /**
  * POST /api/gamification/arcade/high-scores

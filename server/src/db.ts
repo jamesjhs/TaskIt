@@ -386,6 +386,22 @@ db.exec(`
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
   );
+
+  -- Arcade: anonymous high-score rows.  The user_id is retained privately for
+  -- abuse handling and "my score" highlighting; public responses only expose
+  -- the pseudonym.
+  CREATE TABLE IF NOT EXISTS arcade_high_scores (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    game_id TEXT NOT NULL,
+    score INTEGER NOT NULL,
+    pseudonym TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS arcade_high_scores_game_score_idx
+    ON arcade_high_scores (game_id, score DESC, created_at ASC);
 `);
 
 // Seed site-wide defaults (INSERT OR IGNORE so existing values are never overwritten)
@@ -409,7 +425,7 @@ db.prepare("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('collectibl
     { achievementKey: 'task_500',        title: 'Legendary Quest',       subtitle: 'Conquer the leaderboard!',                         icon: '👑', gameId: 'legend',       scriptPath: null,                         sortOrder: 5,  enabled: 0 },
     { achievementKey: 'detail_oriented', title: 'Memory Matrix',         subtitle: 'Match every task-card pair!',                      icon: '📝', gameId: 'memory',       scriptPath: null,                         sortOrder: 6,  enabled: 0 },
     { achievementKey: 'early_bird',      title: 'Early Bird Dash',       subtitle: 'Flap your way past the deadlines!',                 icon: '🐦', gameId: 'bird',         scriptPath: null,                         sortOrder: 7,  enabled: 0 },
-    { achievementKey: 'type_explorer',   title: "Explorer's Maze",       subtitle: 'Navigate through the task maze!',                  icon: '🗺️', gameId: 'maze',         scriptPath: null,                         sortOrder: 8,  enabled: 0 },
+    { achievementKey: 'type_explorer',   title: 'TaskIt Labyrinth',      subtitle: 'Escape the maze and spend tokens for extra hints!', icon: '🗺️', gameId: 'maze',         scriptPath: '/js/game-labyrinth.js',      sortOrder: 8,  enabled: 1 },
     { achievementKey: 'skill_level_5',   title: 'Bullseye!',             subtitle: 'Hit every target with precision!',                 icon: '🎯', gameId: 'target',       scriptPath: null,                         sortOrder: 9,  enabled: 0 },
     { achievementKey: 'skill_level_10',  title: 'Quiz Master',           subtitle: 'Test your TaskIt! knowledge!',                     icon: '🎓', gameId: 'quiz',         scriptPath: null,                         sortOrder: 10, enabled: 0 },
     { achievementKey: 'streak_3',        title: 'Hat Trick',             subtitle: 'Follow the hat - can you find the ball?',           icon: '🎩', gameId: 'hat_trick',    scriptPath: null,                         sortOrder: 11, enabled: 0 },
@@ -419,6 +435,16 @@ db.prepare("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('collectibl
   for (const g of defaultArcadeGames) {
     seedArcadeGame.run(randomUUID(), g.achievementKey, g.title, g.subtitle, g.icon, g.gameId, g.scriptPath, g.sortOrder, g.enabled, now, now);
   }
+  db.prepare(`
+    UPDATE arcade_games
+    SET title = 'TaskIt Labyrinth',
+        subtitle = 'Escape the maze and spend tokens for extra hints!',
+        script_path = '/js/game-labyrinth.js',
+        enabled = 1,
+        updated_at = ?
+    WHERE game_id = 'maze'
+      AND (script_path IS NULL OR script_path = '' OR script_path = '/js/game-labyrinth.js')
+  `).run(now);
 }
 
 // Runtime migrations — add columns if they don't exist yet
@@ -501,6 +527,7 @@ addCol('tasks', 'xp_claimed', 'INTEGER NOT NULL DEFAULT 0');
 // Arcade: token economy and digital-wellbeing daily play limit
 addCol('users', 'arcade_tokens', 'INTEGER NOT NULL DEFAULT 0');
 addCol('users', 'daily_play_minutes', 'INTEGER NOT NULL DEFAULT 5');
+addCol('users', 'arcade_pseudonym', 'TEXT');
 // Sporadic Tasks: track whether task is sporadic and last completion timestamp
 addCol('tasks', 'is_sporadic', 'INTEGER NOT NULL DEFAULT 0');
 addCol('tasks', 'last_completed_at', 'INTEGER');

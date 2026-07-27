@@ -16,6 +16,53 @@ const router = Router();
 
 router.use(authMiddleware);
 
+const PSEUDONYM_MAX_LENGTH = 10;
+const PSEUDONYM_MIN_LENGTH = 2;
+const PSEUDONYM_BLOCKLIST = [
+  'fuck', 'shit', 'cunt', 'cock', 'dick', 'pussy', 'bitch', 'bastard',
+  'wank', 'twat', 'slut', 'whore', 'rape', 'nazi', 'hitler', 'porn',
+];
+
+function normalizeArcadePseudonym(value: unknown): string {
+  return String(value ?? '').trim().replace(/\s+/g, ' ');
+}
+
+function leetFold(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[@4]/g, 'a')
+    .replace(/[3]/g, 'e')
+    .replace(/[1!|]/g, 'i')
+    .replace(/[0]/g, 'o')
+    .replace(/[5$]/g, 's')
+    .replace(/[7+]/g, 't')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function validateArcadePseudonym(rawValue: unknown): { value: string } | { error: string } {
+  const value = normalizeArcadePseudonym(rawValue);
+  if (value.length < PSEUDONYM_MIN_LENGTH) return { error: 'Pseudonym must be at least 2 characters' };
+  if (value.length > PSEUDONYM_MAX_LENGTH) return { error: 'Pseudonym must be 10 characters or fewer' };
+  if (!/^[A-Za-z0-9 _-]+$/.test(value)) return { error: 'Use only letters, numbers, spaces, hyphens, or underscores' };
+  if (/@/.test(value) || /\b\S+@\S+\.\S+\b/.test(value)) return { error: 'Pseudonym cannot be an email address' };
+  if (value.replace(/\D/g, '').length >= 7) return { error: 'Pseudonym cannot be a phone number' };
+  if (/(?:https?:\/\/|www\.|\.com|\.net|\.org)/i.test(value)) return { error: 'Pseudonym cannot be a link or contact address' };
+
+  const folded = leetFold(value);
+  if (PSEUDONYM_BLOCKLIST.some(term => folded.includes(term))) {
+    return { error: 'Choose a different pseudonym' };
+  }
+
+  return { value };
+}
+
+function requireGamifiedUser(userId: string): { arcade_pseudonym: string | null } | null {
+  const row = db.prepare(
+    'SELECT arcade_pseudonym FROM users WHERE id = ? AND gamification_enabled = 1'
+  ).get(userId) as { arcade_pseudonym: string | null } | undefined;
+  return row || null;
+}
+
 /**
  * GET /api/gamification/profile
  * Returns the current user's full gamification profile:
@@ -352,6 +399,124 @@ router.post('/arcade/spend-token', (req: Request, res: Response): void => {
     if (msg === 'NO_TOKENS') { res.status(400).json({ error: 'No arcade tokens available' }); return; }
     throw err;
   }
+});
+
+/**
+ * PUT /api/gamification/arcade/pseudonym
+ * Sets the anonymous display name used for future public arcade high scores.
+ * The account username/email are never exposed on the high-score table.
+ */
+router.put('/arcade/pseudonym', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const user = requireGamifiedUser(userId);
+  if (!user) {
+    res.status(403).json({ error: 'Enable gamification before choosing an arcade pseudonym' });
+    return;
+  }
+
+  const result = validateArcadePseudonym(req.body?.pseudonym);
+  if ('error' in result) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+
+  db.prepare('UPDATE users SET arcade_pseudonym = ? WHERE id = ?').run(result.value, userId);
+  res.json({ arcadePseudonym: result.value });
+});
+
+/**
+ * POST /api/gamification/arcade/high-scores
+ * Records a public anonymous high-score row for a completed arcade run.
+ * Body: { gameId: string, score: number }
+ */
+router.post('/arcade/high-scores', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const user = requireGamifiedUser(userId);
+  if (!user) {
+    res.status(403).json({ error: 'Enable gamification before submitting scores' });
+    return;
+  }
+  if (!user.arcade_pseudonym) {
+    res.status(400).json({ error: 'Choose an arcade pseudonym before submitting scores' });
+    return;
+  }
+
+  const gameId = String(req.body?.gameId || '').trim();
+  const score = Number(req.body?.score);
+  if (!/^[a-z0-9_-]{2,64}$/.test(gameId)) {
+    res.status(400).json({ error: 'Invalid game id' });
+    return;
+  }
+  if (!Number.isInteger(score) || score < 0 || score > 1000000000) {
+    res.status(400).json({ error: 'Score must be an integer between 0 and 1,000,000,000' });
+    return;
+  }
+
+  const game = db.prepare('SELECT game_id FROM arcade_games WHERE game_id = ? AND enabled = 1').get(gameId);
+  if (!game) {
+    res.status(404).json({ error: 'Arcade game not found' });
+    return;
+  }
+
+  const id = randomUUID();
+  const now = Date.now();
+  db.prepare(`
+    INSERT INTO arcade_high_scores (id, user_id, game_id, score, pseudonym, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(id, userId, gameId, score, user.arcade_pseudonym, now);
+
+  const rankRow = db.prepare(`
+    SELECT COUNT(*) + 1 AS rank
+    FROM arcade_high_scores
+    WHERE game_id = ?
+      AND (score > ? OR (score = ? AND created_at < ?))
+  `).get(gameId, score, score, now) as { rank: number };
+
+  res.status(201).json({ id, gameId, score, pseudonym: user.arcade_pseudonym, createdAt: now, rank: rankRow.rank });
+});
+
+/**
+ * GET /api/gamification/arcade/high-scores/:gameId
+ * Returns the public top scores for an enabled arcade game. Account usernames,
+ * emails, and user IDs are deliberately omitted.
+ */
+router.get('/arcade/high-scores/:gameId', (req: Request, res: Response): void => {
+  const userId = req.user!.id;
+  const gameId = String(req.params.gameId || '').trim();
+  if (!/^[a-z0-9_-]{2,64}$/.test(gameId)) {
+    res.status(400).json({ error: 'Invalid game id' });
+    return;
+  }
+
+  const game = db.prepare('SELECT game_id FROM arcade_games WHERE game_id = ? AND enabled = 1').get(gameId);
+  if (!game) {
+    res.status(404).json({ error: 'Arcade game not found' });
+    return;
+  }
+
+  const rows = db.prepare(`
+    SELECT id, score, pseudonym, created_at AS createdAt,
+           CASE WHEN user_id = ? THEN 1 ELSE 0 END AS isMine
+    FROM arcade_high_scores
+    WHERE game_id = ?
+    ORDER BY score DESC, created_at ASC
+    LIMIT 20
+  `).all(userId, gameId) as Array<{
+    id: string;
+    score: number;
+    pseudonym: string;
+    createdAt: number;
+    isMine: number;
+  }>;
+
+  res.json(rows.map((row, i) => ({
+    rank: i + 1,
+    id: row.id,
+    score: row.score,
+    pseudonym: row.pseudonym,
+    createdAt: row.createdAt,
+    isMine: row.isMine === 1,
+  })));
 });
 
 /**

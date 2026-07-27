@@ -1825,6 +1825,22 @@
             <div id="overallLevelXpSub" style="font-size:.75rem;color:rgba(255,255,255,.75);margin-top:4px;text-align:center">Complete tasks to earn XP</div>
           </div>
         </div>
+        <div class="card" style="padding:12px 14px;margin-top:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">
+            <div>
+              <p class="detail-section-title" style="margin:0">🏆 Arcade Name</p>
+              <p style="font-size:.78rem;color:#6b7280;margin:3px 0 0">Shown on anonymous high-score tables instead of your account username.</p>
+            </div>
+            <span id="gamifArcadePseudonymCurrent" class="badge">Not set</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
+            <div style="flex:1;min-width:180px">
+              <input id="gamifArcadePseudonymInput" type="text" maxlength="10" class="input" autocomplete="off" placeholder="Max 10" />
+              <p id="gamifArcadePseudonymError" style="min-height:18px;margin:6px 0 0;color:#dc2626;font-size:.78rem"></p>
+            </div>
+            <button type="button" id="gamifArcadePseudonymSaveBtn" class="btn btn-primary btn-sm" style="min-height:44px">Save</button>
+          </div>
+        </div>
         <!-- Skills XP breakdown — hidden for now; code kept for future use -->
         <div class="hidden">
           <p class="detail-section-title">⭐ XP Breakdown</p>
@@ -1958,6 +1974,26 @@
       </p>
       <button onclick="handleGamifOptInYes()" class="btn btn-primary btn-full" style="margin-bottom:10px">🚀 Enable Gamification</button>
       <button onclick="handleGamifOptInNo()" class="btn btn-secondary btn-full">Maybe Later</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ARCADE PSEUDONYM MODAL ===== -->
+<div id="arcadePseudonymModal" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-body" style="text-align:center">
+      <div style="font-size:3rem;margin-bottom:12px">🏆</div>
+      <h2 class="modal-title">Choose Arcade Name</h2>
+      <p style="font-size:.9rem;color:#6b7280;line-height:1.6;margin-bottom:16px">
+        This short anonymous name is used only for arcade high scores. Your account username and email stay private.
+      </p>
+      <div class="form-group" style="text-align:left;margin-bottom:10px">
+        <label for="arcadePseudonymInput">Arcade name</label>
+        <input id="arcadePseudonymInput" type="text" maxlength="10" class="input" autocomplete="off" placeholder="Max 10" />
+        <p id="arcadePseudonymError" style="min-height:18px;margin:6px 0 0;color:#dc2626;font-size:.78rem"></p>
+      </div>
+      <button type="button" id="arcadePseudonymSaveBtn" class="btn btn-primary btn-full" style="margin-bottom:10px">Save Arcade Name</button>
+      <button type="button" id="arcadePseudonymDismissBtn" class="btn btn-secondary btn-full">Not Now</button>
     </div>
   </div>
 </div>
@@ -2580,6 +2616,9 @@ let activeArcadeGameInstance = null;
 // Arcade token balance and daily play limit (minutes); refreshed with the gamification profile.
 let arcadeTokens = 0;
 let arcadeDailyPlayMinutes = 5;
+let arcadePseudonym = '';
+let _arcadePseudonymPromptShown = false;
+let _pendingArcadeScore = null;
 
 function updateArcadeTokenDisplays(count = arcadeTokens) {
   const safeCount = Number.isFinite(Number(count)) ? Number(count) : 0;
@@ -2591,6 +2630,86 @@ function updateArcadeTokenDisplays(count = arcadeTokens) {
   }
   const progressTokenEl = document.getElementById('gamifArcadeTokens');
   if (progressTokenEl) progressTokenEl.textContent = safeCount.toLocaleString();
+}
+
+function normalizeArcadePseudonym(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ');
+}
+
+function validateArcadePseudonymInput(value) {
+  const name = normalizeArcadePseudonym(value);
+  if (name.length < 2) return 'Use at least 2 characters.';
+  if (name.length > 10) return 'Use 10 characters or fewer.';
+  if (!/^[A-Za-z0-9 _-]+$/.test(name)) return 'Use letters, numbers, spaces, hyphens, or underscores.';
+  if (/@/.test(name) || /\b\S+@\S+\.\S+\b/.test(name)) return 'Do not use an email address.';
+  if (name.replace(/\D/g, '').length >= 7) return 'Do not use a phone number.';
+  if (/(?:https?:\/\/|www\.|\.com|\.net|\.org)/i.test(name)) return 'Do not use a link or contact address.';
+  return '';
+}
+
+function maybeShowArcadePseudonymPrompt() {
+  if (!gamificationEnabled || arcadePseudonym || _arcadePseudonymPromptShown) return;
+  _arcadePseudonymPromptShown = true;
+  openArcadePseudonymModal();
+}
+
+function openArcadePseudonymModal() {
+  const modal = document.getElementById('arcadePseudonymModal');
+  const input = document.getElementById('arcadePseudonymInput');
+  const errorEl = document.getElementById('arcadePseudonymError');
+  if (!modal || !input) return;
+  if (errorEl) errorEl.textContent = '';
+  input.value = arcadePseudonym || '';
+  modal.classList.remove('hidden');
+  setTimeout(() => input.focus(), 0);
+}
+
+function dismissArcadePseudonymModal() {
+  const modal = document.getElementById('arcadePseudonymModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function renderArcadePseudonymControls() {
+  const currentEl = document.getElementById('gamifArcadePseudonymCurrent');
+  if (currentEl) currentEl.textContent = arcadePseudonym || 'Not set';
+  const input = document.getElementById('gamifArcadePseudonymInput');
+  if (input && document.activeElement !== input) input.value = arcadePseudonym || '';
+}
+
+async function saveArcadePseudonymFrom(inputId, errorId, options = {}) {
+  const input = document.getElementById(inputId);
+  const errorEl = document.getElementById(errorId);
+  const name = normalizeArcadePseudonym(input ? input.value : '');
+  const clientError = validateArcadePseudonymInput(name);
+  if (clientError) {
+    if (errorEl) errorEl.textContent = clientError;
+    return false;
+  }
+  try {
+    const data = await api('PUT', '/gamification/arcade/pseudonym', { pseudonym: name });
+    arcadePseudonym = data.arcadePseudonym || name;
+    renderArcadePseudonymControls();
+    if (errorEl) errorEl.textContent = '';
+    if (!options.keepModalOpen) dismissArcadePseudonymModal();
+    toast('Arcade name saved.');
+    if (_pendingArcadeScore) {
+      const pending = _pendingArcadeScore;
+      _pendingArcadeScore = null;
+      submitArcadeHighScore(pending).catch(() => {});
+    }
+    return true;
+  } catch (err) {
+    if (errorEl) errorEl.textContent = err.message || 'Could not save arcade name.';
+    return false;
+  }
+}
+
+async function saveArcadePseudonym() {
+  return saveArcadePseudonymFrom('arcadePseudonymInput', 'arcadePseudonymError');
+}
+
+async function saveGamifArcadePseudonym() {
+  return saveArcadePseudonymFrom('gamifArcadePseudonymInput', 'gamifArcadePseudonymError', { keepModalOpen: true });
 }
 // Far-future task list collapse state.
 let _farFutureExpanded = false;
@@ -3194,7 +3313,10 @@ function initApp() {
   setInterval(refreshTaskTimers, 1000);
   // Background-load gamification state so the strip and streak panel work immediately;
   // then check if the user should see the gamification opt-in prompt
-  loadGamificationProfile().then(() => maybeShowGamifOptIn());
+  loadGamificationProfile().then(() => {
+    maybeShowGamifOptIn();
+    maybeShowArcadePseudonymPrompt();
+  });
   setTimeout(maybeShowPwaInstallPrompt, 700);
   syncPushSubscriptionFromPreferences();
   // On mobile, enhance date inputs for better touch UX
@@ -3415,6 +3537,7 @@ function closeOverlayById(id) {
     else if (id === 'lootDropModal') closeLootDropModal();
     else if (id === 'pwaInstallModal') dismissPwaInstallPrompt();
     else if (id === 'gamifOptInModal') el.classList.add('hidden');
+    else if (id === 'arcadePseudonymModal') dismissArcadePseudonymModal();
     else el.classList.add('hidden');
   } finally {
     suppressOverlayHistory = false;
@@ -5243,8 +5366,10 @@ async function loadGamificationProfile() {
     gamificationEnabled = !!profile.enabled;
     arcadeTokens = profile.arcadeTokens ?? 0;
     arcadeDailyPlayMinutes = profile.dailyPlayMinutes ?? 5;
+    arcadePseudonym = profile.arcadePseudonym || '';
     setArcadeCatalogue(arcadeGames);
     updateArcadeTokenDisplays();
+    renderArcadePseudonymControls();
     toggleEl.checked = gamificationEnabled;
 
     // Progress page — show correct state
@@ -5324,6 +5449,8 @@ function renderGamificationProfile(profile, streaks) {
   document.getElementById('gamifTotalXp').textContent = (profile.totalXp || 0).toLocaleString();
   document.getElementById('gamifFreezeCredits').textContent = profile.freezeCredits ?? 0;
   updateArcadeTokenDisplays(profile.arcadeTokens ?? 0);
+  arcadePseudonym = profile.arcadePseudonym || arcadePseudonym || '';
+  renderArcadePseudonymControls();
 
   // Overall level + progress bar
   const level = profile.level || 1;
@@ -5681,6 +5808,7 @@ async function handleGamifOptInYes() {
     gamificationEnabled = true;
     if (toggleEl) toggleEl.checked = true;
     await loadGamificationProfile();
+    maybeShowArcadePseudonymPrompt();
     toast('\uD83C\uDFAE Gamification enabled! Your journey begins.');
   } catch (err) {
     toast(err.message, 'error');
@@ -7930,14 +8058,91 @@ function setArcadeCatalogue(games) {
 
 window.TaskItArcade = window.TaskItArcade || {
   games: {},
+  gamesByScriptPath: {},
   register(definition) {
     if (!definition || !definition.gameId || typeof definition.mount !== 'function') return;
+    const scriptEl = document.currentScript;
+    if (scriptEl && scriptEl.src) {
+      try {
+        definition.__scriptPath = new URL(scriptEl.src, window.location.href).pathname;
+      } catch {
+        definition.__scriptPath = scriptEl.getAttribute('src') || '';
+      }
+    }
     this.games[definition.gameId] = definition;
+    if (definition.__scriptPath) this.gamesByScriptPath[definition.__scriptPath] = definition;
   },
   get(gameId) {
     return this.games[gameId] || null;
   },
+  getByScriptPath(scriptPath) {
+    return scriptPath ? (this.gamesByScriptPath[scriptPath] || null) : null;
+  },
+  unregister(gameId) {
+    if (!gameId || !this.games[gameId]) return;
+    const existing = this.games[gameId];
+    if (existing.__scriptPath && this.gamesByScriptPath[existing.__scriptPath] === existing) {
+      delete this.gamesByScriptPath[existing.__scriptPath];
+    }
+    delete this.games[gameId];
+  },
+  submitScore(gameIdOrPayload, maybeScore) {
+    return submitArcadeHighScore(gameIdOrPayload, maybeScore);
+  },
+  getHighScores(gameId) {
+    return getArcadeHighScores(gameId);
+  },
 };
+
+function normalizeArcadeScorePayload(gameIdOrPayload, maybeScore) {
+  const payload = typeof gameIdOrPayload === 'object' && gameIdOrPayload !== null
+    ? gameIdOrPayload
+    : { gameId: gameIdOrPayload, score: maybeScore };
+  const gameId = String(payload.gameId || '').trim();
+  const score = Number(payload.score);
+  if (!/^[a-z0-9_-]{2,64}$/.test(gameId)) return null;
+  if (!Number.isInteger(score) || score < 0 || score > 1000000000) return null;
+  return { gameId, score };
+}
+
+async function submitArcadeHighScore(gameIdOrPayload, maybeScore) {
+  const payload = normalizeArcadeScorePayload(gameIdOrPayload, maybeScore);
+  if (!payload || !gamificationEnabled) return null;
+  if (!arcadePseudonym) {
+    _pendingArcadeScore = payload;
+    openArcadePseudonymModal();
+    toast('Choose an arcade name to post your score.');
+    return null;
+  }
+  try {
+    const saved = await api('POST', '/gamification/arcade/high-scores', payload);
+    if (saved) toast('Score posted as ' + saved.pseudonym + '.');
+    return saved;
+  } catch (err) {
+    toast(err.message || 'Could not post high score.', 'error');
+    return null;
+  }
+}
+
+async function getArcadeHighScores(gameId) {
+  const safeGameId = String(gameId || '').trim();
+  if (!/^[a-z0-9_-]{2,64}$/.test(safeGameId)) return [];
+  return api('GET', '/gamification/arcade/high-scores/' + encodeURIComponent(safeGameId));
+}
+
+function readArcadeScoreOnExit(gameId) {
+  if (!activeArcadeGameInstance) return null;
+  const readers = ['getHighScore', 'getScore'];
+  for (const reader of readers) {
+    if (typeof activeArcadeGameInstance[reader] !== 'function') continue;
+    const result = activeArcadeGameInstance[reader]();
+    const payload = typeof result === 'object' && result !== null
+      ? { gameId: result.gameId || gameId, score: result.score }
+      : { gameId, score: result };
+    return normalizeArcadeScorePayload(payload);
+  }
+  return null;
+}
 
 function arcadeScriptSrc(game) {
   if (!game || !game.scriptPath) return '';
@@ -7950,11 +8155,20 @@ function arcadeEnsureGameScript(game) {
   if (!game || !game.scriptPath) return Promise.resolve();
   const appVersion = window.APP_VERSION || window._serverVersion || 'dev';
   const key = game.gameId + ':' + game.scriptPath + ':' + appVersion + ':' + (game.updatedAt || '');
-  if (arcadeLoadedScripts.has(key)) return arcadeLoadedScripts.get(key);
+  if (arcadeLoadedScripts.has(key)) {
+    const registered = window.TaskItArcade && window.TaskItArcade.getByScriptPath(game.scriptPath);
+    if (!registered) {
+      arcadeLoadedScripts.delete(key);
+    } else {
+      return arcadeLoadedScripts.get(key);
+    }
+  }
 
   const promise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = arcadeScriptSrc(game);
+    script.dataset.arcadeGameId = game.gameId;
+    script.dataset.arcadeScriptPath = game.scriptPath;
     script.async = true;
     script.onload = resolve;
     script.onerror = () => reject(new Error('Could not load game script: ' + game.scriptPath));
@@ -8028,7 +8242,7 @@ async function openArcade(badgeKey) {
   arcadeUpdateTimeBudget(remainingSeconds);
 
   const frame = document.getElementById('arcadeGameFrame');
-  frame.innerHTML = '';
+  frame.replaceChildren();
 
   // If the daily limit is reached (non-admin), show locked screen
   if (remainingSeconds <= 0 && !isAdmin) {
@@ -8077,25 +8291,52 @@ async function openArcade(badgeKey) {
     await arcadeEnsureGameScript(game);
     if (overlay.dataset.activeGame !== badgeKey) return;
 
-    const context = { badgeKey, gameId: game.gameId, title: game.title, game };
-    const registeredGame = window.TaskItArcade && window.TaskItArcade.get(game.gameId);
+    const registeredGame = window.TaskItArcade && (
+      (game.scriptPath && window.TaskItArcade.getByScriptPath(game.scriptPath)) ||
+      window.TaskItArcade.get(game.gameId)
+    );
     if (registeredGame) {
+      const runtimeGameId = registeredGame.gameId || game.gameId;
+      overlay.dataset.activeGameId = runtimeGameId;
+      const context = {
+        badgeKey,
+        gameId: runtimeGameId,
+        configuredGameId: game.gameId,
+        title: game.title,
+        game,
+      };
       if (activeArcadeGameInstance && typeof activeArcadeGameInstance.unmount === 'function') {
         activeArcadeGameInstance.unmount();
       }
-      activeArcadeGameInstance = registeredGame;
-      registeredGame.mount(frame, context);
+      const mountedGame = registeredGame.mount(frame, context);
+      activeArcadeGameInstance = mountedGame || registeredGame;
       return;
+    }
+
+    if (game.scriptPath) {
+      throw new Error('Selected arcade script loaded but did not register a TaskItArcade game.');
     }
 
     // Backward-compatible fallback for older modules that still listen for
     // arcade:open directly.
+    const context = { badgeKey, gameId: game.gameId, configuredGameId: game.gameId, title: game.title, game };
     overlay.dispatchEvent(new CustomEvent('arcade:open', {
       bubbles: false,
       detail: context,
     }));
   } catch (err) {
-    frame.innerHTML = '<div class="arcade-coming-soon"><p class="arcade-coming-soon-title">Game could not load</p><p class="arcade-coming-soon-sub">' + escHtml(err.message || 'Please try again later.') + '</p></div>';
+    frame.replaceChildren();
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'arcade-coming-soon';
+    const errorTitle = document.createElement('p');
+    errorTitle.className = 'arcade-coming-soon-title';
+    errorTitle.textContent = 'Game could not load';
+    const errorSub = document.createElement('p');
+    errorSub.className = 'arcade-coming-soon-sub';
+    errorSub.textContent = err.message || 'Please try again later.';
+    errorDiv.appendChild(errorTitle);
+    errorDiv.appendChild(errorSub);
+    frame.appendChild(errorDiv);
   }
 }
 
@@ -8160,22 +8401,25 @@ async function arcadeSpendToken() {
   const spendBtn = document.getElementById('arcadeSpendTokenBtn');
   if (spendBtn) spendBtn.disabled = true;
   try {
-    const data = await api('POST', '/gamification/arcade/spend-token');
-    if (!data) return;
-    arcadeTokens = data.arcadeTokens;
-    updateArcadeTokenDisplays();
-
-    // Extend the stored daily budget by TOKEN_TIME_EXTENSION_SECONDS so the HUD updates immediately
-    const today = new Date().toISOString().slice(0, 10);
-    if (localStorage.getItem('arcadePlayDate') === today) {
-      const current = parseInt(localStorage.getItem('arcadePlaySeconds') || '0', 10);
-      const extended = Math.max(0, current - TOKEN_TIME_EXTENSION_SECONDS);
-      localStorage.setItem('arcadePlaySeconds', String(extended));
-    }
-
-    // Notify active game modules to inject extra seconds into their own timer
     const overlay = document.getElementById('arcadeOverlay');
-    if (overlay && !overlay.classList.contains('hidden')) {
+    if (activeArcadeGameInstance && typeof activeArcadeGameInstance.spendToken === 'function') {
+      const message = await activeArcadeGameInstance.spendToken();
+      if (message) toast(message);
+    } else if (overlay && !overlay.classList.contains('hidden')) {
+      const data = await api('POST', '/gamification/arcade/spend-token');
+      if (!data) return;
+      arcadeTokens = data.arcadeTokens;
+      updateArcadeTokenDisplays();
+
+      // Extend the stored daily budget by TOKEN_TIME_EXTENSION_SECONDS so the HUD updates immediately
+      const today = new Date().toISOString().slice(0, 10);
+      if (localStorage.getItem('arcadePlayDate') === today) {
+        const current = parseInt(localStorage.getItem('arcadePlaySeconds') || '0', 10);
+        const extended = Math.max(0, current - TOKEN_TIME_EXTENSION_SECONDS);
+        localStorage.setItem('arcadePlaySeconds', String(extended));
+      }
+
+      // Notify active game modules to inject extra seconds into their own timer
       if (activeArcadeGameInstance && typeof activeArcadeGameInstance.addTime === 'function') {
         activeArcadeGameInstance.addTime(TOKEN_TIME_EXTENSION_SECONDS);
       }
@@ -8183,9 +8427,9 @@ async function arcadeSpendToken() {
         bubbles: false,
         detail: { seconds: TOKEN_TIME_EXTENSION_SECONDS },
       }));
-    }
 
-    toast('+' + TOKEN_TIME_EXTENSION_SECONDS + ' seconds added! \uD83C\uDF89');
+      toast('+' + TOKEN_TIME_EXTENSION_SECONDS + ' seconds added! \uD83C\uDF89');
+    }
   } catch (err) {
     toast(err.message || 'Could not spend token', 'error');
     if (spendBtn) spendBtn.disabled = arcadeTokens < 1;
@@ -8205,6 +8449,8 @@ function closeArcade() {
     _arcadeTimerInterval = null;
   }
 
+  const exitScore = readArcadeScoreOnExit(overlay.dataset.activeGameId);
+
   // Notify Stage 2 modules so they can tear down canvases / timers
   overlay.dispatchEvent(new CustomEvent('arcade:close', {
     bubbles: false,
@@ -8223,6 +8469,8 @@ function closeArcade() {
   document.body.classList.remove('arcade-open');
   delete overlay.dataset.activeGame;
   delete overlay.dataset.activeGameId;
+
+  if (exitScore) submitArcadeHighScore(exitScore).catch(() => {});
 }
 
 // Keyboard escape-hatch: pressing Escape closes the arcade
@@ -8240,6 +8488,40 @@ document.addEventListener('DOMContentLoaded', function() {
   // Back button in the arcade overlay
   const backBtn = document.getElementById('arcadeBackBtn');
   if (backBtn) backBtn.addEventListener('click', closeArcade);
+
+  const pseudonymSaveBtn = document.getElementById('arcadePseudonymSaveBtn');
+  if (pseudonymSaveBtn) pseudonymSaveBtn.addEventListener('click', saveArcadePseudonym);
+  const pseudonymDismissBtn = document.getElementById('arcadePseudonymDismissBtn');
+  if (pseudonymDismissBtn) pseudonymDismissBtn.addEventListener('click', dismissArcadePseudonymModal);
+  const pseudonymInput = document.getElementById('arcadePseudonymInput');
+  if (pseudonymInput) {
+    pseudonymInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveArcadePseudonym();
+      }
+    });
+  }
+  const gamifPseudonymSaveBtn = document.getElementById('gamifArcadePseudonymSaveBtn');
+  if (gamifPseudonymSaveBtn) gamifPseudonymSaveBtn.addEventListener('click', saveGamifArcadePseudonym);
+  const gamifPseudonymInput = document.getElementById('gamifArcadePseudonymInput');
+  if (gamifPseudonymInput) {
+    gamifPseudonymInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveGamifArcadePseudonym();
+      }
+    });
+  }
+
+  const overlay = document.getElementById('arcadeOverlay');
+  if (overlay) {
+    overlay.addEventListener('arcade:score', function(e) {
+      if (!e || !e.detail) return;
+      const detail = { ...e.detail, gameId: e.detail.gameId || overlay.dataset.activeGameId };
+      submitArcadeHighScore(detail).catch(() => {});
+    });
+  }
 
   // Delegated click/keyboard listeners for arcade badges in the achievements list.
   // Attached here once so there is never a risk of duplicate handlers across

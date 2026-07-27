@@ -1155,5 +1155,9 @@
       frameEl = null;
       stopAudio();
     },
+    getHighScore: function () {
+      if (score <= 0) return null;
+      return { gameId: 'signal_sprint', score: score };
+    },
   });
 }());

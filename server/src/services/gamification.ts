@@ -570,6 +570,7 @@ export interface GamificationProfile {
   freezeCredits: number;
   arcadeTokens: number;
   dailyPlayMinutes: number;
+  arcadePseudonym: string | null;
   skills: Array<{ skill_name: string; xp: number }>;
   achievements: Array<{
     id: string;
@@ -582,8 +583,14 @@ export interface GamificationProfile {
 
 export function getGamificationProfile(userId: string): GamificationProfile {
   const user = db.prepare(
-    'SELECT gamification_enabled, freeze_credits, arcade_tokens, daily_play_minutes FROM users WHERE id = ?'
-  ).get(userId) as { gamification_enabled: number; freeze_credits: number; arcade_tokens: number; daily_play_minutes: number } | undefined;
+    'SELECT gamification_enabled, freeze_credits, arcade_tokens, daily_play_minutes, arcade_pseudonym FROM users WHERE id = ?'
+  ).get(userId) as {
+    gamification_enabled: number;
+    freeze_credits: number;
+    arcade_tokens: number;
+    daily_play_minutes: number;
+    arcade_pseudonym: string | null;
+  } | undefined;
 
   const enabled = !!(user?.gamification_enabled);
   const freezeCredits = user?.freeze_credits ?? 0;
@@ -621,6 +628,7 @@ export function getGamificationProfile(userId: string): GamificationProfile {
     freezeCredits,
     arcadeTokens,
     dailyPlayMinutes,
+    arcadePseudonym: user?.arcade_pseudonym || null,
     skills,
     achievements: achievementRows,
   };

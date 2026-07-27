@@ -369,6 +369,10 @@
       _timeLeft = Math.min(_timeLeft + extra, 999);
       updateHud();
     },
+    getHighScore: function () {
+      if (!_over) return null;
+      return { gameId: 'whac_a_bug', score: Math.max(0, _score) };
+    },
   });
 
 }());

@@ -173,8 +173,8 @@ app.use(helmet({
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
       workerSrc: ["'self'"],
-      frameSrc: ["https://challenges.cloudflare.com"],
-      childSrc: ["https://challenges.cloudflare.com"],
+      frameSrc: ["'self'", "https://challenges.cloudflare.com"],
+      childSrc: ["'self'", "https://challenges.cloudflare.com"],
     },
   },
 }));

@@ -138,8 +138,11 @@ TaskIt/
 │       ├── game-hangman.js     # Hangman arcade mini-game (TaskItArcade module)
 │       ├── game-wordsearch.js  # Wordsearch arcade mini-game
 │       ├── game-code-breaker.js # Code Breaker arcade mini-game
-│       └── game-whac-a-bug.js  # Whac-a-Bug arcade mini-game
+│       ├── game-whac-a-bug.js  # Whac-a-Bug arcade mini-game
+│       ├── game-labyrinth.js   # Wrapper for the ported Labyrinth iframe game
 │       └── games/              # Optional folder for contributor game modules
+│   └── labyrinth/
+│       └── labyrinth.html      # Ported Jahosi Labyrinth single-page game
 │   └── icons/                  # PWA icons (72×72 to 512×512 PNG)
 │
 ├── android/                    # Android WebView wrapper app (Gradle/Kotlin)
@@ -317,6 +320,7 @@ When `NODE_ENV=production`, `server/src/config.ts` performs a startup readiness 
 | `friend_key` | TEXT | CamelCase two-word pair e.g. `BraveOcean` (migration) |
 | `arcade_tokens` | INTEGER NOT NULL DEFAULT 0 | Arcade Token balance — spendable to play mini-games (migration) |
 | `daily_play_minutes` | INTEGER NOT NULL DEFAULT 5 | Digital-wellbeing daily arcade play limit in minutes (1–180) (migration) |
+| `arcade_pseudonym` | TEXT | Anonymous arcade high-score display name, distinct from account username/email (migration) |
 | `notification_preferences` | TEXT NOT NULL | JSON string storing default email/popup reminder flags for new tasks (migration) |
 | `push_reminder_time` | TEXT NOT NULL DEFAULT `'09:00'` | Preferred local delivery time for background push reminders (`HH:MM`, 24-hour) (migration) |
 | `push_time_zone` | TEXT | IANA timezone for the saved push reminder time, e.g. `Europe/London` (migration) |
@@ -608,6 +612,18 @@ Seeded on first run:
 
 The table is seeded with the four implemented games and disabled placeholder slots. `INSERT OR IGNORE` preserves later admin edits.
 
+#### `arcade_high_scores`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | UUID score row |
+| `user_id` | TEXT NOT NULL | Private FK → users.id; never returned publicly |
+| `game_id` | TEXT NOT NULL | Matches `arcade_games.game_id` |
+| `score` | INTEGER NOT NULL | Integer score, validated server-side as 0–1,000,000,000 |
+| `pseudonym` | TEXT NOT NULL | Snapshot of the user's anonymous arcade name at submit time |
+| `created_at` | INTEGER NOT NULL | Unix ms |
+
+Indexed by `(game_id, score DESC, created_at ASC)` so public top-score reads are fast and deterministic.
+
 #### `task_reminders_sent`
 | Column | Type | Notes |
 |---|---|---|
@@ -699,6 +715,7 @@ These `ALTER TABLE … ADD COLUMN` statements run on every server start but only
 | `users` | `friend_key` | `TEXT` |
 | `users` | `arcade_tokens` | `INTEGER NOT NULL DEFAULT 0` |
 | `users` | `daily_play_minutes` | `INTEGER NOT NULL DEFAULT 5` |
+| `users` | `arcade_pseudonym` | `TEXT` |
 | `tasks` | `due_date` | `INTEGER` |
 | `tasks` | `recur_interval` | `INTEGER` |
 | `tasks` | `recur_unit` | `TEXT` |
@@ -895,6 +912,9 @@ Attached to `req.user` by `authMiddleware`.
 | `POST` | `/api/gamification/inventory/recycle` | JWT | authed | Discard pending drop for XP consolation bonus |
 | `PATCH` | `/api/gamification/arcade/daily-limit` | JWT | authed | Set daily arcade play limit (minutes) |
 | `POST` | `/api/gamification/arcade/spend-token` | JWT | authed | Atomically deduct 1 arcade token |
+| `PUT` | `/api/gamification/arcade/pseudonym` | JWT | gamification enabled | Set anonymous arcade display name |
+| `POST` | `/api/gamification/arcade/high-scores` | JWT | gamification enabled + pseudonym | Submit anonymous game score |
+| `GET` | `/api/gamification/arcade/high-scores/:gameId` | JWT | authed | Top 20 anonymous scores for enabled game |
 | `GET` | `/api/friends` | JWT | authed | List friends |
 | `DELETE` | `/api/friends/:friendId` | JWT | authed | Remove friend |
 | `GET` | `/api/friends/my-key` | JWT | authed | Get own friend key |
@@ -1093,6 +1113,9 @@ Three handlers:
 | `GET /arcade/games` | Returns enabled rows from `arcade_games` ordered by `sort_order`; frontend uses this to build `ARCADE_GAME_ORDER`, `ARCADE_GAMES`, and dynamic script loading metadata |
 | `PATCH /arcade/daily-limit` | Validates `minutes` is integer 1–180; UPDATE `users.daily_play_minutes` |
 | `POST /arcade/spend-token` | Atomic DB transaction: `UPDATE users SET arcade_tokens = arcade_tokens - 1 WHERE id = ? AND arcade_tokens > 0`; returns new balance; 400 if no tokens |
+| `PUT /arcade/pseudonym` | Validates a 2–10 character anonymous arcade name; rejects contact-info patterns and obvious vulgarity heuristics; UPDATE `users.arcade_pseudonym` |
+| `POST /arcade/high-scores` | Requires gamification and saved pseudonym; validates enabled `gameId` and integer score; INSERT `arcade_high_scores` with pseudonym snapshot |
+| `GET /arcade/high-scores/:gameId` | Returns rank, pseudonym, score, createdAt, and `isMine`; deliberately omits account username, email, and user ID |
 
 ---
 
@@ -1551,6 +1574,8 @@ Collapsible task sections (`significantly-overdue-list`, `sporadic-list`, and `g
 | `maybeShowGamifOptIn()` | Shows opt-in prompt if not yet opted in and has tasks |
 | `handleGamifOptInYes()` | PATCH opt-in true |
 | `handleGamifOptInNo()` | Dismisses prompt |
+| `renderArcadePseudonymControls()` | Syncs the Progress/Gamify arcade-name input and current-name badge from `arcadePseudonym` |
+| `saveGamifArcadePseudonym()` | PUT `/api/gamification/arcade/pseudonym` from the Progress/Gamify section |
 
 #### Notifications
 | Function | Description |
@@ -1622,10 +1647,16 @@ Collapsible task sections (`significantly-overdue-list`, `sporadic-list`, and `g
 | `arcadeScriptSrc(game)` | Builds a dynamic script URL with a version query from `APP_VERSION` plus the catalogue row `updatedAt` |
 | `arcadeEnsureGameScript(game)` | Lazily injects the configured game script once per game/path/app-version/catalogue-version |
 | `openArcade(badgeKey)` | Opens arcade modal; authorises via `unlockedArcadeKeys`; loads the configured script; calls `window.TaskItArcade.get(gameId).mount(frame, context)` |
-| `arcadeSpendToken()` | POST `/api/gamification/arcade/spend-token`; updates token balance and calls active game `addTime(seconds)` when available |
-| `closeArcade()` | Dispatches legacy `arcade:close`, calls active game `unmount()`, clears timers, and hides the modal |
+| `arcadeSpendToken()` | Uses active game `spendToken()` when present; otherwise POSTs `/api/gamification/arcade/spend-token`, updates token balance, and calls active game `addTime(seconds)` when available |
+| `submitArcadeHighScore(gameIdOrPayload, maybeScore)` | POST `/api/gamification/arcade/high-scores`; prompts for pseudonym first if missing |
+| `getArcadeHighScores(gameId)` | GET `/api/gamification/arcade/high-scores/:gameId`; used by future game scoreboards |
+| `closeArcade()` | Reads active game `getHighScore()` / `getScore()` when present, dispatches legacy `arcade:close`, calls active game `unmount()`, clears timers, and hides the modal |
 
 **Unlock model:** the server returns enabled games from `arcade_games` ordered by `sort_order`. A user with N total achievements earned (any) may play the first N enabled games in this list; the identity of the achievements is irrelevant. Admins can manage order, metadata, enabled state, and script file from **Admin > Gamify > Arcade Games**.
+
+**Anonymous high scores:** scoreboards are intentionally decoupled from social graph visibility. A score row stores `user_id` privately for abuse investigation and personal highlighting, but public table responses expose only `pseudonym`, `score`, rank, timestamp, and `isMine`. Game modules can submit by calling `window.TaskItArcade.submitScore({ gameId, score })`, dispatching `arcade:score` from `#arcadeOverlay`, or implementing `getHighScore()` / `getScore()` for the shell to read on close.
+
+**Labyrinth port:** `/js/game-labyrinth.js` registers `gameId: "maze"` and loads `/labyrinth/labyrinth.html` in a same-origin iframe. The iframe preserves the source game's single-page layout and broad page-level CSS without leaking selectors into `public/index.html`. Parent/iframe `postMessage` calls bridge TaskIt-owned operations: `getScores`, `submitScore`, and `spendHintToken`. The generic arcade token button calls a game-specific `spendToken()` hook when present, so Labyrinth spends a token for an extra hint instead of adding time.
 
 ---
 
@@ -2104,7 +2135,7 @@ All scripts are defined in `server/package.json`:
 | SQL injection | All user input passed as `?` parameters; SQL structure never interpolated from user data (column/table names validated against `VALID_IDENTIFIER` regex before ALTER TABLE in migrations) |
 | Rate limiting | 3-tier: auth (20/15min), general (200/15min), authenticated (2000/15min per user ID) |
 | CORS | Explicit allowlist; wildcard (`*`) disallows credentials; `Vary: Origin` header set |
-| CSP | Via Helmet; `'unsafe-inline'` retained for scripts (inline SPA architecture) |
+| CSP | Via Helmet; `'unsafe-inline'` retained for scripts (inline SPA architecture); `frame-src` / `child-src` allow `'self'` for the same-origin Labyrinth iframe plus Cloudflare Turnstile |
 | ICS token | 32 random bytes; acts as bearer secret; rotatable |
 | SMTP password | Stored plaintext in `smtp_settings.pass` (admin-only accessible table) |
 | Email enumeration | Magic link, forgot-password, and OTP endpoints always return `200` regardless of whether the email exists |

@@ -129,6 +129,8 @@ Run `npm run security:xss-sinks` before changing frontend rendering code. The sc
 
 ### v1.21.12
 
+- **🗺️ Labyrinth arcade port** — ported the Jahosi Labyrinth/Life Runner game into TaskIt as the enabled `maze` arcade slot. The game keeps its single-page structure inside an isolated same-origin iframe, uses TaskIt's anonymous high-score API for posted scores, and lets players spend an Arcade Token for an extra in-level hint.
+- **🏆 Anonymous arcade high-score foundation** — gamified users can choose and change a separate arcade pseudonym from the Progress/Gamify section or the first-run prompt; names are limited to 10 characters and rejected when they look like vulgarities, email addresses, phone numbers, or links. The server now stores anonymous high-score rows per game without exposing account usernames/emails, and future game modules can submit via `window.TaskItArcade.submitScore(...)`, `arcade:score`, or an exit-time `getHighScore()` method.
 - **🔒 Personal task sharing hardening** — reassessed the group visibility boundary after reports that group members could see tasks believed to be Personal. The server now has an explicit Personal-only task filter (`groupId=__personal__`), ignores and prunes stale assignee metadata for non-group tasks, normalizes incoming `groupId` values before writes, and prevents recurring personal tasks from cloning legacy assignee rows into generated follow-up tasks. Non-creators no longer get task visibility from shared group membership alone; group tasks are visible to another member only when that member is explicitly assigned. The UI now exposes a Personal filter and labels each task card as Personal or shared with its group name, making accidental sharing easier to spot.
 - **🔢 Version bump** — package metadata, lockfiles, public cache keys, pages, and documentation updated to 1.21.12.
 
@@ -570,6 +572,9 @@ Open `http://localhost:3000` after starting the server. No separate build step n
 | GET    | /api/gamification/leaderboard/friends      | Friends XP leaderboard                                   |
 | PATCH  | /api/gamification/arcade/daily-limit       | Set daily arcade play limit in minutes (1–180)           |
 | POST   | /api/gamification/arcade/spend-token       | Atomically deduct 1 arcade token from balance            |
+| PUT    | /api/gamification/arcade/pseudonym         | Set anonymous arcade high-score name (2–10 chars)        |
+| POST   | /api/gamification/arcade/high-scores       | Submit `{ gameId, score }` using saved arcade pseudonym  |
+| GET    | /api/gamification/arcade/high-scores/:gameId | Public top 20 scores for an enabled game, anonymous   |
 
 ### Admin
 | Method | Path                                     | Description                          |

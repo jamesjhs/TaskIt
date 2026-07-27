@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.22.3**
+**Version 1.22.4**
 **Author:** J Rowson  
 **Generated:** 2026-05-23
 
@@ -1839,8 +1839,9 @@ Game scripts are loaded after the app is already running, so modules must not re
 
 **Precached static assets:**
 ```
-'/', '/app.css', '/tailwind.css', '/manifest.json',
-'/js/version.js', '/js/qrcode.js',
+'/', '/app.css?v=<version>', '/tailwind.css?v=<version>', '/manifest.json?v=<version>',
+'/js/version.js?v=<version>', '/js/qrcode.js?v=<version>', '/js/game-labyrinth.js?v=<version>',
+'/labyrinth/labyrinth.html?v=<version>', '/labyrinth/assets/vendor/three.min.js',
 '/privacy-policy.html', '/user-guide.html', '/howto.html'
 ```
 
@@ -1849,9 +1850,12 @@ Game scripts are loaded after the app is already running, so modules must not re
 |---|---|
 | `/api/*` | Network-first; returns `503` JSON on network failure |
 | `/calendar/*` | Network-first |
-| SPA navigate (not static pages) | Serve precached root shell (`/`) |
-| Static info pages | Cache-first from SW cache |
+| SPA navigate (not standalone pages) | Network-first; updates cached root shell (`/`) |
+| Standalone pages, including `/labyrinth/labyrinth.html` | Network-first; cache fallback |
+| Versioned assets with `?v=` | Network-first; cache fallback |
 | Other static assets | Cache-first; falls through to network |
+
+**HTTP cache headers:** all `.html` files are served with `Cache-Control: no-cache`, including standalone iframe documents such as `/labyrinth/labyrinth.html`. CSS is also revalidated. JavaScript remains long-lived/immutable at the HTTP layer, so app-owned dynamic script loaders must include release-specific `?v=` query keys.
 
 **Lifecycle:**
 - `install` — Opens `CACHE_NAME` cache, adds all static assets, `skipWaiting()`
@@ -2256,5 +2260,5 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.22.3*
+*End of Technical Reference Manual — TaskIt! v1.22.4*
 

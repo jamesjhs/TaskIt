@@ -357,9 +357,11 @@ app.get('/sw.js', (_req, res) => {
 // all upstream clients under a single IP address.
 app.use(staticLimiter, express.static(path.join(__dirname, '..', '..', 'public'), {
   setHeaders: (res, filePath) => {
-    if (filePath.endsWith('index.html')) {
-      // Always revalidate the HTML shell so clients pick up new asset fingerprints
-      // immediately, even when the Service Worker has been bypassed or not yet active.
+    if (filePath.endsWith('.html')) {
+      // Always revalidate HTML shells/pages so clients pick up new asset
+      // fingerprints immediately, even when the Service Worker has been bypassed
+      // or not yet active. This includes standalone iframe pages such as
+      // /labyrinth/labyrinth.html.
       res.setHeader('Cache-Control', 'no-cache');
       return;
     }

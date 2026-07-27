@@ -1,6 +1,7 @@
 /* ============================================================
    TaskIt! — Service Worker
-   Cache-first for static assets, network-first for /api/
+   Network-first for APIs, navigation, and versioned static assets.
+   Cache fallback keeps installed PWAs usable offline.
    ============================================================ */
 
 const CACHE_NAME = 'taskit-__APP_VERSION__'; // replaced with the real version by the server at runtime
@@ -9,8 +10,8 @@ const ASSET_VERSION = `?v=${APP_VERSION}`;
 
 const STATIC_ASSETS = [
   '/',
-  '/app.css',
-  '/tailwind.css',
+  `/app.css${ASSET_VERSION}`,
+  `/tailwind.css${ASSET_VERSION}`,
   `/manifest.json${ASSET_VERSION}`,
   `/apple-touch-icon.png${ASSET_VERSION}`,
   `/favicon.png${ASSET_VERSION}`,
@@ -19,10 +20,10 @@ const STATIC_ASSETS = [
   `/icons/maskable-icon-192x192.png${ASSET_VERSION}`,
   `/icons/maskable-icon-512x512.png${ASSET_VERSION}`,
   `/icons/notification-badge-96x96.png${ASSET_VERSION}`,
-  '/js/version.js',
-  '/js/qrcode.js',
-  '/js/game-labyrinth.js',
-  '/labyrinth/labyrinth.html',
+  `/js/version.js${ASSET_VERSION}`,
+  `/js/qrcode.js${ASSET_VERSION}`,
+  `/js/game-labyrinth.js${ASSET_VERSION}`,
+  `/labyrinth/labyrinth.html${ASSET_VERSION}`,
   '/labyrinth/assets/vendor/three.min.js',
   '/privacy-policy.html',
   '/user-guide.html',
@@ -57,6 +58,7 @@ self.addEventListener('message', event => {
 
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
+  const STANDALONE_PAGES = ['/privacy-policy.html', '/user-guide.html', '/howto.html', '/labyrinth/labyrinth.html'];
 
   // Network-first for API and calendar feeds
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/calendar/')) {
@@ -74,7 +76,6 @@ self.addEventListener('fetch', event => {
   // For SPA navigation requests, prefer the network so already-installed PWAs
   // can recover from stale cached shells after an app update. Fall back to the
   // cached shell only when offline.
-  const STANDALONE_PAGES = ['/privacy-policy.html', '/user-guide.html', '/howto.html', '/labyrinth/labyrinth.html'];
   if (event.request.mode === 'navigate' && !STANDALONE_PAGES.includes(url.pathname)) {
     event.respondWith(
       fetch(event.request).then(response => {
@@ -84,6 +85,38 @@ self.addEventListener('fetch', event => {
         }
         return response;
       }).catch(() => caches.match('/').then(cached => cached || fetch('/')))
+    );
+    return;
+  }
+
+  // Standalone HTML pages, including the Labyrinth iframe document, should also
+  // recover from stale PWA caches quickly. Prefer the network and keep the cache
+  // only as an offline fallback.
+  if (event.request.mode === 'navigate' && STANDALONE_PAGES.includes(url.pathname)) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(event.request).then(cached => cached || caches.match(url.pathname)))
+    );
+    return;
+  }
+
+  // Versioned assets are expected to change URL on each release. Prefer the
+  // network so old service workers do not keep serving stale UI code once the
+  // shell has moved to a new version key.
+  if (event.request.method === 'GET' && url.searchParams.has('v')) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(event.request).then(cached => cached || new Response('Offline', { status: 503 })))
     );
     return;
   }

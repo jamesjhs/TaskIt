@@ -34,15 +34,13 @@ function formatDueDate(ms: number | null | undefined): string {
   return new Date(ms).toISOString().split('T')[0];
 }
 
-// Returns true when the requesting user may act on a task — either because they
-// created it, or because the task belongs to a group the user is a member of.
-// Personal (non-group) tasks remain accessible only to their creator.
-function hasTaskAccess(task: { created_by: string; group_id: string | null }, userId: string): boolean {
+// Returns true when the requesting user may act on a task. Personal tasks are
+// creator-only. Group tasks are visible to their creator and explicitly assigned
+// group members; group membership alone is not enough to read another user's task.
+function hasTaskAccess(task: { id?: string; created_by: string; group_id: string | null }, userId: string): boolean {
   if (task.created_by === userId) return true;
-  if (task.group_id) {
-    return !!db.prepare(
-      'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
-    ).get(task.group_id, userId);
+  if (task.group_id && task.id) {
+    return isGroupTaskAssignee(task, task.id, userId);
   }
   return false;
 }
@@ -128,17 +126,15 @@ router.get('/', (req: Request, res: Response): void => {
   whereConditions.push('(t.is_long_term_goal IS NULL OR t.is_long_term_goal = 0)');
   whereConditions.push('(t.is_sporadic IS NULL OR t.is_sporadic = 0)');
 
-  // User must be the creator OR an assignee OR group member
+  // User must be the creator, or an explicit assignee on a group task.
+  // Group membership alone must not reveal another user's tasks.
   whereConditions.push(`(
     t.created_by = ?
     OR (t.group_id IS NOT NULL AND EXISTS (
       SELECT 1 FROM task_assignees ta WHERE ta.task_id = t.id AND ta.user_id = ?
     ))
-    OR (t.group_id IS NOT NULL AND EXISTS (
-      SELECT 1 FROM group_members gm WHERE gm.group_id = t.group_id AND gm.user_id = ?
-    ))
   )`);
-  params.push(userId, userId, userId);
+  params.push(userId, userId);
 
   if (groupIdFilter === PERSONAL_GROUP_FILTER) {
     whereConditions.push('t.group_id IS NULL');
@@ -416,7 +412,7 @@ router.get('/sporadic', (req: Request, res: Response): void => {
       AND (
         t.created_by = ?
         OR (t.group_id IS NOT NULL AND EXISTS (
-          SELECT 1 FROM group_members gm WHERE gm.group_id = t.group_id AND gm.user_id = ?
+          SELECT 1 FROM task_assignees ta WHERE ta.task_id = t.id AND ta.user_id = ?
         ))
       )
     ORDER BY t.last_completed_at ASC NULLS FIRST, t.created_at ASC
@@ -555,7 +551,7 @@ router.put('/:id/complete-sporadic', (req: Request, res: Response): void => {
     return;
   }
 
-  // Allow creator or group member only
+  // Allow creator or explicit group-task assignee only
   if (!hasTaskAccess(task, userId)) {
     res.status(403).json({ error: 'Not authorized' });
     return;
@@ -688,7 +684,7 @@ router.patch('/:id/sporadic-last-done', (req: Request, res: Response): void => {
     return;
   }
 
-  // Allow creator or group member only
+  // Allow creator or explicit group-task assignee only
   if (!hasTaskAccess(task, userId)) {
     res.status(403).json({ error: 'Not authorized' });
     return;
@@ -734,7 +730,7 @@ router.get('/long-term-goals', (req: Request, res: Response): void => {
       AND (
         t.created_by = ?
         OR (t.group_id IS NOT NULL AND EXISTS (
-          SELECT 1 FROM group_members gm WHERE gm.group_id = t.group_id AND gm.user_id = ?
+          SELECT 1 FROM task_assignees ta WHERE ta.task_id = t.id AND ta.user_id = ?
         ))
       )
     ORDER BY t.created_at ASC
@@ -865,7 +861,7 @@ router.patch('/:id', (req: Request, res: Response): void => {
     return;
   }
 
-  // Creator always has access; group members have full write access to group tasks
+  // Creator always has access; explicitly assigned group members may edit group tasks
   if (!hasTaskAccess(task, userId)) {
     res.status(403).json({ error: 'Not authorized' });
     return;
@@ -1304,13 +1300,8 @@ router.patch('/:id/defer', (req: Request, res: Response): void => {
     return;
   }
 
-  // Allow creator or any group member to defer
-  const isCreator = task.created_by === userId;
-  const isGroupMember = task.group_id ? !!db.prepare(
-    'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
-  ).get(task.group_id, userId) : false;
-
-  if (!isCreator && !isGroupMember) {
+  // Allow creator or explicit group-task assignee to defer.
+  if (!hasTaskAccess(task, userId)) {
     res.status(403).json({ error: 'Not authorized' });
     return;
   }
@@ -1581,7 +1572,7 @@ router.get('/:id/notes', (req: Request, res: Response): void => {
   const userId = req.user!.id;
   const taskId = req.params.id;
 
-  // Check access: creator, or group task assignee/member.
+  // Check access: creator, or explicit group task assignee.
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
     | { id: string; created_by: string; group_id: string | null }
     | undefined;
@@ -1591,13 +1582,7 @@ router.get('/:id/notes', (req: Request, res: Response): void => {
     return;
   }
 
-  const isCreator = task.created_by === userId;
-  const isAssignee = isGroupTaskAssignee(task, taskId, userId);
-  const isGroupMember = task.group_id ? !!db.prepare(
-    'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
-  ).get(task.group_id, userId) : false;
-
-  if (!isCreator && !isAssignee && !isGroupMember) {
+  if (!hasTaskAccess(task, userId)) {
     res.status(403).json({ error: 'Not authorized' });
     return;
   }
@@ -1637,13 +1622,7 @@ router.post('/:id/notes', (req: Request, res: Response): void => {
     return;
   }
 
-  const isCreator = task.created_by === userId;
-  const isAssignee = isGroupTaskAssignee(task, taskId, userId);
-  const isGroupMember = task.group_id ? !!db.prepare(
-    'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
-  ).get(task.group_id, userId) : false;
-
-  if (!isCreator && !isAssignee && !isGroupMember) {
+  if (!hasTaskAccess(task, userId)) {
     res.status(403).json({ error: 'Not authorized' });
     return;
   }

@@ -128,7 +128,7 @@ Run `npm run security:xss-sinks` before changing frontend rendering code. The sc
 
 ### v1.21.12
 
-- **🔒 Personal task sharing hardening** — reassessed the group visibility boundary after reports that group members could see tasks believed to be Personal. The server now has an explicit Personal-only task filter (`groupId=__personal__`), ignores and prunes stale assignee metadata for non-group tasks, normalizes incoming `groupId` values before writes, and prevents recurring personal tasks from cloning legacy assignee rows into generated follow-up tasks. The UI now exposes a Personal filter and labels each task card as Personal or shared with its group name, making accidental sharing easier to spot.
+- **🔒 Personal task sharing hardening** — reassessed the group visibility boundary after reports that group members could see tasks believed to be Personal. The server now has an explicit Personal-only task filter (`groupId=__personal__`), ignores and prunes stale assignee metadata for non-group tasks, normalizes incoming `groupId` values before writes, and prevents recurring personal tasks from cloning legacy assignee rows into generated follow-up tasks. Non-creators no longer get task visibility from shared group membership alone; group tasks are visible to another member only when that member is explicitly assigned. The UI now exposes a Personal filter and labels each task card as Personal or shared with its group name, making accidental sharing easier to spot.
 - **🔢 Version bump** — package metadata, lockfiles, public cache keys, pages, and documentation updated to 1.21.12.
 
 ### v1.21.11

@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.21.13**
+**Version 1.22.0**
 **Author:** J Rowson  
 **Generated:** 2026-05-23
 
@@ -142,7 +142,8 @@ TaskIt/
 │       ├── game-labyrinth.js   # Wrapper for the ported Labyrinth iframe game
 │       └── games/              # Optional folder for contributor game modules
 │   └── labyrinth/
-│       └── labyrinth.html      # Ported Jahosi Labyrinth single-page game
+│       ├── labyrinth.html      # Ported Jahosi Labyrinth single-page game
+│       └── assets/vendor/three.min.js # Self-hosted Three.js r128 renderer
 │   └── icons/                  # PWA icons (72×72 to 512×512 PNG)
 │
 ├── android/                    # Android WebView wrapper app (Gradle/Kotlin)
@@ -1634,6 +1635,7 @@ Collapsible task sections (`significantly-overdue-list`, `sporadic-list`, and `g
 | `restoreAppState(state)` | Restores a page, task detail panel, or task editor from `popstate` history |
 | `showPage(page, options)` | Toggles the main SPA pages and writes page state unless history updates are skipped |
 | `initOverlayHistoryTracking()` | Observes `.modal-overlay` visibility changes and pushes overlay stack states into browser history |
+| `initGlobalGestureGuards()` | Blocks multi-touch and iOS gesture events across the app shell to prevent pinch/browser gestures during game controls |
 | `closeTopOpenOverlay()` | Closes the most recently opened visible popup before app-page history is restored |
 | `openDetail(task, options)` | Opens the task detail modal and pushes `{ detailTaskId }` into history |
 | `closeDetailModal(options)` | Closes the task detail modal, using `history.back()` when it represents the current history state |
@@ -1656,7 +1658,11 @@ Collapsible task sections (`significantly-overdue-list`, `sporadic-list`, and `g
 
 **Anonymous high scores:** scoreboards are intentionally decoupled from social graph visibility. A score row stores `user_id` privately for abuse investigation and personal highlighting, but public table responses expose only `pseudonym`, `score`, rank, timestamp, and `isMine`. Game modules can submit by calling `window.TaskItArcade.submitScore({ gameId, score })`, dispatching `arcade:score` from `#arcadeOverlay`, or implementing `getHighScore()` / `getScore()` for the shell to read on close.
 
-**Labyrinth port:** `/js/game-labyrinth.js` registers `gameId: "maze"` and loads `/labyrinth/labyrinth.html` in a same-origin iframe. The iframe preserves the source game's single-page layout and broad page-level CSS without leaking selectors into `public/index.html`. Parent/iframe `postMessage` calls bridge TaskIt-owned operations: `getScores`, `submitScore`, and `spendHintToken`. The generic arcade token button calls a game-specific `spendToken()` hook when present, so Labyrinth spends a token for an extra hint instead of adding time.
+**Arcade Back behavior:** opening an arcade game pushes an app-history state. Browser/PWA Back first gives the active game a chance to handle the event through `handleBack()`, then closes the arcade and restores the previous TaskIt page/overlay state. This keeps game menu transitions and app navigation in the same Back flow.
+
+**Labyrinth port:** `/js/game-labyrinth.js` registers `gameId: "maze"` and loads `/labyrinth/labyrinth.html` in a same-origin iframe. The iframe preserves the source game's single-page layout and broad page-level CSS without leaking selectors into `public/index.html`. Parent/iframe `postMessage` calls bridge TaskIt-owned operations: `getScores`, `submitScore`, `spendHintToken`, and `stateChanged`. The generic arcade token button calls a game-specific `spendToken()` hook when present, so Labyrinth spends a token for an extra hint instead of adding time. Labyrinth also blocks multi-touch gesture events internally because iframe touch events do not bubble to the parent app shell.
+
+**Labyrinth renderer:** Three.js is self-hosted at `/labyrinth/assets/vendor/three.min.js`, copied from exact-pinned `three@0.128.0`. The Labyrinth loader uses a same-origin `<script>` tag and keeps CDN fallback disabled. This avoids widening Helmet CSP to third-party script origins and avoids the source game's older `fetch` + `new Function` path, which would conflict with the no-`unsafe-eval` CSP hardening. The service worker treats `/labyrinth/labyrinth.html` as a standalone static page and precaches the wrapper, page, and renderer asset.
 
 ---
 
@@ -2250,5 +2256,5 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.21.13*
+*End of Technical Reference Manual — TaskIt! v1.22.0*
 

@@ -143,15 +143,15 @@
   <style>
     .hidden { display: none !important; }
   </style>
-  <link rel="stylesheet" href="/app.css?v=1.21.13" type="text/css" />
+  <link rel="stylesheet" href="/app.css?v=1.22.0" type="text/css" />
   <!-- PWA / installable web app -->
-  <link rel="manifest" href="/manifest.json?v=1.21.13" />
+  <link rel="manifest" href="/manifest.json?v=1.22.0" />
   <meta name="theme-color" content="#7c3aed" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="TaskIt!" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1.21.13" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=1.21.13" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1.22.0" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=1.22.0" />
   <!-- Cloudflare Turnstile for CAPTCHA security (explicit render; onload callback fires when ready) -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit" async defer></script>
 </head>
@@ -192,7 +192,7 @@
     <div class="lp-hero-float lp-float-achievement" aria-hidden="true">🏆 Achievement Unlocked!</div>
     <div class="lp-hero-float lp-float-streak" aria-hidden="true">🔥 14-day streak!</div>
     <div style="position:relative;z-index:1">
-      <img class="lp-hero-logo" src="/RKlogo.png?v=1.21.13" width="900" height="900" alt="TaskIt! logo: a checklist with a star and tick" decoding="async" fetchpriority="high" />
+      <img class="lp-hero-logo" src="/RKlogo.png?v=1.22.0" width="900" height="900" alt="TaskIt! logo: a checklist with a star and tick" decoding="async" fetchpriority="high" />
       <h1>Gamify your life and compete with friends!</h1>
       <p class="lp-hero-sub">Run recurring work, household jobs, sporadic maintenance, long-term goals, and group collaboration from one privacy-first app. Add reminders, calendar sync, and optional gamification — without subscriptions or vendor lock-in.</p>
       <div class="lp-hero-ctas">
@@ -959,7 +959,7 @@
   <div class="auth-card">
     <div class="auth-logo">
       <div class="auth-logo-icon auth-logo-icon-brand">
-        <img src="/RKlogo.png?v=1.21.13" width="900" height="900" alt="TaskIt! logo" decoding="async" />
+        <img src="/RKlogo.png?v=1.22.0" width="900" height="900" alt="TaskIt! logo" decoding="async" />
       </div>
       <h1>TaskIt!</h1>
       <p>🎮 Gamified task management</p>
@@ -1087,7 +1087,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.21.13</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
+      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.22.0</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>
@@ -2002,7 +2002,7 @@
 <div id="pwaInstallModal" class="modal-overlay hidden">
   <div class="modal-sheet">
     <div class="modal-body" style="text-align:center">
-      <img src="/RKlogo.png?v=1.21.13" width="900" height="900" alt="" aria-hidden="true" style="width:92px;height:auto;margin:0 auto 12px;display:block" />
+      <img src="/RKlogo.png?v=1.22.0" width="900" height="900" alt="" aria-hidden="true" style="width:92px;height:auto;margin:0 auto 12px;display:block" />
       <h2 class="modal-title">Install TaskIt!</h2>
       <p style="font-size:.9rem;color:#6b7280;line-height:1.6;margin-bottom:20px">
         Add TaskIt! to your home screen for a cleaner app-style launch, faster access, and better notification behaviour.
@@ -2631,6 +2631,22 @@ function updateArcadeTokenDisplays(count = arcadeTokens) {
   const progressTokenEl = document.getElementById('gamifArcadeTokens');
   if (progressTokenEl) progressTokenEl.textContent = safeCount.toLocaleString();
 }
+
+function preventMultiTouchGestures(e) {
+  if (e && e.touches && e.touches.length > 1) e.preventDefault();
+}
+
+let _gestureGuardsInitialized = false;
+function initGlobalGestureGuards() {
+  if (_gestureGuardsInitialized) return;
+  _gestureGuardsInitialized = true;
+  document.addEventListener('touchstart', preventMultiTouchGestures, { passive: false });
+  document.addEventListener('touchmove', preventMultiTouchGestures, { passive: false });
+  document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+  document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
+  document.addEventListener('gestureend', e => e.preventDefault(), { passive: false });
+}
+initGlobalGestureGuards();
 
 function normalizeArcadePseudonym(value) {
   return String(value || '').trim().replace(/\s+/g, ' ');
@@ -3269,6 +3285,7 @@ function buildPwaInstallReminderHtml() {
 
 // ========== App init ==========
 function initApp() {
+  initGlobalGestureGuards();
   document.getElementById('landingPage').classList.add('hidden');
   document.getElementById('authPage').classList.add('hidden');
   document.getElementById('appPage').classList.remove('hidden');
@@ -3590,9 +3607,36 @@ function initOverlayHistoryTracking() {
 
 function closeOpenAppOverlays() {
   closeFabMenu(true);
+  closeArcade({ updateHistory: false });
   while (closeTopOpenOverlay()) {
     // Close every visible modal before rendering a different app state.
   }
+}
+
+function isArcadeOpen() {
+  const overlay = document.getElementById('arcadeOverlay');
+  return !!(overlay && !overlay.classList.contains('hidden'));
+}
+
+function currentArcadeHistoryState() {
+  const overlay = document.getElementById('arcadeOverlay');
+  if (!overlay || overlay.classList.contains('hidden')) return null;
+  return {
+    page: currentAppPage || 'tasks',
+    arcadeBadgeKey: overlay.dataset.activeGame || '',
+    arcadeGameId: overlay.dataset.activeGameId || '',
+  };
+}
+
+function pushArcadeHistory(badgeKey, gameId) {
+  if (!token || !currentUser || !badgeKey) return;
+  const state = history.state && history.state.app === 'taskit' ? history.state : {};
+  if (state.arcadeBadgeKey === badgeKey && state.arcadeGameId === gameId) return;
+  writeAppHistory({
+    page: currentAppPage || state.page || 'tasks',
+    arcadeBadgeKey: badgeKey,
+    arcadeGameId: gameId || '',
+  });
 }
 
 function restoreAppState(state) {
@@ -3612,6 +3656,21 @@ function restoreAppState(state) {
 
 window.addEventListener('popstate', event => {
   if (!token || !currentUser) return;
+  if (isArcadeOpen()) {
+    const targetState = event.state;
+    if (targetState && targetState.arcadeBadgeKey) return;
+    if (activeArcadeGameInstance && typeof activeArcadeGameInstance.handleBack === 'function') {
+      const handled = activeArcadeGameInstance.handleBack();
+      if (handled) {
+        const arcadeState = currentArcadeHistoryState();
+        if (arcadeState) writeAppHistory(arcadeState);
+        return;
+      }
+    }
+    closeArcade({ updateHistory: false });
+    restoreAppState(targetState);
+    return;
+  }
   if (closeTopOpenOverlay()) return;
   restoreAppState(event.state);
 });
@@ -7133,7 +7192,7 @@ async function refreshNotifications() {
           if (!fired[k]) {
             fired[k] = day;
             try {
-              new Notification('TaskIt! Reminder', { body: t.title, icon: '/icons/icon-192x192.png?v=1.21.13', badge: '/icons/notification-badge-96x96.png?v=1.21.13', tag: k });
+              new Notification('TaskIt! Reminder', { body: t.title, icon: '/icons/icon-192x192.png?v=1.22.0', badge: '/icons/notification-badge-96x96.png?v=1.22.0', tag: k });
             } catch { /* Notification API unavailable or permission revoked */ }
           }
         };
@@ -8231,6 +8290,10 @@ async function openArcade(badgeKey) {
   // Store active game context on the element for Stage 2 modules
   overlay.dataset.activeGame   = badgeKey;
   overlay.dataset.activeGameId = game.gameId;
+  if (!overlay.dataset.historyPushed) {
+    pushArcadeHistory(badgeKey, game.gameId);
+    overlay.dataset.historyPushed = '1';
+  }
 
   // ── Time Budget pre-game check ──────────────────────────────────────────
   // Daily play time is tracked per calendar day in localStorage.
@@ -8453,9 +8516,14 @@ async function arcadeSpendToken() {
 /**
  * Closes the Arcade overlay and restores the main app.
  */
-function closeArcade() {
+function closeArcade(options = {}) {
   const overlay = document.getElementById('arcadeOverlay');
   if (!overlay || overlay.classList.contains('hidden')) return;
+
+  if (options.updateHistory !== false && history.state?.arcadeBadgeKey) {
+    history.back();
+    return;
+  }
 
   // Stop play timer
   if (_arcadeTimerInterval !== null) {
@@ -8483,6 +8551,7 @@ function closeArcade() {
   document.body.classList.remove('arcade-open');
   delete overlay.dataset.activeGame;
   delete overlay.dataset.activeGameId;
+  delete overlay.dataset.historyPushed;
 
   if (exitScore) submitArcadeHighScore(exitScore).catch(() => {});
 }

@@ -1,6 +1,6 @@
 {
   "name": "taskit",
-  "version": "1.21.13",
+  "version": "1.22.0",
   "private": true,
   "description": "TaskIt! task management application",
   "workspaces": [
@@ -17,5 +17,8 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "three": "0.128.0"
   }
 }

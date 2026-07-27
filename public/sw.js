@@ -21,6 +21,9 @@ const STATIC_ASSETS = [
   `/icons/notification-badge-96x96.png${ASSET_VERSION}`,
   '/js/version.js',
   '/js/qrcode.js',
+  '/js/game-labyrinth.js',
+  '/labyrinth/labyrinth.html',
+  '/labyrinth/assets/vendor/three.min.js',
   '/privacy-policy.html',
   '/user-guide.html',
   '/howto.html',
@@ -71,7 +74,7 @@ self.addEventListener('fetch', event => {
   // For SPA navigation requests, prefer the network so already-installed PWAs
   // can recover from stale cached shells after an app update. Fall back to the
   // cached shell only when offline.
-  const STANDALONE_PAGES = ['/privacy-policy.html', '/user-guide.html', '/howto.html'];
+  const STANDALONE_PAGES = ['/privacy-policy.html', '/user-guide.html', '/howto.html', '/labyrinth/labyrinth.html'];
   if (event.request.mode === 'navigate' && !STANDALONE_PAGES.includes(url.pathname)) {
     event.respondWith(
       fetch(event.request).then(response => {

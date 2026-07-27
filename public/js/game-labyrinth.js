@@ -11,6 +11,7 @@
   let iframe = null;
   let lastFinalScore = null;
   let submittedScoreKey = '';
+  let frameState = 'menu';
 
   function scoreKey(payload) {
     if (!payload) return '';
@@ -80,6 +81,11 @@
       return;
     }
 
+    if (msg.type === 'stateChanged') {
+      frameState = (msg.payload && msg.payload.state) || 'menu';
+      return;
+    }
+
     if (msg.type === 'finalScore') {
       const payload = msg.payload || {};
       const score = Math.max(0, Math.floor(Number(payload.score) || 0));
@@ -95,6 +101,7 @@
   function mount(frame) {
     lastFinalScore = null;
     submittedScoreKey = '';
+    frameState = 'menu';
     frame.replaceChildren();
 
     iframe = document.createElement('iframe');
@@ -133,11 +140,22 @@
     return 'Extra Labyrinth hint unlocked!';
   }
 
+  function handleBack() {
+    if (!iframe || !iframe.contentWindow) return false;
+    if (frameState === 'menu') return false;
+    iframe.contentWindow.postMessage({
+      source: 'taskit-labyrinth-parent',
+      type: 'back',
+    }, window.location.origin);
+    return true;
+  }
+
   window.TaskItArcade.register({
     gameId: GAME_ID,
     mount,
     unmount,
     getHighScore,
     spendToken,
+    handleBack,
   });
 }());

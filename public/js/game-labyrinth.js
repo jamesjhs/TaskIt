@@ -119,7 +119,6 @@
     iframe.style.display = 'block';
     iframe.style.background = '#070b1f';
     iframe.style.overscrollBehavior = 'none';
-    iframe.style.touchAction = 'none';
 
     frame.appendChild(iframe);
     window.addEventListener('message', onMessage);

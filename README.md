@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.22.2** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.22.3** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -127,15 +127,15 @@ Run `npm run security:xss-sinks` before changing frontend rendering code. The sc
 
 ## Changelog
 
-### v1.22.2
+### v1.22.3
 
-- **🧭 Labyrinth touch/rendering fix** — hardened the arcade shell and Labyrinth iframe against two-finger browser scrolling by using capture-phase, non-passive guards that intercept multi-touch/native gesture events while allowing normal single-finger taps to reach buttons and menus. Labyrinth iframe URLs now include the app version so installed PWAs do not keep stale cached game pages, and startup now requires the self-hosted Three/WebGL renderer instead of silently defaulting to the CPU ray renderer.
+- **🧭 Labyrinth touch/rendering fix** — hardened the arcade shell and Labyrinth iframe against two-finger browser scrolling by using capture-phase, non-passive guards that intercept multi-touch/native gesture events while allowing normal single-finger taps to reach buttons and menus. The broad `touch-action: none` rules were removed from the iframe/page surfaces after mobile WebViews treated them as too restrictive for iframe-internal taps. Labyrinth iframe URLs now include the app version so installed PWAs do not keep stale cached game pages, and startup now requires the self-hosted Three/WebGL renderer instead of silently defaulting to the CPU ray renderer.
 - **🗺️ Labyrinth arcade port** — ported the Jahosi Labyrinth/Life Runner game into TaskIt as the enabled `maze` arcade slot. The game keeps its single-page structure inside an isolated same-origin iframe, uses TaskIt's anonymous high-score API for posted scores, and lets players spend an Arcade Token for an extra in-level hint.
 - **🧱 Self-hosted Labyrinth renderer** — vendored the compatible Three.js r128 browser build under `/labyrinth/assets/vendor/three.min.js` and loads it from TaskIt at Labyrinth launch. CDN fallbacks remain disabled so CSP can stay `script-src 'self'` for game code, and the service worker precaches the Labyrinth page, wrapper, and renderer for PWA reliability.
 - **📱 Back and gesture hardening** — blocked multi-touch/pinch gestures across the app shell and Labyrinth iframe so two-thumb game controls are not mistaken for browser zoom/navigation gestures. Arcade opens now create a browser-history state, Back returns active Labyrinth runs to their menu/summary before closing the arcade, and Back from the arcade returns to the previous TaskIt page state.
 - **🏆 Anonymous arcade high-score foundation** — gamified users can choose and change a separate arcade pseudonym from the Progress/Gamify section or the first-run prompt; names are limited to 10 characters and rejected when they look like vulgarities, email addresses, phone numbers, or links. The server now stores anonymous high-score rows per game without exposing account usernames/emails, and future game modules can submit via `window.TaskItArcade.submitScore(...)`, `arcade:score`, or an exit-time `getHighScore()` method.
 - **🔒 Personal task sharing hardening** — reassessed the group visibility boundary after reports that group members could see tasks believed to be Personal. The server now has an explicit Personal-only task filter (`groupId=__personal__`), ignores and prunes stale assignee metadata for non-group tasks, normalizes incoming `groupId` values before writes, and prevents recurring personal tasks from cloning legacy assignee rows into generated follow-up tasks. Non-creators no longer get task visibility from shared group membership alone; group tasks are visible to another member only when that member is explicitly assigned. The UI now exposes a Personal filter and labels each task card as Personal or shared with its group name, making accidental sharing easier to spot.
-- **🔢 Version bump** — package metadata, lockfiles, public cache keys, pages, and documentation updated to 1.22.2.
+- **🔢 Version bump** — package metadata, lockfiles, public cache keys, pages, and documentation updated to 1.22.3.
 
 ### v1.21.11
 

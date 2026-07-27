@@ -1,6 +1,6 @@
 {
   "name": "taskit",
-  "version": "1.22.2",
+  "version": "1.22.3",
   "private": true,
   "description": "TaskIt! task management application",
   "workspaces": [
@@ -20,5 +20,9 @@
   },
   "devDependencies": {
     "three": "0.128.0"
+  },
+  "allowScripts": {
+    "better-sqlite3-multiple-ciphers@12.10.0": true,
+    "esbuild@0.28.1": true
   }
 }

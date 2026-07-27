@@ -2226,8 +2226,6 @@ body.arcade-open { overflow: hidden; }
   flex-direction: column;
   overflow: hidden;
   overscroll-behavior: none;
-  touch-action: none;
-  -ms-touch-action: none;
 }
 .arcade-overlay.hidden { display: none; }
 
@@ -2315,8 +2313,6 @@ body.arcade-open { overflow: hidden; }
   overflow: hidden;
   min-height: 0;
   overscroll-behavior: none;
-  touch-action: none;
-  -ms-touch-action: none;
 }
 
 /* The frame where game canvases / Stage 2 content is injected */
@@ -2333,14 +2329,10 @@ body.arcade-open { overflow: hidden; }
   overflow: hidden;
   position: relative;
   overscroll-behavior: none;
-  touch-action: none;
-  -ms-touch-action: none;
 }
 
 .arcade-game-frame iframe {
   overscroll-behavior: none;
-  touch-action: none;
-  -ms-touch-action: none;
 }
 
 /* Coming-soon placeholder (replaced by Stage 2 games) */

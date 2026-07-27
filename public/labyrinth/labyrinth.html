@@ -61,19 +61,22 @@
 
       window.__labyrinthVersionRefreshPromise = checkLabyrinthVersion();
 
-      function preventLabyrinthTouchDefaults(e) {
+      function preventLabyrinthMultiTouch(e) {
+        if (e && e.touches && e.touches.length > 1 && typeof e.preventDefault === "function") {
+          e.preventDefault();
+        }
+      }
+      function preventLabyrinthGesture(e) {
         if (e && typeof e.preventDefault === "function") e.preventDefault();
       }
       const touchGuardOptions = { passive: false, capture: true };
-      window.addEventListener("touchstart", preventLabyrinthTouchDefaults, touchGuardOptions);
-      window.addEventListener("touchmove", preventLabyrinthTouchDefaults, touchGuardOptions);
-      window.addEventListener("touchcancel", preventLabyrinthTouchDefaults, touchGuardOptions);
-      document.addEventListener("touchstart", preventLabyrinthTouchDefaults, touchGuardOptions);
-      document.addEventListener("touchmove", preventLabyrinthTouchDefaults, touchGuardOptions);
-      document.addEventListener("touchcancel", preventLabyrinthTouchDefaults, touchGuardOptions);
-      document.addEventListener("gesturestart", preventLabyrinthTouchDefaults, touchGuardOptions);
-      document.addEventListener("gesturechange", preventLabyrinthTouchDefaults, touchGuardOptions);
-      document.addEventListener("gestureend", preventLabyrinthTouchDefaults, touchGuardOptions);
+      window.addEventListener("touchstart", preventLabyrinthMultiTouch, touchGuardOptions);
+      window.addEventListener("touchmove", preventLabyrinthMultiTouch, touchGuardOptions);
+      document.addEventListener("touchstart", preventLabyrinthMultiTouch, touchGuardOptions);
+      document.addEventListener("touchmove", preventLabyrinthMultiTouch, touchGuardOptions);
+      document.addEventListener("gesturestart", preventLabyrinthGesture, touchGuardOptions);
+      document.addEventListener("gesturechange", preventLabyrinthGesture, touchGuardOptions);
+      document.addEventListener("gestureend", preventLabyrinthGesture, touchGuardOptions);
     })();
   </script>
   <style>

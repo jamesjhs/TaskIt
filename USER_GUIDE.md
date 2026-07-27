@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.21.8** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.21.9** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -39,7 +39,7 @@ There are two ways to log in:
    - **🎯 Long-term Goal** — an aspirational goal with no immediate deadline
 2. Tap the choice that fits. The **Create Task** form opens pre-configured with only the fields relevant to that type.
 3. Give your task a **title** and choose a **type** (e.g. Urgent, Routine, Hobby). You can also add a custom type by selecting *+ Add new type…* from the dropdown.
-4. Optionally select a **Group**. Once a group is chosen, an **Assign To** section appears — tick the group members you want to assign the task to.
+4. Optionally select a **Group**. Leave it as **Personal (no group)** for a task only you can see; choose a group only when you want other members of that group to see and work on it. Once a group is chosen, an **Assign To** section appears — tick the group members you want to assign the task to.
 5. To break the task into steps, click the **▶ Add Sub-tasks** toggle (directly below the Group field) and enter each step (see [Sub-tasks](#sub-tasks) below).
 6. To add free-text **Notes**, click the **▶ Notes** toggle to expand the notes field. When editing a task that already has notes, the field opens automatically.
 7. Set a **due date** if needed (defaults to today). Tap the date field to open a calendar picker — on mobile this is a native date picker for easy one-thumb use.
@@ -78,7 +78,7 @@ Click any task card to open the detail panel. From here you can:
 
 - Move it through the stages: **Not Started → Started → Complete**
 - **Edit** any of the task's details
-- **Defer** the task — click *Defer* to set a new due date without opening the full edit form. You can enter the date directly or use the *"or in X days/weeks/months from now"* shortcut below the date picker
+- **Defer** the task — click *Defer* to set a new due date without opening the full edit form. It defaults to **in 1 week from now**, shows the actual calendar date below the relative controls, and updates automatically when you type a number or change days/weeks/months
 - **Archive** it to tidy your view (archived tasks can always be brought back)
 - **Delete** it permanently — note that for group tasks, only the task creator or a group admin can delete; other group members can edit all other details but not delete
 - Or use the **bin icon** at the top-right of a task card to delete directly from the list; TaskIt asks for confirmation first.
@@ -491,5 +491,5 @@ Tap the **⭐ Progress** tab in the bottom navigation. You can also enable or di
 
 ---
 
-*TaskIt! v1.21.8 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*TaskIt! v1.21.9 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
 

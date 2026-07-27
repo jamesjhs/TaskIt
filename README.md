@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.21.8** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.21.9** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -16,7 +16,7 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - Task statuses: Not Started → Started → Complete
 - **Sub-tasks** — break any task into individual checklist steps; tick each off one at a time, with a progress bar on the task card and detail modal; edit existing sub-task names, add and delete sub-tasks when editing a task; completing a sub-task automatically sets the parent task to "Started", and each sub-task completion earns a small configurable XP reward
 - Recurring tasks — automatically create the next occurrence when complete
-- Task deferral — reschedule due date from the detail panel
+- Task deferral — reschedule due date from the detail panel with an auto-updating relative date helper
 - Custom task types per user and per group — create, edit, delete, and re-enable archived types; sorted alphabetically across all dropdowns; system automatically resets active tasks to the Routine type when their custom type is deleted
 - Archive and delete tasks
 - Group collaboration with invite word pairs and shared secret keys
@@ -26,9 +26,9 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - In-app alerts for overdue and due-soon tasks
 - **Per-task notification preferences** — choose whether to receive email reminders and/or browser popup notifications for each task, with a grid selecting 7-day, 1-day, and on-the-day timing
 - **Profile-level push reminder time** — choose a friendly local delivery time for browser push reminders from your Profile page, while keeping task due dates date-only
-- Group member access control — any group member can edit all task fields (title, due date, recurrence, notes, status, defer, archive); only the task creator or a group admin can delete a task
+- Group member access control — Personal (no group) tasks remain visible only to their creator; group tasks are shared only when a group is explicitly selected, and any group member can edit group task fields (title, due date, recurrence, notes, status, defer, archive); only the task creator or a group admin can delete a group task
 - **Date-only scheduling** — task due dates are date-only (no time component); all times default to midnight so you never have to think about hours. Native calendar pickers on mobile and desktop for easy date entry
-- **Relative date shortcuts** — on any date field, type a number and choose days/weeks/months and tap "Set" to quickly jump to *n* days/weeks/months from today
+- **Relative date shortcuts** — on task date fields, type a number and choose days/weeks/months to quickly jump to *n* days/weeks/months from today; defer defaults to 1 week and previews the resulting calendar date automatically
 - **In-app Back/Forward navigation** — browser, Android, and PWA Back now closes active popup overlays from top to bottom, then returns to previous TaskIt! pages before leaving the app
 - Calendar integration — private ICS feed for any calendar app
 - Date locale preference per user
@@ -121,6 +121,12 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 | Android  | Kotlin, Retrofit, DataStore                              |
 
 ## Changelog
+
+### v1.21.9
+
+- **🔒 Personal task visibility fix** — tasks created with **Personal (no group)** now remain visible only to their creator, even when the creator belongs to groups or stale assignee data exists; group sharing applies only when a group is explicitly selected.
+- **🐛 Defer date UX fix** — opening Defer now defaults to **in 1 week from now**, previews the resolved calendar date below the relative controls, and updates automatically when the period changes.
+- **🔢 Version bump** — package metadata, lockfiles, public cache keys, pages, and documentation updated to 1.21.9.
 
 ### v1.21.8
 

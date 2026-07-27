@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.21.8**
+**Version 1.21.9**
 **Author:** J Rowson  
 **Generated:** 2026-05-23
 
@@ -984,20 +984,22 @@ Attached to `req.user` by `authMiddleware`.
 | `ALLOWED_STATUSES` | Set | `{ 'not_started', 'started', 'complete' }` |
 | `ALLOWED_RECUR_UNITS` | Set | `{ 'days', 'weeks', 'months', 'years' }` |
 | `URGENT_TASK_TYPE` | const | `'urgent'` — used in ORDER BY clause |
-| `hasTaskAccess(task, userId)` | function | Returns true if userId === task.created_by OR is a group member |
+| `hasTaskAccess(task, userId)` | function | Returns true if userId === task.created_by OR the task has `group_id` and the user is a group member; personal tasks remain creator-only |
+| `isGroupTaskAssignee(task, taskId, userId)` | function | Returns true only when the task has `group_id` and the user is assigned |
+| `resolveAssigneeIdsForGroup(groupId, assigneeIds)` | function | Returns valid assignee IDs only for members of the selected group; returns empty for Personal tasks |
 | `computeNextDue(dueDateMs, interval, unit)` | function | Computes next occurrence date; uses `Date` methods for days/weeks/months/years |
 
 **Route handlers:**
 | Handler | Description |
 |---|---|
-| `GET /` | Lists tasks with filters (groupId, assignedToMe, status, archived, typeId); excludes `is_sporadic=1` and `is_long_term_goal=1`; attaches assignees |
-| `POST /` | Creates task, awards `create_task` XP, inserts assignees, creates assignment alerts |
+| `GET /` | Lists tasks with filters (groupId, assignedToMe, status, archived, typeId); excludes `is_sporadic=1` and `is_long_term_goal=1`; personal tasks are visible only to creators; group tasks are visible to group members and group-task assignees |
+| `POST /` | Creates task, awards `create_task` XP, inserts selected group-member assignees for group tasks only, creates assignment alerts |
 | `GET /sporadic` | Lists all non-archived sporadic tasks for the user with friendly last-completed timestamps |
 | `POST /create-sporadic` | Creates a sporadic task (`is_sporadic=1`, no due date) |
 | `PUT /:id/complete-sporadic` | Resets sporadic task to `not_started`, stamps `last_completed_at`, awards XP |
 | `GET /long-term-goals` | Lists all non-archived long-term goals for the user |
 | `POST /create-long-term-goal` | Creates a long-term goal (`is_long_term_goal=1`, no due date); supports optional xpMultiplier |
-| `PATCH /:id` | Updates any task field; supports `isLongTermGoal` to clear the flag and convert a goal to a regular task; re-validates assignees; preserves completed_at/by sync |
+| `PATCH /:id` | Updates any task field; supports `isLongTermGoal` to clear the flag and convert a goal to a regular task; clears assignees when moving to Personal and re-validates assignees against the selected group; preserves completed_at/by sync |
 | `PATCH /:id/status` | Changes status; on `started`: accepts optional `timeLimitMinutes` (5/10/15/60) and stores `started_at` + `time_limit_expires_at`; on `complete`: awards double XP if `time_limit_expires_at` is still in the future (`TIMED_TASK_XP_MULTIPLIER = 2`), spawns next recurrence (if any), awards XP/freeze, checks achievements |
 | `PATCH /:id/defer` | Updates due_date only |
 | `PATCH /:id/fast-forward` | Advances recurring due_date by one interval; clears reminder sent records |
@@ -1508,7 +1510,8 @@ For unauthenticated users, the top of the file renders the public marketing / la
 | `quickStatus(status)` | PATCH `/api/tasks/:id/status` from detail view |
 | `editCurrentTask()` | Opens edit modal pre-filled with `currentDetailTask` |
 | `archiveCurrentTask()` | PATCH `/api/tasks/:id/archive` |
-| `toggleDeferSection()` | Shows/hides defer-date form |
+| `toggleDeferSection()` | Shows/hides defer controls; defaults to 1 week from today and previews the resolved calendar date |
+| `updateDeferRelativeDate()` | Recomputes the hidden defer date and preview text when the relative number/unit changes |
 | `confirmDefer()` | PATCH `/api/tasks/:id/defer` |
 | `deleteCurrentTask()` | DELETE `/api/tasks/:id` |
 | `deleteTaskFromCard(event, taskId)` | Stops card-click propagation and deletes a task from the top-right card bin button |
@@ -2122,7 +2125,7 @@ tasks.ts POST / handler (authMiddleware → user verified)
   3. Validate xpMultiplier (group gamification_enhanced required)
   4. INSERT tasks row
   5. awardEventXp(userId, 'create_task') → user_skills 'Activity'
-  6. INSERT task_assignees (validated IDs only)
+  6. INSERT task_assignees only when groupId is selected, using IDs validated against group_members
   7. INSERT user_alerts for each assignee ≠ creator
   8. SELECT back the new task
         │
@@ -2142,7 +2145,7 @@ User taps Complete in SPA
         │
         ▼
 tasks.ts PATCH /:id/status
-  1. Validate access (creator / assignee / group member)
+  1. Validate access (creator / group task assignee / group member)
   2. UPDATE tasks SET status='complete', completed_at=now, completed_by=userId
   3. Load full task from DB
   4. If recur_interval set:
@@ -2198,7 +2201,7 @@ node-cron: '0 * * * *'
         │       not complete, not archived,
         │       notify_email=1, no reminder sent yet
         │       For each task:
-        │         Collect creator + assignees
+        │         Collect creator + assignees for group tasks only
         │         sendTaskReminder() via SMTP
         │         INSERT task_reminders_sent
         │
@@ -2211,5 +2214,5 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.21.8*
+*End of Technical Reference Manual — TaskIt! v1.21.9*
 

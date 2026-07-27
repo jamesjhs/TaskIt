@@ -1,6 +1,6 @@
 # TaskIt! – How-To Manual
 
-**Version 1.21.8**
+**Version 1.21.9**
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -41,7 +41,7 @@ Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 - Progress notes on each task for tracking updates
 - In-app notification bell for overdue and due-soon tasks
 - Per-task notification preferences — a grid to independently enable email and/or browser popup reminders at 7-day, 1-day, and on-the-day intervals, plus a profile-level local push reminder time
-- Group member access control — any group member can edit all aspects of a task; only the task creator or a group admin can delete a task
+- Group member access control — Personal (no group) tasks stay private to their creator; group tasks are shared only when a group is explicitly selected, and any group member can edit group task fields while only the task creator or a group admin can delete
 - Calendar integration — subscribe to your tasks as an ICS feed in any calendar app
 - Group creation with admin controls — rename, promote/demote members, email invites, QR invite links, shared join key
 - Magic-link and password login (with two-factor authentication via OTP), email verification, and account lockout protection
@@ -232,7 +232,7 @@ The application will be available at `http://localhost:3000` (or whichever port 
 2. Fill in the form:
    - **Title** *(required)*
    - **Type** *(required)* – choose from default types, your own custom types, or group-specific types. Select *+ Add new type…* to create a new custom type on the fly.
-   - **Group** – assign to a group (optional); this allows assigning to group members
+   - **Group** – leave as **Personal (no group)** for a private task visible only to you, or explicitly select a group to share it with that group's members
    - **Assign To** – select group members to assign the task to (only visible when a group is selected)
    - **Notes** – click the **▶ Notes** toggle to expand a free-text notes field; it opens automatically when editing a task that already has notes
    - **Due Date** – defaults to **midnight on today's date** (00:00); adjust as needed
@@ -282,7 +282,7 @@ Click any task card to open the **Task Detail** panel, where you can:
 
 - Change the task **status**: Not Started → Started → Complete
 - **Edit** the task (title, type, group, assignees, notes, due date, recurrence)
-- **Defer** the task — click the *Defer* button to set a new due date without opening the full edit form
+- **Defer** the task — click the *Defer* button to set a new due date without opening the full edit form; it defaults to **in 1 week from now**, shows the actual calendar date below the relative controls, and updates automatically as you type or change the unit
 - **Toggle Archive** – hide/unhide the task from the main view
 - **Delete** the task permanently — for group tasks, only the task creator or a group admin can delete; other group members can edit all other details but cannot delete
 
@@ -606,5 +606,5 @@ The Freeze is consumed automatically, the streak is preserved, and the ❄️ is
 
 ---
 
-*TaskIt! v1.21.8 – Copyright J Rowson 2026 | jahosi.co.uk*
+*TaskIt! v1.21.9 – Copyright J Rowson 2026 | jahosi.co.uk*
 

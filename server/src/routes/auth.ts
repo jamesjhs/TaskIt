@@ -41,9 +41,7 @@ const MAX_USERNAME_LEN = 50;
 const MAX_EMAIL_LEN = 254; // RFC 5321 maximum
 const MAX_PASSWORD_LEN = 128; // bcrypt silently truncates at 72; we enforce a hard cap
 const MAX_OTP_ATTEMPTS = 5;
-const WEB_SESSION_MS = 12 * 60 * 60 * 1000; // 12 hours
-const WEB_REMEMBER_SESSION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-const LEGACY_CLIENT_SESSION_MS = 30 * 24 * 60 * 60 * 1000; // Android currently sends no rememberMe flag
+const WEB_SESSION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 function signAuthToken(
   user: { id: string; username: string; email: string; role: string; locale: string; token_version: number | null },
@@ -56,10 +54,6 @@ function signAuthToken(
     { algorithm: 'HS256', expiresIn: Math.floor(maxAgeMs / 1000) }
   );
   return { token, expiresAt };
-}
-
-function browserSessionMs(rememberMe: unknown): number {
-  return rememberMe === true || rememberMe === 'true' ? WEB_REMEMBER_SESSION_MS : WEB_SESSION_MS;
 }
 
 // Verify Turnstile CAPTCHA token with Cloudflare
@@ -277,7 +271,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 // POST /api/auth/verify-otp
 // Second step of password login: validates the email OTP and issues a JWT.
 router.post('/verify-otp', (req: Request, res: Response): void => {
-  const { sessionId, code, rememberMe } = req.body;
+  const { sessionId, code } = req.body;
 
   if (!sessionId || !code) {
     res.status(400).json({ error: 'sessionId and code are required' });
@@ -333,14 +327,13 @@ router.post('/verify-otp', (req: Request, res: Response): void => {
     return;
   }
 
-  const maxAgeMs = typeof rememberMe === 'undefined' ? LEGACY_CLIENT_SESSION_MS : browserSessionMs(rememberMe);
+  const maxAgeMs = WEB_SESSION_MS;
   const { token, expiresAt } = signAuthToken(user, maxAgeMs);
   res.json({
     token,
     expiresAt,
     expiresInSeconds: Math.floor(maxAgeMs / 1000),
     user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale },
-    rememberMe: rememberMe === true,
   });
 });
 
@@ -394,7 +387,7 @@ router.post('/magic-link', async (req: Request, res: Response): Promise<void> =>
 
 // GET /api/auth/magic-link/verify
 router.get('/magic-link/verify', (req: Request, res: Response): void => {
-  const { token, rememberMe } = req.query;
+  const { token } = req.query;
 
   if (!token || typeof token !== 'string') {
     res.status(400).json({ error: 'Token is required' });
@@ -434,7 +427,7 @@ router.get('/magic-link/verify', (req: Request, res: Response): void => {
     return;
   }
 
-  const maxAgeMs = browserSessionMs(rememberMe);
+  const maxAgeMs = WEB_SESSION_MS;
   const { token: jwtToken, expiresAt } = signAuthToken(user, maxAgeMs);
 
   res.json({
@@ -442,7 +435,6 @@ router.get('/magic-link/verify', (req: Request, res: Response): void => {
     expiresAt,
     expiresInSeconds: Math.floor(maxAgeMs / 1000),
     user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale },
-    rememberMe: rememberMe === 'true',
   });
 });
 

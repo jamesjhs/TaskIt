@@ -460,7 +460,7 @@ TaskIt! stores a small amount of data in your browser's `localStorage` to make t
 
 | Key | What it stores |
 |-----|----------------|
-| `taskitToken` | Your login session token |
+| `taskitToken` | Your signed-in session token (JWT) |
 | `taskitTokenExpiresAt` | The expiry time TaskIt! checks before reusing your saved session token |
 | `taskitUser` | Your username, email, role, and locale preference |
 | `taskit_app_version` | The app version (for update detection) |

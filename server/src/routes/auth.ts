@@ -334,7 +334,6 @@ router.post('/verify-otp', (req: Request, res: Response): void => {
     expiresAt,
     expiresInSeconds: Math.floor(maxAgeMs / 1000),
     user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale },
-    rememberMe: true,
   });
 });
 
@@ -436,7 +435,6 @@ router.get('/magic-link/verify', (req: Request, res: Response): void => {
     expiresAt,
     expiresInSeconds: Math.floor(maxAgeMs / 1000),
     user: { id: user.id, username: user.username, email: user.email, role: user.role, locale: user.locale },
-    rememberMe: true,
   });
 });
 

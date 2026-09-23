@@ -8,6 +8,7 @@ import { adminMiddleware } from '../middleware/admin';
 import db from '../db';
 import { ADMIN_EMAIL } from '../config';
 import { getVapidFromDb, reconfigureWebpush } from '../webpush-config';
+import { routeParam } from '../http';
 
 /** Absolute path to the server-side PNG icons directory. */
 const COLLECTABLES_DIR = path.resolve(__dirname, '..', '..', '..', 'public', 'collectables');
@@ -370,13 +371,13 @@ router.get('/locked', (_req: Request, res: Response): void => {
 });
 
 router.post('/users/:id/unlock', (req: Request, res: Response): void => {
-  const userId = req.params.id;
+  const userId = routeParam(req.params.id);
   db.prepare('UPDATE users SET failed_logins = 0, locked_until = NULL WHERE id = ?').run(userId);
   res.json({ message: 'Account unlocked' });
 });
 
 router.put('/users/:id/role', (req: Request, res: Response): void => {
-  const targetId = req.params.id;
+  const targetId = routeParam(req.params.id);
   const requesterId = req.user!.id;
   const { role } = req.body;
 
@@ -423,7 +424,7 @@ router.get('/reports', (_req: Request, res: Response): void => {
 });
 
 router.put('/reports/:id/resolve', (req: Request, res: Response): void => {
-  const reportId = req.params.id;
+  const reportId = routeParam(req.params.id);
   const report = db.prepare('SELECT id FROM user_reports WHERE id = ?').get(reportId);
   if (!report) {
     res.status(404).json({ error: 'Report not found' });
@@ -456,7 +457,7 @@ router.get('/feedback', (_req: Request, res: Response): void => {
 });
 
 router.put('/feedback/:id/read', (req: Request, res: Response): void => {
-  const fbId = req.params.id;
+  const fbId = routeParam(req.params.id);
   const row = db.prepare('SELECT id FROM feedback_messages WHERE id = ?').get(fbId);
   if (!row) { res.status(404).json({ error: 'Feedback not found' }); return; }
   db.prepare('UPDATE feedback_messages SET read_at = ? WHERE id = ?').run(Date.now(), fbId);
@@ -464,7 +465,7 @@ router.put('/feedback/:id/read', (req: Request, res: Response): void => {
 });
 
 router.patch('/feedback/:id/status', (req: Request, res: Response): void => {
-  const fbId = req.params.id;
+  const fbId = routeParam(req.params.id);
   const { status } = req.body;
   const VALID_STATUSES = new Set(['not_started', 'in_progress', 'completed', 'archived']);
   if (!status || !VALID_STATUSES.has(status)) {
@@ -483,7 +484,7 @@ router.patch('/feedback/:id/status', (req: Request, res: Response): void => {
 });
 
 router.post('/feedback/:id/reply', (req: Request, res: Response): void => {
-  const fbId = req.params.id;
+  const fbId = routeParam(req.params.id);
   const { message } = req.body;
 
   if (!message || typeof message !== 'string' || !message.trim()) {
@@ -521,7 +522,7 @@ router.get('/xp-events', (_req: Request, res: Response): void => {
 
 // PATCH /api/admin/xp-events/:key — update the XP value or enabled flag for an event
 router.patch('/xp-events/:key', (req: Request, res: Response): void => {
-  const { key } = req.params;
+  const key = routeParam(req.params.key);
   const { xp_value, enabled } = req.body;
 
   const row = db.prepare('SELECT key FROM xp_events WHERE key = ?').get(key);
@@ -605,7 +606,7 @@ router.post('/collectible-categories', (req: Request, res: Response): void => {
 
 // PATCH /api/admin/collectible-categories/:id — update category name
 router.patch('/collectible-categories/:id', (req: Request, res: Response): void => {
-  const catId = req.params.id;
+  const catId = routeParam(req.params.id);
   const { name } = req.body;
 
   const cat = db.prepare(
@@ -631,7 +632,7 @@ router.patch('/collectible-categories/:id', (req: Request, res: Response): void 
 
 // DELETE /api/admin/collectible-categories/:id — soft delete (archived = 1)
 router.delete('/collectible-categories/:id', (req: Request, res: Response): void => {
-  const catId = req.params.id;
+  const catId = routeParam(req.params.id);
 
   const cat = db.prepare(
     'SELECT id FROM item_categories WHERE id = ? AND archived = 0'
@@ -860,7 +861,7 @@ router.post('/collectibles', (req: Request, res: Response): void => {
 
 // PATCH /api/admin/collectibles/:id — update collectible fields
 router.patch('/collectibles/:id', (req: Request, res: Response): void => {
-  const itemId = req.params.id;
+  const itemId = routeParam(req.params.id);
   const { name, description, categoryId, rarity, iconFilename } = req.body;
 
   const item = db.prepare(
@@ -945,7 +946,7 @@ router.patch('/collectibles/:id', (req: Request, res: Response): void => {
 
 // DELETE /api/admin/collectibles/:id — soft delete (archived = 1)
 router.delete('/collectibles/:id', (req: Request, res: Response): void => {
-  const itemId = req.params.id;
+  const itemId = routeParam(req.params.id);
 
   const item = db.prepare(
     'SELECT id FROM collectibles WHERE id = ? AND archived = 0'
@@ -1182,7 +1183,7 @@ router.post('/arcade-games', (req: Request, res: Response): void => {
 });
 
 router.patch('/arcade-games/:id', (req: Request, res: Response): void => {
-  const gameId = req.params.id;
+  const gameId = routeParam(req.params.id);
   const existing = db.prepare('SELECT id FROM arcade_games WHERE id = ?').get(gameId);
   if (!existing) {
     res.status(404).json({ error: 'Arcade game not found' });
@@ -1239,7 +1240,7 @@ router.patch('/arcade-games/:id', (req: Request, res: Response): void => {
 });
 
 router.delete('/arcade-games/:id', (req: Request, res: Response): void => {
-  const gameId = req.params.id;
+  const gameId = routeParam(req.params.id);
   const existing = db.prepare('SELECT id FROM arcade_games WHERE id = ?').get(gameId);
   if (!existing) {
     res.status(404).json({ error: 'Arcade game not found' });

@@ -12,6 +12,7 @@ import {
   LootDropResult,
   formatFriendlyTime,
 } from '../services/gamification';
+import { routeParam } from '../http';
 
 const router = Router();
 
@@ -528,7 +529,7 @@ router.post('/create-sporadic', (req: Request, res: Response): void => {
 // PUT /api/tasks/:id/complete-sporadic — Mark a sporadic task complete
 router.put('/:id/complete-sporadic', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const taskId = req.params.id;
+  const taskId = routeParam(req.params.id);
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
     | {
@@ -599,8 +600,8 @@ router.put('/:id/complete-sporadic', (req: Request, res: Response): void => {
 // DELETE /api/tasks/:id/sporadic-history/:historyId — Remove one "Mark done" history entry
 router.delete('/:id/sporadic-history/:historyId', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const taskId = req.params.id;
-  const historyId = req.params.historyId;
+  const taskId = routeParam(req.params.id);
+  const historyId = routeParam(req.params.historyId);
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
     | {
@@ -662,7 +663,7 @@ router.delete('/:id/sporadic-history/:historyId', (req: Request, res: Response):
 // PATCH /api/tasks/:id/sporadic-last-done — Update last_completed_at for a sporadic task
 router.patch('/:id/sporadic-last-done', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const taskId = req.params.id;
+  const taskId = routeParam(req.params.id);
   const { lastCompletedAt } = req.body;
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
@@ -850,7 +851,7 @@ router.post('/create-long-term-goal', (req: Request, res: Response): void => {
 
 router.patch('/:id', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const taskId = req.params.id;
+  const taskId = routeParam(req.params.id);
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
     | { id: string; created_by: string; group_id: string | null; archived: number; due_date: number | null; xp_multiplier?: number | null }
@@ -1101,7 +1102,7 @@ router.patch('/:id', (req: Request, res: Response): void => {
 
 router.patch('/:id/status', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const taskId = req.params.id;
+  const taskId = routeParam(req.params.id);
   const { status, timeLimitMinutes } = req.body;
 
   if (!status || !ALLOWED_STATUSES.has(status)) {
@@ -1289,7 +1290,7 @@ router.patch('/:id/status', (req: Request, res: Response): void => {
 
 router.patch('/:id/defer', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const taskId = req.params.id;
+  const taskId = routeParam(req.params.id);
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
     | { id: string; created_by: string; group_id: string | null; due_date: number | null }
@@ -1354,7 +1355,7 @@ router.patch('/:id/defer', (req: Request, res: Response): void => {
 // they fire against the new date.
 router.patch('/:id/fast-forward', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const taskId = req.params.id;
+  const taskId = routeParam(req.params.id);
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
     | { id: string; created_by: string; group_id: string | null;
@@ -1411,7 +1412,7 @@ router.patch('/:id/fast-forward', (req: Request, res: Response): void => {
 
 router.patch('/:id/archive', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const taskId = req.params.id;
+  const taskId = routeParam(req.params.id);
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
     | { id: string; created_by: string; group_id: string | null; archived: number;
@@ -1484,7 +1485,7 @@ router.patch('/:id/archive', (req: Request, res: Response): void => {
 
 router.delete('/:id', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const taskId = req.params.id;
+  const taskId = routeParam(req.params.id);
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
     | { id: string; created_by: string; group_id: string | null;
@@ -1570,7 +1571,7 @@ router.delete('/:id', (req: Request, res: Response): void => {
 
 router.get('/:id/notes', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const taskId = req.params.id;
+  const taskId = routeParam(req.params.id);
 
   // Check access: creator, or explicit group task assignee.
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as
@@ -1600,7 +1601,7 @@ router.get('/:id/notes', (req: Request, res: Response): void => {
 
 router.post('/:id/notes', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const taskId = req.params.id;
+  const taskId = routeParam(req.params.id);
   const { note } = req.body;
 
   if (!note || typeof note !== 'string' || !note.trim()) {
@@ -1656,7 +1657,7 @@ router.post('/:id/notes', (req: Request, res: Response): void => {
 // GET /api/tasks/:id/subtasks — list sub-tasks for a task
 router.get('/:id/subtasks', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const taskId = req.params.id;
+  const taskId = routeParam(req.params.id);
 
   const task = db.prepare('SELECT id, created_by, group_id FROM tasks WHERE id = ?').get(taskId) as
     | { id: string; created_by: string; group_id: string | null }
@@ -1680,7 +1681,7 @@ router.get('/:id/subtasks', (req: Request, res: Response): void => {
 // POST /api/tasks/:id/subtasks — create a sub-task
 router.post('/:id/subtasks', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const taskId = req.params.id;
+  const taskId = routeParam(req.params.id);
   const { title } = req.body;
 
   if (!title || typeof title !== 'string' || !title.trim()) {
@@ -1725,8 +1726,8 @@ router.post('/:id/subtasks', (req: Request, res: Response): void => {
 // PATCH /api/tasks/:id/subtasks/:subId — update a sub-task (title or completed)
 router.patch('/:id/subtasks/:subId', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const taskId = req.params.id;
-  const subId = req.params.subId;
+  const taskId = routeParam(req.params.id);
+  const subId = routeParam(req.params.subId);
 
   const task = db.prepare('SELECT id, created_by, group_id, status FROM tasks WHERE id = ?').get(taskId) as
     | { id: string; created_by: string; group_id: string | null; status: string }
@@ -1818,8 +1819,8 @@ router.patch('/:id/subtasks/:subId', (req: Request, res: Response): void => {
 // DELETE /api/tasks/:id/subtasks/:subId — remove a sub-task
 router.delete('/:id/subtasks/:subId', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const taskId = req.params.id;
-  const subId = req.params.subId;
+  const taskId = routeParam(req.params.id);
+  const subId = routeParam(req.params.subId);
 
   const task = db.prepare('SELECT id, created_by, group_id FROM tasks WHERE id = ?').get(taskId) as
     | { id: string; created_by: string; group_id: string | null }

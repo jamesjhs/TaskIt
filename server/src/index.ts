@@ -6,6 +6,7 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import db from './db'; // initialize database
 import { APP_VERSION, BASE_URL, CORS_ORIGIN, JWT_SECRET, PORT, TRUST_PROXY } from './config';
+import { routeParam } from './http';
 import { reconfigureWebpush } from './webpush-config';
 import { startScheduler } from './services/scheduler';
 
@@ -200,7 +201,7 @@ app.get('/api/version', (_req, res) => {
 // GET /calendar/:token/tasks.ics — returns a valid iCalendar (.ics) file for the user
 // The token acts as a secret — no session or JWT required.
 app.get('/calendar/:token/tasks.ics', generalLimiter, (req, res): void => {
-  const { token } = req.params;
+  const token = routeParam(req.params.token);
   if (!token || token.length !== 64 || !/^[0-9a-f]+$/.test(token)) {
     res.status(404).send('Not found');
     return;
@@ -388,7 +389,7 @@ app.use(staticLimiter, express.static(path.join(__dirname, '..', '..', 'public')
 }));
 
 // SPA fallback
-app.get('*', generalLimiter, (_req, res) => {
+app.get(/.*/, generalLimiter, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', '..', 'public', 'index.html'));
 });
 

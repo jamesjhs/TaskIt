@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 import db from '../db';
 
 const DEFAULT_FROM = process.env.SMTP_DEFAULT_FROM || 'noreply@taskit.jahosi.co.uk';
@@ -36,7 +37,7 @@ interface SmtpSettings {
   enabled: number;
 }
 
-export async function getTransporter(): Promise<nodemailer.Transporter | null> {
+export async function getTransporter(): Promise<Transporter | null> {
   const settings = db.prepare('SELECT * FROM smtp_settings WHERE id = 1').get() as SmtpSettings | undefined;
   if (!settings || !settings.enabled || !settings.host) {
     console.debug('[mail] getTransporter: SMTP not configured or disabled (host:', settings?.host || 'unset', ', enabled:', settings?.enabled ?? 0, ')');
@@ -57,7 +58,7 @@ export async function getTransporter(): Promise<nodemailer.Transporter | null> {
   );
 }
 
-function sendTaskItMail(transporter: nodemailer.Transporter, options: TaskItMailOptions) {
+function sendTaskItMail(transporter: Transporter, options: TaskItMailOptions) {
   return transporter.sendMail({
     ...options,
     disableFileAccess: true,

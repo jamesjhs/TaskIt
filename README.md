@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.22.4** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.22.5** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -126,6 +126,12 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 Run `npm run security:xss-sinks` before changing frontend rendering code. The scan compares current HTML-rendering sinks, inline event handlers, and dynamic script loaders against `scripts/xss-sink-baseline.json`; new entries fail the check until they are reviewed. Prefer `textContent`, attributes set through DOM APIs, and explicit event listeners for new UI code. Use `npm run security:xss-sinks:update` only after deliberately reviewing an unavoidable sink.
 
 ## Changelog
+
+### v1.22.5
+
+- **Dependency maintenance** — updated npm dependencies to their current published versions, including the Express, Nodemailer, Tailwind, TypeScript, and SQLite support packages.
+- **Security maintenance** — refreshed the lockfile so `npm audit` reports zero vulnerabilities.
+- **Version bump** — package metadata, lockfiles, public cache keys, pages, and documentation updated to 1.22.5.
 
 ### v1.22.4
 

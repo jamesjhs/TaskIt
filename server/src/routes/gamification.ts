@@ -11,6 +11,7 @@ import {
   getPendingDrop,
   awardEventXp,
 } from '../services/gamification';
+import { routeParam } from '../http';
 
 const router = Router();
 
@@ -137,7 +138,7 @@ router.get('/streaks', (req: Request, res: Response): void => {
  */
 router.get('/leaderboard/group/:groupId', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const { groupId } = req.params;
+  const groupId = routeParam(req.params.groupId);
 
   const membership = db.prepare(
     'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
@@ -198,7 +199,7 @@ router.get('/leaderboard/friends', (req: Request, res: Response): void => {
  */
 router.post('/streaks/:taskId/freeze', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const { taskId } = req.params;
+  const taskId = routeParam(req.params.taskId);
 
   const err = applyStreakFreeze(userId, taskId);
   if (err) {
@@ -486,7 +487,7 @@ router.post('/arcade/high-scores', (req: Request, res: Response): void => {
  */
 router.get('/arcade/high-scores/:gameId', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const gameId = String(req.params.gameId || '').trim();
+  const gameId = routeParam(req.params.gameId).trim();
   if (!/^[a-z0-9_-]{2,64}$/.test(gameId)) {
     res.status(400).json({ error: 'Invalid game id' });
     return;

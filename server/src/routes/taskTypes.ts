@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db';
+import { routeParam } from '../http';
 
 const router = Router();
 
@@ -95,7 +96,7 @@ router.post('/', (req: Request, res: Response): void => {
 
 router.patch('/:id', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const typeId = req.params.id;
+  const typeId = routeParam(req.params.id);
   const { name } = req.body;
 
   if (!name || !String(name).trim()) {
@@ -161,7 +162,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 router.delete('/:id', (req: Request, res: Response): void => {
   const userId = req.user!.id;
-  const typeId = req.params.id;
+  const typeId = routeParam(req.params.id);
 
   if (!UUID_RE.test(typeId)) {
     res.status(400).json({ error: 'Invalid category id' });

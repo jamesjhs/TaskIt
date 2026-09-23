@@ -311,7 +311,7 @@
         <tr class="border-t border-slate-200 dark:border-slate-700">
           <td class="py-2 px-3 font-mono text-xs">taskitToken</td>
           <td class="py-2 px-3">JSON Web Token (JWT) — cryptographically signed, no personal data embedded</td>
-          <td class="py-2 px-3"><strong>Strictly necessary</strong> — maintains your authenticated session; stored in session storage by default or localStorage for remembered sessions</td>
+          <td class="py-2 px-3"><strong>Strictly necessary</strong> — maintains your authenticated session; stored in localStorage so you stay signed in on the web for up to 30 days</td>
         </tr>
         <tr class="border-t border-slate-200 dark:border-slate-700">
           <td class="py-2 px-3 font-mono text-xs">taskitTokenExpiresAt</td>
@@ -347,8 +347,7 @@
     </table>
     <p>
       <strong>No cookies</strong> (HTTP <code>Set-Cookie</code> headers) are used by TaskIt!.  Web
-      session management relies on <code>sessionStorage</code> by default and <code>localStorage</code>
-      only when you choose "Keep me signed in" for up to 7 days. Because
+      session management relies on <code>localStorage</code> so your web session can persist for up to 30 days. Because
       none of the above storage is used for tracking, profiling, or advertising, no consent banner
       is legally required under UK PECR for strictly necessary or purely functional storage.
       We display an informational notice on first visit as a matter of transparency.

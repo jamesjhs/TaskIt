@@ -25,6 +25,8 @@ There are two ways to log in:
 - **Magic link** – enter your email and click *Send Magic Link*. Check your inbox for a one-click login link (requires email to be configured by your admin).
 - **Password** – click *Use password instead* and enter your email and password. You will be sent a **one-time 6-digit code** by email to confirm your identity — enter it to complete sign-in.
 
+Web sessions now stay signed in automatically for up to **30 days**. You'll only need to sign in again if you log out, clear your browser's site data, use private browsing that wipes storage on close, or let the session expire.
+
 > 💡 If you forget your password, use the magic link option to log in, then update your password from your Profile page.
 
 ---
@@ -458,8 +460,9 @@ TaskIt! stores a small amount of data in your browser's `localStorage` to make t
 
 | Key | What it stores |
 |-----|----------------|
-| `jbToken` | Your login session token |
-| `jbUser` | Your username, email, and locale preference |
+| `taskitToken` | Your login session token |
+| `taskitTokenExpiresAt` | When the browser should discard the session token |
+| `taskitUser` | Your username, email, role, and locale preference |
 | `taskit_app_version` | The app version (for update detection) |
 | `jbPopupFired` | Which browser popup notifications have been sent today |
 | `jbGamifAsked` | Whether you've seen the gamification opt-in prompt |
@@ -492,4 +495,3 @@ Tap the **⭐ Progress** tab in the bottom navigation. You can also enable or di
 ---
 
 *TaskIt! v1.21.9 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
-

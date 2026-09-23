@@ -977,10 +977,6 @@
         <input id="loginEmail" type="email" required placeholder="you@example.com" autocomplete="email" class="input" />
       </div>
       <div id="magicLinkMode">
-        <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <input type="checkbox" id="rememberMeMagic" style="width:16px;height:16px;accent-color:#7c3aed" />
-          <label for="rememberMeMagic" style="font-size:.88rem;color:#374151;margin:0;cursor:pointer">Keep me signed in for 7 days</label>
-        </div>
         <button type="submit" class="btn btn-primary btn-full">Send Magic Link</button>
         <p style="text-align:center;margin-top:12px">
           <button type="button" onclick="toggleLoginMode()" class="link-btn">Use password instead</button>
@@ -990,10 +986,6 @@
         <div class="form-group">
           <label>Password</label>
           <input id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password" class="input" />
-        </div>
-        <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <input type="checkbox" id="rememberMePassword" style="width:16px;height:16px;accent-color:#7c3aed" />
-          <label for="rememberMePassword" style="font-size:.88rem;color:#374151;margin:0;cursor:pointer">Keep me signed in for 7 days</label>
         </div>
         <button type="button" onclick="handlePasswordLogin()" class="btn btn-primary btn-full">Sign In</button>
         <p style="text-align:center;margin-top:12px">
@@ -2891,12 +2883,8 @@ function toggleLoginMode() {
 async function handleMagicLinkSend(e) {
   e.preventDefault();
   if (loginMode === 'password') { await handlePasswordLogin(); return; }
-  // Stash rememberMe in localStorage so it survives a browser close before the
-  // email link is clicked.
-  const rememberMe = document.getElementById('rememberMeMagic').checked;
-  localStorage.setItem('jbRememberMe', rememberMe ? 'true' : 'false');
   const email = document.getElementById('loginEmail').value;
-  console.debug('[Login] Sending magic link to:', email, '| rememberMe:', rememberMe);
+  console.debug('[Login] Sending magic link to:', email);
   try {
     const data = await api('POST', '/auth/magic-link', { email });
     console.debug('[Login] Magic link API response:', data);
@@ -2939,14 +2927,13 @@ async function handleOTPVerify() {
     toast('Please enter the 6-digit code from your email.', 'error');
     return;
   }
-  const rememberMe = document.getElementById('rememberMePassword').checked;
-  console.debug('[Login] Submitting OTP code — session ID:', _otpSessionId, '| rememberMe:', rememberMe);
+  console.debug('[Login] Submitting OTP code — session ID:', _otpSessionId);
   try {
-    const data = await api('POST', '/auth/verify-otp', { sessionId: _otpSessionId, code, rememberMe });
+    const data = await api('POST', '/auth/verify-otp', { sessionId: _otpSessionId, code });
     console.debug('[Login] OTP verified successfully');
     document.getElementById('otpModal').classList.add('hidden');
     _otpSessionId = null;
-    storeAuth(data, rememberMe);
+    storeAuth(data);
   } catch (err) {
     console.error('[Login] OTP verification failed:', err.message || err);
     toast(err.message, 'error');
@@ -3097,24 +3084,14 @@ async function handleRegister(e) {
   }
 }
 
-function storeAuth(data, rememberMe) {
+function storeAuth(data) {
   token = data.token; currentUser = data.user;
-  // Use the rememberMe flag from the response (server echoes it back) or the parameter
-  const persist = rememberMe !== undefined ? rememberMe : (data.rememberMe === true);
   const expiresAt = data.expiresAt ? String(data.expiresAt) : '';
-  if (persist) {
-    localStorage.setItem('taskitToken', token);
-    localStorage.setItem('taskitUser', JSON.stringify(currentUser));
-    if (expiresAt) localStorage.setItem('taskitTokenExpiresAt', expiresAt);
-    else localStorage.removeItem('taskitTokenExpiresAt');
-    clearStoredAuth(sessionStorage);
-  } else {
-    sessionStorage.setItem('taskitToken', token);
-    sessionStorage.setItem('taskitUser', JSON.stringify(currentUser));
-    if (expiresAt) sessionStorage.setItem('taskitTokenExpiresAt', expiresAt);
-    else sessionStorage.removeItem('taskitTokenExpiresAt');
-    clearStoredAuth(localStorage);
-  }
+  localStorage.setItem('taskitToken', token);
+  localStorage.setItem('taskitUser', JSON.stringify(currentUser));
+  if (expiresAt) localStorage.setItem('taskitTokenExpiresAt', expiresAt);
+  else localStorage.removeItem('taskitTokenExpiresAt');
+  clearStoredAuth(sessionStorage);
   // Hide cookie notice when user enters the app
   const notice = document.getElementById('cookieNotice');
   if (notice) notice.classList.add('hidden');
@@ -5986,7 +5963,7 @@ async function performAppUpdate() {
       const regs = await navigator.serviceWorker.getRegistrations();
       await Promise.all(regs.map(reg => reg.unregister()));
     }
-    // Preserve auth tokens so "Remember Me" users remain logged in after update
+    // Preserve auth tokens so signed-in users remain logged in after update
     const savedToken = localStorage.getItem('taskitToken');
     const savedUser = localStorage.getItem('taskitUser');
     const savedExpiresAt = localStorage.getItem('taskitTokenExpiresAt');
@@ -7745,19 +7722,15 @@ document.addEventListener('click', function(e) {
   }
 
   if (magicToken) {
-    // Carry the rememberMe preference from localStorage if the user set it before being redirected
-    const rememberedChoice = localStorage.getItem('jbRememberMe') === 'true';
-    const rememberMeQS = rememberedChoice ? '&rememberMe=true' : '';
     try {
-      const data = await api('GET', '/auth/magic-link/verify?token=' + encodeURIComponent(magicToken) + rememberMeQS);
-      localStorage.removeItem('jbRememberMe');
+      const data = await api('GET', '/auth/magic-link/verify?token=' + encodeURIComponent(magicToken));
       history.replaceState(null, '', window.location.pathname);
       // Preserve any pending invite/friend token through the auth flow
       const pendingInvite = sessionStorage.getItem('pendingInvite') || inviteToken;
       if (pendingInvite) sessionStorage.setItem('pendingInvite', pendingInvite);
       const pendingFriend = sessionStorage.getItem('pendingFriendInvite') || friendToken;
       if (pendingFriend) sessionStorage.setItem('pendingFriendInvite', pendingFriend);
-      storeAuth(data, rememberedChoice);
+      storeAuth(data);
     } catch (err) {
       history.replaceState(null, '', window.location.pathname);
       document.getElementById('landingPage').classList.add('hidden');

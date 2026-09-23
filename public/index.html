@@ -2884,7 +2884,7 @@ async function handleMagicLinkSend(e) {
   e.preventDefault();
   if (loginMode === 'password') { await handlePasswordLogin(); return; }
   const email = document.getElementById('loginEmail').value;
-  console.debug('[Login] Sending magic link to:', email);
+  console.debug('[Login] Sending magic link');
   try {
     const data = await api('POST', '/auth/magic-link', { email });
     console.debug('[Login] Magic link API response:', data);
@@ -2927,7 +2927,7 @@ async function handleOTPVerify() {
     toast('Please enter the 6-digit code from your email.', 'error');
     return;
   }
-  console.debug('[Login] Submitting OTP code — session ID:', _otpSessionId);
+  console.debug('[Login] Submitting OTP code');
   try {
     const data = await api('POST', '/auth/verify-otp', { sessionId: _otpSessionId, code });
     console.debug('[Login] OTP verified successfully');

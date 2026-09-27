@@ -332,7 +332,9 @@ function isOriginalAdmin(userId: string): boolean {
 router.get('/users', (_req: Request, res: Response): void => {
   const now = Date.now();
   const users = db.prepare(
-    'SELECT id, username, email, role, failed_logins, locked_until, created_at FROM users ORDER BY created_at ASC'
+    `SELECT id, username, email, role, failed_logins, locked_until, created_at, last_active_at
+     FROM users
+     ORDER BY last_active_at IS NULL ASC, last_active_at DESC, created_at DESC`
   ).all() as Array<{
     id: string;
     username: string;
@@ -341,6 +343,7 @@ router.get('/users', (_req: Request, res: Response): void => {
     failed_logins: number;
     locked_until: number | null;
     created_at: number;
+    last_active_at: number | null;
   }>;
 
   // Open (unresolved) report counts per reported user

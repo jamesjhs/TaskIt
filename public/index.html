@@ -2819,12 +2819,15 @@ async function api(method, path, body) {
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch('/api' + path, opts);
   if (res.status === 204) return null;
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && path === '/auth/login') {
+    throw new Error(data.error || 'Username or password is incorrect.');
+  }
   if (res.status === 401) {
     // Token is invalid or expired — clear session and return to login
     logout();
     return null;
   }
-  const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
 }
@@ -2905,6 +2908,7 @@ async function handlePasswordLogin() {
       email,
       password: document.getElementById('loginPassword').value,
     });
+    if (!data) throw new Error('Username or password is incorrect.');
     console.debug('[Login] /auth/login response status:', data.status || 'authenticated');
     if (data.status === 'otp_required') {
       console.debug('[Login] OTP required — session ID:', data.sessionId);
@@ -6301,6 +6305,11 @@ function filterUsersList() {
   renderUsersList();
 }
 
+function fmtAdminLastSeen(ts) {
+  if (!ts) return 'Never';
+  return fmtDateTime(ts);
+}
+
 function renderUsersList() {
   const listEl = document.getElementById('adminUsersList');
   if (!listEl) return;
@@ -6350,6 +6359,8 @@ function renderUsersList() {
       ? `<span class="badge badge-gray" style="font-size:.72rem">you</span>`
       : '';
 
+    const lastSeenLabel = fmtAdminLastSeen(u.last_active_at);
+
     // Role toggle: disable for self and for original admin being demoted
     const canToggleRole = !isSelf(u.id) && !(u.is_original_admin && u.role === 'admin');
     const roleBtn = canToggleRole
@@ -6372,6 +6383,7 @@ function renderUsersList() {
             ${roleBadge}${originalBadge}${selfBadge}${lockedBadge}${reportBadge}
           </div>
           <p style="font-size:.78rem;color:#9ca3af;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(u.email)}</p>
+          <p style="font-size:.72rem;color:#6b7280;margin:2px 0 0">Last seen ${escHtml(lastSeenLabel)}</p>
           <p style="font-size:.72rem;color:#d1d5db;margin:2px 0 0">Joined ${new Date(u.created_at).toLocaleDateString(userLocale())}</p>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;align-items:center">

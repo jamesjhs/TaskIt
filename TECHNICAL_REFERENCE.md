@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.22.5**
+**Version 1.22.6**
 **Author:** J Rowson  
 **Generated:** 2026-05-23
 
@@ -925,7 +925,7 @@ Attached to `req.user` by `authMiddleware`.
 | `POST` | `/api/friends/invite/:token/accept` | JWT | authed | Accept friend invite |
 | `GET` | `/api/admin/smtp` | JWT+Admin | authed | Get SMTP settings |
 | `PUT` | `/api/admin/smtp` | JWT+Admin | authed | Update SMTP settings |
-| `GET` | `/api/admin/users` | JWT+Admin | authed | List all users |
+| `GET` | `/api/admin/users` | JWT+Admin | authed | List all users ordered by `last_active_at DESC`, with never-seen users last |
 | `GET` | `/api/admin/locked` | JWT+Admin | authed | List locked accounts |
 | `POST` | `/api/admin/users/:id/unlock` | JWT+Admin | authed | Unlock account |
 | `PUT` | `/api/admin/users/:id/role` | JWT+Admin | authed | Change user role |
@@ -978,14 +978,14 @@ Attached to `req.user` by `authMiddleware`.
 | `MAX_USERNAME_LEN` | const | `50` |
 | `MAX_EMAIL_LEN` | const | `254` (RFC 5321) |
 | `MAX_PASSWORD_LEN` | const | `128` |
-| `UserRow` | interface | `{ id, username, email, password_hash, role, failed_logins, locked_until, email_verified, locale }` |
+| `UserRow` | interface | `{ id, username, email, password_hash, role, failed_logins, locked_until, email_verified, locale, last_active_at }` |
 
 **Route handlers:**
 | Handler | Description |
 |---|---|
 | `POST /register` | Creates user (email_verified=0), sends verification magic link, awards `signup` XP. If Turnstile is enabled, validates CAPTCHA token via `verifyTurnstileToken()` before proceeding. |
 | `GET /turnstile` | **Public (no auth required).** Returns `{ site_key, enabled }` for registration form to conditionally display CAPTCHA widget. Secret key never exposed. |
-| `POST /login` | Validates bcrypt hash, tracks failed logins, generates OTP (SHA-256 stored), sends email |
+| `POST /login` | Validates bcrypt hash, tracks failed logins, returns generic bad-credentials errors, generates OTP (SHA-256 stored), sends email |
 | `POST /verify-otp` | Timing-safe hash compare, marks OTP used, issues JWT |
 | `POST /magic-link` | Generates `purpose='login'` magic token, sends email (always returns 200) |
 | `GET /magic-link/verify` | Marks token used, sets email_verified=1, issues JWT |
@@ -1159,7 +1159,7 @@ Requires both `authMiddleware` + `adminMiddleware`.
 | `GET /arcade-game-files` | Scans `public/js` for compatible game files (`game-*.js` or files under `public/js/games/`) |
 | `GET /arcade-settings` | Returns `{ arcadeDailyPlayMinutes }` from `site_settings` |
 | `PUT /arcade-settings` | Validates `arcadeDailyPlayMinutes` is integer 1–180; writes to `site_settings` **and** runs `UPDATE users SET daily_play_minutes = ?` so the change is applied to all users immediately |
-| `GET /users` | All users ordered by `created_at`; response includes `is_locked`, `open_reports`, `is_original_admin` |
+| `GET /users` | All users ordered by most recent `last_active_at`, with never-seen users last; response includes `last_active_at`, `is_locked`, `open_reports`, `is_original_admin` |
 | `GET /locked` | Users with `locked_until > now` |
 | `POST /users/:id/unlock` | Clears `failed_logins` and `locked_until` |
 | `PUT /users/:id/role` | Changes role to `'admin'` or `'user'` (cannot self-change; original admin cannot be demoted) |
@@ -1451,7 +1451,7 @@ For unauthenticated users, the top of the file renders the public marketing / la
 | `userLocale()` | Returns `currentUser.locale` or `'en-GB'` |
 | `fmtDate(ts)` | `toLocaleDateString(userLocale())` |
 | `fmtDateTime(ts)` | `toLocaleString(userLocale())` |
-| `api(method, path, body)` | Wrapper for `fetch('/api' + path)` with JWT auth header; throws on non-OK |
+| `api(method, path, body)` | Wrapper for `fetch('/api' + path)` with JWT auth header; throws on non-OK; preserves `/auth/login` 401 as a friendly credentials error instead of logging out |
 | `toast(msg, type)` | Creates and auto-removes a toast notification (success/error/info) |
 | `escHtml(str)` | HTML-escapes a string (replaces `&`, `<`, `>`, `"`, `'`) |
 | `copyToClipboard(text)` | `navigator.clipboard.writeText` with textarea fallback |
@@ -1462,7 +1462,7 @@ For unauthenticated users, the top of the file renders the public marketing / la
 |---|---|
 | `toggleLoginMode()` | Switches between magic-link and password login UI |
 | `handleMagicLinkSend(e)` | POST `/auth/magic-link` |
-| `handlePasswordLogin()` | POST `/auth/login`; on success shows OTP modal |
+| `handlePasswordLogin()` | POST `/auth/login`; shows friendly generic credential failures; on success shows OTP modal |
 | `handleOTPVerify()` | POST `/auth/verify-otp`; calls `storeAuth()` |
 | `cancelOTP()` | Hides OTP modal, clears `_otpSessionId` |
 | `handleLogin(e)` | Legacy combined login handler (delegates to magic/password) |
@@ -1592,6 +1592,9 @@ Collapsible task sections (`significantly-overdue-list`, `sporadic-list`, and `g
 | `showAdminTab(tab)` | Switches admin sub-tabs (`smtp`, `users`, `gamify`, `feedback`) |
 | `loadAdminPage()` | Loads all admin data sections |
 | `handleSmtpSave(e)` | PUT `/api/admin/smtp` |
+| `loadUsersPanel()` | GET `/api/admin/users`; caches the admin user list already sorted by last seen |
+| `renderUsersList()` | Applies admin user filters/search and renders user rows with role, lock/report badges, last seen, and join date |
+| `fmtAdminLastSeen(ts)` | Formats `last_active_at` for the Users tab, returning `Never` when no activity is recorded |
 | `loadLockedAccounts()` | GET `/api/admin/locked` — results rendered inline within the Users tab |
 | `unlockAccount(userId)` | POST `/api/admin/users/:id/unlock` |
 | `loadUserReports()` | GET `/api/admin/reports` — results rendered inline within the Users tab |
@@ -2260,5 +2263,5 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.22.5*
+*End of Technical Reference Manual — TaskIt! v1.22.6*
 

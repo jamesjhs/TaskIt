@@ -1,6 +1,6 @@
 # 👋 TaskIt! – User Guide
 
-**Version 1.22.5** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.22.6** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 TaskIt! is a friendly, no-fuss task manager built for individuals and small teams. Whether you're keeping track of your own to-dos or collaborating with others, this guide will have you up and running in minutes.
 
@@ -24,6 +24,8 @@ There are two ways to log in:
 
 - **Magic link** – enter your email and click *Send Magic Link*. Check your inbox for a one-click login link (requires email to be configured by your admin).
 - **Password** – click *Use password instead* and enter your email and password. You will be sent a **one-time 6-digit code** by email to confirm your identity — enter it to complete sign-in.
+
+If the email/username or password is wrong, TaskIt! shows the same friendly message for both: **Username or password is incorrect.**
 
 Web sessions now stay signed in automatically for up to **30 days**. You'll only need to sign in again if you log out, clear your browser's site data, use private browsing that wipes storage on close, or let the session expire.
 
@@ -305,6 +307,7 @@ All your tasks, notes, group memberships, and account details are removed immedi
 System administrators see an extra **Admin** menu item. From here you can:
 
 - **Stats** – a dashboard showing total users, users active today, total tasks, and tasks created today
+- **Users** – review accounts in descending order of last seen activity, including role, lock/report status, join date, and available role/unlock actions
 - **SMTP Settings** – configure the outgoing email server for magic links and reminders
 - **Locked Accounts** – view and unlock accounts blocked after too many failed login attempts
 - **User Reports** – review reports submitted by users and mark them as resolved
@@ -494,4 +497,4 @@ Tap the **⭐ Progress** tab in the bottom navigation. You can also enable or di
 
 ---
 
-*TaskIt! v1.22.5 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*
+*TaskIt! v1.22.6 – Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)*

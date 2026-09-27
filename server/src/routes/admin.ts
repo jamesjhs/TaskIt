@@ -331,6 +331,8 @@ function isOriginalAdmin(userId: string): boolean {
 
 router.get('/users', (_req: Request, res: Response): void => {
   const now = Date.now();
+  // Show the Users tab in most-recently-seen order, with accounts that have
+  // never authenticated sorted after users with activity.
   const users = db.prepare(
     `SELECT id, username, email, role, failed_logins, locked_until, created_at, last_active_at
      FROM users

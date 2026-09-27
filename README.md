@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.22.5** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.22.6** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -35,7 +35,7 @@ A cross-platform task management application with a Node.js/TypeScript server, w
 - User reporting and blocking
 - User feedback submission with in-app admin replies
 - Self-service account deletion (GDPR right to erasure)
-- Admin panel: stats dashboard, SMTP configuration, locked accounts, user reports, feedback management
+- Admin panel: stats dashboard, SMTP configuration, user management with last-seen ordering, locked accounts, user reports, feedback management
 - **Database encryption** — full SQLite file encryption at rest via SQLCipher (set `DB_ENCRYPTION_KEY` env var)
 - **Gamification Engine** — opt-in XP system, overall level progression, XP breakdown by skill, dynamic titles, personal achievements, streak tracking, and freeze mechanic (see below)
 - **Admin-tunable collectible drop sensitivity** — admins can adjust how often XP gains roll for collectible loot drops; default sensitivity is `2.0`, doubling the previous acquisition rate while preserving the 75% maximum drop chance cap
@@ -126,6 +126,13 @@ When a frozen task is missed, the freeze absorbs the miss and the streak is pres
 Run `npm run security:xss-sinks` before changing frontend rendering code. The scan compares current HTML-rendering sinks, inline event handlers, and dynamic script loaders against `scripts/xss-sink-baseline.json`; new entries fail the check until they are reviewed. Prefer `textContent`, attributes set through DOM APIs, and explicit event listeners for new UI code. Use `npm run security:xss-sinks:update` only after deliberately reviewing an unavoidable sink.
 
 ## Changelog
+
+### v1.22.6
+
+- **Admin last-seen visibility** — Admin > Users now shows each user's last seen time and lists users from most recently seen to least recently seen, with never-seen accounts last.
+- **Friendly login failure message** — bad password-login attempts now show the generic `Username or password is incorrect.` message instead of leaking a JavaScript null-property error.
+- **Code documentation pass** — added descriptive comments around the touched login API wrapper, password-login handler, and admin last-seen sorting behavior.
+- **Version bump** — package metadata, lockfiles, public cache keys, pages, and documentation updated to 1.22.6.
 
 ### v1.22.5
 
@@ -592,7 +599,7 @@ Open `http://localhost:3000` after starting the server. No separate build step n
 |--------|------------------------------------------|--------------------------------------|
 | GET    | /api/admin/smtp                          | Get SMTP settings                    |
 | PUT    | /api/admin/smtp                          | Update SMTP settings                 |
-| GET    | /api/admin/users                         | List all users (includes lock status and open report count) |
+| GET    | /api/admin/users                         | List all users ordered by last seen descending (includes lock status, last seen, and open report count) |
 | GET    | /api/admin/locked                        | List locked accounts                 |
 | POST   | /api/admin/users/:id/unlock              | Unlock account                       |
 | PUT    | /api/admin/users/:id/role                | Change user role                     |

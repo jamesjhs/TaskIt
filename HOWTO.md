@@ -1,6 +1,6 @@
 # TaskIt! – How-To Manual
 
-**Version 1.22.5**
+**Version 1.22.6**
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -411,6 +411,9 @@ Accessible from the **Admin** menu item (visible to system admins only).
 **Stats:**  
 A real-time dashboard showing total users, users active today, total tasks, and tasks created today.
 
+**Users:**  
+Review all users in descending order of last seen activity. Each row shows the user's role, lock/report status, last seen time, join date, and available role/unlock actions.
+
 **SMTP Settings:**  
 Configure the outgoing email server for magic-link logins, email verification, and task reminders.  
 Toggle the *Enabled* checkbox to activate or deactivate email sending.
@@ -599,7 +602,8 @@ The Freeze is consumed automatically, the streak is preserved, and the ❄️ is
 **I can't log in**  
 - If your account is locked, an admin must unlock it via Admin → Locked Accounts
 - For magic links, ensure SMTP is configured; use password login as a fallback
-- For password login, check your email for the two-factor authentication code
+- For password login, an incorrect username/email or password displays the same generic message: *Username or password is incorrect.*
+- After a successful password login, check your email for the two-factor authentication code
 
 **Tasks are not showing**  
 - Check the filter bar — filters like *Show Archived*, *Assigned to Me*, or *Show Group Tasks* can hide tasks
@@ -610,5 +614,5 @@ The Freeze is consumed automatically, the streak is preserved, and the ❄️ is
 
 ---
 
-*TaskIt! v1.22.5 – Copyright J Rowson 2026 | jahosi.co.uk*
+*TaskIt! v1.22.6 – Copyright J Rowson 2026 | jahosi.co.uk*
 

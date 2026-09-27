@@ -231,6 +231,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     } else {
       console.debug('[auth/login] No account found for that email');
     }
+    // Keep the response intentionally generic so login cannot reveal which field failed.
     res.status(401).json({ error: 'Username or password is incorrect.' });
     return;
   }

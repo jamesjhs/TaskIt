@@ -66,6 +66,8 @@ function sendTaskItMail(transporter: Transporter, options: TaskItMailOptions) {
   });
 }
 
+export { escHtml, sanitizeHeaderValue };
+
 export async function sendMagicLink(to: string, token: string, baseUrl: string, purpose: 'login' | 'verify' = 'login'): Promise<void> {
   console.debug('[mail] sendMagicLink called for purpose:', purpose, '| recipient:', to);
   const transporter = await getTransporter();
@@ -205,4 +207,35 @@ export async function sendTaskReminder(to: string, task: { title: string; due_da
     ? `<p>The task <strong>${escHtml(task.title)}</strong> was due on <strong>${escHtml(dueStr)}</strong> and has not been completed.</p>`
     : `<p>This is a reminder that the task <strong>${escHtml(task.title)}</strong> is due on <strong>${escHtml(dueStr)}</strong>.</p>`;
   await sendTaskItMail(transporter, { from, to, subject, text: bodyText, html: bodyHtml });
+}
+
+export async function sendPromotionalEmail(to: string, subject: string, message: string, optOutUrl: string, privacyUrl: string): Promise<void> {
+  const transporter = await getTransporter();
+  const safeSubject = sanitizeHeaderValue(subject || 'TaskIt!');
+  const body = message.trim();
+  const footerText = [
+    'You are receiving this because promotional emails are enabled for your TaskIt! account.',
+    `Opt out: ${optOutUrl}`,
+    `Privacy Policy: ${privacyUrl}`,
+  ].join('\n');
+
+  if (!transporter) {
+    console.warn('[mail] SMTP not configured or disabled — promotional email not sent');
+    console.info(`[mail] Promotional email for ${to}: ${safeSubject}\n\n${body}\n\n${footerText}`);
+    return;
+  }
+
+  const settings = db.prepare('SELECT from_addr FROM smtp_settings WHERE id = 1').get() as { from_addr: string } | undefined;
+  const from = settings?.from_addr || DEFAULT_FROM;
+  const htmlBody = body
+    ? body.split(/\n{2,}/).map(p => `<p>${escHtml(p).replace(/\n/g, '<br>')}</p>`).join('')
+    : '<p></p>';
+
+  await sendTaskItMail(transporter, {
+    from,
+    to,
+    subject: safeSubject,
+    text: `${body}\n\n--\n${footerText}`,
+    html: `${htmlBody}<hr><p style="font-size:12px;color:#6b7280">You are receiving this because promotional emails are enabled for your TaskIt! account.<br><a href="${escHtml(optOutUrl)}">Opt out of promotional emails</a> &middot; <a href="${escHtml(privacyUrl)}">Privacy Policy</a></p>`,
+  });
 }

@@ -168,8 +168,10 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
 
   // Insert with email_verified = 0; magic link will flip this to 1
   db.prepare(
-    'INSERT INTO users (id, username, email, password_hash, created_at, role, email_verified, locale) VALUES (?, ?, ?, ?, ?, ?, 0, ?)'
-  ).run(id, username.trim(), normalizedEmail, passwordHash, now, role, userLocale);
+    `INSERT INTO users
+      (id, username, email, password_hash, created_at, role, email_verified, locale, marketing_emails_opted_out, marketing_opt_out_token)
+     VALUES (?, ?, ?, ?, ?, ?, 0, ?, 1, ?)`
+  ).run(id, username.trim(), normalizedEmail, passwordHash, now, role, userLocale, crypto.randomUUID());
 
   // Award sign-up XP (banked immediately; visible once gamification is enabled)
   try {

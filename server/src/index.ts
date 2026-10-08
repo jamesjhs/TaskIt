@@ -19,6 +19,7 @@ import userRoutes from './routes/users';
 import gamificationRoutes from './routes/gamification';
 import friendRoutes from './routes/friends';
 import pushRoutes from './routes/push';
+import promoteRoutes from './routes/promote';
 
 const app = express();
 
@@ -319,6 +320,7 @@ app.use('/api/auth/magic-link', authEmailLimiter);
 app.use('/api/auth/forgot-password', authEmailLimiter);
 app.use('/api/auth/reset-password', authEmailLimiter);
 app.use('/api/auth', authRoutes);
+app.use('/api/promote', authReadLimiter, promoteRoutes);
 app.use('/api/groups', authenticatedLimiter, groupRoutes);
 app.use('/api/tasks', authenticatedLimiter, taskRoutes);
 app.use('/api/task-types', authenticatedLimiter, taskTypeRoutes);

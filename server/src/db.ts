@@ -536,6 +536,10 @@ addCol('users', 'notification_preferences', `TEXT NOT NULL DEFAULT '{"email":{"n
 addCol('users', 'push_notifications_enabled', 'INTEGER NOT NULL DEFAULT 1');
 addCol('users', 'push_reminder_time', "TEXT NOT NULL DEFAULT '09:00'");
 addCol('users', 'push_time_zone', 'TEXT');
+// Promotional email consent. Accounts start opted out; admins may opt users in
+// from the Promote panel, and every promotional email includes an opt-out link.
+addCol('users', 'marketing_emails_opted_out', 'INTEGER NOT NULL DEFAULT 1');
+addCol('users', 'marketing_opt_out_token', 'TEXT');
 // Collectibles icon: optional filename of a PNG in public/collectables/ that overrides the rarity emoji
 addCol('collectibles', 'icon_filename', 'TEXT');
 // Long-term Goals: aspirational items that live outside the active task list until given a deadline
@@ -551,6 +555,14 @@ db.prepare('DELETE FROM task_assignees WHERE task_id IN (SELECT id FROM tasks WH
   const updateKey = db.prepare('UPDATE users SET friend_key = ? WHERE id = ?');
   for (const row of missingKey) {
     updateKey.run(generateFriendKey(), row.id);
+  }
+}
+// Backfill opt-out tokens for promotional email links.
+{
+  const missingToken = db.prepare("SELECT id FROM users WHERE marketing_opt_out_token IS NULL OR marketing_opt_out_token = ''").all() as Array<{ id: string }>;
+  const updateToken = db.prepare('UPDATE users SET marketing_opt_out_token = ? WHERE id = ?');
+  for (const row of missingToken) {
+    updateToken.run(randomUUID(), row.id);
   }
 }
 // Backfill existing groups: generate a proper unique invite word pair for any group that lacks one

@@ -6,9 +6,10 @@ import webpush from 'web-push';
 import { authMiddleware } from '../middleware/auth';
 import { adminMiddleware } from '../middleware/admin';
 import db from '../db';
-import { ADMIN_EMAIL } from '../config';
+import { ADMIN_EMAIL, BASE_URL } from '../config';
 import { getVapidFromDb, reconfigureWebpush } from '../webpush-config';
 import { routeParam } from '../http';
+import { sendPromotionalEmail } from '../services/mail';
 
 /** Absolute path to the server-side PNG icons directory. */
 const COLLECTABLES_DIR = path.resolve(__dirname, '..', '..', '..', 'public', 'collectables');
@@ -334,7 +335,8 @@ router.get('/users', (_req: Request, res: Response): void => {
   // Show the Users tab in most-recently-seen order, with accounts that have
   // never authenticated sorted after users with activity.
   const users = db.prepare(
-    `SELECT id, username, email, role, failed_logins, locked_until, created_at, last_active_at
+    `SELECT id, username, email, role, failed_logins, locked_until, created_at, last_active_at,
+            marketing_emails_opted_out
      FROM users
      ORDER BY last_active_at IS NULL ASC, last_active_at DESC, created_at DESC`
   ).all() as Array<{
@@ -346,6 +348,7 @@ router.get('/users', (_req: Request, res: Response): void => {
     locked_until: number | null;
     created_at: number;
     last_active_at: number | null;
+    marketing_emails_opted_out: number;
   }>;
 
   // Open (unresolved) report counts per reported user
@@ -362,6 +365,7 @@ router.get('/users', (_req: Request, res: Response): void => {
     is_locked: u.locked_until != null && u.locked_until > now,
     open_reports: reportMap.get(u.id) ?? 0,
     is_original_admin: isOriginalAdmin(u.id),
+    marketing_emails_opted_out: u.marketing_emails_opted_out === 1,
   }));
 
   res.json(result);
@@ -410,6 +414,89 @@ router.put('/users/:id/role', (req: Request, res: Response): void => {
 
   db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, targetId);
   res.json({ message: 'Role updated' });
+});
+
+router.patch('/users/:id/promotional-email', (req: Request, res: Response): void => {
+  const userId = routeParam(req.params.id);
+  const receivesEmail = req.body?.receivesEmail === true;
+  const user = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
+  if (!user) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  db.prepare(`
+    UPDATE users
+    SET marketing_emails_opted_out = ?,
+        marketing_opt_out_token = COALESCE(NULLIF(marketing_opt_out_token, ''), ?)
+    WHERE id = ?
+  `).run(receivesEmail ? 0 : 1, randomUUID(), userId);
+
+  res.json({ message: receivesEmail ? 'Promotional email enabled' : 'Promotional email disabled' });
+});
+
+router.post('/promote/send', async (req: Request, res: Response): Promise<void> => {
+  const subject = typeof req.body?.subject === 'string' && req.body.subject.trim()
+    ? req.body.subject.trim()
+    : 'TaskIt!';
+  const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+  const userIds = Array.isArray(req.body?.userIds)
+    ? req.body.userIds.filter((id: unknown): id is string => typeof id === 'string' && id.trim() !== '')
+    : [];
+
+  if (!BASE_URL) {
+    res.status(500).json({ error: 'BASE_URL must be configured to send promotional emails.' });
+    return;
+  }
+  if (subject.length > 160) {
+    res.status(400).json({ error: 'Subject must be 160 characters or fewer' });
+    return;
+  }
+  if (message.length > 5000) {
+    res.status(400).json({ error: 'Message must be 5000 characters or fewer' });
+    return;
+  }
+  if (userIds.length === 0) {
+    res.status(400).json({ error: 'Select at least one opted-in user to email' });
+    return;
+  }
+
+  const uniqueIds = Array.from(new Set(userIds));
+  const getUser = db.prepare(`
+    SELECT id, email, marketing_emails_opted_out, marketing_opt_out_token
+    FROM users
+    WHERE id = ?
+  `);
+  const ensureToken = db.prepare('UPDATE users SET marketing_opt_out_token = ? WHERE id = ?');
+  const privacyUrl = `${BASE_URL}/privacy-policy.html`;
+  let sent = 0;
+  let skippedOptedOut = 0;
+  const failures: Array<{ id: string; email?: string; error: string }> = [];
+
+  for (const id of uniqueIds) {
+    const user = getUser.get(id) as { id: string; email: string; marketing_emails_opted_out: number; marketing_opt_out_token: string | null } | undefined;
+    if (!user) continue;
+    if (user.marketing_emails_opted_out === 1) {
+      skippedOptedOut++;
+      continue;
+    }
+
+    let token = user.marketing_opt_out_token;
+    if (!token) {
+      token = randomUUID();
+      ensureToken.run(token, user.id);
+    }
+    const optOutUrl = `${BASE_URL}/api/promote/opt-out/${encodeURIComponent(token)}`;
+
+    try {
+      await sendPromotionalEmail(user.email, subject, message, optOutUrl, privacyUrl);
+      sent++;
+    } catch (err) {
+      failures.push({ id: user.id, email: user.email, error: (err as Error).message || 'Send failed' });
+    }
+  }
+
+  res.json({ sent, skippedOptedOut, failures });
 });
 
 router.get('/reports', (_req: Request, res: Response): void => {

@@ -1533,14 +1533,14 @@
       <details class="card admin-collapsible" style="margin-bottom:16px">
         <summary class="admin-collapsible-summary">
           <span>Promote</span>
-          <button onclick="event.preventDefault();event.stopPropagation();loadPromotePanel()" class="btn btn-sm btn-secondary">Refresh</button>
+          <button id="promoteRefreshBtn" type="button" class="btn btn-sm btn-secondary">Refresh</button>
         </summary>
         <div style="padding-top:12px">
           <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">
             Enable promotional email receipt for users, select one or more opted-in recipients, and send a TaskIt! feature email.
             All users start opted out, and every message includes opt-out and privacy policy links.
           </p>
-          <form onsubmit="sendPromoteEmail(event)">
+          <form id="promoteEmailForm">
             <div class="form-group">
               <label for="promoteSubject">Subject</label>
               <input id="promoteSubject" type="text" value="TaskIt!" maxlength="160" class="input" />
@@ -4259,6 +4259,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (arrow) arrow.textContent = isOpen ? '▶' : '▼';
     });
   }
+  const promoteRefreshBtn = document.getElementById('promoteRefreshBtn');
+  if (promoteRefreshBtn) {
+    promoteRefreshBtn.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      loadPromotePanel();
+    });
+  }
+  const promoteEmailForm = document.getElementById('promoteEmailForm');
+  if (promoteEmailForm) {
+    promoteEmailForm.addEventListener('submit', sendPromoteEmail);
+  }
 });
 
 // ========== Long-term Goals ==========
@@ -6438,7 +6450,7 @@ function renderUsersList() {
 async function loadPromotePanel() {
   const listEl = document.getElementById('promoteUsersList');
   if (!listEl) return;
-  listEl.innerHTML = '<div class="loading">Loading\u2026</div>';
+  setPromotePanelMessage(listEl, 'Loading\u2026');
   try {
     _adminUsers = await api('GET', '/admin/users');
     _promoteSelectedUserIds = new Set(Array.from(_promoteSelectedUserIds).filter(id =>
@@ -6447,8 +6459,16 @@ async function loadPromotePanel() {
     renderPromoteUsers();
     renderUsersList();
   } catch (err) {
-    listEl.innerHTML = `<div class="loading" style="color:#dc2626">${escHtml(err.message)}</div>`;
+    setPromotePanelMessage(listEl, err.message, '#dc2626');
   }
+}
+
+function setPromotePanelMessage(listEl, message, color) {
+  const messageEl = document.createElement('div');
+  messageEl.className = 'loading';
+  if (color) messageEl.style.color = color;
+  messageEl.textContent = message;
+  listEl.replaceChildren(messageEl);
 }
 
 function updatePromoteRecipientCount() {
@@ -6462,40 +6482,74 @@ function renderPromoteUsers() {
   const listEl = document.getElementById('promoteUsersList');
   if (!listEl) return;
   if (!_adminUsers.length) {
-    listEl.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic;padding:8px 0">No users found.</p>';
+    const emptyEl = document.createElement('p');
+    emptyEl.style.cssText = 'font-size:.85rem;color:#9ca3af;font-style:italic;padding:8px 0';
+    emptyEl.textContent = 'No users found.';
+    listEl.replaceChildren(emptyEl);
     updatePromoteRecipientCount();
     return;
   }
 
-  listEl.innerHTML = _adminUsers.map(u => {
+  const rows = _adminUsers.map(u => {
     const canReceive = !u.marketing_emails_opted_out;
     const selected = canReceive && _promoteSelectedUserIds.has(u.id);
-    return `
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9">
-        <input type="checkbox"
-          ${selected ? 'checked' : ''}
-          ${canReceive ? '' : 'disabled'}
-          onchange="togglePromoteRecipient('${escHtml(u.id)}', this.checked)"
-          aria-label="Select ${escHtml(u.username)} for promotional email"
-          style="width:18px;height:18px;accent-color:#7c3aed;margin-top:3px;flex-shrink:0" />
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <span style="font-size:.9rem;font-weight:700;color:#374151">${escHtml(u.username)}</span>
-            ${canReceive
-              ? '<span class="badge" style="font-size:.72rem;background:#dcfce7;color:#15803d">email receipt enabled</span>'
-              : '<span class="badge badge-gray" style="font-size:.72rem">opted out</span>'}
-          </div>
-          <p style="font-size:.78rem;color:#9ca3af;margin:2px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(u.email)}</p>
-        </div>
-        <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;color:#4b5563;white-space:nowrap">
-          <input type="checkbox"
-            ${canReceive ? 'checked' : ''}
-            onchange="setPromotionalEmailReceipt('${escHtml(u.id)}', this.checked)"
-            style="width:16px;height:16px;accent-color:#7c3aed" />
-          Email receipt
-        </label>
-      </div>`;
-  }).join('');
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9';
+
+    const recipientCheckbox = document.createElement('input');
+    recipientCheckbox.type = 'checkbox';
+    recipientCheckbox.checked = selected;
+    recipientCheckbox.disabled = !canReceive;
+    recipientCheckbox.setAttribute('aria-label', `Select ${u.username} for promotional email`);
+    recipientCheckbox.style.cssText = 'width:18px;height:18px;accent-color:#7c3aed;margin-top:3px;flex-shrink:0';
+    recipientCheckbox.addEventListener('change', () => togglePromoteRecipient(u.id, recipientCheckbox.checked));
+    row.appendChild(recipientCheckbox);
+
+    const userInfo = document.createElement('div');
+    userInfo.style.cssText = 'flex:1;min-width:0';
+
+    const nameRow = document.createElement('div');
+    nameRow.style.cssText = 'display:flex;align-items:center;gap:6px;flex-wrap:wrap';
+
+    const username = document.createElement('span');
+    username.style.cssText = 'font-size:.9rem;font-weight:700;color:#374151';
+    username.textContent = u.username;
+    nameRow.appendChild(username);
+
+    const badge = document.createElement('span');
+    badge.className = canReceive ? 'badge' : 'badge badge-gray';
+    badge.style.fontSize = '.72rem';
+    if (canReceive) {
+      badge.style.background = '#dcfce7';
+      badge.style.color = '#15803d';
+      badge.textContent = 'email receipt enabled';
+    } else {
+      badge.textContent = 'opted out';
+    }
+    nameRow.appendChild(badge);
+    userInfo.appendChild(nameRow);
+
+    const email = document.createElement('p');
+    email.style.cssText = 'font-size:.78rem;color:#9ca3af;margin:2px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    email.textContent = u.email;
+    userInfo.appendChild(email);
+    row.appendChild(userInfo);
+
+    const receiptLabel = document.createElement('label');
+    receiptLabel.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;color:#4b5563;white-space:nowrap';
+
+    const receiptCheckbox = document.createElement('input');
+    receiptCheckbox.type = 'checkbox';
+    receiptCheckbox.checked = canReceive;
+    receiptCheckbox.style.cssText = 'width:16px;height:16px;accent-color:#7c3aed';
+    receiptCheckbox.addEventListener('change', () => setPromotionalEmailReceipt(u.id, receiptCheckbox.checked));
+    receiptLabel.appendChild(receiptCheckbox);
+    receiptLabel.appendChild(document.createTextNode('Email receipt'));
+    row.appendChild(receiptLabel);
+
+    return row;
+  });
+  listEl.replaceChildren(...rows);
   updatePromoteRecipientCount();
 }
 

@@ -1,6 +1,6 @@
 # TaskIt! – How-To Manual
 
-**Version 1.22.6**
+**Version 1.23.1**
 Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 ---
@@ -614,5 +614,5 @@ The Freeze is consumed automatically, the streak is preserved, and the ❄️ is
 
 ---
 
-*TaskIt! v1.22.6 – Copyright J Rowson 2026 | jahosi.co.uk*
+*TaskIt! v1.23.1 – Copyright J Rowson 2026 | jahosi.co.uk*
 

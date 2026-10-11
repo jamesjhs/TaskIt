@@ -1,6 +1,6 @@
 # TaskIt! – Task Management App
 
-**Version 1.22.6** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
+**Version 1.23.1** | Copyright J Rowson 2026 | [jahosi.co.uk](https://jahosi.co.uk)
 
 A cross-platform task management application with a Node.js/TypeScript server, web frontend, and Android app.
 
@@ -127,12 +127,14 @@ Run `npm run security:xss-sinks` before changing frontend rendering code. The sc
 
 ## Changelog
 
-### v1.22.6
+### v1.23.1
 
-- **Admin last-seen visibility** — Admin > Users now shows each user's last seen time and lists users from most recently seen to least recently seen, with never-seen accounts last.
-- **Friendly login failure message** — bad password-login attempts now show the generic `Username or password is incorrect.` message instead of leaking a JavaScript null-property error.
-- **Code documentation pass** — added descriptive comments around the touched login API wrapper, password-login handler, and admin last-seen sorting behavior.
-- **Version bump** — package metadata, lockfiles, public cache keys, pages, and documentation updated to 1.22.6.
+- **Second Look arcade game** — added `/js/game-secondlook.js`, a compact one-row observation game where players spot changed task details across three quick rounds; its Arcade Token hook now buys a hint instead of extra time.
+- **Admin collapsibles default closed** — expandable sections in the Admin Users and Gamify tabs now load collapsed by default.
+- **Arcade script loading hardening** — the arcade wrapper now loads the configured game JavaScript file fresh by `scriptPath`, requires the module registered by that file, and no longer uses a TaskIt-side loaded-script cache or `gameId` fallback.
+- **Arcade cache cleanup** — removed hard-coded arcade game script precaching from the service worker so arcade games are sourced from their own selected `.js` files.
+- **Dependency audit cleanup** — added npm overrides for patched transitive packages so `npm audit` reports zero vulnerabilities without downgrading Tailwind.
+- **Version bump** — package metadata, lockfiles, public cache keys, pages, and documentation updated to 1.23.1.
 
 ### v1.22.5
 

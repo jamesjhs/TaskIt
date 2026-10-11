@@ -143,15 +143,15 @@
   <style>
     .hidden { display: none !important; }
   </style>
-  <link rel="stylesheet" href="/app.css?v=1.22.6" type="text/css" />
+  <link rel="stylesheet" href="/app.css?v=1.23.1" type="text/css" />
   <!-- PWA / installable web app -->
-  <link rel="manifest" href="/manifest.json?v=1.22.6" />
+  <link rel="manifest" href="/manifest.json?v=1.23.1" />
   <meta name="theme-color" content="#7c3aed" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="TaskIt!" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1.22.6" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=1.22.6" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1.23.1" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=1.23.1" />
   <!-- Cloudflare Turnstile for CAPTCHA security (explicit render; onload callback fires when ready) -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit" async defer></script>
 </head>
@@ -192,7 +192,7 @@
     <div class="lp-hero-float lp-float-achievement" aria-hidden="true">🏆 Achievement Unlocked!</div>
     <div class="lp-hero-float lp-float-streak" aria-hidden="true">🔥 14-day streak!</div>
     <div style="position:relative;z-index:1">
-      <img class="lp-hero-logo" src="/RKlogo.png?v=1.22.6" width="900" height="900" alt="TaskIt! logo: a checklist with a star and tick" decoding="async" fetchpriority="high" />
+      <img class="lp-hero-logo" src="/RKlogo.png?v=1.23.1" width="900" height="900" alt="TaskIt! logo: a checklist with a star and tick" decoding="async" fetchpriority="high" />
       <h1>Gamify your life and compete with friends!</h1>
       <p class="lp-hero-sub">Run recurring work, household jobs, sporadic maintenance, long-term goals, and group collaboration from one privacy-first app. Add reminders, calendar sync, and optional gamification — without subscriptions or vendor lock-in.</p>
       <div class="lp-hero-ctas">
@@ -959,7 +959,7 @@
   <div class="auth-card">
     <div class="auth-logo">
       <div class="auth-logo-icon auth-logo-icon-brand">
-        <img src="/RKlogo.png?v=1.22.6" width="900" height="900" alt="TaskIt! logo" decoding="async" />
+        <img src="/RKlogo.png?v=1.23.1" width="900" height="900" alt="TaskIt! logo" decoding="async" />
       </div>
       <h1>TaskIt!</h1>
       <p>🎮 Gamified task management</p>
@@ -1079,7 +1079,7 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Create Account</button>
       </form>
-      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.22.6</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
+      <p class="version-footer" style="margin-top:16px">TaskIt! v<span id="authFooterVersion">1.23.1</span> &nbsp;·&nbsp; &copy; J Rowson and R Shaw, 2026 &nbsp;·&nbsp; <a href="https://jahosi.co.uk" target="_blank" rel="noopener">jahosi.co.uk</a> &nbsp;·&nbsp; <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/user-guide.html">User Guide</a></p>
     </div>
   </div>
 </div>
@@ -1440,73 +1440,80 @@
       <button onclick="showAdminTab('gamify')" id="adminTabGamify" class="tab-btn">🎮 Gamify</button>
     </div>
     <div id="adminSmtpTab">
-      <div class="card">
-        <p class="card-title">SMTP Configuration</p>
-        <form onsubmit="handleSmtpSave(event)">
-          <div class="form-group">
-            <label>Host</label>
-            <input id="smtpHost" type="text" placeholder="smtp.example.com" class="input" />
-          </div>
-          <div class="admin-field-row">
+      <details class="card admin-collapsible" style="margin-bottom:16px">
+        <summary class="admin-collapsible-summary">
+          <span>SMTP Configuration</span>
+        </summary>
+        <div style="padding-top:12px">
+          <form onsubmit="handleSmtpSave(event)">
             <div class="form-group">
-              <label>Port</label>
-              <input id="smtpPort" type="number" placeholder="587" class="input" />
+              <label>Host</label>
+              <input id="smtpHost" type="text" placeholder="smtp.example.com" class="input" />
             </div>
-            <div class="form-group" style="display:flex;align-items:center;gap:8px;padding-top:30px">
-              <input id="smtpSecure" type="checkbox" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0" />
-              <label style="font-size:.9rem;font-weight:600;color:#333;margin:0">Secure (TLS)</label>
+            <div class="admin-field-row">
+              <div class="form-group">
+                <label>Port</label>
+                <input id="smtpPort" type="number" placeholder="587" class="input" />
+              </div>
+              <div class="form-group" style="display:flex;align-items:center;gap:8px;padding-top:30px">
+                <input id="smtpSecure" type="checkbox" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0" />
+                <label style="font-size:.9rem;font-weight:600;color:#333;margin:0">Secure (TLS)</label>
+              </div>
             </div>
-          </div>
-          <div class="form-group">
-            <label>Username</label>
-            <input id="smtpUsername" type="text" placeholder="user@example.com" class="input" />
-          </div>
-          <div class="form-group">
-            <label>Password</label>
-            <input id="smtpPass" type="password" placeholder="leave blank to keep current" autocomplete="off" class="input" />
-          </div>
-          <div class="form-group">
-            <label>From Address</label>
-            <input id="smtpFrom" type="text" placeholder="TaskIt! &lt;noreply@example.com&gt;" class="input" />
-          </div>
-          <div class="form-group" style="display:flex;align-items:center;gap:8px">
-            <input id="smtpEnabled" type="checkbox" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0" />
-            <label style="font-size:.9rem;font-weight:600;color:#333;margin:0">Enabled</label>
-          </div>
-          <hr style="border:none;border-top:1px solid #e5e7eb;margin:14px 0" />
-          <button type="submit" class="btn btn-primary btn-full">Save SMTP Settings</button>
-        </form>
-      </div>
-      <div class="card" style="margin-top:16px">
-        <p class="card-title">Web Push (VAPID)</p>
-        <form onsubmit="handleVapidSave(event)">
-          <div class="form-group">
-            <label for="vapidPublicKey">Public Key</label>
-            <input id="vapidPublicKey" type="text" placeholder="leave blank to keep current" class="input" autocomplete="off" />
-          </div>
-          <div class="form-group">
-            <label for="vapidPrivateKey">Private Key</label>
-            <input id="vapidPrivateKey" type="password" placeholder="leave blank to keep current" class="input" autocomplete="off" />
-          </div>
-          <div id="vapidPrivateKeyStatus" style="font-size:.82rem;color:#6b7280;margin:-8px 0 10px"></div>
-          <div class="form-group">
-            <label for="vapidSubject">Subject <span style="font-weight:400;color:#6b7280">(mailto: or https://)</span></label>
-            <input id="vapidSubject" type="text" placeholder="mailto:admin@example.com" class="input" />
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-            <button type="button" onclick="handleVapidGenerate()" class="btn btn-secondary">Generate New Keys</button>
-            <button type="submit" class="btn btn-primary">Save VAPID Settings</button>
-          </div>
-        </form>
-      </div>
+            <div class="form-group">
+              <label>Username</label>
+              <input id="smtpUsername" type="text" placeholder="user@example.com" class="input" />
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input id="smtpPass" type="password" placeholder="leave blank to keep current" autocomplete="off" class="input" />
+            </div>
+            <div class="form-group">
+              <label>From Address</label>
+              <input id="smtpFrom" type="text" placeholder="TaskIt! &lt;noreply@example.com&gt;" class="input" />
+            </div>
+            <div class="form-group" style="display:flex;align-items:center;gap:8px">
+              <input id="smtpEnabled" type="checkbox" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0" />
+              <label style="font-size:.9rem;font-weight:600;color:#333;margin:0">Enabled</label>
+            </div>
+            <hr style="border:none;border-top:1px solid #e5e7eb;margin:14px 0" />
+            <button type="submit" class="btn btn-primary btn-full">Save SMTP Settings</button>
+          </form>
+        </div>
+      </details>
+      <details class="card admin-collapsible" style="margin-bottom:16px">
+        <summary class="admin-collapsible-summary">
+          <span>Web Push (VAPID)</span>
+        </summary>
+        <div style="padding-top:12px">
+          <form onsubmit="handleVapidSave(event)">
+            <div class="form-group">
+              <label for="vapidPublicKey">Public Key</label>
+              <input id="vapidPublicKey" type="text" placeholder="leave blank to keep current" class="input" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="vapidPrivateKey">Private Key</label>
+              <input id="vapidPrivateKey" type="password" placeholder="leave blank to keep current" class="input" autocomplete="off" />
+            </div>
+            <div id="vapidPrivateKeyStatus" style="font-size:.82rem;color:#6b7280;margin:-8px 0 10px"></div>
+            <div class="form-group">
+              <label for="vapidSubject">Subject <span style="font-weight:400;color:#6b7280">(mailto: or https://)</span></label>
+              <input id="vapidSubject" type="text" placeholder="mailto:admin@example.com" class="input" />
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+              <button type="button" onclick="handleVapidGenerate()" class="btn btn-secondary">Generate New Keys</button>
+              <button type="submit" class="btn btn-primary">Save VAPID Settings</button>
+            </div>
+          </form>
+        </div>
+      </details>
     </div>
     <!-- ===== USERS ADMIN TAB ===== -->
     <div id="adminUsersTab" class="hidden">
       <!-- User Management card -->
-      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+      <details class="card admin-collapsible" style="margin-bottom:16px">
         <summary class="admin-collapsible-summary">
           <span>👥 User Management</span>
-          <button onclick="event.preventDefault();event.stopPropagation();loadUsersPanel()" class="btn btn-sm btn-secondary">Refresh</button>
         </summary>
         <div style="padding-top:12px">
           <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">
@@ -1533,7 +1540,6 @@
       <details class="card admin-collapsible" style="margin-bottom:16px">
         <summary class="admin-collapsible-summary">
           <span>Promote</span>
-          <button id="promoteRefreshBtn" type="button" class="btn btn-sm btn-secondary">Refresh</button>
         </summary>
         <div style="padding-top:12px">
           <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">
@@ -1565,7 +1571,6 @@
       <details class="card admin-collapsible" style="margin-bottom:16px">
         <summary class="admin-collapsible-summary">
           <span>🔒 Locked Accounts</span>
-          <button onclick="event.preventDefault();event.stopPropagation();loadLockedAccounts()" class="btn btn-sm btn-secondary">Refresh</button>
         </summary>
         <div style="padding-top:12px">
           <div id="lockedAccountsList"><div class="loading">Loading…</div></div>
@@ -1576,7 +1581,6 @@
       <details class="card admin-collapsible" style="margin-bottom:16px">
         <summary class="admin-collapsible-summary">
           <span>⚠️ User Reports</span>
-          <button onclick="event.preventDefault();event.stopPropagation();loadUserReports()" class="btn btn-sm btn-secondary">Refresh</button>
         </summary>
         <div style="padding-top:12px">
           <div id="userReportsList"><div class="loading">Loading…</div></div>
@@ -1587,10 +1591,7 @@
     <!-- ===== FEEDBACK ADMIN TAB ===== -->
     <div id="adminFeedbackTab" class="hidden">
       <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <p class="card-title" style="margin:0">Feedback &amp; Feature Requests</p>
-          <button onclick="loadAdminFeedback()" class="btn btn-sm btn-secondary">Refresh</button>
-        </div>
+        <p class="card-title">Feedback &amp; Feature Requests</p>
         <div id="adminFeedbackList"><div class="loading">Loading…</div></div>
       </div>
     </div>
@@ -1599,10 +1600,9 @@
     <div id="adminGamifyTab" class="hidden">
 
       <!-- XP Events card -->
-      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+      <details class="card admin-collapsible" style="margin-bottom:16px">
         <summary class="admin-collapsible-summary">
           <span>⚡ XP Events</span>
-          <button onclick="event.preventDefault();event.stopPropagation();loadXpEvents()" class="btn btn-sm btn-secondary">Refresh</button>
         </summary>
         <div style="padding-top:12px">
           <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Configure how much XP each action awards. Changes take effect immediately for all users.</p>
@@ -1611,10 +1611,9 @@
       </details>
 
       <!-- Categories card -->
-      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+      <details class="card admin-collapsible" style="margin-bottom:16px">
         <summary class="admin-collapsible-summary">
           <span>📁 Collectible Categories</span>
-          <button onclick="event.preventDefault();event.stopPropagation();loadCollectiblesAdmin()" class="btn btn-sm btn-secondary">Refresh</button>
         </summary>
         <div style="padding-top:12px">
           <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Group collectibles into named collections. Deleting a category soft-archives it and hides it from drop rolls.</p>
@@ -1627,7 +1626,7 @@
       </details>
 
       <!-- Collectible Items card -->
-      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+      <details class="card admin-collapsible" style="margin-bottom:16px">
         <summary class="admin-collapsible-summary">
           <span>🎁 Collectible Items</span>
         </summary>
@@ -1715,10 +1714,9 @@
       </details>
 
       <!-- Arcade Settings card -->
-      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+      <details class="card admin-collapsible" style="margin-bottom:16px">
         <summary class="admin-collapsible-summary">
           <span>🕹️ Arcade Settings</span>
-          <button onclick="event.preventDefault();event.stopPropagation();loadArcadeSettings()" class="btn btn-sm btn-secondary">Refresh</button>
         </summary>
         <div style="padding-top:12px">
           <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Set arcade and collectibles tuning. The daily play limit applies immediately to all users; collectible sensitivity controls how often XP gains roll for a pending loot drop.</p>
@@ -1740,10 +1738,9 @@
       </details>
 
       <!-- Arcade Games card -->
-      <details class="card admin-collapsible" style="margin-bottom:16px" open>
+      <details class="card admin-collapsible" style="margin-bottom:16px">
         <summary class="admin-collapsible-summary">
           <span>🎮 Arcade Games</span>
-          <button onclick="event.preventDefault();event.stopPropagation();loadAdminArcadeGames()" class="btn btn-sm btn-secondary">Refresh</button>
         </summary>
         <div style="padding-top:12px">
           <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Register game modules, choose their achievement slot, and enable them without editing the HTML shell. <a href="/arcade-game-guide.html" target="_blank" rel="noopener" style="color:#7c3aed;text-decoration:underline">Open the game creator guide</a>.</p>
@@ -2026,7 +2023,7 @@
 <div id="pwaInstallModal" class="modal-overlay hidden">
   <div class="modal-sheet">
     <div class="modal-body" style="text-align:center">
-      <img src="/RKlogo.png?v=1.22.6" width="900" height="900" alt="" aria-hidden="true" style="width:92px;height:auto;margin:0 auto 12px;display:block" />
+      <img src="/RKlogo.png?v=1.23.1" width="900" height="900" alt="" aria-hidden="true" style="width:92px;height:auto;margin:0 auto 12px;display:block" />
       <h2 class="modal-title">Install TaskIt!</h2>
       <p style="font-size:.9rem;color:#6b7280;line-height:1.6;margin-bottom:20px">
         Add TaskIt! to your home screen for a cleaner app-style launch, faster access, and better notification behaviour.
@@ -2635,7 +2632,6 @@ let gamificationEnabled = false;
 let unlockedArcadeKeys = new Set();
 let ARCADE_GAME_ORDER = [];
 let ARCADE_GAMES = {};
-const arcadeLoadedScripts = new Map();
 let activeArcadeGameInstance = null;
 // Arcade token balance and daily play limit (minutes); refreshed with the gamification profile.
 let arcadeTokens = 0;
@@ -2841,7 +2837,7 @@ function userLocale() { return (currentUser && currentUser.locale) || 'en-GB'; }
 function fmtDate(ts) { return new Date(ts).toLocaleDateString(userLocale()); }
 function fmtDateTime(ts) { return new Date(ts).toLocaleString(userLocale()); }
 let currentGroupId = null;
-window.APP_VERSION = '1.22.6';
+window.APP_VERSION = '1.23.1';
 window._serverVersion = window.APP_VERSION; // kept for compatibility; version check uses localStorage
 
 // ========== API ==========
@@ -4257,14 +4253,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const isOpen = list.style.display !== 'none';
       list.style.display = isOpen ? 'none' : 'flex';
       if (arrow) arrow.textContent = isOpen ? '▶' : '▼';
-    });
-  }
-  const promoteRefreshBtn = document.getElementById('promoteRefreshBtn');
-  if (promoteRefreshBtn) {
-    promoteRefreshBtn.addEventListener('click', event => {
-      event.preventDefault();
-      event.stopPropagation();
-      loadPromotePanel();
     });
   }
   const promoteEmailForm = document.getElementById('promoteEmailForm');
@@ -6428,6 +6416,10 @@ function renderUsersList() {
       ? `<button onclick="adminUnlockUser('${escHtml(u.id)}')" class="btn btn-sm btn-secondary" style="white-space:nowrap">Unlock</button>`
       : '';
 
+    const deleteBtn = u.role !== 'admin' && !isSelf(u.id)
+      ? `<button type="button" data-user-id="${escHtml(u.id)}" class="btn btn-sm btn-danger admin-delete-user-btn" style="white-space:nowrap">Delete</button>`
+      : '';
+
     return `
       <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9">
         <div style="flex:1;min-width:0">
@@ -6442,9 +6434,18 @@ function renderUsersList() {
         <div style="display:flex;gap:6px;flex-shrink:0;align-items:center">
           ${unlockBtn}
           ${roleBtn}
+          ${deleteBtn}
         </div>
       </div>`;
   }).join('');
+
+  listEl.querySelectorAll('.admin-delete-user-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const userId = btn.getAttribute('data-user-id');
+      const user = _adminUsers.find(u => u.id === userId);
+      if (userId) adminDeleteUser(userId, user?.username || 'this user');
+    });
+  });
 }
 
 async function loadPromotePanel() {
@@ -6610,6 +6611,22 @@ async function adminUnlockUser(userId) {
     await api('POST', '/admin/users/' + userId + '/unlock');
     toast('Account unlocked.');
     await loadUsersPanel();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function adminDeleteUser(userId, username) {
+  const name = username || 'this user';
+  if (!window.confirm('Permanently delete ' + name + ' and all associated account data? This cannot be undone.')) return;
+  try {
+    await api('DELETE', '/admin/users/' + userId);
+    _promoteSelectedUserIds.delete(userId);
+    toast('User deleted.');
+    await Promise.all([
+      loadUsersPanel(),
+      loadPromotePanel(),
+      loadLockedAccounts(),
+      loadUserReports(),
+    ]);
   } catch (err) { toast(err.message, 'error'); }
 }
 
@@ -7395,7 +7412,7 @@ async function refreshNotifications() {
           if (!fired[k]) {
             fired[k] = day;
             try {
-              new Notification('TaskIt! Reminder', { body: t.title, icon: '/icons/icon-192x192.png?v=1.22.6', badge: '/icons/notification-badge-96x96.png?v=1.22.6', tag: k });
+              new Notification('TaskIt! Reminder', { body: t.title, icon: '/icons/icon-192x192.png?v=1.23.1', badge: '/icons/notification-badge-96x96.png?v=1.23.1', tag: k });
             } catch { /* Notification API unavailable or permission revoked */ }
           }
         };
@@ -8421,35 +8438,30 @@ function readArcadeScoreOnExit(gameId) {
 function arcadeScriptSrc(game) {
   if (!game || !game.scriptPath) return '';
   const appVersion = window.APP_VERSION || window._serverVersion || 'dev';
-  const version = appVersion + '-' + (game.updatedAt || Date.now());
+  const version = appVersion + '-' + (game.updatedAt || Date.now()) + '-' + Date.now();
   return game.scriptPath + (game.scriptPath.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(version);
 }
 
 function arcadeEnsureGameScript(game) {
   if (!game || !game.scriptPath) return Promise.resolve();
-  const appVersion = window.APP_VERSION || window._serverVersion || 'dev';
-  const key = game.gameId + ':' + game.scriptPath + ':' + appVersion + ':' + (game.updatedAt || '');
-  if (arcadeLoadedScripts.has(key)) {
-    const registered = window.TaskItArcade && window.TaskItArcade.getByScriptPath(game.scriptPath);
-    if (!registered) {
-      arcadeLoadedScripts.delete(key);
-    } else {
-      return arcadeLoadedScripts.get(key);
-    }
+  const existingForPath = window.TaskItArcade && window.TaskItArcade.getByScriptPath(game.scriptPath);
+  if (existingForPath && typeof window.TaskItArcade.unregister === 'function') {
+    window.TaskItArcade.unregister(existingForPath.gameId);
   }
 
-  const promise = new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = arcadeScriptSrc(game);
     script.dataset.arcadeGameId = game.gameId;
     script.dataset.arcadeScriptPath = game.scriptPath;
     script.async = true;
-    script.onload = resolve;
+    script.onload = () => {
+      script.remove();
+      resolve();
+    };
     script.onerror = () => reject(new Error('Could not load game script: ' + game.scriptPath));
     document.body.appendChild(script);
   });
-  arcadeLoadedScripts.set(key, promise);
-  return promise;
 }
 
 /**
@@ -8486,7 +8498,6 @@ async function openArcade(badgeKey) {
   // Populate header
   document.getElementById('arcadeGameIcon').textContent     = game.icon;
   document.getElementById('arcadeTitle').textContent        = game.title;
-  document.getElementById('arcadeGameSubtitle').textContent = game.subtitle;
 
   // Store active game context on the element for Stage 2 modules
   overlay.dataset.activeGame   = badgeKey;
@@ -8569,10 +8580,9 @@ async function openArcade(badgeKey) {
     await arcadeEnsureGameScript(game);
     if (overlay.dataset.activeGame !== badgeKey) return;
 
-    const registeredGame = window.TaskItArcade && (
-      (game.scriptPath && window.TaskItArcade.getByScriptPath(game.scriptPath)) ||
-      window.TaskItArcade.get(game.gameId)
-    );
+    const registeredGame = window.TaskItArcade && game.scriptPath
+      ? window.TaskItArcade.getByScriptPath(game.scriptPath)
+      : null;
     if (registeredGame) {
       const runtimeGameId = registeredGame.gameId || game.gameId;
       overlay.dataset.activeGameId = runtimeGameId;
@@ -9036,17 +9046,13 @@ async function loadInventory() {
     <button id="arcadeBackBtn" class="arcade-back-btn" aria-label="Close Arcade and return to tasks">
       🔙 Back to Tasks
     </button>
-    <div class="arcade-logo">🕹️ TaskIt! Arcade</div>
+    <div class="arcade-logo">
+      <span id="arcadeGameIcon" class="arcade-game-icon" aria-hidden="true">🏆</span>
+      <span id="arcadeTitle" class="arcade-game-title">Achievement Game</span>
+    </div>
     <div class="arcade-topbar-right">
       <span id="arcadeTokenDisplay" class="arcade-token-display" aria-label="Arcade token balance">🎟️ 0</span>
     </div>
-  </div>
-
-  <!-- Game title / subtitle -->
-  <div class="arcade-title-bar">
-    <span id="arcadeGameIcon" class="arcade-game-icon" aria-hidden="true">🏆</span>
-    <h2 id="arcadeTitle" class="arcade-game-title">Achievement Game</h2>
-    <p id="arcadeGameSubtitle" class="arcade-game-subtitle">Loading…</p>
   </div>
 
   <!-- Time budget HUD — shown when a game session is active -->

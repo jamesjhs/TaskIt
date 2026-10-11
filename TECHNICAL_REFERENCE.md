@@ -1,6 +1,6 @@
 # TaskIt! — Technical Reference Manual
 
-**Version 1.22.6**
+**Version 1.23.1**
 **Author:** J Rowson  
 **Generated:** 2026-05-23
 
@@ -1649,9 +1649,9 @@ Collapsible task sections (`significantly-overdue-list`, `sporadic-list`, and `g
 | Function | Description |
 |---|---|
 | `setArcadeCatalogue(games)` | Converts enabled rows from `/gamification/arcade/games` into `ARCADE_GAME_ORDER` and `ARCADE_GAMES` |
-| `arcadeScriptSrc(game)` | Builds a dynamic script URL with a version query from `APP_VERSION` plus the catalogue row `updatedAt` |
-| `arcadeEnsureGameScript(game)` | Lazily injects the configured game script once per game/path/app-version/catalogue-version |
-| `openArcade(badgeKey)` | Opens arcade modal; authorises via `unlockedArcadeKeys`; loads the configured script; calls `window.TaskItArcade.get(gameId).mount(frame, context)` |
+| `arcadeScriptSrc(game)` | Builds a dynamic script URL with a version query from `APP_VERSION`, the catalogue row `updatedAt`, and a launch timestamp |
+| `arcadeEnsureGameScript(game)` | Injects the configured game script for the current launch and clears any previously registered module for the same script path first |
+| `openArcade(badgeKey)` | Opens arcade modal; authorises via `unlockedArcadeKeys`; loads the configured script; mounts only the module registered by that script path |
 | `arcadeSpendToken()` | Uses active game `spendToken()` when present; otherwise POSTs `/api/gamification/arcade/spend-token`, updates token balance, and calls active game `addTime(seconds)` when available |
 | `submitArcadeHighScore(gameIdOrPayload, maybeScore)` | POST `/api/gamification/arcade/high-scores`; prompts for pseudonym first if missing |
 | `getArcadeHighScores(gameId)` | GET `/api/gamification/arcade/high-scores/:gameId`; used by future game scoreboards |
@@ -1665,7 +1665,7 @@ Collapsible task sections (`significantly-overdue-list`, `sporadic-list`, and `g
 
 **Labyrinth port:** `/js/game-labyrinth.js` registers `gameId: "maze"` and loads `/labyrinth/labyrinth.html` in a same-origin iframe with an app-version query string. The iframe preserves the source game's single-page layout and broad page-level CSS without leaking selectors into `public/index.html`. Parent/iframe `postMessage` calls bridge TaskIt-owned operations: `getScores`, `submitScore`, `spendHintToken`, and `stateChanged`. The generic arcade token button calls a game-specific `spendToken()` hook when present, so Labyrinth spends a token for an extra hint instead of adding time. The parent arcade surface and the Labyrinth iframe both block two-finger scroll/pinch defaults with capture-phase non-passive handlers for multi-touch/native gesture events, while leaving normal single-finger taps available for buttons and menus. Do not apply broad `touch-action: none` rules to the iframe, `html`, `body`, or whole game surface; some mobile WebViews suppress iframe-internal tap activation when those are present. Joystick zones call `preventDefault()` only for their own touch controls.
 
-**Labyrinth renderer:** Three.js is self-hosted at `/labyrinth/assets/vendor/three.min.js`, copied from exact-pinned `three@0.128.0`. The Labyrinth loader uses a same-origin `<script>` tag and keeps CDN fallback disabled. This avoids widening Helmet CSP to third-party script origins and avoids the source game's older `fetch` + `new Function` path, which would conflict with the no-`unsafe-eval` CSP hardening. Normal TaskIt launches require this Three/WebGL path; the older CPU ray renderer remains in the source as an emergency renderer but is no longer selected silently at startup. The service worker treats `/labyrinth/labyrinth.html` as a standalone static page and precaches the wrapper, page, and renderer asset.
+**Labyrinth renderer:** Three.js is self-hosted at `/labyrinth/assets/vendor/three.min.js`, copied from exact-pinned `three@0.128.0`. The Labyrinth loader uses a same-origin `<script>` tag and keeps CDN fallback disabled. This avoids widening Helmet CSP to third-party script origins and avoids the source game's older `fetch` + `new Function` path, which would conflict with the no-`unsafe-eval` CSP hardening. Normal TaskIt launches require this Three/WebGL path; the older CPU ray renderer remains in the source as an emergency renderer but is no longer selected silently at startup. The service worker treats `/labyrinth/labyrinth.html` as a standalone static page and precaches the page and renderer asset; arcade wrapper scripts are loaded from their configured game files instead of a hard-coded service-worker game-script cache.
 
 ---
 
@@ -2263,5 +2263,5 @@ node-cron: '0 * * * *'
 
 ---
 
-*End of Technical Reference Manual — TaskIt! v1.22.6*
+*End of Technical Reference Manual — TaskIt! v1.23.1*
 

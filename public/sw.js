@@ -22,7 +22,6 @@ const STATIC_ASSETS = [
   `/icons/notification-badge-96x96.png${ASSET_VERSION}`,
   `/js/version.js${ASSET_VERSION}`,
   `/js/qrcode.js${ASSET_VERSION}`,
-  `/js/game-labyrinth.js${ASSET_VERSION}`,
   `/labyrinth/labyrinth.html${ASSET_VERSION}`,
   '/labyrinth/assets/vendor/three.min.js',
   '/privacy-policy.html',

@@ -1,6 +1,6 @@
 {
   "name": "taskit",
-  "version": "1.22.6",
+  "version": "1.23.1",
   "private": true,
   "description": "TaskIt! task management application",
   "workspaces": [
@@ -21,8 +21,13 @@
   "devDependencies": {
     "three": "0.128.0"
   },
+  "overrides": {
+    "@parcel/watcher": "2.6.0",
+    "proxy-addr": "2.0.8",
+    "source-map-js": "1.2.2"
+  },
   "allowScripts": {
-    "@parcel/watcher@2.5.1": true,
+    "@parcel/watcher@2.6.0": true,
     "better-sqlite3-multiple-ciphers@13.0.3": true,
     "esbuild@0.28.2": true
   }

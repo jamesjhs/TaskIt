@@ -328,6 +328,80 @@ function isOriginalAdmin(userId: string): boolean {
   return oid !== null && oid === userId;
 }
 
+function deleteUserAccount(userId: string): void {
+  const deleteInOrder = db.transaction(() => {
+    const deletedGroupIds = new Set<string>();
+    const deleteGroup = (groupId: string): void => {
+      db.prepare('DELETE FROM task_reminders_sent WHERE task_id IN (SELECT id FROM tasks WHERE group_id = ?)').run(groupId);
+      db.prepare('DELETE FROM task_push_reminders_sent WHERE task_id IN (SELECT id FROM tasks WHERE group_id = ?)').run(groupId);
+      db.prepare('DELETE FROM task_notes WHERE task_id IN (SELECT id FROM tasks WHERE group_id = ?)').run(groupId);
+      db.prepare('DELETE FROM task_history WHERE task_id IN (SELECT id FROM tasks WHERE group_id = ?)').run(groupId);
+      db.prepare('DELETE FROM task_subtasks WHERE task_id IN (SELECT id FROM tasks WHERE group_id = ?)').run(groupId);
+      db.prepare('DELETE FROM task_assignees WHERE task_id IN (SELECT id FROM tasks WHERE group_id = ?)').run(groupId);
+      db.prepare('DELETE FROM tasks WHERE group_id = ?').run(groupId);
+      db.prepare('DELETE FROM group_invites WHERE group_id = ?').run(groupId);
+      db.prepare('DELETE FROM group_members WHERE group_id = ?').run(groupId);
+      db.prepare('DELETE FROM task_types WHERE group_id = ?').run(groupId);
+      db.prepare('DELETE FROM groups WHERE id = ?').run(groupId);
+      deletedGroupIds.add(groupId);
+    };
+
+    db.prepare('DELETE FROM task_reminders_sent WHERE task_id IN (SELECT id FROM tasks WHERE created_by = ?)').run(userId);
+    db.prepare('DELETE FROM task_push_reminders_sent WHERE user_id = ? OR task_id IN (SELECT id FROM tasks WHERE created_by = ?)').run(userId, userId);
+    db.prepare('DELETE FROM task_notes WHERE user_id = ? OR task_id IN (SELECT id FROM tasks WHERE created_by = ?)').run(userId, userId);
+    db.prepare('DELETE FROM task_history WHERE user_id = ? OR task_id IN (SELECT id FROM tasks WHERE created_by = ?)').run(userId, userId);
+    db.prepare('DELETE FROM task_subtasks WHERE task_id IN (SELECT id FROM tasks WHERE created_by = ?)').run(userId);
+    db.prepare('UPDATE task_subtasks SET completed_by = NULL WHERE completed_by = ?').run(userId);
+    db.prepare('DELETE FROM task_assignees WHERE user_id = ? OR task_id IN (SELECT id FROM tasks WHERE created_by = ?)').run(userId, userId);
+    db.prepare('DELETE FROM tasks WHERE created_by = ?').run(userId);
+    db.prepare('DELETE FROM group_invites WHERE created_by = ?').run(userId);
+
+    const ownedGroups = db.prepare('SELECT id FROM groups WHERE created_by = ?').all(userId) as Array<{ id: string }>;
+    for (const group of ownedGroups) {
+      const replacementAdmin = db.prepare(
+        "SELECT user_id FROM group_members WHERE group_id = ? AND user_id != ? AND role = 'admin' ORDER BY joined_at ASC LIMIT 1"
+      ).get(group.id, userId) as { user_id: string } | undefined;
+
+      if (replacementAdmin) {
+        db.prepare('UPDATE groups SET created_by = ? WHERE id = ?').run(replacementAdmin.user_id, group.id);
+        continue;
+      }
+
+      deleteGroup(group.id);
+    }
+
+    const adminGroups = db.prepare(
+      "SELECT group_id FROM group_members WHERE user_id = ? AND role = 'admin'"
+    ).all(userId) as Array<{ group_id: string }>;
+    for (const membership of adminGroups) {
+      if (deletedGroupIds.has(membership.group_id)) continue;
+      const otherAdmins = db.prepare(
+        "SELECT 1 FROM group_members WHERE group_id = ? AND user_id != ? AND role = 'admin'"
+      ).get(membership.group_id, userId);
+      if (!otherAdmins) deleteGroup(membership.group_id);
+    }
+
+    db.prepare('DELETE FROM group_members WHERE user_id = ?').run(userId);
+    db.prepare('UPDATE task_types SET created_by = NULL WHERE created_by = ?').run(userId);
+    db.prepare('DELETE FROM user_blocks WHERE blocker_id = ? OR blocked_id = ?').run(userId, userId);
+    db.prepare('DELETE FROM user_reports WHERE reporter_id = ? OR reported_id = ?').run(userId, userId);
+    db.prepare('DELETE FROM user_friends WHERE user_id = ? OR friend_id = ?').run(userId, userId);
+    db.prepare('DELETE FROM friend_invites WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM otp_tokens WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM magic_tokens WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM feedback_messages WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM user_alerts WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM push_subscriptions WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM user_skills WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM user_achievements WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM user_inventory WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM arcade_high_scores WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+  });
+
+  deleteInOrder();
+}
+
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 router.get('/users', (_req: Request, res: Response): void => {
@@ -414,6 +488,30 @@ router.put('/users/:id/role', (req: Request, res: Response): void => {
 
   db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, targetId);
   res.json({ message: 'Role updated' });
+});
+
+router.delete('/users/:id', (req: Request, res: Response): void => {
+  const targetId = routeParam(req.params.id);
+  const requesterId = req.user!.id;
+
+  if (targetId === requesterId) {
+    res.status(400).json({ error: 'Cannot delete your own account from the admin panel' });
+    return;
+  }
+
+  const target = db.prepare('SELECT id, username, role FROM users WHERE id = ?').get(targetId) as { id: string; username: string; role: string } | undefined;
+  if (!target) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  if (target.role === 'admin') {
+    res.status(403).json({ error: 'Admin accounts cannot be deleted from this panel' });
+    return;
+  }
+
+  deleteUserAccount(targetId);
+  res.json({ message: 'User deleted', username: target.username });
 });
 
 router.patch('/users/:id/promotional-email', (req: Request, res: Response): void => {

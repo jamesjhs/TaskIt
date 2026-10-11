@@ -47,7 +47,7 @@
 <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
   <article class="prose prose-slate dark:prose-invert max-w-none bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 sm:p-8">
     <h1>TaskIt! Arcade Game Creation and Integration Manual</h1>
-    <p class="lead" style="color:#6b7280;font-size:.95rem;margin-top:-4px">v<span class="page-version">1.22.6</span> · for contributors and AI coding agents</p>
+    <p class="lead" style="color:#6b7280;font-size:.95rem;margin-top:-4px">v<span class="page-version">1.23.1</span> · for contributors and AI coding agents</p>
     <p>This manual explains how to create a compatible TaskIt! Arcade game module, test it locally, and enable it from <strong>Admin &gt; Gamify &gt; Arcade Games</strong>. It is written for a human contributor and for an AI agent that may be asked to build or iterate a game using the repository as reference.</p>
 
     <div class="toc">
@@ -68,12 +68,12 @@
 
     <h2 id="mental-model">1. Mental Model</h2>
     <p>The TaskIt! app owns the Arcade overlay, achievement unlock rules, daily play budget, token spending, and close/back controls. A game module owns only the content inside <code>#arcadeGameFrame</code>.</p>
-    <p>When a user opens a game, TaskIt! fetches the enabled arcade catalogue from the server, dynamically loads the configured JavaScript file, looks up the module by <code>gameId</code>, and calls its <code>mount(frame, context)</code> function. When the overlay closes, TaskIt! calls <code>unmount()</code>.</p>
+    <p>When a user opens a game, TaskIt! fetches the enabled arcade catalogue from the server, dynamically loads the configured JavaScript file, looks up the module registered by that script path, and calls its <code>mount(frame, context)</code> function. When the overlay closes, TaskIt! calls <code>unmount()</code>.</p>
 
     <table>
       <tr><th>Owned by TaskIt!</th><th>Owned by the game module</th></tr>
       <tr><td>Overlay shell, title, subtitle, back button, token balance, daily limit, achievement access</td><td>Game UI inside <code>#arcadeGameFrame</code>, game state, scoring, input handling, timers within the game</td></tr>
-      <tr><td>Script loading and cache busting using the admin catalogue's <code>updatedAt</code></td><td>Registering itself with <code>window.TaskItArcade.register(...)</code></td></tr>
+      <tr><td>Script loading from the selected <code>.js</code> file with cache busting using the admin catalogue's <code>updatedAt</code></td><td>Registering itself with <code>window.TaskItArcade.register(...)</code></td></tr>
     </table>
 
     <div class="info-box">The game should not navigate away, replace the whole page, edit account data, or assume it is the only JavaScript running on the page.</div>
@@ -267,11 +267,11 @@ After implementation, explain the Admin Arcade Games values needed to register i
     <table>
       <tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr>
       <tr><td>File does not appear in Script File dropdown</td><td>Filename/path does not match scanner rules</td><td>Use <code>public/js/game-name.js</code> or <code>public/js/games/name.js</code>, then click Refresh.</td></tr>
-      <tr><td>Overlay shows placeholder instead of game</td><td>Script did not register, or <code>gameId</code> mismatch</td><td>Check browser console and confirm Admin Game ID equals module <code>gameId</code>.</td></tr>
+      <tr><td>Overlay shows placeholder instead of game</td><td>Selected script did not register a module for that file path, or the file failed to load</td><td>Check browser console, confirm the selected Script File exists, and confirm the module calls <code>window.TaskItArcade.register(...)</code>.</td></tr>
       <tr><td>Game works once but breaks after reopening</td><td>State or listeners are not reset</td><td>Reset state in <code>mount()</code> and clean up in <code>unmount()</code>.</td></tr>
       <tr><td>Keyboard controls fire multiple times</td><td>Document listener added repeatedly and not removed</td><td>Use a named listener function and remove it in <code>unmount()</code>.</td></tr>
       <tr><td>Timer continues after closing Arcade</td><td>Interval or animation loop not cleared</td><td>Store interval/frame IDs and clear/cancel them in <code>unmount()</code>.</td></tr>
-      <tr><td>Updated game file does not appear to change</td><td>Browser/CDN cache</td><td>Save the admin game entry again so <code>updatedAt</code> changes and the loader appends a fresh version query.</td></tr>
+      <tr><td>Updated game file does not appear to change</td><td>Browser/CDN cache</td><td>Save the admin game entry again so <code>updatedAt</code> changes. The wrapper also appends a launch timestamp so normal opens fetch the selected file fresh.</td></tr>
     </table>
 
     <div class="tip-box">Reference implementations: <code>/public/js/game-hangman.js</code>, <code>/public/js/game-wordsearch.js</code>, <code>/public/js/game-whac-a-bug.js</code>, and <code>/public/js/game-code-breaker.js</code>.</div>
@@ -280,7 +280,7 @@ After implementation, explain the Admin Arcade Games values needed to register i
 
 <footer class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-6 mt-auto">
   <div class="max-w-5xl mx-auto px-4 text-center text-sm text-slate-500 dark:text-slate-400">
-    <p>TaskIt! v<span class="page-version">1.22.6</span> · <a href="/user-guide.html" class="text-indigo-600 hover:underline">User Guide</a></p>
+    <p>TaskIt! v<span class="page-version">1.23.1</span> · <a href="/user-guide.html" class="text-indigo-600 hover:underline">User Guide</a></p>
   </div>
 </footer>
 <script src="/js/version.js"></script>

@@ -2220,6 +2220,8 @@ body.arcade-open { overflow: hidden; }
   inset: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   z-index: 9999;
   background: linear-gradient(160deg, #0f0c29 0%, #1a1040 40%, #24243e 100%);
   display: flex;
@@ -2267,40 +2269,34 @@ body.arcade-open { overflow: hidden; }
 .arcade-back-btn:hover { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.45); }
 
 .arcade-logo {
-  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   font-weight: 800;
-  color: #c4b5fd;
-  letter-spacing: .04em;
   text-align: center;
+  min-width: 0;
 }
 
 /* Third grid cell — invisible but keeps the logo centred */
 .arcade-topbar-spacer { visibility: hidden; pointer-events: none; }
 
-/* Game title section */
-.arcade-title-bar {
-  text-align: center;
-  padding: 14px 16px 10px;
-  flex-shrink: 0;
-}
 .arcade-game-icon {
-  font-size: 2.4rem;
+  font-size: 1.35rem;
   line-height: 1;
-  display: block;
-  margin-bottom: 6px;
+  flex-shrink: 0;
   filter: drop-shadow(0 0 12px rgba(196,181,253,.6));
 }
 .arcade-game-title {
-  font-size: 1.3rem;
+  font-size: 1rem;
   font-weight: 800;
   color: #fff;
-  margin: 0 0 4px;
   letter-spacing: .01em;
-}
-.arcade-game-subtitle {
-  font-size: .85rem;
-  color: #a5b4fc;
   margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Main game container — fills remaining vertical space */
@@ -2309,7 +2305,7 @@ body.arcade-open { overflow: hidden; }
   display: flex;
   align-items: stretch;
   justify-content: center;
-  padding: 8px 12px 12px;
+  padding: 8px 12px calc(16px + env(safe-area-inset-bottom, 0px));
   overflow: hidden;
   min-height: 0;
   overscroll-behavior: none;
@@ -2318,7 +2314,9 @@ body.arcade-open { overflow: hidden; }
 /* The frame where game canvases / Stage 2 content is injected */
 .arcade-game-frame {
   width: 100%;
+  height: 100%;
   max-width: 640px;
+  max-height: 100%;
   min-height: 180px;
   background: rgba(0,0,0,.3);
   border: 1px solid rgba(255,255,255,.1);
@@ -2405,19 +2403,15 @@ body.arcade-open { overflow: hidden; }
 
 /* Responsive tweaks */
 @media (max-width: 480px) {
-  .arcade-game-title  { font-size: 1.05rem; }
-  .arcade-game-icon   { font-size: 1.9rem; }
-  .arcade-logo        { font-size: .82rem; }
+  .arcade-game-title  { font-size: .92rem; }
+  .arcade-game-icon   { font-size: 1.15rem; }
   .arcade-back-btn    { font-size: .75rem; padding: 6px 10px; }
-  .arcade-title-bar   { padding: 10px 12px 8px; }
 }
 
 /* Landscape + short viewport: shrink title area to maximise game space */
 @media (max-height: 500px) {
-  .arcade-title-bar   { padding: 6px 12px 4px; }
-  .arcade-game-icon   { font-size: 1.4rem; margin-bottom: 3px; }
-  .arcade-game-title  { font-size: .95rem; }
-  .arcade-game-subtitle { display: none; }
+  .arcade-game-icon   { font-size: 1.05rem; }
+  .arcade-game-title  { font-size: .9rem; }
 }
 
 /* =========================================================

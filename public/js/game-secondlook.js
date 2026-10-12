@@ -8,10 +8,15 @@
 (function () {
   'use strict';
 
+  // Stable arcade identifier used when reading and submitting this game's scores.
   var GAME_ID = 'second_look';
+  // Lives are shared across every round in the current level, then reset on level-up.
   var LIVES_PER_LEVEL = 4;
+  // The player studies the original task for this many seconds before it changes.
   var PREVIEW_SECONDS = 5;
+  // Brief overlay duration between showing the original task and asking for changes.
   var TRANSITION_MS = 800;
+  // Difficulty progression: visible task fields, maximum changes, rounds, and search time.
   var LEVELS = [
     { name: 'Intro', columns: ['status', 'title', 'due'], changes: 2, games: 4, findSeconds: 18 },
     { name: 'Focused', columns: ['status', 'title', 'due', 'priority'], changes: 3, games: 5, findSeconds: 20 },
@@ -19,6 +24,7 @@
     { name: 'Expert', columns: ['status', 'title', 'due', 'priority', 'tag', 'end'], changes: 5, games: 7, findSeconds: 28 },
   ];
 
+  // Point values are centralized so scoring rules remain easy to review and tune.
   var SCORE = {
     detail: 100,
     timeDetail: 150,
@@ -29,10 +35,12 @@
     streak: 25,
   };
 
+  // Sample data keeps the game self-contained; each title has a deliberately similar variant.
   var TASK_TITLES = [
     'Submit report', 'Confirm booking', 'Review notes', 'Send invoice',
     'Plan sprint', 'Book appointment', 'Email client', 'Prepare agenda',
   ];
+  // Explicit variants avoid awkward pluralization when generating a changed title.
   var TITLE_VARIANTS = {
     'Submit report': 'Submit reports',
     'Confirm booking': 'Confirm bookings',
@@ -43,6 +51,7 @@
     'Email client': 'Email clients',
     'Prepare agenda': 'Prepare agendas',
   };
+  // Tags carry both display text and a CSS color name used by the task renderer.
   var TAGS = [
     { name: 'Work', color: 'blue' },
     { name: 'Home', color: 'green' },
@@ -50,29 +59,37 @@
     { name: 'Study', color: 'violet' },
     { name: 'Health', color: 'rose' },
   ];
+  // Ordered options are cycled when producing a changed priority.
   var PRIORITIES = ['Low', 'Med', 'High'];
 
+  // The single mutable model for the game. Rendering reads it; game actions update it.
   var state = {
+    // Host element and lifecycle/phase control.
     frame: null,
     active: false,
     phase: 'idle',
+    // Progress through LEVELS and the current level's shared life pool.
     levelIndex: 0,
     roundIndex: 0,
     levelLives: LIVES_PER_LEVEL,
+    // Accumulated score and accuracy-related counters.
     score: 0,
     streak: 0,
     wrongClicks: 0,
     totalChanges: 0,
     totalFound: 0,
+    // Per-detail lookup maps: membership/value indicates a UI selection or outcome.
     selectedIds: {},
     foundChangeIds: {},
     missedChangeIds: {},
     incorrectIds: {},
     hintedIds: {},
     hintFlashIds: {},
+    // The original task, its altered version, and the changes the player must find.
     currentOriginal: null,
     currentChanged: null,
     activeChanges: [],
+    // Current-round scoring counters and the start time used for speed bonuses.
     roundFound: 0,
     roundWrong: 0,
     roundMissed: 0,
@@ -80,8 +97,10 @@
     roundScore: 0,
     findStartedAt: 0,
     countdownLabel: '',
+    // Handles let phase changes and unmount reliably cancel pending callbacks.
     timers: [],
     intervals: [],
+    // Completion/scoreboard integration state.
     completed: false,
     finalRating: null,
     lastScorePayload: null,
@@ -91,10 +110,12 @@
     originalSpendButtonText: '',
   };
 
+  // Choose one array element uniformly at random; callers provide a non-empty list.
   function randomItem(items) {
     return items[Math.floor(Math.random() * items.length)];
   }
 
+  // Return a shuffled copy using Fisher-Yates, leaving the caller's array untouched.
   function shuffle(items) {
     var copy = items.slice();
     for (var i = copy.length - 1; i > 0; i--) {
@@ -106,19 +127,23 @@
     return copy;
   }
 
+  // Format a numeric hour or minute as two digits for the task's HH:MM display.
   function pad2(n) {
     return n < 10 ? '0' + n : String(n);
   }
 
+  // Convert minutes since midnight into a zero-padded clock string.
   function minutesToTime(minutes) {
     return pad2(Math.floor(minutes / 60)) + ':' + pad2(minutes % 60);
   }
 
+  // Parse the HH:MM string representation into minutes since midnight.
   function timeToMinutes(value) {
     var parts = value.split(':');
     return (parseInt(parts[0], 10) * 60) + parseInt(parts[1], 10);
   }
 
+  // Move a displayed task time by a small amount while keeping it near work hours.
   function shiftTime(value) {
     var minutes = timeToMinutes(value) + randomItem([-30, -15, 15, 30]);
     if (minutes < 8 * 60) minutes += 45;
@@ -126,15 +151,18 @@
     return minutesToTime(minutes);
   }
 
+  // Select an option other than the current one, falling back if no alternative exists.
   function nextDifferent(value, pool) {
     var choices = pool.filter(function (item) { return item !== value; });
     return randomItem(choices.length ? choices : pool);
   }
 
+  // Make a JSON-safe deep copy of the plain task record before applying alterations.
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
   }
 
+  // Cancel every outstanding timeout and interval, then discard their handles.
   function clearTimers() {
     state.timers.forEach(function (id) { clearTimeout(id); });
     state.intervals.forEach(function (id) { clearInterval(id); });
@@ -142,6 +170,7 @@
     state.intervals = [];
   }
 
+  // Register a timeout and remove its handle when it fires so cleanup stays accurate.
   function setTimeoutTracked(fn, ms) {
     var id = setTimeout(function () {
       state.timers = state.timers.filter(function (timerId) { return timerId !== id; });
@@ -151,12 +180,14 @@
     return id;
   }
 
+  // Register a repeating callback so clearTimers/unmount can stop it later.
   function setIntervalTracked(fn, ms) {
     var id = setInterval(fn, ms);
     state.intervals.push(id);
     return id;
   }
 
+  // Restore all per-session counters and transient data to their initial values.
   function resetSession() {
     clearTimers();
     state.phase = 'idle';
@@ -192,21 +223,26 @@
     state.leaderboardStatus = 'Loading scores...';
   }
 
+  // Sum the configured rounds across all difficulty levels for HUD progress.
   function totalGames() {
     return LEVELS.reduce(function (sum, level) { return sum + level.games; }, 0);
   }
 
+  // Count rounds belonging to levels already passed, excluding the current level.
   function completedGamesBeforeCurrentLevel() {
     return LEVELS.slice(0, state.levelIndex).reduce(function (sum, level) {
       return sum + level.games;
     }, 0);
   }
 
+  // Convert zero-based level/round indices to a player-facing one-based game number.
   function overallGameNumber() {
     return completedGamesBeforeCurrentLevel() + state.roundIndex + 1;
   }
 
+  // Create one synthetic task whose fields form the baseline the player memorizes.
   function generateTask(roundIndex) {
+    // Round index gently advances times and cycles priority without using real user data.
     var baseMinutes = (9 * 60) + (roundIndex * 35) + randomItem([0, 15]);
     var endMinutes = baseMinutes + randomItem([30, 45, 60, 75]);
     var tag = TAGS[(roundIndex + Math.floor(Math.random() * TAGS.length)) % TAGS.length];
@@ -222,6 +258,7 @@
     };
   }
 
+  // Describe every field that can change, including its old/new values and display ID.
   function buildChangeCandidates(task) {
     return [
       { id: 'task-1-status', field: 'done', kind: 'detail', before: task.done, after: !task.done, label: 'status' },
@@ -233,14 +270,17 @@
     ];
   }
 
+  // Return the active difficulty configuration, with a safe fallback for invalid indices.
   function currentLevel() {
     return LEVELS[state.levelIndex] || LEVELS[0];
   }
 
+  // Map internal field name "done" to the visible column name "status" before checking.
   function candidateIsVisible(change, level) {
     return level.columns.indexOf(change.field === 'done' ? 'status' : change.field) !== -1;
   }
 
+  // Choose a random, difficulty-appropriate subset of task details to alter this round.
   function generateChanges(task) {
     var level = currentLevel();
     var candidates = buildChangeCandidates(task).filter(function (change) {
@@ -255,6 +295,7 @@
     });
   }
 
+  // Produce the second task view by copying the baseline and applying selected changes.
   function applyChanges(task, changes) {
     var changed = clone(task);
     changes.forEach(function (change) {
@@ -267,6 +308,7 @@
     return changed;
   }
 
+  // Start a fresh session, load scores asynchronously, and enter the first level.
   function startGame() {
     resetSession();
     state.active = true;
@@ -274,12 +316,14 @@
     startLevel(0);
   }
 
+  // Begin a level with a restored life pool, then start its first round.
   function startLevel(levelIndex) {
     state.levelIndex = levelIndex;
     state.levelLives = LIVES_PER_LEVEL;
     startRound(0);
   }
 
+  // Reset round-only state, generate both task views, then launch the memorization timer.
   function startRound(roundIndex) {
     clearTimers();
     state.roundIndex = roundIndex;
@@ -307,6 +351,7 @@
     renderGame();
   }
 
+  // Move from preview to a short transition overlay, guarding against stale callbacks.
   function startTransition() {
     if (!state.active || state.phase !== 'preview') return;
     clearTimers();
@@ -316,6 +361,7 @@
     setTimeoutTracked(startFinding, TRANSITION_MS);
   }
 
+  // Reveal the altered task and start the level-specific time limit for finding changes.
   function startFinding() {
     if (!state.active || state.phase !== 'transition') return;
     clearTimers();
@@ -330,7 +376,9 @@
     renderGame();
   }
 
+  // Run a deadline-based countdown; onTick receives remaining whole seconds.
   function startCountdown(seconds, onTick, onDone) {
+    // Derive remaining time from a fixed deadline rather than decrementing each interval.
     var endAt = Date.now() + (seconds * 1000);
     function tick() {
       var left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
@@ -344,6 +392,7 @@
     setIntervalTracked(tick, 250);
   }
 
+  // Look up a generated change by the stable ID carried by its corresponding button.
   function findChange(detailId) {
     for (var i = 0; i < state.activeChanges.length; i++) {
       if (state.activeChanges[i].id === detailId) return state.activeChanges[i];
@@ -351,6 +400,7 @@
     return null;
   }
 
+  // Toggle a task detail in/out of the player's answer while the find phase is active.
   function handleDetailClick(detailId) {
     if (!state.active || state.phase !== 'finding') return;
     if (state.selectedIds[detailId]) delete state.selectedIds[detailId];
@@ -358,6 +408,7 @@
     renderGame();
   }
 
+  // Award correct-answer points and record the result for this detail.
   function scoreCorrect(change, orderIndex, selectedAt) {
     var base = change.kind === 'time' ? SCORE.timeDetail : SCORE.detail;
     var selectedTime = Number(selectedAt) || Date.now();
@@ -372,6 +423,7 @@
     change.found = true;
   }
 
+  // Apply a wrong-answer penalty and mark the clicked field for result feedback.
   function scoreWrongGuess(detailId) {
     state.wrongClicks += 1;
     state.roundWrong += 1;
@@ -380,6 +432,7 @@
     state.roundScore += SCORE.wrong;
   }
 
+  // Freeze input, score all selected answers, penalize missed changes, and show results.
   function endRound(reason) {
     if (!state.active || state.phase !== 'finding') return;
     clearTimers();
@@ -415,6 +468,7 @@
     renderGame();
   }
 
+  // Advance after results, ending early on zero lives or after the final level.
   function nextRoundOrComplete() {
     if (state.phase !== 'round-results') return;
     if (state.levelLives <= 0) completeGame();
@@ -423,6 +477,7 @@
     else completeGame();
   }
 
+  // Freeze the session, calculate its rating, and hand the final score to arcade services.
   function completeGame() {
     clearTimers();
     state.phase = 'complete';
@@ -434,7 +489,9 @@
     loadLeaderboard();
   }
 
+  // Choose the player-facing result message from survival, accuracy, and mistakes.
   function getRating() {
+    // Accuracy is based only on required changes; wrong extra taps are handled separately.
     var accuracy = state.totalChanges ? state.totalFound / state.totalChanges : 0;
     if (state.levelLives <= 0 && state.levelIndex + 1 < LEVELS.length) {
       return { title: 'Out of Lives', text: 'You reached level ' + (state.levelIndex + 1) + ' before the details got away.' };
@@ -447,6 +504,7 @@
     return { title: 'Second Glance Needed', text: 'The clock hid a few clues.' };
   }
 
+  // Mark one unselected, unhinted change and briefly highlight it in the interface.
   function revealHint() {
     var hidden = state.activeChanges.filter(function (change) {
       return !state.selectedIds[change.id] && !state.hintedIds[change.id];
@@ -463,6 +521,7 @@
     return change;
   }
 
+  // Spend an arcade token through the host API and reveal one still-hidden change.
   async function spendToken() {
     if (!state.active || state.phase !== 'finding') return '';
     if (typeof api !== 'function') throw new Error('TaskIt API is unavailable');
@@ -479,6 +538,7 @@
     return hinted ? 'Hint used.' : 'Hint used.';
   }
 
+  // Submit the completed positive score once, when the host exposes its score service.
   function submitFinalScore() {
     if (state.scoreSubmitted || !state.lastScorePayload || state.lastScorePayload.score <= 0) return;
     state.scoreSubmitted = true;
@@ -489,6 +549,7 @@
     }
   }
 
+  // Fetch this game's leaderboard and render an appropriate loading/empty/error state.
   function loadLeaderboard() {
     state.leaderboardStatus = 'Loading scores...';
     if (!window.TaskItArcade || typeof window.TaskItArcade.getHighScores !== 'function') {
@@ -508,15 +569,18 @@
     });
   }
 
+  // Return the host-provided public nickname, or an empty string when unavailable.
   function arcadeNickname() {
     return typeof arcadePseudonym === 'string' ? arcadePseudonym : '';
   }
 
+  // Allow the host/game UI to end an active session through the normal completion path.
   function endGame() {
     if (!state.active || state.phase === 'idle' || state.phase === 'complete') return;
     completeGame();
   }
 
+  // Temporarily relabel the host's generic token button to explain its in-game use.
   function updateTokenButton() {
     var button = document.getElementById('arcadeSpendTokenBtn');
     if (!button) return;
@@ -525,6 +589,7 @@
     button.title = 'Reveal one changed detail in Second Look.';
   }
 
+  // Put the host's token button back exactly as it was before this game mounted.
   function restoreTokenButton() {
     var button = document.getElementById('arcadeSpendTokenBtn');
     if (!button || !state.originalSpendButtonText) return;
@@ -926,3 +991,23 @@
     },
   });
 }());
+    // Only fields visible at this level can change, so every change is findable.
+    // Mark each selected candidate unfound; the same records drive rendering and scoring.
+        // A tag's color is part of its presentation and must follow the new tag name.
+    // Clear callbacks from the previous round before resetting state or scheduling work.
+    // Generate one baseline, the changes to discover, and the derived changed task.
+    // The preview countdown updates the whole screen; expiry advances to the overlay.
+    // Date.now-based deadline prevents interval drift from extending the time limit.
+    // Tick immediately so the UI does not wait 250ms to show its first value.
+    // Keep the time of selection so speed bonuses reflect when the answer was chosen.
+    // Speed is measured from the start of the find phase; subsequent correct picks
+    // in selection order receive increasing streak bonuses.
+    // Revisit selections in their recorded insertion order for streak scoring.
+    // Any required change that wasn't found costs one life, just like a wrong tap.
+    // A flawless voluntary finish or timeout earns a bonus; missed/wrong answers do not.
+    // Store an integer, non-negative score in the payload expected by the host API.
+    // Flash state is temporary visual feedback; the hint remains recorded afterward.
+    // Check that a useful hint exists before charging the player's token balance.
+    // The host owns token accounting; update the shared UI balance from its response.
+    // Mark submission before the async call to prevent duplicate submissions.
+    // Ignore late results while actively playing; rendering then could disrupt the board.

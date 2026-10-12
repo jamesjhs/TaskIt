@@ -598,10 +598,14 @@
     state.originalSpendButtonText = '';
   }
 
+  // Install this game's stylesheet once. The rules are grouped as shell/HUD,
+  // board/task controls, results/scoreboard, animation, and responsive overrides.
   function injectStyles() {
     if (document.getElementById('second-look-styles')) return;
     var style = document.createElement('style');
     style.id = 'second-look-styles';
+    // Keep styles scoped under .second-look-game so this arcade game does not
+    // unexpectedly restyle unrelated pages or other games.
     style.textContent =
       '.second-look-game{--sl-ink:#111827;--sl-muted:#64748b;--sl-line:#dbe3ef;--sl-card:#fff;--sl-good:#047857;--sl-good-bg:#d1fae5;--sl-bad:#b91c1c;--sl-bad-bg:#fee2e2;--sl-miss:#b45309;--sl-miss-bg:#fef3c7;--sl-hint:#1d4ed8;--sl-hint-bg:#dbeafe;display:flex;flex-direction:column;width:100%;height:100%;min-height:0;padding:12px;color:var(--sl-ink);background:linear-gradient(180deg,#f8fafc 0%,#eef6ff 100%);font-family:inherit;box-sizing:border-box;overflow:hidden}' +
       '.second-look-game *{box-sizing:border-box}.sl-start,.sl-complete{margin:auto;max-width:560px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px}.sl-title{font-size:clamp(1.6rem,4vw,2.25rem);line-height:1;margin:0;font-weight:900;color:#0f172a}.sl-sub{margin:0;color:#475569;font-size:.98rem;line-height:1.45}.sl-primary{border:0;border-radius:8px;padding:10px 14px;font-weight:800;cursor:pointer;min-height:42px;background:#2563eb;color:#fff}.sl-secondary{border:1px solid #cbd5e1;border-radius:8px;padding:9px 12px;font-weight:800;cursor:pointer;min-height:38px;background:#fff;color:#334155}.sl-ready{align-self:center;min-width:136px}.sl-primary:focus-visible,.sl-secondary:focus-visible,.sl-detail:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}' +
@@ -615,6 +619,7 @@
     document.head.appendChild(style);
   }
 
+  // Rebuild the game's small DOM tree from state; state remains the source of truth.
   function renderGame() {
     if (!state.frame) return;
     injectStyles();
@@ -622,8 +627,11 @@
     state.frame.replaceChildren();
     var root = document.createElement('div');
     root.className = 'second-look-game';
+    // One delegated click listener survives rerenders because it is attached to
+    // the newly created root, not individually to every replaceable detail button.
     root.addEventListener('click', function (event) {
       var target = event.target.closest && event.target.closest('.sl-detail');
+      // Ignore clicks outside a detail button (including Ready/result controls).
       if (!target || !root.contains(target)) return;
       event.preventDefault();
       handleDetailClick(target.dataset.detailId);
@@ -634,6 +642,7 @@
       root.appendChild(buildHud());
       root.appendChild(buildBoardArea());
     }
+    // Screen readers receive concise phase updates without announcing the whole board.
     var live = document.createElement('div');
     live.className = 'sl-live';
     live.setAttribute('aria-live', 'polite');
@@ -642,12 +651,14 @@
     state.frame.appendChild(root);
   }
 
+  // Refresh just the changing HUD during the fast find countdown, preserving the board.
   function renderHudOnly() {
     var existing = state.frame && state.frame.querySelector('.sl-hud');
     if (!existing) renderGame();
     else existing.replaceWith(buildHud());
   }
 
+  // Build the idle screen with instructions, the latest leaderboard, and start action.
   function buildStart() {
     var start = document.createElement('div');
     start.className = 'sl-start';
@@ -669,6 +680,7 @@
     return start;
   }
 
+  // Build the status and stat pills shared by all active gameplay phases.
   function buildHud() {
     var level = currentLevel();
     var hud = document.createElement('div');
@@ -694,6 +706,7 @@
     return hud;
   }
 
+  // Create a small reusable HUD/stat label, optionally styled as urgent.
   function pill(text, hot) {
     var el = document.createElement('span');
     el.className = 'sl-pill' + (hot ? ' sl-pill--hot' : '');
@@ -701,6 +714,7 @@
     return el;
   }
 
+  // Translate internal phase names into short player-facing headings.
   function phaseTitle() {
     if (state.phase === 'preview') return 'Study the details';
     if (state.phase === 'transition') return 'Time passes...';
@@ -709,6 +723,7 @@
     return 'Second Look';
   }
 
+  // Show selected answer count during play, otherwise the round's found/total count.
   function hudProgressText() {
     if (state.phase === 'finding') {
       return Object.keys(state.selectedIds).length + ' selected';
@@ -716,9 +731,11 @@
     return state.roundFound + '/' + state.activeChanges.length + ' found';
   }
 
+  // Build the central board and add phase-specific overlay or result panel.
   function buildBoardArea() {
     var wrap = document.createElement('div');
     wrap.className = 'sl-board-wrap';
+    // During preview/transition show the memorized original; afterward show changes.
     var task = (state.phase === 'preview' || state.phase === 'transition') ? state.currentOriginal : state.currentChanged;
     wrap.appendChild(buildScene(task));
     if (state.phase === 'transition') {
@@ -731,6 +748,7 @@
     return wrap;
   }
 
+  // Compose the instruction, paper-like task note, and optional submit button.
   function buildScene(task) {
     var level = currentLevel();
     var board = document.createElement('div');
@@ -753,6 +771,7 @@
     return board;
   }
 
+  // Let the player submit early rather than waiting for the search countdown to expire.
   function buildReadyButton() {
     var button = document.createElement('button');
     button.type = 'button';
@@ -765,6 +784,7 @@
     return button;
   }
 
+  // Lay out the task's currently unlocked columns in the level-specific grid.
   function buildTask(task) {
     var level = currentLevel();
     var row = document.createElement('div');
@@ -775,6 +795,7 @@
     return row;
   }
 
+  // Render one field according to its column type, with readable labels and styling.
   function buildColumnButton(column, task) {
     if (column === 'status') {
       return detailButton('task-1-status', task.done ? 'Done' : 'Open', 'Task status ' + (task.done ? 'done' : 'open'), 'sl-check');
@@ -794,6 +815,7 @@
     return detailButton('task-1-end', task.end, 'End time ' + task.end, 'sl-clock');
   }
 
+  // Create an accessible task-field button and attach state-specific visual feedback.
   function detailButton(id, text, label, extraClass) {
     var button = document.createElement('button');
     button.type = 'button';
@@ -802,6 +824,8 @@
     button.disabled = state.phase !== 'finding';
     button.setAttribute('aria-label', label);
     button.textContent = text;
+    // Show one outcome badge; this priority ensures a resolved answer is not
+    // obscured by a stale selection or incorrect-tap marker.
     var found = state.foundChangeIds[id];
     if (found) appendBadge(button, 'Found', '+' + found.points);
     else if (state.missedChangeIds[id]) appendBadge(button, 'Missed');
@@ -810,6 +834,7 @@
     return button;
   }
 
+  // Append a textual result badge and, when provided, a floating points marker.
   function appendBadge(button, label, floating) {
     var badge = document.createElement('span');
     badge.className = 'sl-badge';
@@ -823,6 +848,7 @@
     }
   }
 
+  // Map the first applicable answer state to its CSS class for the detail button.
   function detailStateClass(id) {
     if (state.foundChangeIds[id]) return ' sl-found';
     if (state.missedChangeIds[id]) return ' sl-missed';
@@ -832,8 +858,10 @@
     return '';
   }
 
+  // Summarize round outcomes and create controls to end or continue the session.
   function buildRoundResults() {
     var missed = Object.keys(state.missedChangeIds).length;
+    // "Perfect" means every required change was found with no extra wrong taps.
     var perfect = missed === 0 && state.roundWrong === 0;
     var levelComplete = state.levelLives > 0 && state.roundIndex + 1 >= currentLevel().games;
     var outOfLives = state.levelLives <= 0;
@@ -881,6 +909,7 @@
     return panel;
   }
 
+  // Render the shared arcade leaderboard, including loading/empty/error messaging.
   function buildScoreboard() {
     var board = document.createElement('div');
     board.className = 'sl-scoreboard';
@@ -900,6 +929,7 @@
       board.appendChild(empty);
       return board;
     }
+    // Use textContent for all returned names and values so leaderboard text stays inert.
     state.leaderboardRows.forEach(function (row, index) {
       var line = document.createElement('div');
       line.className = 'sl-score-row';
@@ -921,6 +951,7 @@
     return board;
   }
 
+  // Build the final rating, session stats, leaderboard, and replay control.
   function buildComplete() {
     var rating = state.finalRating || getRating();
     var complete = document.createElement('div');
@@ -950,6 +981,7 @@
     return complete;
   }
 
+  // Return the concise sentence placed in the aria-live region for the current phase.
   function liveText() {
     if (state.phase === 'preview') return 'Study the task. ' + state.countdownLabel + ' remaining.';
     if (state.phase === 'finding') return 'Find changes. ' + state.countdownLabel + ' remaining.';
@@ -958,10 +990,12 @@
     return '';
   }
 
+  // Arcade host entry point: choose a container, reset transient state, and render.
   function mount(frame) {
     state.frame = frame || document.getElementById('arcadeGameFrame');
     state.active = true;
     resetSession();
+    // resetSession clears game progress but deliberately does not deactivate the mount.
     state.active = true;
     updateTokenButton();
     loadLeaderboard();
@@ -969,6 +1003,7 @@
     return this;
   }
 
+  // Arcade host cleanup: cancel callbacks, restore shared controls, and release the DOM.
   function unmount() {
     clearTimers();
     restoreTokenButton();
@@ -977,6 +1012,8 @@
     state.frame = null;
   }
 
+  // Register lifecycle and token hooks with the host arcade framework. getHighScore
+  // lazily prepares the payload for hosts that request it before submitFinalScore runs.
   window.TaskItArcade.register({
     gameId: GAME_ID,
     mount: mount,
@@ -985,6 +1022,7 @@
     getHighScore: function () {
       if (state.scoreSubmitted) return null;
       if (!state.lastScorePayload && state.score > 0 && state.completed) {
+        // Match the host contract: scores are whole, non-negative numbers.
         state.lastScorePayload = { gameId: GAME_ID, score: Math.max(0, Math.floor(state.score)) };
       }
       return state.lastScorePayload;

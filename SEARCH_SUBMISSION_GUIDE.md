@@ -1,6 +1,6 @@
 # TaskIt Search Submission Guide
 
-**Version 1.23.1**  
+**Version 1.24.1**
 For the official hosted property: `https://taskit.jahosi.co.uk/`
 
 ## Self-Hosting Domain Configuration

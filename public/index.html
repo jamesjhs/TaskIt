@@ -144,6 +144,7 @@
     .hidden { display: none !important; }
   </style>
   <link rel="stylesheet" href="/app.css?v=1.23.1" type="text/css" />
+  <link rel="stylesheet" href="/games/css/arcade.css?v=1.23.1" type="text/css" />
   <!-- PWA / installable web app -->
   <link rel="manifest" href="/manifest.json?v=1.23.1" />
   <meta name="theme-color" content="#7c3aed" />
@@ -1743,56 +1744,9 @@
           <span>🎮 Arcade Games</span>
         </summary>
         <div style="padding-top:12px">
-          <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Register game modules, choose their achievement slot, and enable them without editing the HTML shell. <a href="/arcade-game-guide.html" target="_blank" rel="noopener" style="color:#7c3aed;text-decoration:underline">Open the game creator guide</a>.</p>
-          <div id="arcadeGameForm" style="background:#f5f3ff;border-radius:10px;padding:14px;margin-bottom:14px">
-            <p id="arcadeGameFormTitle" style="font-size:.88rem;font-weight:700;color:#374151;margin-bottom:10px">New Arcade Game</p>
-            <input type="hidden" id="arcadeGameEditId" value="" />
-            <div class="admin-field-row">
-              <div class="form-group">
-                <label>Achievement Slot</label>
-                <select id="arcadeGameAchievementKey" class="select"></select>
-              </div>
-              <div class="form-group">
-                <label>Order</label>
-                <input id="arcadeGameSortOrder" type="number" min="1" max="999" class="input" placeholder="1" />
-              </div>
-            </div>
-            <div class="admin-field-row">
-              <div class="form-group">
-                <label>Title</label>
-                <input id="arcadeGameTitleInput" type="text" class="input" maxlength="100" placeholder="e.g. Productivity Hangman" />
-              </div>
-              <div class="form-group">
-                <label>Icon</label>
-                <input id="arcadeGameIconInput" type="text" class="input" maxlength="16" placeholder="🎮" />
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Subtitle</label>
-              <input id="arcadeGameSubtitleInput" type="text" class="input" maxlength="255" placeholder="Short description shown in the Arcade overlay" />
-            </div>
-            <div class="admin-field-row">
-              <div class="form-group">
-                <label>Game ID</label>
-                <input id="arcadeGameIdInput" type="text" class="input" placeholder="lowercase_identifier" />
-              </div>
-              <div class="form-group">
-                <label>Script File</label>
-                <select id="arcadeGameScriptSelect" class="select">
-                  <option value="">— No script yet —</option>
-                </select>
-              </div>
-            </div>
-            <label style="display:flex;align-items:center;gap:8px;font-size:.88rem;color:#374151;margin:4px 0 12px">
-              <input id="arcadeGameEnabledInput" type="checkbox" />
-              Enabled for users
-            </label>
-            <div style="display:flex;gap:8px">
-              <button onclick="adminSaveArcadeGame()" class="btn btn-primary btn-sm" style="flex:1">Save Game</button>
-              <button onclick="adminClearArcadeGameForm()" class="btn btn-secondary btn-sm">Clear</button>
-            </div>
-          </div>
+          <p style="font-size:.82rem;color:#6b7280;margin-bottom:14px">Add a game and its dependencies under server/games/public, refresh the file list, select its entry script and save. No registration or manifest file is needed. <a href="/games/arcade-game-guide.html" target="_blank" rel="noopener" style="color:#7c3aed;text-decoration:underline">Open the game creator guide</a>.</p>
           <div id="adminArcadeGamesList"><div class="loading">Loading…</div></div>
+          <button type="button" id="adminAddArcadeGameBtn" class="arcade-add-game" disabled>+ Add</button>
         </div>
       </details>
 
@@ -1870,6 +1824,8 @@
         <!-- Achievements -->
         <p class="detail-section-title" style="margin-top:16px">🏆 Achievements</p>
         <div id="gamifAchievementsList" class="gamif-ach-grid"></div>
+        <p class="detail-section-title" style="margin-top:16px">🎮 Unlocked games</p>
+        <div id="gamifArcadeGamesList" class="gamif-ach-grid"></div>
         <!-- Streaks -->
         <p class="detail-section-title" style="margin-top:16px">🔥 Streaks</p>
         <div id="gamifStreaksList"><p style="font-size:.85rem;color:#9ca3af;font-style:italic">Create recurring tasks and complete them on time to build streaks.</p></div>
@@ -2582,6 +2538,8 @@
 <script src="/js/qrcode.js"></script>
 <script>
 // ========== State ==========
+const _arcadePreviewRequest = new URLSearchParams(window.location.search).get('arcadePreview');
+let _appInitPending = false;
 function clearStoredAuth(storage) {
   storage.removeItem('taskitToken');
   storage.removeItem('taskitUser');
@@ -3307,6 +3265,18 @@ function buildPwaInstallReminderHtml() {
 
 // ========== App init ==========
 function initApp() {
+  // Bootstrap runs before the external arcade wrapper and overlay markup below.
+  // Wait for both before starting async profile loads or launching a preview.
+  if (document.readyState === 'loading') {
+    if (!_appInitPending) {
+      _appInitPending = true;
+      document.addEventListener('DOMContentLoaded', () => {
+        _appInitPending = false;
+        if (token && currentUser) initApp();
+      }, { once: true });
+    }
+    return;
+  }
   initGlobalGestureGuards();
   document.getElementById('landingPage').classList.add('hidden');
   document.getElementById('authPage').classList.add('hidden');
@@ -3366,7 +3336,11 @@ function initApp() {
   setInterval(refreshTaskTimers, 1000);
   // Background-load gamification state so the strip and streak panel work immediately;
   // then check if the user should see the gamification opt-in prompt
-  loadGamificationProfile().then(() => {
+  loadGamificationProfile().then(async () => {
+    if (_arcadePreviewRequest) {
+      await launchAdminArcadePreview();
+      return;
+    }
     maybeShowGamifOptIn();
     maybeShowArcadePseudonymPrompt();
   });
@@ -5622,60 +5596,27 @@ function renderGamificationProfile(profile, streaks) {
   // ARCADE_GAME_ORDER, regardless of *which* achievements were earned.
   // Admins always get all registered keys so they can test every game.
   const isAdmin = currentUser && currentUser.role === 'admin';
-  unlockedArcadeKeys.clear();
-  if (isAdmin) {
-    ARCADE_GAME_ORDER.forEach(k => unlockedArcadeKeys.add(k));
-  } else if (profile.achievements) {
-    const earnedCount = profile.achievements.filter(a => a.unlockedAt).length;
-    ARCADE_GAME_ORDER.slice(0, earnedCount).forEach(k => unlockedArcadeKeys.add(k));
-  }
-
   const achEl = document.getElementById('gamifAchievementsList');
   if (profile.achievements && profile.achievements.length) {
     achEl.innerHTML = profile.achievements.map(a => {
       const icon = ACHIEVEMENT_ICONS[a.key] || '\uD83C\uDFC5';
       const unlocked = !!a.unlockedAt;
       const dateStr = unlocked ? new Date(a.unlockedAt).toLocaleDateString(userLocale()) : '';
-      const gameEntry = ARCADE_GAMES && ARCADE_GAMES[a.key];
-      // Game is accessible if count qualifies this slot — independent of whether
-      // the user has earned this specific achievement.
-      const gameAccessible = !!gameEntry && (isAdmin || unlockedArcadeKeys.has(a.key));
-      const hasGame = gameAccessible;
-      const playableClass = hasGame ? ' arcade-playable' : '';
-      // Use data attribute + event delegation — avoids inline JS and single-quote injection.
-      const dataAttr = hasGame ? ` data-arcade-key="${escHtml(a.key)}" role="button" tabindex="0"` : '';
-      const dateLabel = unlocked
-        ? escHtml(dateStr)
-        : (isAdmin ? '\uD83D\uDEE0\uFE0F Admin preview'
-          : (hasGame ? '\uD83C\uDFAE Game available' : '\uD83D\uDD12 Locked'));
-      // Show the game title on every card that has an associated game so users
-      // know what they are working towards, whether the game is locked or not.
-      const gameLabel = gameEntry ? `<div class="gamif-ach-game">\uD83C\uDFAE ${escHtml(gameEntry.title)}</div>` : '';
-      // Card state: unlocked achievement, admin preview, game-ready (accessible
-      // but achievement not yet earned), or fully locked.
-      let cardClass;
-      if (unlocked) {
-        cardClass = 'gamif-ach-unlocked' + playableClass;
-      } else if (isAdmin) {
-        cardClass = 'gamif-ach-admin-preview' + playableClass;
-      } else if (hasGame) {
-        cardClass = 'gamif-ach-game-ready arcade-playable';
-      } else {
-        cardClass = 'gamif-ach-locked';
-      }
+      const dateLabel = unlocked ? escHtml(dateStr) : (isAdmin ? 'Admin preview' : 'Locked');
+      const cardClass = unlocked ? 'gamif-ach-unlocked' : (isAdmin ? 'gamif-ach-admin-preview' : 'gamif-ach-locked');
       return `
-        <div class="gamif-ach ${cardClass}" title="${escHtml(a.description)}"${dataAttr}>
+        <div class="gamif-ach ${cardClass}" title="${escHtml(a.description)}">
           <span class="gamif-ach-icon">${icon}</span>
           <div class="gamif-ach-name">${escHtml(a.name)}</div>
           <div class="gamif-ach-desc">${escHtml(a.description)}</div>
-          ${gameLabel}
           <div class="gamif-ach-date">${dateLabel}</div>
-          ${hasGame ? '<div class="gamif-ach-play-hint">🕹️ Play</div>' : ''}
         </div>`;
     }).join('');
   } else {
     achEl.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic;grid-column:1/-1">No achievements yet.</p>';
   }
+
+  renderArcadeGameCards(profile.achievements || [], isAdmin);
 
   // Streaks
   const streaksEl = document.getElementById('gamifStreaksList');
@@ -5693,6 +5634,38 @@ function renderGamificationProfile(profile, streaks) {
       </div>`).join('');
   } else {
     streaksEl.innerHTML = '<p style="font-size:.85rem;color:#9ca3af;font-style:italic">Create recurring tasks and complete them on time to build streaks.</p>';
+  }
+}
+
+function renderArcadeGameCards(achievements, isAdmin) {
+  const earnedCount = achievements.filter(achievement => achievement.unlockedAt).length;
+  const keys = ARCADE_GAME_ORDER.slice(0, isAdmin ? ARCADE_GAME_ORDER.length : earnedCount);
+  unlockedArcadeKeys.clear();
+  keys.forEach(key => unlockedArcadeKeys.add(key));
+  const container = document.getElementById('gamifArcadeGamesList');
+  if (!container) return;
+  container.replaceChildren();
+  if (!keys.length) {
+    const message = document.createElement('p');
+    message.className = 'arcade-unlock-message';
+    message.textContent = ARCADE_GAME_ORDER.length ? 'Earn an achievement to unlock your first game.' : 'No games available yet.';
+    container.appendChild(message);
+  }
+  for (const key of keys) {
+    const game = ARCADE_GAMES[key];
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'gamif-ach gamif-ach-game-ready arcade-playable';
+    card.dataset.arcadeKey = key;
+    const title = document.createElement('span');
+    title.className = 'gamif-ach-name';
+    setArcadeGameIcon(title, game.icon);
+    title.appendChild(document.createTextNode(' ' + game.title));
+    const description = document.createElement('span');
+    description.className = 'gamif-ach-desc';
+    description.textContent = game.subtitle;
+    card.append(title, description);
+    container.appendChild(card);
   }
 }
 
@@ -6727,8 +6700,11 @@ async function sendFeedbackReply(id) {
 }
 
 let _adminArcadeGames = [];
+let _adminArcadeMoving = false;
+let _adminArcadeAdding = false;
+const _adminArcadeToggling = new Map();
+const _adminArcadeDrafts = new Map();
 let _adminArcadeFiles = [];
-let _adminArcadeAchievements = [];
 
 async function loadArcadeSettings() {
   try {
@@ -6763,38 +6739,81 @@ async function saveArcadeSettings(e) {
 }
 
 async function loadAdminArcadeGames() {
+  const addButton = document.getElementById('adminAddArcadeGameBtn');
+  if (addButton) {
+    addButton.onclick = adminAddArcadeGame;
+    addButton.disabled = true;
+  }
   const listEl = document.getElementById('adminArcadeGamesList');
   if (listEl) listEl.innerHTML = '<div class="loading">Loading…</div>';
   try {
-    const [games, files, achievements] = await Promise.all([
+    const [games, files] = await Promise.all([
       api('GET', '/admin/arcade-games'),
       api('GET', '/admin/arcade-game-files').catch(() => []),
-      api('GET', '/gamification/achievements').catch(() => []),
     ]);
     _adminArcadeGames = Array.isArray(games) ? games : [];
     _adminArcadeFiles = Array.isArray(files) ? files : [];
-    _adminArcadeAchievements = Array.isArray(achievements) ? achievements : [];
-    renderAdminArcadeGameControls();
+    renderAdminArcadeGameList();
+
   } catch (err) {
     if (listEl) listEl.innerHTML = '<p style="font-size:.85rem;color:#ef4444">Failed to load arcade games.</p>';
     toast('Failed to load arcade games: ' + err.message, 'error');
+  } finally {
+    if (addButton) addButton.disabled = _adminArcadeAdding;
   }
 }
 
-function renderAdminArcadeGameControls() {
-  const achievementSelect = document.getElementById('arcadeGameAchievementKey');
-  if (achievementSelect) {
-    achievementSelect.innerHTML = _adminArcadeAchievements.length
-      ? _adminArcadeAchievements.map(a => `<option value="${escHtml(a.key)}">${escHtml(a.name)} (${escHtml(a.key)})</option>`).join('')
-      : '<option value="">No achievements available</option>';
+async function adminAddArcadeGame() {
+  if (_adminArcadeAdding) return;
+  _adminArcadeAdding = true;
+  const button = document.getElementById('adminAddArcadeGameBtn');
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Adding…';
   }
-
-  const scriptSelect = document.getElementById('arcadeGameScriptSelect');
-  if (scriptSelect) {
-    scriptSelect.innerHTML = '<option value="">— No script yet —</option>' +
-      _adminArcadeFiles.map(file => `<option value="${escHtml(file)}">${escHtml(file)}</option>`).join('');
+  try {
+    const sortOrder = Math.max(0, ..._adminArcadeGames.map(game => Number(game.sortOrder) || 0)) + 1;
+    await api('POST', '/admin/arcade-games', {
+      title: 'New game name',
+      subtitle: 'New game description',
+      icon: '🎮',
+      scriptPath: null,
+      sortOrder,
+      enabled: false,
+    });
+    await loadAdminArcadeGames();
+    toast('Game placeholder added');
+  } catch (err) {
+    toast('Could not add game: ' + err.message, 'error');
+  } finally {
+    _adminArcadeAdding = false;
+    if (button) {
+      button.disabled = false;
+      button.textContent = '+ Add';
+    }
   }
+}
 
+function arcadeGameIconMarkup(icon) {
+  if (/^\/games\/icons\/[a-f0-9-]+\.png$/.test(icon) || /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(icon)) {
+    return '<img src="' + escHtml(icon) + '" class="arcade-game-png" alt="" />';
+  }
+  return '🎮';
+}
+
+function setArcadeGameIcon(element, icon) {
+  if (!element) return;
+  element.replaceChildren();
+  if (/^\/games\/icons\/[a-f0-9-]+\.png$/.test(icon) || /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(icon)) {
+    const image = document.createElement('img');
+    image.src = icon;
+    image.alt = '';
+    image.className = 'arcade-game-png';
+    element.appendChild(image);
+  } else element.textContent = '🎮';
+}
+
+function renderAdminArcadeGameList() {
   const listEl = document.getElementById('adminArcadeGamesList');
   if (!listEl) return;
   if (!_adminArcadeGames.length) {
@@ -6802,90 +6821,307 @@ function renderAdminArcadeGameControls() {
     return;
   }
 
-  listEl.innerHTML = _adminArcadeGames.map(game => {
-    const enabledBadge = game.enabled
-      ? '<span class="badge badge-green" style="font-size:.72rem">enabled</span>'
-      : '<span class="badge badge-gray" style="font-size:.72rem">disabled</span>';
+  listEl.innerHTML = _adminArcadeGames.map((game, index) => {
+    const draft = _adminArcadeDrafts.get(game.id);
+    const busy = !!draft && (draft.saving || draft.reading);
     const scriptLabel = game.scriptPath ? escHtml(game.scriptPath) : 'No script selected';
-    const testBtn = game.enabled
-      ? `<button onclick="adminTestArcadeGame('${escHtml(game.achievementKey)}')" class="btn btn-sm btn-secondary" style="white-space:nowrap">Test</button>`
-      : '';
-    return `
-      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px;background:white">
-        <div style="min-width:0">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <strong style="font-size:.9rem;color:#374151">${escHtml(game.icon)} ${escHtml(game.title)}</strong>
-            ${enabledBadge}
-            <span class="badge badge-gray" style="font-size:.72rem">#${escHtml(String(game.sortOrder))}</span>
+    const icon = arcadeGameIconMarkup(draft ? draft.preview || draft.icon : game.icon);
+    const titleField = draft
+      ? `<input id="arcadeTitle_${escHtml(game.id)}" class="arcade-inline-title" type="text" maxlength="100" data-arcade-field="title" data-game-id="${escHtml(game.id)}" value="${escHtml(draft.title)}" aria-label="Game title" ${busy ? 'disabled' : ''} />`
+      : null;
+    const details = draft
+      ? `<textarea class="arcade-inline-description" rows="2" maxlength="255" data-arcade-field="subtitle" data-game-id="${escHtml(game.id)}" aria-label="Game description" ${busy ? 'disabled' : ''}>${escHtml(draft.subtitle || '')}</textarea>
+          <div class="arcade-script-test">
+          <select class="arcade-inline-script" data-arcade-field="scriptPath" data-game-id="${escHtml(game.id)}" aria-label="Script File" ${busy ? 'disabled' : ''}>
+            <option value="" ${!draft.scriptPath ? 'selected' : ''}>None</option>
+            ${draft.scriptPath && !_adminArcadeFiles.includes(draft.scriptPath) ? `<option value="${escHtml(draft.scriptPath)}" selected disabled>${escHtml(draft.scriptPath)} (unavailable)</option>` : ''}
+            ${_adminArcadeFiles.map(file => `<option value="${escHtml(file)}" ${draft.scriptPath === file ? 'selected' : ''}>${escHtml(file)}</option>`).join('')}
+          </select>
+          <button type="button" id="arcadeTest_${escHtml(game.id)}" class="btn btn-sm btn-outline" data-arcade-action="test" data-game-id="${escHtml(game.id)}" title="Test the current draft in a new window" ${busy || !draft.scriptPath ? 'disabled' : ''}>Test</button>
           </div>
-          <div style="font-size:.78rem;color:#6b7280;margin-top:2px">${escHtml(game.achievementKey)} → ${escHtml(game.gameId)}</div>
-          <div style="font-size:.75rem;color:#9ca3af;margin-top:2px;overflow:hidden;text-overflow:ellipsis">${scriptLabel}</div>
+          <label class="arcade-icon-upload">PNG icon (under 40 × 40 px, like rewards)
+            <input type="file" accept="image/png,.png" data-arcade-icon-upload data-game-id="${escHtml(game.id)}" aria-label="Upload game icon PNG" ${busy ? 'disabled' : ''} />
+          </label>
+          <div class="arcade-inline-actions">
+            <button type="button" class="btn btn-sm btn-primary" data-arcade-action="save" data-game-id="${escHtml(game.id)}" ${busy ? 'disabled' : ''}>${draft.saving ? 'Saving…' : draft.reading ? 'Reading icon…' : 'Save'}</button>
+            <button type="button" class="btn btn-sm btn-outline" data-arcade-action="cancel" data-game-id="${escHtml(game.id)}" ${draft.saving ? 'disabled' : ''}>Cancel</button>
+          </div>`
+      : `<div class="arcade-game-description">${escHtml(game.subtitle || '')}</div>
+          <div class="arcade-game-path">${scriptLabel}</div>`;
+    const switchChecked = _adminArcadeToggling.has(game.id) ? _adminArcadeToggling.get(game.id) : !!game.enabled;
+    const title = game.enabled && game.scriptPath
+      ? `<a href="#arcadeOverlay" data-arcade-play="${escHtml(game.id)}" style="color:#7c3aed;text-decoration:underline">${escHtml(game.title)}</a>`
+      : escHtml(game.title);
+    return `
+      <div class="arcade-game-row ${draft ? 'is-editing' : ''}">
+        <div class="arcade-order-controls">
+          <button type="button" data-arcade-move="up" data-game-id="${escHtml(game.id)}" class="arcade-order-arrow" aria-label="Move ${escHtml(game.title)} up" ${index === 0 || _adminArcadeMoving || _adminArcadeToggling.size ? 'disabled' : ''}>▴</button>
+          <button type="button" data-arcade-move="down" data-game-id="${escHtml(game.id)}" class="arcade-order-arrow" aria-label="Move ${escHtml(game.title)} down" ${index === _adminArcadeGames.length - 1 || _adminArcadeMoving || _adminArcadeToggling.size ? 'disabled' : ''}>▾</button>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-          ${testBtn}
-          <button onclick="adminEditArcadeGame('${escHtml(game.id)}')" class="btn btn-sm btn-outline" style="white-space:nowrap">Edit</button>
-          <button onclick="adminDeleteArcadeGame('${escHtml(game.id)}')" class="btn btn-sm btn-danger" style="white-space:nowrap">Delete</button>
+        <div style="min-width:0;flex:1">
+          <div class="arcade-game-heading">
+            <label class="toggle-switch arcade-game-switch">
+              <input type="checkbox" role="switch" id="arcadeGameToggle_${escHtml(game.id)}" data-arcade-toggle data-game-id="${escHtml(game.id)}" aria-label="Enable ${escHtml(game.title)}" ${switchChecked ? 'checked' : ''} ${_adminArcadeMoving || _adminArcadeToggling.has(game.id) ? 'disabled' : ''} />
+              <span class="toggle-switch-track" aria-hidden="true"></span>
+            </label>
+            <strong style="font-size:.9rem;color:#374151;min-width:0">${index + 1}. ${icon} ${titleField || title}</strong>
+          </div>
+          ${details}
+        </div>
+        <div class="arcade-row-actions">
+          <button type="button" id="arcadeEdit_${escHtml(game.id)}" data-arcade-action="edit" data-game-id="${escHtml(game.id)}" class="arcade-row-action" aria-pressed="${draft ? 'true' : 'false'}" aria-label="${draft ? 'Exit editing' : 'Edit'} ${escHtml(game.title)}" title="${draft ? 'Exit edit mode' : 'Edit game'}" ${[..._adminArcadeDrafts.values()].some(value => value.saving) ? 'disabled' : ''}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5M3 21l5-1L21 7a2.1 2.1 0 0 0-5-5L3 15z"/></svg>
+          </button>
+          <button type="button" data-arcade-action="delete" data-game-id="${escHtml(game.id)}" class="arcade-row-action arcade-row-action-delete" aria-label="Delete ${escHtml(game.title)}" title="Delete game" ${draft?.saving ? 'disabled' : ''}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </button>
         </div>
       </div>`;
   }).join('');
-}
-
-function adminClearArcadeGameForm() {
-  document.getElementById('arcadeGameEditId').value = '';
-  document.getElementById('arcadeGameFormTitle').textContent = 'New Arcade Game';
-  document.getElementById('arcadeGameTitleInput').value = '';
-  document.getElementById('arcadeGameSubtitleInput').value = '';
-  document.getElementById('arcadeGameIconInput').value = '🎮';
-  document.getElementById('arcadeGameIdInput').value = '';
-  document.getElementById('arcadeGameScriptSelect').value = '';
-  document.getElementById('arcadeGameSortOrder').value = String((_adminArcadeGames.length || 0) + 1);
-  document.getElementById('arcadeGameEnabledInput').checked = false;
+  if (!listEl.dataset.moveBound) {
+    listEl.dataset.moveBound = '1';
+    listEl.addEventListener('input', event => {
+      const field = event.target.closest('[data-arcade-field]');
+      const draft = field && _adminArcadeDrafts.get(field.dataset.gameId);
+      if (draft && !draft.saving && ['title', 'subtitle', 'scriptPath'].includes(field.dataset.arcadeField)) {
+        draft[field.dataset.arcadeField] = field.value;
+        if (field.dataset.arcadeField === 'scriptPath') {
+          const testButton = document.getElementById('arcadeTest_' + field.dataset.gameId);
+          if (testButton) testButton.disabled = !field.value || draft.reading;
+        }
+      }
+    });
+    listEl.addEventListener('change', event => {
+      const field = event.target.closest('[data-arcade-field]');
+      const draft = field && _adminArcadeDrafts.get(field.dataset.gameId);
+      if (draft && !draft.saving && ['title', 'subtitle', 'scriptPath'].includes(field.dataset.arcadeField)) {
+        draft[field.dataset.arcadeField] = field.value;
+        if (field.dataset.arcadeField === 'scriptPath') {
+          const testButton = document.getElementById('arcadeTest_' + field.dataset.gameId);
+          if (testButton) testButton.disabled = !field.value || draft.reading;
+        }
+      }
+      const upload = event.target.closest('[data-arcade-icon-upload]');
+      if (upload) adminChooseArcadeIcon(upload.dataset.gameId, upload);
+      const input = event.target.closest('[data-arcade-toggle]');
+      if (input) adminToggleArcadeGame(input.dataset.gameId, input.checked, input);
+    });
+    listEl.addEventListener('click', event => {
+      const gameLink = event.target.closest('[data-arcade-play]');
+      if (gameLink) {
+        event.preventDefault();
+        adminTestArcadeGame(gameLink.dataset.arcadePlay);
+        return;
+      }
+      const action = event.target.closest('[data-arcade-action]');
+      if (action && !action.disabled) {
+        if (action.dataset.arcadeAction === 'test') adminPreviewArcadeGame(action.dataset.gameId);
+        else if (action.dataset.arcadeAction === 'save') adminSaveArcadeRow(action.dataset.gameId);
+        else if (action.dataset.arcadeAction === 'cancel') adminCancelArcadeEdit(action.dataset.gameId);
+        else if (action.dataset.arcadeAction === 'edit') adminEditArcadeGame(action.dataset.gameId);
+        else if (action.dataset.arcadeAction === 'delete') adminDeleteArcadeGame(action.dataset.gameId);
+        return;
+      }
+      const button = event.target.closest('[data-arcade-move]');
+      if (button && !button.disabled) adminMoveArcadeGame(button.dataset.gameId, button.dataset.arcadeMove);
+    });
+  }
 }
 
 function adminEditArcadeGame(id) {
-  const game = _adminArcadeGames.find(g => g.id === id);
+  const game = _adminArcadeGames.find(game => game.id === id);
   if (!game) return;
-  document.getElementById('arcadeGameEditId').value = game.id;
-  document.getElementById('arcadeGameFormTitle').textContent = 'Edit Arcade Game';
-  document.getElementById('arcadeGameAchievementKey').value = game.achievementKey;
-  document.getElementById('arcadeGameTitleInput').value = game.title || '';
-  document.getElementById('arcadeGameSubtitleInput').value = game.subtitle || '';
-  document.getElementById('arcadeGameIconInput').value = game.icon || '🎮';
-  document.getElementById('arcadeGameIdInput').value = game.gameId || '';
-  document.getElementById('arcadeGameScriptSelect').value = game.scriptPath || '';
-  document.getElementById('arcadeGameSortOrder').value = game.sortOrder || 1;
-  document.getElementById('arcadeGameEnabledInput').checked = !!game.enabled;
-}
-
-async function adminSaveArcadeGame() {
-  const editId = document.getElementById('arcadeGameEditId').value;
-  const body = {
-    achievementKey: document.getElementById('arcadeGameAchievementKey').value,
-    title: document.getElementById('arcadeGameTitleInput').value.trim(),
-    subtitle: document.getElementById('arcadeGameSubtitleInput').value.trim(),
-    icon: document.getElementById('arcadeGameIconInput').value.trim() || '🎮',
-    gameId: document.getElementById('arcadeGameIdInput').value.trim(),
-    scriptPath: document.getElementById('arcadeGameScriptSelect').value || null,
-    sortOrder: parseInt(document.getElementById('arcadeGameSortOrder').value, 10),
-    enabled: document.getElementById('arcadeGameEnabledInput').checked,
-  };
-  if (!body.achievementKey || !body.title || !body.subtitle || !body.gameId || !body.sortOrder) {
-    toast('Complete the required arcade game fields', 'error');
+  if ([..._adminArcadeDrafts.values()].some(draft => draft.saving)) return;
+  if (_adminArcadeDrafts.has(id)) {
+    adminCancelArcadeEdit(id);
     return;
   }
+  _adminArcadeDrafts.clear();
+  _adminArcadeDrafts.set(id, { ...game, preview: null, iconBase64: null, reading: false, saving: false });
+  renderAdminArcadeGameList();
+  document.getElementById('arcadeTitle_' + id)?.focus();
+}
+
+function adminPreviewArcadeGame(id) {
+  const draft = _adminArcadeDrafts.get(id);
+  if (!draft || draft.saving || draft.reading || !draft.scriptPath) return;
+  const request = crypto.randomUUID();
+  const key = 'taskitArcadePreview:' + request;
   try {
-    if (editId) {
-      await api('PATCH', '/admin/arcade-games/' + editId, body);
-      toast('Arcade game updated');
-    } else {
-      await api('POST', '/admin/arcade-games', body);
-      toast('Arcade game created');
+    localStorage.setItem(key, JSON.stringify({
+      createdAt: Date.now(),
+      id,
+      title: draft.title,
+      subtitle: draft.subtitle,
+      scriptPath: draft.scriptPath,
+      icon: draft.preview || draft.icon,
+    }));
+    const popup = window.open('/?arcadePreview=' + encodeURIComponent(request), '_blank', 'popup=yes,width=960,height=760,resizable=yes,scrollbars=yes');
+    if (!popup) {
+      localStorage.removeItem(key);
+      toast('Allow pop-up windows to test this game.', 'error');
+      return;
     }
-    adminClearArcadeGameForm();
-    await loadAdminArcadeGames();
+    // Retain the normal same-origin session-storage copy, then detach the opener.
+    popup.opener = null;
+    setTimeout(() => localStorage.removeItem(key), 5 * 60 * 1000);
+  } catch (err) {
+    localStorage.removeItem(key);
+    toast('Could not open test window: ' + err.message, 'error');
+  }
+}
+
+async function launchAdminArcadePreview() {
+  const key = 'taskitArcadePreview:' + _arcadePreviewRequest;
+  try {
+    if (document.readyState === 'loading') {
+      await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve, { once: true }));
+    }
+    if (typeof window.TaskItArcade?.register !== 'function' || typeof openArcade !== 'function' || !document.getElementById('arcadeOverlay') || !document.getElementById('arcadeGameFrame')) {
+      throw new Error('The arcade wrapper could not load. Reload this test window.');
+    }
+    const raw = localStorage.getItem(key);
+    localStorage.removeItem(key);
+    const draft = raw && JSON.parse(raw);
+    if (!draft || !Number.isFinite(draft.createdAt) || Date.now() - draft.createdAt > 5 * 60 * 1000) throw new Error('This game preview has expired. Open Test again from the editor.');
+    // Admin endpoints verify the signed-in account before accepting the preview.
+    const [games, files] = await Promise.all([
+      api('GET', '/admin/arcade-games'),
+      api('GET', '/admin/arcade-game-files'),
+    ]);
+    const saved = games.find(game => game.id === draft.id);
+    if (!saved || !files.includes(draft.scriptPath)) throw new Error('The selected game script is no longer available.');
+    const previewKey = 'preview_' + _arcadePreviewRequest;
+    ARCADE_GAMES[previewKey] = {
+      ...saved,
+      title: String(draft.title || saved.title),
+      subtitle: String(draft.subtitle || saved.subtitle),
+      scriptPath: draft.scriptPath,
+      icon: draft.icon || saved.icon,
+    };
+    unlockedArcadeKeys.add(previewKey);
+    document.title = 'Test: ' + ARCADE_GAMES[previewKey].title + ' · TaskIt!';
+    await openArcade(previewKey);
+  } catch (err) {
+    toast(err.message || 'Could not load game preview.', 'error');
+  }
+}
+
+function adminCancelArcadeEdit(id) {
+  if (_adminArcadeDrafts.get(id)?.saving) return;
+  _adminArcadeDrafts.delete(id);
+  renderAdminArcadeGameList();
+  document.getElementById('arcadeEdit_' + id)?.focus();
+}
+
+async function adminChooseArcadeIcon(id, input) {
+  const draft = _adminArcadeDrafts.get(id);
+  const file = input.files?.[0];
+  if (!draft || draft.saving || !file) return;
+  if (file.type !== 'image/png' || !/\.png$/i.test(file.name) || file.size > 32768) {
+    toast('Choose a PNG under 40 × 40 px, maximum 32 KB.', 'error');
+    input.value = '';
+    return;
+  }
+  draft.reading = true;
+  renderAdminArcadeGameList();
+  try {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Could not read PNG file'));
+      reader.onload = () => {
+        const image = new Image();
+        image.onload = () => {
+          if (image.width < 1 || image.height < 1 || image.width >= 40 || image.height >= 40) reject(new Error('PNG must be under 40 × 40 px, like reward icons'));
+          else resolve(String(reader.result));
+        };
+        image.onerror = () => reject(new Error('Could not read PNG image'));
+        image.src = String(reader.result);
+      };
+      reader.readAsDataURL(file);
+    });
+    if (_adminArcadeDrafts.get(id) !== draft) return;
+    draft.preview = dataUrl;
+    draft.iconBase64 = dataUrl.split(',')[1];
+  } catch (err) {
+    toast(err.message || 'Could not read PNG icon', 'error');
+  } finally {
+    draft.reading = false;
+    if (_adminArcadeDrafts.get(id) === draft) renderAdminArcadeGameList();
+  }
+}
+
+async function adminSaveArcadeRow(id) {
+  const draft = _adminArcadeDrafts.get(id);
+  if (!draft || draft.saving || draft.reading) return;
+  if (!draft.title.trim() || !draft.subtitle.trim()) {
+    toast('Enter a game title and description.', 'error');
+    return;
+  }
+  draft.saving = true;
+  renderAdminArcadeGameList();
+  try {
+    if (draft.iconBase64) {
+      const uploaded = await api('POST', '/admin/arcade-games/upload-icon', { base64: draft.iconBase64 });
+      draft.icon = uploaded.icon;
+      draft.iconBase64 = null;
+      draft.preview = null;
+    }
+    const updated = await api('PATCH', '/admin/arcade-games/' + encodeURIComponent(id), {
+      title: draft.title.trim(),
+      subtitle: draft.subtitle.trim(),
+      scriptPath: draft.scriptPath || null,
+      icon: draft.icon,
+    });
+    const index = _adminArcadeGames.findIndex(game => game.id === id);
+    if (index !== -1) _adminArcadeGames[index] = { ..._adminArcadeGames[index], ...updated };
+    _adminArcadeDrafts.delete(id);
+    await loadGamificationProfile();
+    toast('Game updated');
+  } catch (err) {
+    toast('Could not save game: ' + err.message, 'error');
+  } finally {
+    draft.saving = false;
+    renderAdminArcadeGameList();
+  }
+}
+
+async function adminToggleArcadeGame(id, enabled, input) {
+  if (_adminArcadeMoving || _adminArcadeToggling.has(id)) return;
+  const game = _adminArcadeGames.find(game => game.id === id);
+  if (!game) return;
+  const wasEnabled = !!game.enabled;
+  const hadFocus = document.activeElement === input;
+  _adminArcadeToggling.set(id, enabled);
+  input.disabled = true;
+  try {
+    const updated = await api('PATCH', '/admin/arcade-games/' + encodeURIComponent(id), { enabled });
+    const current = _adminArcadeGames.find(game => game.id === id);
+    if (current) current.enabled = updated.enabled;
     await loadGamificationProfile();
   } catch (err) {
-    toast('Failed to save arcade game: ' + err.message, 'error');
+    input.checked = wasEnabled;
+    toast('Could not update game: ' + err.message, 'error');
+  } finally {
+    _adminArcadeToggling.delete(id);
+    const restoreFocus = hadFocus && (document.activeElement === input || document.activeElement === document.body);
+    renderAdminArcadeGameList();
+    if (restoreFocus) document.getElementById('arcadeGameToggle_' + id)?.focus();
+  }
+}
+
+async function adminMoveArcadeGame(id, direction) {
+  if (_adminArcadeMoving || _adminArcadeToggling.size) return;
+  _adminArcadeMoving = true;
+  renderAdminArcadeGameList();
+  try {
+    _adminArcadeGames = await api('POST', '/admin/arcade-games/' + encodeURIComponent(id) + '/move', { direction });
+    await loadGamificationProfile();
+  } catch (err) {
+    toast('Could not move game: ' + err.message, 'error');
+  } finally {
+    _adminArcadeMoving = false;
+    renderAdminArcadeGameList();
   }
 }
 
@@ -6895,8 +7131,8 @@ async function adminDeleteArcadeGame(id) {
   if (!confirm('Delete arcade game "' + title + '"?')) return;
   try {
     await api('DELETE', '/admin/arcade-games/' + id);
+    _adminArcadeDrafts.delete(id);
     toast('Arcade game deleted');
-    adminClearArcadeGameForm();
     await loadAdminArcadeGames();
     await loadGamificationProfile();
   } catch (err) {
@@ -6904,9 +7140,9 @@ async function adminDeleteArcadeGame(id) {
   }
 }
 
-async function adminTestArcadeGame(achievementKey) {
+async function adminTestArcadeGame(id) {
   await loadGamificationProfile();
-  openArcade(achievementKey);
+  openArcade(id);
 }
 
 async function loadXpEvents() {
@@ -8324,517 +8560,9 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
-// ========== TaskIt! Arcade — Stage 1: Overlay & Routing ==========
-
-/** Seconds added to the daily play budget when a token is spent. */
-const TOKEN_TIME_EXTENSION_SECONDS = 30;
-
-function setArcadeCatalogue(games) {
-  const enabledGames = Array.isArray(games) ? games : [];
-  ARCADE_GAME_ORDER = enabledGames.map(g => g.achievementKey);
-  ARCADE_GAMES = {};
-  enabledGames.forEach(g => {
-    ARCADE_GAMES[g.achievementKey] = {
-      id: g.id,
-      title: g.title,
-      icon: g.icon,
-      subtitle: g.subtitle,
-      gameId: g.gameId,
-      scriptPath: g.scriptPath,
-      sortOrder: g.sortOrder,
-      updatedAt: g.updatedAt,
-    };
-  });
-}
-
-window.TaskItArcade = window.TaskItArcade || {
-  games: {},
-  gamesByScriptPath: {},
-  register(definition) {
-    if (!definition || !definition.gameId || typeof definition.mount !== 'function') return;
-    const scriptEl = document.currentScript;
-    if (scriptEl && scriptEl.src) {
-      try {
-        definition.__scriptPath = new URL(scriptEl.src, window.location.href).pathname;
-      } catch {
-        definition.__scriptPath = scriptEl.getAttribute('src') || '';
-      }
-    }
-    this.games[definition.gameId] = definition;
-    if (definition.__scriptPath) this.gamesByScriptPath[definition.__scriptPath] = definition;
-  },
-  get(gameId) {
-    return this.games[gameId] || null;
-  },
-  getByScriptPath(scriptPath) {
-    return scriptPath ? (this.gamesByScriptPath[scriptPath] || null) : null;
-  },
-  unregister(gameId) {
-    if (!gameId || !this.games[gameId]) return;
-    const existing = this.games[gameId];
-    if (existing.__scriptPath && this.gamesByScriptPath[existing.__scriptPath] === existing) {
-      delete this.gamesByScriptPath[existing.__scriptPath];
-    }
-    delete this.games[gameId];
-  },
-  submitScore(gameIdOrPayload, maybeScore) {
-    return submitArcadeHighScore(gameIdOrPayload, maybeScore);
-  },
-  getHighScores(gameId) {
-    return getArcadeHighScores(gameId);
-  },
-};
-
-function normalizeArcadeScorePayload(gameIdOrPayload, maybeScore) {
-  const payload = typeof gameIdOrPayload === 'object' && gameIdOrPayload !== null
-    ? gameIdOrPayload
-    : { gameId: gameIdOrPayload, score: maybeScore };
-  const gameId = String(payload.gameId || '').trim();
-  const score = Number(payload.score);
-  if (!/^[a-z0-9_-]{2,64}$/.test(gameId)) return null;
-  if (!Number.isInteger(score) || score < 0 || score > 1000000000) return null;
-  return { gameId, score };
-}
-
-async function submitArcadeHighScore(gameIdOrPayload, maybeScore) {
-  const payload = normalizeArcadeScorePayload(gameIdOrPayload, maybeScore);
-  if (!payload || !gamificationEnabled) return null;
-  if (!arcadePseudonym) {
-    _pendingArcadeScore = payload;
-    openArcadePseudonymModal();
-    toast('Choose an arcade name to post your score.');
-    return null;
-  }
-  try {
-    const saved = await api('POST', '/gamification/arcade/high-scores', payload);
-    if (saved) toast('Score posted as ' + saved.pseudonym + '.');
-    return saved;
-  } catch (err) {
-    toast(err.message || 'Could not post high score.', 'error');
-    return null;
-  }
-}
-
-async function getArcadeHighScores(gameId) {
-  const safeGameId = String(gameId || '').trim();
-  if (!/^[a-z0-9_-]{2,64}$/.test(safeGameId)) return [];
-  return api('GET', '/gamification/arcade/high-scores/' + encodeURIComponent(safeGameId));
-}
-
-function readArcadeScoreOnExit(gameId) {
-  if (!activeArcadeGameInstance) return null;
-  const readers = ['getHighScore', 'getScore'];
-  for (const reader of readers) {
-    if (typeof activeArcadeGameInstance[reader] !== 'function') continue;
-    const result = activeArcadeGameInstance[reader]();
-    const payload = typeof result === 'object' && result !== null
-      ? { gameId: result.gameId || gameId, score: result.score }
-      : { gameId, score: result };
-    return normalizeArcadeScorePayload(payload);
-  }
-  return null;
-}
-
-function arcadeScriptSrc(game) {
-  if (!game || !game.scriptPath) return '';
-  const appVersion = window.APP_VERSION || window._serverVersion || 'dev';
-  const version = appVersion + '-' + (game.updatedAt || Date.now()) + '-' + Date.now();
-  return game.scriptPath + (game.scriptPath.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(version);
-}
-
-function arcadeEnsureGameScript(game) {
-  if (!game || !game.scriptPath) return Promise.resolve();
-  const existingForPath = window.TaskItArcade && window.TaskItArcade.getByScriptPath(game.scriptPath);
-  if (existingForPath && typeof window.TaskItArcade.unregister === 'function') {
-    window.TaskItArcade.unregister(existingForPath.gameId);
-  }
-
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = arcadeScriptSrc(game);
-    script.dataset.arcadeGameId = game.gameId;
-    script.dataset.arcadeScriptPath = game.scriptPath;
-    script.async = true;
-    script.onload = () => {
-      script.remove();
-      resolve();
-    };
-    script.onerror = () => reject(new Error('Could not load game script: ' + game.scriptPath));
-    document.body.appendChild(script);
-  });
-}
-
-/**
- * Opens the Arcade overlay for the given achievement badge key.
- *
- * Access rules:
- *   • Regular users: key must be in `unlockedArcadeKeys`, which is populated
- *     purely by count — N earned achievements (any) unlock the first N games
- *     listed in ARCADE_GAME_ORDER, regardless of which achievements were earned.
- *   • Site administrators: all registered keys are accessible so they can
- *     test every game without needing to earn any badge first.
- *
- * Includes a Time Budget pre-game check: if the user has consumed all of
- * their daily play allowance the game frame shows a locked message instead
- * of launching the game.  Admins bypass the time budget entirely.
- *
- * Stage 2 game modules listen for the 'arcade:open' CustomEvent on
- * #arcadeOverlay to boot themselves; 'arcade:close' is fired on exit.
- *
- * @param {string} badgeKey - One of the keys in ARCADE_GAMES.
- */
-async function openArcade(badgeKey) {
-  const game = ARCADE_GAMES[badgeKey];
-  if (!game) return;
-
-  // Authorization check: the key must be in the server-verified unlock set,
-  // OR the current user must be the site administrator.
-  const isAdmin = currentUser && currentUser.role === 'admin';
-  if (!isAdmin && !unlockedArcadeKeys.has(badgeKey)) return;
-
-  const overlay = document.getElementById('arcadeOverlay');
-  if (!overlay) return;
-
-  // Populate header
-  document.getElementById('arcadeGameIcon').textContent     = game.icon;
-  document.getElementById('arcadeTitle').textContent        = game.title;
-
-  // Store active game context on the element for Stage 2 modules
-  overlay.dataset.activeGame   = badgeKey;
-  overlay.dataset.activeGameId = game.gameId;
-  if (!overlay.dataset.historyPushed) {
-    pushArcadeHistory(badgeKey, game.gameId);
-    overlay.dataset.historyPushed = '1';
-  }
-
-  // ── Time Budget pre-game check ──────────────────────────────────────────
-  // Daily play time is tracked per calendar day in localStorage.
-  const today = new Date().toISOString().slice(0, 10);
-  if (localStorage.getItem('arcadePlayDate') !== today) {
-    localStorage.setItem('arcadePlayDate', today);
-    localStorage.setItem('arcadePlaySeconds', '0');
-  }
-  const playedSeconds  = parseInt(localStorage.getItem('arcadePlaySeconds') || '0', 10);
-  const limitSeconds   = arcadeDailyPlayMinutes * 60;
-  const remainingSeconds = Math.max(0, limitSeconds - playedSeconds);
-
-  // Sync token display
-  updateArcadeTokenDisplays();
-
-  // Show overlay with animation
-  overlay.classList.remove('hidden', 'arcade-animating');
-  void overlay.offsetWidth; // intentional: force CSS reflow so .arcade-animating restart is registered
-  overlay.classList.add('arcade-animating');
-  document.body.classList.add('arcade-open');
-
-  // ── Time budget HUD ────────────────────────────────────────────────────
-  arcadeUpdateTimeBudget(remainingSeconds);
-
-  const frame = document.getElementById('arcadeGameFrame');
-  frame.replaceChildren();
-
-  // If the daily limit is reached (non-admin), show locked screen
-  if (remainingSeconds <= 0 && !isAdmin) {
-    const lockDiv = document.createElement('div');
-    lockDiv.className = 'arcade-time-locked';
-    const lockIcon = document.createElement('span');
-    lockIcon.className = 'arcade-time-locked-icon';
-    lockIcon.setAttribute('aria-hidden', 'true');
-    lockIcon.textContent = '\u23F1\uFE0F';
-    const lockTitle = document.createElement('p');
-    lockTitle.className = 'arcade-time-locked-title';
-    lockTitle.textContent = 'Arcade Locked';
-    const lockSub = document.createElement('p');
-    lockSub.className = 'arcade-time-locked-sub';
-    lockSub.textContent = 'Complete a task to earn more break time!';
-    lockDiv.appendChild(lockIcon);
-    lockDiv.appendChild(lockTitle);
-    lockDiv.appendChild(lockSub);
-    frame.appendChild(lockDiv);
-    // Game does not start — do not fire arcade:open
-    return;
-  }
-
-  // Render the coming-soon placeholder; Stage 2 replaces this
-  const placeholder = document.createElement('div');
-  placeholder.className = 'arcade-coming-soon';
-  const iconEl = document.createElement('span');
-  iconEl.className = 'arcade-coming-soon-icon';
-  iconEl.setAttribute('aria-hidden', 'true');
-  iconEl.textContent = game.icon;
-  const titleEl = document.createElement('p');
-  titleEl.className = 'arcade-coming-soon-title';
-  titleEl.textContent = game.title;
-  const subEl = document.createElement('p');
-  subEl.className = 'arcade-coming-soon-sub';
-  subEl.textContent = 'Mini-game arriving in Stage 2 \u2014 watch this space!';
-  placeholder.appendChild(iconEl);
-  placeholder.appendChild(titleEl);
-  placeholder.appendChild(subEl);
-  frame.appendChild(placeholder);
-
-  // Start tracking play time: increment once per second while the arcade is open
-  arcadeStartPlayTimer(overlay, limitSeconds, playedSeconds);
-
-  try {
-    await arcadeEnsureGameScript(game);
-    if (overlay.dataset.activeGame !== badgeKey) return;
-
-    const registeredGame = window.TaskItArcade && game.scriptPath
-      ? window.TaskItArcade.getByScriptPath(game.scriptPath)
-      : null;
-    if (registeredGame) {
-      const runtimeGameId = registeredGame.gameId || game.gameId;
-      overlay.dataset.activeGameId = runtimeGameId;
-      const context = {
-        badgeKey,
-        gameId: runtimeGameId,
-        configuredGameId: game.gameId,
-        title: game.title,
-        game,
-      };
-      if (activeArcadeGameInstance && typeof activeArcadeGameInstance.unmount === 'function') {
-        activeArcadeGameInstance.unmount();
-      }
-      const mountedGame = registeredGame.mount(frame, context);
-      activeArcadeGameInstance = mountedGame || registeredGame;
-      return;
-    }
-
-    if (game.scriptPath) {
-      throw new Error('Selected arcade script loaded but did not register a TaskItArcade game.');
-    }
-
-    // Backward-compatible fallback for older modules that still listen for
-    // arcade:open directly.
-    const context = { badgeKey, gameId: game.gameId, configuredGameId: game.gameId, title: game.title, game };
-    overlay.dispatchEvent(new CustomEvent('arcade:open', {
-      bubbles: false,
-      detail: context,
-    }));
-  } catch (err) {
-    frame.replaceChildren();
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'arcade-coming-soon';
-    const errorTitle = document.createElement('p');
-    errorTitle.className = 'arcade-coming-soon-title';
-    errorTitle.textContent = 'Game could not load';
-    const errorSub = document.createElement('p');
-    errorSub.className = 'arcade-coming-soon-sub';
-    errorSub.textContent = err.message || 'Please try again later.';
-    errorDiv.appendChild(errorTitle);
-    errorDiv.appendChild(errorSub);
-    frame.appendChild(errorDiv);
-  }
-}
-
-/**
- * Updates the time budget row text and the spend-token button state.
- * @param {number} remainingSeconds
- */
-function arcadeUpdateTimeBudget(remainingSeconds) {
-  const budgetEl = document.getElementById('arcadeTimeBudget');
-  const textEl   = document.getElementById('arcadeTimeBudgetText');
-  const spendBtn = document.getElementById('arcadeSpendTokenBtn');
-  if (!budgetEl || !textEl) return;
-
-  if (remainingSeconds <= 0) {
-    textEl.textContent = '\u23F1\uFE0F No time remaining today';
-  } else {
-    const m = Math.floor(remainingSeconds / 60);
-    const s = remainingSeconds % 60;
-    textEl.textContent = '\u23F1\uFE0F ' + m + 'm ' + (s < 10 ? '0' : '') + s + 's remaining';
-  }
-  if (spendBtn) spendBtn.disabled = arcadeTokens < 1;
-  budgetEl.classList.remove('hidden');
-}
-
-/** Interval ID for the in-session play timer (cleared on close). */
-let _arcadeTimerInterval = null;
-
-/**
- * Starts the per-second play timer that accumulates usage in localStorage
- * and keeps the time-budget HUD updated.  Clears any existing interval first
- * so there is never more than one timer running at a time.
- * @param {Element} overlay   The arcade overlay element (used to detect close).
- * @param {number}  limitSeconds  User's configured daily cap in seconds.
- * @param {number}  startedAt    Seconds already played at session start.
- */
-function arcadeStartPlayTimer(overlay, limitSeconds, startedAt) {
-  if (_arcadeTimerInterval !== null) {
-    clearInterval(_arcadeTimerInterval);
-    _arcadeTimerInterval = null;
-  }
-  let elapsed = 0;
-  _arcadeTimerInterval = setInterval(function() {
-    if (overlay.classList.contains('hidden')) {
-      clearInterval(_arcadeTimerInterval);
-      _arcadeTimerInterval = null;
-      return;
-    }
-    elapsed++;
-    const totalPlayed = startedAt + elapsed;
-    localStorage.setItem('arcadePlaySeconds', String(totalPlayed));
-    const remaining = Math.max(0, limitSeconds - totalPlayed);
-    arcadeUpdateTimeBudget(remaining);
-  }, 1000);
-}
-
-/**
- * Spends 1 Arcade Token to extend the user's daily play budget by 30 seconds.
- * Calls the backend, updates the local state, and fires `arcade:addTime` on
- * the overlay so active game modules can extend their own countdown.
- */
-async function arcadeSpendToken() {
-  const spendBtn = document.getElementById('arcadeSpendTokenBtn');
-  if (spendBtn) spendBtn.disabled = true;
-  try {
-    const overlay = document.getElementById('arcadeOverlay');
-    if (activeArcadeGameInstance && typeof activeArcadeGameInstance.spendToken === 'function') {
-      const message = await activeArcadeGameInstance.spendToken();
-      if (message) toast(message);
-    } else if (overlay && !overlay.classList.contains('hidden')) {
-      const data = await api('POST', '/gamification/arcade/spend-token');
-      if (!data) return;
-      arcadeTokens = data.arcadeTokens;
-      updateArcadeTokenDisplays();
-
-      // Extend the stored daily budget by TOKEN_TIME_EXTENSION_SECONDS so the HUD updates immediately
-      const today = new Date().toISOString().slice(0, 10);
-      if (localStorage.getItem('arcadePlayDate') === today) {
-        const current = parseInt(localStorage.getItem('arcadePlaySeconds') || '0', 10);
-        const extended = Math.max(0, current - TOKEN_TIME_EXTENSION_SECONDS);
-        localStorage.setItem('arcadePlaySeconds', String(extended));
-      }
-
-      // Notify active game modules to inject extra seconds into their own timer
-      if (activeArcadeGameInstance && typeof activeArcadeGameInstance.addTime === 'function') {
-        activeArcadeGameInstance.addTime(TOKEN_TIME_EXTENSION_SECONDS);
-      }
-      overlay.dispatchEvent(new CustomEvent('arcade:addTime', {
-        bubbles: false,
-        detail: { seconds: TOKEN_TIME_EXTENSION_SECONDS },
-      }));
-
-      toast('+' + TOKEN_TIME_EXTENSION_SECONDS + ' seconds added! \uD83C\uDF89');
-    }
-  } catch (err) {
-    toast(err.message || 'Could not spend token', 'error');
-    if (spendBtn) spendBtn.disabled = arcadeTokens < 1;
-  }
-}
-
-/**
- * Closes the Arcade overlay and restores the main app.
- */
-function closeArcade(options = {}) {
-  const overlay = document.getElementById('arcadeOverlay');
-  if (!overlay || overlay.classList.contains('hidden')) return;
-
-  if (options.updateHistory !== false && history.state?.arcadeBadgeKey) {
-    history.back();
-    return;
-  }
-
-  // Stop play timer
-  if (_arcadeTimerInterval !== null) {
-    clearInterval(_arcadeTimerInterval);
-    _arcadeTimerInterval = null;
-  }
-
-  const exitScore = readArcadeScoreOnExit(overlay.dataset.activeGameId);
-
-  // Notify Stage 2 modules so they can tear down canvases / timers
-  overlay.dispatchEvent(new CustomEvent('arcade:close', {
-    bubbles: false,
-    detail: { gameId: overlay.dataset.activeGameId },
-  }));
-  if (activeArcadeGameInstance && typeof activeArcadeGameInstance.unmount === 'function') {
-    activeArcadeGameInstance.unmount();
-  }
-  activeArcadeGameInstance = null;
-
-  // Hide time budget row until next open
-  const budgetEl = document.getElementById('arcadeTimeBudget');
-  if (budgetEl) budgetEl.classList.add('hidden');
-
-  overlay.classList.add('hidden');
-  document.body.classList.remove('arcade-open');
-  delete overlay.dataset.activeGame;
-  delete overlay.dataset.activeGameId;
-  delete overlay.dataset.historyPushed;
-
-  if (exitScore) submitArcadeHighScore(exitScore).catch(() => {});
-}
-
-// Keyboard escape-hatch: pressing Escape closes the arcade
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeArcade();
-});
-
-/**
- * One-time setup for arcade badge interaction on the achievements list.
- * Delegated listeners are attached here (once) rather than inside
- * renderGamificationProfile to avoid any risk of duplicate handlers.
- * openArcade() enforces the real access check on every call.
- */
-document.addEventListener('DOMContentLoaded', function() {
-  // Back button in the arcade overlay
-  const backBtn = document.getElementById('arcadeBackBtn');
-  if (backBtn) backBtn.addEventListener('click', closeArcade);
-
-  const pseudonymSaveBtn = document.getElementById('arcadePseudonymSaveBtn');
-  if (pseudonymSaveBtn) pseudonymSaveBtn.addEventListener('click', saveArcadePseudonym);
-  const pseudonymDismissBtn = document.getElementById('arcadePseudonymDismissBtn');
-  if (pseudonymDismissBtn) pseudonymDismissBtn.addEventListener('click', dismissArcadePseudonymModal);
-  const pseudonymInput = document.getElementById('arcadePseudonymInput');
-  if (pseudonymInput) {
-    pseudonymInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        saveArcadePseudonym();
-      }
-    });
-  }
-  const gamifPseudonymSaveBtn = document.getElementById('gamifArcadePseudonymSaveBtn');
-  if (gamifPseudonymSaveBtn) gamifPseudonymSaveBtn.addEventListener('click', saveGamifArcadePseudonym);
-  const gamifPseudonymInput = document.getElementById('gamifArcadePseudonymInput');
-  if (gamifPseudonymInput) {
-    gamifPseudonymInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        saveGamifArcadePseudonym();
-      }
-    });
-  }
-
-  const overlay = document.getElementById('arcadeOverlay');
-  if (overlay) {
-    overlay.addEventListener('arcade:score', function(e) {
-      if (!e || !e.detail) return;
-      const detail = { ...e.detail, gameId: e.detail.gameId || overlay.dataset.activeGameId };
-      submitArcadeHighScore(detail).catch(() => {});
-    });
-  }
-
-  // Delegated click/keyboard listeners for arcade badges in the achievements list.
-  // Attached here once so there is never a risk of duplicate handlers across
-  // multiple calls to renderGamificationProfile. openArcade() enforces the
-  // real access check on every call.
-  const achEl = document.getElementById('gamifAchievementsList');
-  if (!achEl) return;
-  achEl.addEventListener('click', function(e) {
-    const badge = e.target.closest('[data-arcade-key]');
-    if (badge) openArcade(badge.dataset.arcadeKey);
-  });
-  achEl.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      const badge = e.target.closest('[data-arcade-key]');
-      if (badge) { e.preventDefault(); openArcade(badge.dataset.arcadeKey); }
-    }
-  });
-});
-
+</script>
+<script src="/games/js/arcade-wrapper.js?v=1.23.1"></script>
+<script>
 // ========== Loot Drop Modal ==========
 
 /** Rarity emojis used inside the loot-drop modal */
@@ -9047,7 +8775,7 @@ async function loadInventory() {
       🔙 Back to Tasks
     </button>
     <div class="arcade-logo">
-      <span id="arcadeGameIcon" class="arcade-game-icon" aria-hidden="true">🏆</span>
+      <span id="arcadeGameIcon" class="arcade-game-icon" aria-hidden="true">🎮</span>
       <span id="arcadeTitle" class="arcade-game-title">Achievement Game</span>
     </div>
     <div class="arcade-topbar-right">

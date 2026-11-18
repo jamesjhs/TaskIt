@@ -7,7 +7,7 @@
   'use strict';
 
   const GAME_ID = 'maze';
-  const FRAME_SRC = '/labyrinth/labyrinth.html';
+  const FRAME_SRC = '/games/labyrinth/labyrinth.html';
   let iframe = null;
   let lastFinalScore = null;
   let submittedScoreKey = '';

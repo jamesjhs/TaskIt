@@ -1,0 +1,1101 @@
+/* =========================================================
+   TASKIT! ARCADE — full-screen overlay (Stage 1)
+   ========================================================= */
+
+/* Body lock — prevents background scroll while arcade is open */
+body.arcade-open { overflow: hidden; }
+
+/* Full-screen overlay — animation is triggered by JS via .arcade-animating */
+.arcade-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  z-index: 9999;
+  background: linear-gradient(160deg, #0f0c29 0%, #1a1040 40%, #24243e 100%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.arcade-overlay.hidden { display: none; }
+
+/* Animation class — added by JS on every open so it always replays */
+.arcade-overlay.arcade-animating {
+  animation: arcadeIn .22s ease both;
+}
+
+@keyframes arcadeIn {
+  from { opacity: 0; transform: scale(.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Top bar — CSS Grid for perfect centering independent of button width */
+.arcade-topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 10px 16px;
+  background: rgba(0,0,0,.35);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.arcade-back-btn {
+  justify-self: start;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.25);
+  color: #e0e7ff;
+  font-size: .85rem;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  white-space: nowrap;
+}
+.arcade-back-btn:hover { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.45); }
+
+.arcade-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 800;
+  text-align: center;
+  min-width: 0;
+}
+
+/* Third grid cell — invisible but keeps the logo centred */
+.arcade-topbar-spacer { visibility: hidden; pointer-events: none; }
+
+.arcade-game-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 12px rgba(196,181,253,.6));
+}
+.arcade-game-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: .01em;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Main game container — fills remaining vertical space */
+.arcade-container {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 8px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
+  min-height: 0;
+  overscroll-behavior: none;
+}
+
+/* The frame where game canvases / Stage 2 content is injected */
+.arcade-game-frame {
+  width: 100%;
+  height: 100%;
+  max-width: 640px;
+  max-height: 100%;
+  min-height: 180px;
+  background: rgba(0,0,0,.3);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  overscroll-behavior: none;
+}
+
+.arcade-game-frame iframe {
+  overscroll-behavior: none;
+}
+
+/* Coming-soon placeholder (replaced by Stage 2 games) */
+.arcade-coming-soon {
+  text-align: center;
+  padding: 28px 20px;
+  animation: arcadeIn .3s ease both;
+}
+.arcade-coming-soon-icon {
+  font-size: 3.6rem;
+  display: block;
+  margin-bottom: 14px;
+  animation: arcadeBounce 1.8s ease-in-out infinite;
+}
+.arcade-coming-soon-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #e0e7ff;
+  margin: 0 0 8px;
+}
+.arcade-coming-soon-sub {
+  font-size: .82rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+@keyframes arcadeBounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+
+/* Clickable unlocked achievement badges */
+.gamif-ach-unlocked.arcade-playable,
+.gamif-ach-admin-preview.arcade-playable,
+.gamif-ach-game-ready.arcade-playable {
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+.gamif-ach-unlocked.arcade-playable:hover,
+.gamif-ach-admin-preview.arcade-playable:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 4px 14px rgba(134,239,172,.35);
+}
+
+/* Admin-preview badge style (not yet earned but admin can test) */
+.gamif-ach-admin-preview {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  opacity: .85;
+}
+
+/* Game-ready: game slot is accessible by achievement count but this specific
+   achievement hasn't been earned yet. Purple tint to distinguish from both
+   the green (earned+playable) and grey (locked, no access) states. */
+.gamif-ach-game-ready {
+  background: #f5f3ff;
+  border-color: #a78bfa;
+}
+.gamif-ach-game-ready.arcade-playable:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 4px 14px rgba(167,139,250,.35);
+}
+
+.gamif-ach-play-hint {
+  font-size: .6rem;
+  color: #16a34a;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+/* Responsive tweaks */
+@media (max-width: 480px) {
+  .arcade-game-title  { font-size: .92rem; }
+  .arcade-game-icon   { font-size: 1.15rem; }
+  .arcade-back-btn    { font-size: .75rem; padding: 6px 10px; }
+}
+
+/* Landscape + short viewport: shrink title area to maximise game space */
+@media (max-height: 500px) {
+  .arcade-game-icon   { font-size: 1.05rem; }
+  .arcade-game-title  { font-size: .9rem; }
+}
+
+/* =========================================================
+   TASKIT! ARCADE — Stage 2: Shared game theme + Hangman + Word Search
+   =========================================================
+   All colours are declared as CSS custom properties on each game's
+   root element so they can be overridden from a parent stylesheet
+   to restyle every game at once without touching the JS files.
+   ========================================================= */
+
+/* ── Theme variables (scoped to each game's root element) ── */
+.hm-root, .ws-root {
+  /* Text colours */
+  --jba-text:        #e0e7ff;
+  --jba-text-dim:    rgba(196,181,253,.7);
+  /* Brand accent */
+  --jba-accent:      #7c3aed;
+  --jba-purple:      #c4b5fd;
+  /* Success (correct / found) */
+  --jba-ok-bg:       rgba(22,163,74,.42);
+  --jba-ok-text:     #4ade80;
+  /* Danger (wrong / lost) */
+  --jba-err-bg:      rgba(220,38,38,.35);
+  --jba-err-text:    #f87171;
+  /* Cell / key surfaces */
+  --jba-surface:     rgba(255,255,255,.08);
+  --jba-surface-hi:  rgba(255,255,255,.2);
+  --jba-border:      rgba(255,255,255,.18);
+  /* Drag-selection highlight */
+  --jba-sel-bg:      rgba(196,181,253,.38);
+  /* SVG gallows stroke */
+  --jba-gallows:     rgba(196,181,253,.6);
+  /* SVG hangman figure stroke/fill */
+  --jba-figure:      #f9a8d4;
+}
+
+/* ── Shared game-root rules ── */
+/* align-self:stretch overrides the parent arcade-game-frame's
+   align-items:center so the game fills the full frame height.    */
+.hm-root, .ws-root {
+  width: 100%;
+  align-self: stretch;
+  box-sizing: border-box;
+  overflow-y: auto;    /* scroll on very short viewports instead of clipping */
+  overflow-x: hidden;
+}
+
+/* ── Shared replay / new-game button ── */
+.hm-replay, .ws-replay {
+  display: none;              /* shown by JS when the game ends */
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--jba-accent);
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: opacity .15s;
+}
+.hm-replay:hover, .ws-replay:hover { opacity: .86; }
+
+/* =========================================================
+   HANGMAN
+   ========================================================= */
+
+/* Root — two-column flex row */
+.hm-root {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+/* Left column — SVG gallows */
+.hm-svg-col {
+  flex-shrink: 0;
+  width: 130px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 6px;
+}
+.hm-svg-col svg { display: block; width: 100%; max-width: 130px; }
+
+/* SVG stroke/fill classes — scoped under .hm-svg-col so they never
+   accidentally match HTML elements with the same class name           */
+.hm-svg-col .hm-gallows {
+  stroke: var(--jba-gallows);
+  stroke-width: 3;
+  stroke-linecap: round;
+  fill: none;
+}
+.hm-svg-col .hm-body {
+  stroke: var(--jba-figure);
+  stroke-width: 3;
+  stroke-linecap: round;
+  fill: none;
+}
+.hm-svg-col circle.hm-body {
+  fill: var(--jba-figure);
+  stroke: none;
+}
+
+/* Right panel */
+.hm-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Wrong-guess counter */
+.hm-wrong-count {
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--jba-err-text);
+  margin: 0;
+}
+
+/* Word display — row of letter slots */
+.hm-word {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Individual letter slot — underline style */
+.hm-letter-slot {
+  display: inline-flex;
+  width: 20px;
+  height: 28px;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2px;
+  border-bottom: 2px solid var(--jba-purple);
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--jba-ok-text);   /* correctly guessed letters shown in green */
+}
+/* Unguessed letters are invisible (slot is still shown) */
+.hm-letter-slot--hidden { color: transparent; }
+/* Revealed on loss — shown in red */
+.hm-letter-slot--revealed { color: var(--jba-err-text); }
+
+/* Win / lose message */
+.hm-msg {
+  font-size: .88rem;
+  font-weight: 700;
+  min-height: 1.3em;
+  color: var(--jba-text);
+  margin: 0;
+}
+.hm-msg--win  { color: var(--jba-ok-text); }
+.hm-msg--lose { color: var(--jba-err-text); }
+
+/* A–Z keyboard */
+.hm-keyboard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+/* Individual letter key */
+.hm-key {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  border: 1px solid var(--jba-border);
+  background: var(--jba-surface);
+  color: var(--jba-text);
+  font-size: .68rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .1s, transform .1s;
+}
+.hm-key:not(:disabled):hover {
+  background: var(--jba-surface-hi);
+  transform: scale(1.1);
+}
+.hm-key:disabled { cursor: not-allowed; }
+
+/* Correct guess — green tint */
+.hm-key--correct {
+  background: var(--jba-ok-bg);
+  color: var(--jba-ok-text);
+  border-color: transparent;
+}
+/* Wrong guess — red tint, dimmed text */
+.hm-key--wrong {
+  background: var(--jba-err-bg);
+  color: rgba(255,255,255,.3);
+  border-color: transparent;
+}
+
+/* =========================================================
+   WORD SEARCH
+   ========================================================= */
+
+/* Root — grid (flex:1) + word-list panel (fixed) */
+.ws-root {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+/* Grid wrapper — fills remaining horizontal space */
+.ws-grid-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 12-column CSS Grid for the letter cells */
+.ws-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1px;
+  width: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;   /* prevent browser scroll-gestures during drag */
+}
+
+/* Individual letter cell */
+.ws-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .65rem;   /* overridden to best-fit value by JS after layout */
+  font-weight: 700;
+  border-radius: 2px;
+  cursor: pointer;
+  color: var(--jba-purple);
+  background: var(--jba-surface);
+  transition: background .07s;
+}
+/* Active drag-selection highlight */
+.ws-cell--sel {
+  background: var(--jba-sel-bg);
+  color: #fff;
+}
+/* Permanently found cell — green */
+.ws-cell--found {
+  background: var(--jba-ok-bg);
+  color: var(--jba-ok-text);
+}
+
+/* Right-hand word-list panel */
+.ws-panel {
+  width: 100px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 2px 0;
+  justify-content: center;
+  overflow-y: auto;
+}
+.ws-panel-title {
+  font-size: .66rem;
+  font-weight: 700;
+  color: var(--jba-text-dim);
+  margin: 0 0 3px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+/* Word items in the panel */
+.ws-word-item {
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--jba-text);
+  transition: color .2s;
+}
+.ws-word-item--found {
+  color: var(--jba-ok-text);
+  text-decoration: line-through;
+}
+
+/* Win message */
+.ws-win-msg {
+  display: none;     /* shown by JS when all words are found */
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--jba-ok-text);
+  margin-top: 6px;
+}
+.ws-replay { margin-top: 4px; }
+
+/* Narrow screens (≤ 380 px): stack word list below the grid */
+@media (max-width: 380px) {
+  .ws-root    { flex-direction: column; }
+  .ws-panel   { width: 100%; flex-direction: row; flex-wrap: wrap;
+                gap: 8px; justify-content: flex-start; }
+  .ws-panel-title { width: 100%; margin-bottom: 0; }
+  .ws-win-msg, .ws-replay { margin: 0; }
+}
+
+/* =========================================================
+   ARCADE — Token economy & Time Budget UI
+   ========================================================= */
+
+/* Token balance display in the arcade topbar (right column) */
+.arcade-topbar-right {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.arcade-token-display {
+  font-size: .78rem;
+  font-weight: 700;
+  color: #fde68a;
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(253,230,138,.35);
+  border-radius: 20px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+/* Time budget row — shown below title bar when a game is active */
+.arcade-time-budget {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 16px 4px;
+  background: rgba(0,0,0,.2);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  flex-shrink: 0;
+}
+.arcade-time-budget-text {
+  font-size: .76rem;
+  color: #a5b4fc;
+  font-weight: 600;
+}
+.arcade-spend-token-btn {
+  background: rgba(253,230,138,.15);
+  border: 1px solid rgba(253,230,138,.4);
+  color: #fde68a;
+  font-size: .72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
+}
+.arcade-spend-token-btn:hover { background: rgba(253,230,138,.28); }
+.arcade-spend-token-btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* Time-budget locked screen */
+.arcade-time-locked {
+  text-align: center;
+  padding: 28px 20px;
+  animation: arcadeIn .3s ease both;
+}
+.arcade-time-locked-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 12px;
+}
+.arcade-time-locked-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f87171;
+  margin: 0 0 8px;
+}
+.arcade-time-locked-sub {
+  font-size: .82rem;
+  color: #a5b4fc;
+  margin: 0;
+}
+
+/* =========================================================
+   ARCADE — Game 3: Whac-A-Bug
+   ========================================================= */
+
+.wab-root {
+  --wab-text:     #e0e7ff;
+  --wab-accent:   #7c3aed;
+  --wab-surface:  rgba(255,255,255,.08);
+  --wab-border:   rgba(255,255,255,.15);
+  --wab-ok:       #4ade80;
+  --wab-ok-bg:    rgba(22,163,74,.38);
+  --wab-err:      #f87171;
+  --wab-err-bg:   rgba(220,38,38,.32);
+  --wab-gold:     #fbbf24;
+  --wab-gold-bg:  rgba(251,191,36,.28);
+
+  width: 100%;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* HUD row: score + timer */
+.wab-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: var(--wab-surface);
+  border-radius: 8px;
+  border: 1px solid var(--wab-border);
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--wab-text);
+  flex-shrink: 0;
+}
+.wab-timer-danger { color: var(--wab-err); }
+
+/* 4×4 bug grid */
+.wab-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  flex: 1;
+}
+
+/* Individual bug hole */
+.wab-cell {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: var(--wab-surface);
+  border: 1px solid var(--wab-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform .08s, background .1s;
+  position: relative;
+  overflow: hidden;
+}
+.wab-cell:empty::after {
+  content: '';
+  display: block;
+  width: 40%;
+  height: 40%;
+  border-radius: 50%;
+  background: rgba(255,255,255,.05);
+}
+.wab-cell--bug    { background: var(--wab-ok-bg);   border-color: var(--wab-ok);   cursor: pointer; }
+.wab-cell--golden { background: var(--wab-gold-bg); border-color: var(--wab-gold); cursor: pointer; }
+.wab-cell--error  { background: var(--wab-err-bg);  border-color: var(--wab-err);  cursor: pointer; }
+.wab-cell--bug:hover,
+.wab-cell--golden:hover,
+.wab-cell--error:hover   { transform: scale(1.08); }
+.wab-cell--whacked       { animation: wabWhack .2s ease; }
+@keyframes wabWhack {
+  0%   { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* End-state */
+.wab-msg {
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--wab-ok);
+  text-align: center;
+  min-height: 1.4em;
+  margin: 0;
+}
+.wab-replay {
+  display: none;
+  padding: 7px 18px;
+  border-radius: 8px;
+  border: none;
+  background: var(--wab-accent);
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: center;
+  transition: opacity .15s;
+}
+.wab-replay:hover { opacity: .86; }
+
+/* =========================================================
+   ARCADE — Game 4: Code Breaker (Mastermind)
+   ========================================================= */
+
+.cb-root {
+  --cb-text:      #e0e7ff;
+  --cb-text-dim:  rgba(196,181,253,.65);
+  --cb-surface:   rgba(255,255,255,.07);
+  --cb-border:    rgba(255,255,255,.14);
+  --cb-accent:    #7c3aed;
+  --cb-ok:        #4ade80;
+  --cb-err:       #f87171;
+
+  /* Color palette tokens */
+  --cb-red:    #ef4444;
+  --cb-blue:   #3b82f6;
+  --cb-green:  #22c55e;
+  --cb-yellow: #eab308;
+  --cb-orange: #f97316;
+  --cb-purple: #a855f7;
+  --cb-empty:  rgba(255,255,255,.12);
+
+  width: 100%;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Board — scrollable list of guess rows */
+.cb-board {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* One attempt row */
+.cb-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: var(--cb-surface);
+  border: 1px solid var(--cb-border);
+  transition: border-color .15s;
+}
+.cb-row--active {
+  border-color: rgba(196,181,253,.5);
+  background: rgba(196,181,253,.08);
+}
+
+/* Row number label */
+.cb-row-num {
+  font-size: .65rem;
+  font-weight: 700;
+  color: var(--cb-text-dim);
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Four color pegs */
+.cb-pegs {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+}
+.cb-peg {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--cb-empty);
+  border: 2px solid rgba(255,255,255,.18);
+  cursor: pointer;
+  transition: transform .1s, box-shadow .1s;
+  flex-shrink: 0;
+}
+.cb-peg--active:hover { transform: scale(1.12); box-shadow: 0 0 8px currentColor; }
+.cb-peg--red    { background: var(--cb-red);    border-color: var(--cb-red); }
+.cb-peg--blue   { background: var(--cb-blue);   border-color: var(--cb-blue); }
+.cb-peg--green  { background: var(--cb-green);  border-color: var(--cb-green); }
+.cb-peg--yellow { background: var(--cb-yellow); border-color: var(--cb-yellow); }
+.cb-peg--orange { background: var(--cb-orange); border-color: var(--cb-orange); }
+.cb-peg--purple { background: var(--cb-purple); border-color: var(--cb-purple); }
+
+/* 2×2 feedback mini-pegs */
+.cb-feedback {
+  display: grid;
+  grid-template-columns: repeat(2, 10px);
+  grid-template-rows: repeat(2, 10px);
+  gap: 2px;
+  flex-shrink: 0;
+}
+.cb-fb-peg {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.15);
+}
+.cb-fb-peg--black { background: #1f2937; border-color: #9ca3af; }
+.cb-fb-peg--white { background: #f9fafb; border-color: #d1d5db; }
+
+/* Submit button */
+.cb-submit {
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: none;
+  background: var(--cb-accent);
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity .15s;
+  white-space: nowrap;
+}
+.cb-submit:hover { opacity: .86; }
+.cb-submit:disabled { opacity: .35; cursor: not-allowed; }
+
+/* Color palette row */
+.cb-palette {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  background: var(--cb-surface);
+  border: 1px solid var(--cb-border);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.cb-palette-label {
+  font-size: .65rem;
+  color: var(--cb-text-dim);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.cb-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform .1s, box-shadow .1s;
+  flex-shrink: 0;
+}
+.cb-swatch:hover { transform: scale(1.15); }
+.cb-swatch--selected {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.5);
+  transform: scale(1.15);
+}
+
+/* Secret code reveal */
+.cb-secret {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: rgba(220,38,38,.18);
+  border: 1px solid rgba(248,113,113,.3);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.cb-secret-label {
+  font-size: .7rem;
+  color: var(--cb-err);
+  font-weight: 700;
+}
+.cb-secret-pegs { display: flex; gap: 5px; }
+
+/* End message */
+.cb-msg {
+  font-size: .88rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--cb-ok);
+  min-height: 1.3em;
+  flex-shrink: 0;
+}
+.cb-msg--lose { color: var(--cb-err); }
+
+/* Replay button */
+.cb-replay {
+  display: none;
+  padding: 7px 18px;
+  border-radius: 8px;
+  border: none;
+  background: var(--cb-accent);
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: center;
+  flex-shrink: 0;
+  transition: opacity .15s;
+}
+.cb-replay:hover { opacity: .86; }
+
+
+/* Compact reorder controls at the left of each Admin game row. */
+.arcade-order-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.arcade-order-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.arcade-order-arrow:hover:not(:disabled) {
+  color: #7c3aed;
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+}
+.arcade-order-arrow:focus-visible {
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
+}
+.arcade-order-arrow:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
+/* Discreet Edit/Delete controls in the top-right of Admin game rows. */
+.arcade-row-actions {
+  display: flex;
+  gap: 4px;
+  align-self: flex-start;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.arcade-row-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: pointer;
+}
+.arcade-row-action:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #374151;
+}
+.arcade-row-action-delete { color: #dc2626; }
+.arcade-row-action-delete:hover {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+.arcade-row-action:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Game availability and details in the Admin list. */
+.arcade-game-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.arcade-game-switch { padding: 2px 0; }
+.arcade-game-switch input:focus-visible + .toggle-switch-track {
+  outline: 2px solid #7c3aed;
+  outline-offset: 3px;
+}
+.arcade-game-description {
+  margin-top: 5px;
+  color: #6b7280;
+  font-size: .8rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.arcade-game-path {
+  margin-top: 3px;
+  color: #9ca3af;
+  font-size: .75rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arcade-game-switch .toggle-switch-track,
+  .arcade-game-switch .toggle-switch-track::after { transition: none; }
+}
+
+.arcade-add-game {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 14px;
+  border: 1px dashed #c4b5fd;
+  border-radius: 8px;
+  background: #faf9ff;
+  color: #7c3aed;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.arcade-add-game:hover:not(:disabled) { background: #f5f3ff; border-color: #a78bfa; }
+.arcade-add-game:focus-visible { outline: 2px solid #7c3aed; outline-offset: 2px; }
+.arcade-add-game:disabled { opacity: .55; cursor: wait; }
+.arcade-game-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: white;
+}
+.arcade-game-row.is-editing {
+  border-color: #ec4899;
+  box-shadow: 0 0 0 1px #ec4899;
+  background: #fffafd;
+}
+.arcade-game-row.is-editing .arcade-game-heading strong {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 5px;
+}
+.arcade-inline-title, .arcade-inline-description {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 3px 0;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  border-radius: 3px;
+  background: transparent;
+  color: #374151;
+  font: inherit;
+}
+.arcade-inline-title { flex: 1; font-weight: 600; }
+.arcade-inline-description { margin-top: 5px; font-size: .8rem; line-height: 1.45; resize: vertical; }
+.arcade-inline-title:focus, .arcade-inline-description:focus { background: #fce7f3; }
+.arcade-inline-script {
+  width: 100%;
+  margin-top: 5px;
+  padding: 5px;
+  border: 1px solid #fbcfe8;
+  border-radius: 5px;
+  background: white;
+  color: #4b5563;
+  font-size: .75rem;
+}
+.arcade-icon-upload { display: block; margin-top: 10px; font-size: .75rem; color: #6b7280; }
+.arcade-icon-upload input { display: block; width: 100%; margin-top: 4px; font-size: .75rem; }
+.arcade-inline-actions { display: flex; gap: 6px; margin-top: 10px; }
+.arcade-game-png { display: inline-block; width: 24px; height: 24px; object-fit: contain; vertical-align: middle; flex-shrink: 0; }
+.arcade-row-action:disabled { opacity: .4; cursor: default; }
+.arcade-unlock-message {
+  grid-column: 1 / -1;
+  color: #6b7280;
+  font-size: .85rem;
+  line-height: 1.5;
+}
+.arcade-script-test { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
+.arcade-script-test .arcade-inline-script { flex: 1; min-width: 0; margin-top: 0; }
+.arcade-script-test button { flex-shrink: 0; }
+
+.arcade-row-action[aria-pressed="true"] { color: #be185d; border-color: #f9a8d4; background: #fce7f3; }

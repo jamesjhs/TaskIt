@@ -358,6 +358,22 @@ app.get('/sw.js', (_req, res) => {
 // (HTML + CSS + JS + icons) never exhausts the API quota — this is especially
 // important when the server runs behind a reverse proxy or CDN that presents
 // all upstream clients under a single IP address.
+// Only games/public is web-accessible; server-side files stay private.
+const gamesPublicDir = path.join(__dirname, '..', 'games', 'public');
+const gameAssets = express.static(gamesPublicDir, {
+  setHeaders: (res) => { res.setHeader('Cache-Control', 'no-cache'); },
+});
+app.use('/games', staticLimiter, gameAssets, (_req, res) => { res.sendStatus(404); });
+// Compatibility for cached clients and existing links, without duplicate files.
+app.use('/labyrinth', staticLimiter, express.static(path.join(gamesPublicDir, 'labyrinth')));
+app.get('/arcade-game-guide.html', staticLimiter, (_req, res) => {
+  res.sendFile(path.join(gamesPublicDir, 'arcade-game-guide.html'));
+});
+app.get(/^\/js\/(game-[a-zA-Z0-9_-]+\.js)$/, staticLimiter, (req, res, next) => {
+  const filename = routeParam(req.params[0]);
+  res.sendFile(path.join(gamesPublicDir, 'js', filename), err => { if (err) next(err); });
+});
+
 app.use(staticLimiter, express.static(path.join(__dirname, '..', '..', 'public'), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.html')) {

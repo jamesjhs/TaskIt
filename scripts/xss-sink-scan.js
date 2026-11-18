@@ -10,7 +10,7 @@ const SCAN_PATHS = [
   'public/index.html',
   'public/user-guide.html',
   'public/privacy-policy.html',
-  'public/arcade-game-guide.html',
+  'server/games/public',
   'public/js',
 ];
 

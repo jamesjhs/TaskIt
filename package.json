@@ -13,7 +13,8 @@
     "dev": "npm run dev -w server",
     "dev:css": "npm run dev:css -w server",
     "security:xss-sinks": "node scripts/xss-sink-scan.js",
-    "security:xss-sinks:update": "node scripts/xss-sink-scan.js --update"
+    "security:xss-sinks:update": "node scripts/xss-sink-scan.js --update",
+    "test:games": "npm run build -w server && node scripts/test-game-packages.js"
   },
   "engines": {
     "node": ">=20.0.0"

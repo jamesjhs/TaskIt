@@ -9,12 +9,11 @@ import db from '../db';
 import { ADMIN_EMAIL, BASE_URL } from '../config';
 import { getVapidFromDb, reconfigureWebpush } from '../webpush-config';
 import { routeParam } from '../http';
+import { listGameFiles, resolveGameScript, withGameRevisions, GAMES_PUBLIC_DIR } from '../services/arcade-games';
 import { sendPromotionalEmail } from '../services/mail';
 
 /** Absolute path to the server-side PNG icons directory. */
 const COLLECTABLES_DIR = path.resolve(__dirname, '..', '..', '..', 'public', 'collectables');
-/** Absolute path to the public JavaScript directory used by arcade modules. */
-const PUBLIC_JS_DIR = path.resolve(__dirname, '..', '..', '..', 'public', 'js');
 
 /**
  * Validates that an icon filename is safe to store and serve.
@@ -58,26 +57,14 @@ function validateIconFilename(raw: unknown): string | null {
 
 function validateArcadeScriptPath(raw: unknown, allowEmpty = true): string | null {
   if ((raw === null || raw === undefined || raw === '') && allowEmpty) return '';
-  if (!raw || typeof raw !== 'string') return null;
-  const trimmed = raw.trim();
-  if (!trimmed.startsWith('/js/') || !trimmed.toLowerCase().endsWith('.js')) return null;
-  if (trimmed.includes('..') || trimmed.includes('\\')) return null;
-
-  const rel = trimmed.slice('/js/'.length).split('/');
-  if (rel.some(part => !/^[a-zA-Z0-9][a-zA-Z0-9_.\-]*$/.test(part))) return null;
-
-  const resolved = path.join(PUBLIC_JS_DIR, ...rel);
-  if (!resolved.startsWith(PUBLIC_JS_DIR + path.sep)) return null;
-  if (!fs.existsSync(resolved)) return null;
-  return trimmed;
+  if (typeof raw !== 'string') return null;
+  return resolveGameScript(raw.trim()) ? raw.trim() : null;
 }
 
 interface ArcadeGamePayload {
-  achievementKey?: string;
   title?: string;
   subtitle?: string;
   icon?: string;
-  gameId?: string;
   scriptPath?: string | null;
   sortOrder?: number;
   enabled?: number;
@@ -87,12 +74,6 @@ interface ArcadeGamePayload {
 function normaliseArcadeGamePayload(body: Request['body'], partial = false): ArcadeGamePayload {
   const out: ArcadeGamePayload = {};
 
-  if (!partial || body.achievementKey !== undefined) {
-    if (!body.achievementKey || typeof body.achievementKey !== 'string' || !/^[a-z0-9_]+$/.test(body.achievementKey.trim())) {
-      return { error: 'achievementKey is required and must contain only lowercase letters, numbers, and underscores' };
-    }
-    out.achievementKey = body.achievementKey.trim();
-  }
   if (!partial || body.title !== undefined) {
     if (!body.title || typeof body.title !== 'string' || !body.title.trim() || body.title.length > 100) {
       return { error: 'title is required and must be 1-100 characters' };
@@ -106,21 +87,24 @@ function normaliseArcadeGamePayload(body: Request['body'], partial = false): Arc
     out.subtitle = body.subtitle.trim();
   }
   if (!partial || body.icon !== undefined) {
-    if (!body.icon || typeof body.icon !== 'string' || !body.icon.trim() || body.icon.length > 16) {
-      return { error: 'icon is required and must be short text or an emoji' };
+    const icon = typeof body.icon === 'string' ? body.icon.trim() : '🎮';
+    const uploadedIcon = /^\/games\/icons\/[a-f0-9-]+\.png$/.test(icon);
+    let validUploadedIcon = false;
+    if (uploadedIcon) {
+      const file = path.join(GAMES_PUBLIC_DIR, 'icons', path.basename(icon));
+      try {
+        validUploadedIcon = fs.statSync(file).isFile() && fs.realpathSync(file).startsWith(fs.realpathSync(GAMES_PUBLIC_DIR) + path.sep);
+      } catch { /* An absent or invalid icon is rejected below. */ }
     }
-    out.icon = body.icon.trim();
-  }
-  if (!partial || body.gameId !== undefined) {
-    if (!body.gameId || typeof body.gameId !== 'string' || !/^[a-z0-9_]+$/.test(body.gameId.trim())) {
-      return { error: 'gameId is required and must contain only lowercase letters, numbers, and underscores' };
+    if ((uploadedIcon && !validUploadedIcon) || (icon.startsWith('/') && !uploadedIcon)) {
+      return { error: 'Upload a valid PNG game icon' };
     }
-    out.gameId = body.gameId.trim();
+    out.icon = uploadedIcon ? icon : '🎮';
   }
   if (!partial || body.scriptPath !== undefined) {
     const scriptPath = validateArcadeScriptPath(body.scriptPath, true);
     if (scriptPath === null) {
-      return { error: 'scriptPath must be an existing .js file under /js/' };
+      return { error: 'scriptPath must be an existing .js file under /games/' };
     }
     out.scriptPath = scriptPath || null;
   }
@@ -1292,42 +1276,76 @@ function arcadeGameSelectSql(): string {
 router.get('/arcade-games', (_req: Request, res: Response): void => {
   const rows = db.prepare(`
     ${arcadeGameSelectSql()}
-    ORDER BY sort_order ASC, title ASC
+    ORDER BY sort_order ASC, title ASC, id ASC
   `).all();
-  res.json(rows);
+  res.json(withGameRevisions(rows as Array<{ scriptPath: string | null }>));
 });
 
 router.get('/arcade-game-files', (_req: Request, res: Response): void => {
+  try { res.json(listGameFiles()); }
+  catch { res.status(500).json({ error: 'Could not read arcade game files' }); }
+});
+
+// Same PNG size rules as reward icons; game uploads stay in the games directory.
+router.post('/arcade-games/upload-icon', (req: Request, res: Response): void => {
+  const base64 = req.body?.base64;
+  if (typeof base64 !== 'string' || !base64 || base64.length > 44000) {
+    res.status(400).json({ error: 'PNG image data is required (maximum 32 KB)' });
+    return;
+  }
+  const buffer = Buffer.from(base64, 'base64');
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  if (buffer.length < 33 || buffer.length > 32768 || !buffer.subarray(0, 8).equals(signature) || buffer.toString('ascii', 12, 16) !== 'IHDR') {
+    res.status(400).json({ error: 'File must be a valid PNG image' });
+    return;
+  }
+  const width = buffer.readUInt32BE(16);
+  const height = buffer.readUInt32BE(20);
+  if (width < 1 || height < 1 || width >= 40 || height >= 40) {
+    res.status(400).json({ error: `Image must be under 40 × 40 px (got ${width}×${height})` });
+    return;
+  }
+  const filename = randomUUID() + '.png';
   try {
-    if (!fs.existsSync(PUBLIC_JS_DIR)) {
-      res.json([]);
+    const directory = path.join(GAMES_PUBLIC_DIR, 'icons');
+    fs.mkdirSync(directory, { recursive: true });
+    if (!fs.realpathSync(directory).startsWith(fs.realpathSync(GAMES_PUBLIC_DIR) + path.sep)) {
+      res.status(400).json({ error: 'Invalid game icon directory' });
       return;
     }
-
-    const results: string[] = [];
-    const walk = (dir: string, prefix = ''): void => {
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (entry.name.startsWith('.')) continue;
-        const fullPath = path.join(dir, entry.name);
-        const relPath = prefix ? `${prefix}/${entry.name}` : entry.name;
-        if (entry.isDirectory()) {
-          walk(fullPath, relPath);
-        } else if (entry.isFile() && /^[a-zA-Z0-9][a-zA-Z0-9_.\-]*\.js$/i.test(entry.name)) {
-          // Prefer game modules but still expose nested /js/games files. Avoid
-          // generic infrastructure scripts such as qrcode.js and version.js.
-          if (entry.name.startsWith('game-') || relPath.startsWith('games/')) {
-            results.push('/js/' + relPath.replace(/\\/g, '/'));
-          }
-        }
-      }
-    };
-    walk(PUBLIC_JS_DIR);
-    results.sort((a, b) => a.localeCompare(b));
-    res.json(results);
+    fs.writeFileSync(path.join(directory, filename), buffer, { flag: 'wx' });
+    res.status(201).json({ icon: '/games/icons/' + filename });
   } catch {
-    res.status(500).json({ error: 'Could not read arcade game files' });
+    res.status(500).json({ error: 'Could not save game icon' });
   }
+});
+
+router.post('/arcade-games/:id/move', (req: Request, res: Response): void => {
+  const id = routeParam(req.params.id);
+  const direction = req.body?.direction;
+  if (direction !== 'up' && direction !== 'down') {
+    res.status(400).json({ error: 'Choose up or down' });
+    return;
+  }
+  const moved = db.transaction(() => {
+    const games = db.prepare('SELECT id FROM arcade_games ORDER BY sort_order ASC, title ASC, id ASC').all() as Array<{ id: string }>;
+    const index = games.findIndex(game => game.id === id);
+    if (index === -1) return false;
+    const nextIndex = index + (direction === 'up' ? -1 : 1);
+    if (nextIndex >= 0 && nextIndex < games.length) {
+      [games[index], games[nextIndex]] = [games[nextIndex], games[index]];
+      const update = db.prepare('UPDATE arcade_games SET sort_order = ?, updated_at = ? WHERE id = ?');
+      const now = Date.now();
+      games.forEach((game, position) => update.run(position + 1, now, game.id));
+    }
+    return true;
+  })();
+  if (!moved) {
+    res.status(404).json({ error: 'Arcade game not found' });
+    return;
+  }
+  const rows = db.prepare(`${arcadeGameSelectSql()} ORDER BY sort_order ASC, title ASC, id ASC`).all();
+  res.json(withGameRevisions(rows as Array<{ scriptPath: string | null }>));
 });
 
 router.post('/arcade-games', (req: Request, res: Response): void => {
@@ -1337,12 +1355,7 @@ router.post('/arcade-games', (req: Request, res: Response): void => {
     return;
   }
 
-  const achievement = db.prepare('SELECT key FROM achievements WHERE key = ?').get(parsed.achievementKey);
-  if (!achievement) {
-    res.status(404).json({ error: 'Achievement key not found' });
-    return;
-  }
-
+  const internalGameId = 'g_' + randomUUID().replace(/-/g, '');
   const now = Date.now();
   const id = randomUUID();
   try {
@@ -1352,11 +1365,11 @@ router.post('/arcade-games', (req: Request, res: Response): void => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
-      parsed.achievementKey,
+      'game_' + internalGameId,
       parsed.title,
       parsed.subtitle,
       parsed.icon,
-      parsed.gameId,
+      internalGameId,
       parsed.scriptPath,
       parsed.sortOrder,
       parsed.enabled,
@@ -1364,7 +1377,7 @@ router.post('/arcade-games', (req: Request, res: Response): void => {
       now
     );
   } catch {
-    res.status(409).json({ error: 'A game with that achievement key or gameId already exists' });
+    res.status(409).json({ error: 'Could not save game' });
     return;
   }
 
@@ -1374,7 +1387,7 @@ router.post('/arcade-games', (req: Request, res: Response): void => {
 
 router.patch('/arcade-games/:id', (req: Request, res: Response): void => {
   const gameId = routeParam(req.params.id);
-  const existing = db.prepare('SELECT id FROM arcade_games WHERE id = ?').get(gameId);
+  const existing = db.prepare('SELECT id, achievement_key, game_id FROM arcade_games WHERE id = ?').get(gameId) as { id: string; achievement_key: string; game_id: string } | undefined;
   if (!existing) {
     res.status(404).json({ error: 'Arcade game not found' });
     return;
@@ -1386,14 +1399,6 @@ router.patch('/arcade-games/:id', (req: Request, res: Response): void => {
     return;
   }
 
-  if (parsed.achievementKey) {
-    const achievement = db.prepare('SELECT key FROM achievements WHERE key = ?').get(parsed.achievementKey);
-    if (!achievement) {
-      res.status(404).json({ error: 'Achievement key not found' });
-      return;
-    }
-  }
-
   const setClauses: string[] = [];
   const vals: Array<string | number | null> = [];
   const add = (column: string, value: string | number | null): void => {
@@ -1401,11 +1406,9 @@ router.patch('/arcade-games/:id', (req: Request, res: Response): void => {
     vals.push(value);
   };
 
-  if (parsed.achievementKey !== undefined) add('achievement_key', parsed.achievementKey);
   if (parsed.title !== undefined) add('title', parsed.title);
   if (parsed.subtitle !== undefined) add('subtitle', parsed.subtitle);
   if (parsed.icon !== undefined) add('icon', parsed.icon);
-  if (parsed.gameId !== undefined) add('game_id', parsed.gameId);
   if (parsed.scriptPath !== undefined) add('script_path', parsed.scriptPath);
   if (parsed.sortOrder !== undefined) add('sort_order', parsed.sortOrder);
   if (parsed.enabled !== undefined) add('enabled', parsed.enabled);
@@ -1421,7 +1424,7 @@ router.patch('/arcade-games/:id', (req: Request, res: Response): void => {
   try {
     db.prepare(`UPDATE arcade_games SET ${setClauses.join(', ')} WHERE id = ?`).run(...vals);
   } catch {
-    res.status(409).json({ error: 'A game with that achievement key or gameId already exists' });
+    res.status(409).json({ error: 'Could not save game' });
     return;
   }
 

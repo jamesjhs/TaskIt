@@ -12,6 +12,7 @@ import {
   awardEventXp,
 } from '../services/gamification';
 import { routeParam } from '../http';
+import { withGameRevisions } from '../services/arcade-games';
 
 const router = Router();
 
@@ -536,9 +537,9 @@ router.get('/arcade/games', (_req: Request, res: Response): void => {
            enabled, updated_at AS updatedAt
     FROM arcade_games
     WHERE enabled = 1
-    ORDER BY sort_order ASC, title ASC
+    ORDER BY sort_order ASC, title ASC, id ASC
   `).all();
-  res.json(rows);
+  res.json(withGameRevisions(rows as Array<{ scriptPath: string | null }>));
 });
 
 export default router;

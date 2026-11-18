@@ -11,6 +11,8 @@ const ASSET_VERSION = `?v=${APP_VERSION}`;
 const STATIC_ASSETS = [
   '/',
   `/app.css${ASSET_VERSION}`,
+  `/games/css/arcade.css${ASSET_VERSION}`,
+  `/games/js/arcade-wrapper.js${ASSET_VERSION}`,
   `/tailwind.css${ASSET_VERSION}`,
   `/manifest.json${ASSET_VERSION}`,
   `/apple-touch-icon.png${ASSET_VERSION}`,
@@ -22,8 +24,7 @@ const STATIC_ASSETS = [
   `/icons/notification-badge-96x96.png${ASSET_VERSION}`,
   `/js/version.js${ASSET_VERSION}`,
   `/js/qrcode.js${ASSET_VERSION}`,
-  `/labyrinth/labyrinth.html${ASSET_VERSION}`,
-  '/labyrinth/assets/vendor/three.min.js',
+  '/games/arcade-game-guide.html',
   '/privacy-policy.html',
   '/user-guide.html',
   '/howto.html',
@@ -57,7 +58,8 @@ self.addEventListener('message', event => {
 
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-  const STANDALONE_PAGES = ['/privacy-policy.html', '/user-guide.html', '/howto.html', '/labyrinth/labyrinth.html'];
+  const STANDALONE_PAGES = ['/labyrinth/labyrinth.html', '/arcade-game-guide.html', '/privacy-policy.html', '/user-guide.html', '/howto.html'];
+  const isStandalonePage = STANDALONE_PAGES.includes(url.pathname) || (url.pathname.startsWith('/games/') && url.pathname.endsWith('.html'));
 
   // Network-first for API and calendar feeds
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/calendar/')) {
@@ -75,7 +77,7 @@ self.addEventListener('fetch', event => {
   // For SPA navigation requests, prefer the network so already-installed PWAs
   // can recover from stale cached shells after an app update. Fall back to the
   // cached shell only when offline.
-  if (event.request.mode === 'navigate' && !STANDALONE_PAGES.includes(url.pathname)) {
+  if (event.request.mode === 'navigate' && !isStandalonePage) {
     event.respondWith(
       fetch(event.request).then(response => {
         if (response && response.status === 200) {
@@ -91,7 +93,7 @@ self.addEventListener('fetch', event => {
   // Standalone HTML pages, including the Labyrinth iframe document, should also
   // recover from stale PWA caches quickly. Prefer the network and keep the cache
   // only as an offline fallback.
-  if (event.request.mode === 'navigate' && STANDALONE_PAGES.includes(url.pathname)) {
+  if (event.request.mode === 'navigate' && isStandalonePage) {
     event.respondWith(
       fetch(event.request).then(response => {
         if (response && response.status === 200) {
@@ -107,7 +109,7 @@ self.addEventListener('fetch', event => {
   // Versioned assets are expected to change URL on each release. Prefer the
   // network so old service workers do not keep serving stale UI code once the
   // shell has moved to a new version key.
-  if (event.request.method === 'GET' && url.searchParams.has('v')) {
+  if (event.request.method === 'GET' && (url.searchParams.has('v') || url.pathname.startsWith('/games/'))) {
     event.respondWith(
       fetch(event.request).then(response => {
         if (response && response.status === 200) {

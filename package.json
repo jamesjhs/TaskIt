@@ -15,6 +15,7 @@
     "security:xss-sinks": "node scripts/xss-sink-scan.js",
     "security:xss-sinks:update": "node scripts/xss-sink-scan.js --update",
     "test:collectibles": "npm run build -w server && node scripts/test-collectibles.js",
+    "test:task-rewards": "npm run build -w server && node scripts/test-task-rewards.js",
     "test:games": "npm run build -w server && node scripts/test-game-packages.js"
   },
   "engines": {

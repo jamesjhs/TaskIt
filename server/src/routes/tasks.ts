@@ -27,7 +27,7 @@ const URGENT_TASK_TYPE = 'urgent';
 const PERSONAL_GROUP_FILTER = '__personal__';
 
 // Anti-farming: tasks completed this many ms after creation earn no XP (non-recurring only)
-const ANTI_FARM_TIMEGATE_MS = 60 * 1000; // 60 seconds
+const ANTI_FARM_TIMEGATE_MS = 20 * 1000; // 20 seconds
 
 /** Format a UNIX-millisecond timestamp as a YYYY-MM-DD string for audit notes. */
 function formatDueDate(ms: number | null | undefined): string {

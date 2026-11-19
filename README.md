@@ -55,6 +55,12 @@ TaskIt! includes a fully opt-in gamification system that rewards consistent prod
 
 Every time you complete a task, you earn **50 XP** in the skill matching the task type (e.g. completing a *Household* task earns Household XP). **Your overall Level is derived from the sum of all XP you have ever earned**, regardless of which skill it came from. This means every task you complete — in any category — contributes to your single unified level.
 
+Task completion XP requires gamification to be enabled. Non-recurring tasks completed less than 20 seconds after creation earn no completion XP or loot; recurring tasks bypass this age check. A regular task can earn completion XP only once. Sporadic tasks use a separate completion endpoint and can earn XP on each completion.
+
+Collectibles are random rewards, with no guaranteed drop after five tasks. At the default sensitivity of `2.0`, an ordinary 50-XP completion has a 50% drop chance, so five eligible completions still have a 3.125% chance of no drop. An active, unowned catalogue item must be available. A drop must be claimed with **Keep** to enter inventory; only one reward can be pending at a time, and pending rewards expire after ten minutes or a server restart.
+
+Run `npm run test:task-rewards` to simulate five completions per scenario through the completion and inventory APIs using an isolated in-memory database. It covers fresh and eligible tasks, recurring and sporadic tasks, goals, timed tasks, group assignees, disabled gamification, random misses, an unavailable catalogue, and every default task category. Successful-drop scenarios force winning rolls to verify acquisition; their drop counts do not represent normal random odds. Run `npm run test:collectibles` for selection, pending reward recovery, claim retry, and browser race regression checks.
+
 The level formula uses a triangular progression curve:
 
 | Level | Cumulative XP required |

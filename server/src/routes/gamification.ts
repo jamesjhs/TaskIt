@@ -259,6 +259,12 @@ router.get('/inventory', (req: Request, res: Response): void => {
   res.json(rows);
 });
 
+// Recover drops from any XP event, including events whose responses do not carry loot.
+router.get('/inventory/pending', (req: Request, res: Response): void => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ drop: getPendingDrop(req.user!.id) });
+});
+
 /**
  * POST /api/gamification/inventory/claim
  * Claims the authenticated user's pending loot drop (if any) by removing it
@@ -286,16 +292,19 @@ router.post('/inventory/claim', (req: Request, res: Response): void => {
     return;
   }
 
-  // Atomically consume the pending drop and write to user_inventory
+  // Persist before consuming the cache entry so failed writes remain retryable.
   const claimTx = db.transaction(() => {
-    const drop = claimPendingDrop(userId);
+    const drop = getPendingDrop(userId);
     if (!drop) return null; // raced to expiry between check and claim
 
     const id = randomUUID();
     const now = Date.now();
-    db.prepare(
-      'INSERT INTO user_inventory (id, user_id, collectible_id, acquired_at) VALUES (?, ?, ?, ?)'
-    ).run(id, userId, drop.collectibleId, now);
+    const inserted = db.prepare(`
+      INSERT INTO user_inventory (id, user_id, collectible_id, acquired_at)
+      SELECT ?, ?, ?, ?
+      WHERE NOT EXISTS (SELECT 1 FROM user_inventory WHERE user_id = ? AND collectible_id = ?)
+    `).run(id, userId, drop.collectibleId, now, userId, drop.collectibleId);
+    if (!inserted.changes) return null;
 
     return {
       id,
@@ -308,6 +317,7 @@ router.post('/inventory/claim', (req: Request, res: Response): void => {
   });
 
   const saved = claimTx();
+  claimPendingDrop(userId);
   if (!saved) {
     res.status(404).json({ error: 'No pending drop to claim' });
     return;

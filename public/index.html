@@ -2806,7 +2806,10 @@ async function api(method, path, body) {
   if (token) opts.headers['Authorization'] = 'Bearer ' + token;
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch('/api' + path, opts);
-  if (res.status === 204) return null;
+  if (res.status === 204) {
+    if (token && method !== 'GET') schedulePendingDropRefresh();
+    return null;
+  }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && path === '/auth/login') {
     throw new Error(data.error || 'Username or password is incorrect.');
@@ -2817,6 +2820,7 @@ async function api(method, path, body) {
     return null;
   }
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  if (token && method !== 'GET') schedulePendingDropRefresh();
   return data;
 }
 
@@ -3282,6 +3286,7 @@ function initApp() {
   document.getElementById('authPage').classList.add('hidden');
   document.getElementById('appPage').classList.remove('hidden');
   initOverlayHistoryTracking();
+  schedulePendingDropRefresh();
   if (currentUser) {
     document.getElementById('profileUsername').textContent = currentUser.username;
     document.getElementById('profileEmail').textContent = currentUser.email;
@@ -5296,10 +5301,7 @@ async function quickStatus(status) {
     }
     if (earnedDoubleXp) successMessage += ' Double XP earned!';
     toast(successMessage);
-    // If a loot drop was included in the response, show the modal
-    if (status === 'complete' && updated && updated.drop) {
-      openLootDropModal(updated.drop);
-    }
+    // The shared API wrapper recovers pending loot after completion handlers finish.
   } catch (err) { toast(err.message, 'error'); }
 }
 
@@ -8576,10 +8578,34 @@ const RECYCLE_CONFIRM_RARITIES = new Set(['epic']);
 
 /** The drop object currently shown in the modal (null when modal is closed). */
 let _pendingDrop = null;
+let _pendingDropRefreshTimer = null;
+let _lootDropActionInFlight = false;
+let _pendingDropRefreshVersion = 0;
+
+// Defer until the action's own handler has finished closing/replacing its modals.
+function schedulePendingDropRefresh() {
+  clearTimeout(_pendingDropRefreshTimer);
+  _pendingDropRefreshTimer = setTimeout(refreshPendingDrop, 0);
+}
+
+async function refreshPendingDrop() {
+  if (!token || _lootDropActionInFlight) return;
+  const requestToken = token;
+  const version = ++_pendingDropRefreshVersion;
+  try {
+    const data = await api('GET', '/gamification/inventory/pending');
+    if (token !== requestToken || version !== _pendingDropRefreshVersion || _lootDropActionInFlight) return;
+    if (data && data.drop) openLootDropModal(data.drop);
+    else if (_pendingDrop) closeLootDropModal();
+  } catch (err) {
+    // A recovery failure must not turn an otherwise successful action into an error.
+    console.error('Failed to recover pending collectible:', err);
+  }
+}
 
 /**
  * Populates and opens the loot-drop modal.
- * Called from quickStatus() whenever the server response contains a `.drop` field.
+ * Called by the shared pending-drop recovery path after actions and on startup.
  *
  * @param {Object} drop - LootDropResult from the server:
  *   { collectibleId, collectibleName, rarity, categoryName, description }
@@ -8630,7 +8656,9 @@ function closeLootDropModal() {
  * to the user's permanent inventory.
  */
 async function keepDrop() {
-  if (!_pendingDrop) return;
+  if (!_pendingDrop || _lootDropActionInFlight) return;
+  _lootDropActionInFlight = true;
+  ++_pendingDropRefreshVersion;
   const name = _pendingDrop.collectibleName || 'item';
   closeLootDropModal();
   try {
@@ -8639,6 +8667,9 @@ async function keepDrop() {
     loadInventory();
   } catch (err) {
     toast(err.message || 'Failed to claim item', 'error');
+  } finally {
+    _lootDropActionInFlight = false;
+    schedulePendingDropRefresh();
   }
 }
 
@@ -8648,7 +8679,7 @@ async function keepDrop() {
  * confirmation before proceeding.
  */
 async function recycleDrop() {
-  if (!_pendingDrop) return;
+  if (!_pendingDrop || _lootDropActionInFlight) return;
   const rarity = (_pendingDrop.rarity || 'common').toLowerCase();
   const name   = _pendingDrop.collectibleName || 'item';
 
@@ -8660,6 +8691,8 @@ async function recycleDrop() {
     if (!confirmed) return;
   }
 
+  _lootDropActionInFlight = true;
+  ++_pendingDropRefreshVersion;
   closeLootDropModal();
   try {
     const data = await api('POST', '/gamification/inventory/recycle');
@@ -8667,6 +8700,9 @@ async function recycleDrop() {
     if (gamificationEnabled) loadGamificationProfile();
   } catch (err) {
     toast(err.message || 'Failed to recycle item', 'error');
+  } finally {
+    _lootDropActionInFlight = false;
+    schedulePendingDropRefresh();
   }
 }
 

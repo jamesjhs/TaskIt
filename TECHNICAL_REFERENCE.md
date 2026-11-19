@@ -909,6 +909,7 @@ Attached to `req.user` by `authMiddleware`.
 | `POST` | `/api/gamification/streaks/:taskId/freeze` | JWT | authed | Apply streak freeze |
 | `GET` | `/api/gamification/catalogue` | JWT | authed | Full active collectibles catalogue |
 | `GET` | `/api/gamification/inventory` | JWT | authed | Authenticated user's owned collectible inventory |
+| `GET` | `/api/gamification/inventory/pending` | JWT | authed | Recover the current pending drop as `{ drop }` (null when absent); no-store response |
 | `POST` | `/api/gamification/inventory/claim` | JWT | authed | Claim pending loot drop → persisted to inventory |
 | `POST` | `/api/gamification/inventory/recycle` | JWT | authed | Discard pending drop for XP consolation bonus |
 | `PATCH` | `/api/gamification/arcade/daily-limit` | JWT | authed | Set daily arcade play limit (minutes) |
@@ -1109,7 +1110,8 @@ Three handlers:
 | `POST /streaks/:taskId/freeze` | Calls `applyStreakFreeze(userId, taskId)` |
 | `GET /catalogue` | Returns all active (non-archived) collectibles joined with category; no ownership filter — used to render unowned silhouettes |
 | `GET /inventory` | Returns full `user_inventory` joined with collectible and category details, ordered by `acquired_at DESC` |
-| `POST /inventory/claim` | Calls `getPendingDrop()` (non-destructive check), validates collectible still active, then atomically `claimPendingDrop()` + INSERT `user_inventory`; 404 if no pending drop; 410 if dropped item was archived |
+| `GET /inventory/pending` | Returns `{ drop }` for the authenticated user. The shared browser API wrapper checks after successful mutations and on app startup, surfacing drops from every XP event, including sporadic tasks and recycling. Pending drops still expire after ten minutes and are held in server memory. |
+| `POST /inventory/claim` | Validates the pending collectible is active, inserts only if the user does not already own it, then consumes the pending entry after the transaction succeeds. Failed writes retain the reward for retry; 404 if absent, expired, or already owned; 410 if archived. |
 | `POST /inventory/recycle` | Calls `getPendingDrop()`, consumes it via `claimPendingDrop()`, awards `recycle_drop` XP via `awardEventXp()`; 404 if no pending drop |
 | `GET /arcade/games` | Returns enabled rows from `arcade_games` ordered by `sort_order`; frontend uses this to build `ARCADE_GAME_ORDER`, `ARCADE_GAMES`, and dynamic script loading metadata |
 | `PATCH /arcade/daily-limit` | Validates `minutes` is integer 1–180; UPDATE `users.daily_play_minutes` |
@@ -1227,7 +1229,7 @@ All public functions:
 | `applyStreakFreeze(userId, taskId)` | `(string, string) → string \| null` | Atomic deduct credit + set `streak_frozen=1`; returns error string or null |
 | `getStreaksForUser(userId)` | `(string) → StreakRow[]` | Returns active recurring tasks with streak data |
 | `resetOverdueStreaks()` | `() → void` | Called by scheduler hourly; handles frozen and unfrozen overdue tasks |
-| `rollLootDrop(userId, xpGained)` | `(string, number) → LootDropResult \| null` | **(private)** Rolls for a loot drop based on XP gained; stores result in `pendingDrops` cache; returns null if RNG misses, no active collectibles, or user already has an unclaimed drop |
+| `rollLootDrop(userId, xpGained)` | `(string, number) → LootDropResult \| null` | **(private)** Rolls for a loot drop based on XP gained; selects only active, unowned items, falling back across rarities when the rolled tier is exhausted and reporting the selected item's actual rarity. Stores result in `pendingDrops`; returns null if RNG misses, the active catalogue is fully owned, or a drop is already pending. Existing inventory copies are preserved. |
 | `claimPendingDrop(userId)` | `(string) → LootDropResult \| null` | Atomically removes and returns the pending drop from the in-memory cache; returns null if none or expired |
 | `getPendingDrop(userId)` | `(string) → LootDropResult \| null` | Non-destructively peeks at the pending drop; returns null if none or expired |
 

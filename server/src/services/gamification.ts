@@ -152,28 +152,30 @@ function rollLootDrop(userId: string, xpGained: number): LootDropResult | null {
 
   const rarity = selectWeightedRarity();
 
-  // Pick a random collectible of the rolled rarity (not archived)
+  // Pick an active collectible of the rolled rarity that the user does not own.
   const candidates = db.prepare(`
-    SELECT c.id, c.name, c.icon_filename, ic.name AS category_name
+    SELECT c.id, c.name, c.rarity, c.icon_filename, ic.name AS category_name
     FROM collectibles c
     JOIN item_categories ic ON ic.id = c.category_id
     WHERE c.rarity = ? AND c.archived = 0 AND ic.archived = 0
-  `).all(rarity) as Array<{ id: string; name: string; icon_filename: string | null; category_name: string }>;
+      AND NOT EXISTS (SELECT 1 FROM user_inventory ui WHERE ui.user_id = ? AND ui.collectible_id = c.id)
+  `).all(rarity, userId) as Array<{ id: string; name: string; rarity: string; icon_filename: string | null; category_name: string }>;
 
-  let pick: { id: string; name: string; icon_filename: string | null; category_name: string } | undefined;
+  let pick: { id: string; name: string; rarity: string; icon_filename: string | null; category_name: string } | undefined;
 
   if (candidates.length > 0) {
     pick = candidates[Math.floor(Math.random() * candidates.length)];
   } else {
-    // Fallback: any active collectible regardless of rarity
+    // Fallback: any active, unowned collectible regardless of rarity.
     pick = db.prepare(`
-      SELECT c.id, c.name, c.icon_filename, ic.name AS category_name
+      SELECT c.id, c.name, c.rarity, c.icon_filename, ic.name AS category_name
       FROM collectibles c
       JOIN item_categories ic ON ic.id = c.category_id
       WHERE c.archived = 0 AND ic.archived = 0
+        AND NOT EXISTS (SELECT 1 FROM user_inventory ui WHERE ui.user_id = ? AND ui.collectible_id = c.id)
       ORDER BY RANDOM()
       LIMIT 1
-    `).get() as { id: string; name: string; icon_filename: string | null; category_name: string } | undefined;
+    `).get(userId) as { id: string; name: string; rarity: string; icon_filename: string | null; category_name: string } | undefined;
   }
 
   if (!pick) return null;
@@ -181,7 +183,7 @@ function rollLootDrop(userId: string, xpGained: number): LootDropResult | null {
   const result: LootDropResult = {
     collectibleId: pick.id,
     collectibleName: pick.name,
-    rarity,
+    rarity: pick.rarity,
     categoryName: pick.category_name,
     iconFilename: pick.icon_filename ?? null,
   };

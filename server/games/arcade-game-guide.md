@@ -2,7 +2,7 @@
 
 Agent-readable Markdown companion to [the HTML guide](public/arcade-game-guide.html). This duplicates the guide content, including examples and integration requirements; keep both versions in sync when updating the contract. All repository paths below are relative to the repository root unless stated otherwise.
 
-v1.24.2 · a complete guide for contributors and coding agents
+v1.24.3 · a complete guide for contributors and coding agents
 
 **Contents**
 
